@@ -49,7 +49,6 @@
 
         .hidden { display: none !important; }
 
-        /* --- UI ENHANCEMENT: Auto-hiding header --- */
         .app-header {
             position: fixed; top: 0; left: 0; width: 100%; height: 60px;
             background-color: color-mix(in srgb, var(--bg) 85%, transparent);
@@ -101,7 +100,6 @@
 
         main { padding: 48px 24px; }
         
-        /* Redesigned fallback view for a cleaner look */
         .fallback-view, .loading-view {
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center; min-height: calc(100vh - 156px);
@@ -156,15 +154,15 @@
             background-color: color-mix(in srgb, var(--accent) 40%, transparent);
         }
 
-        /* --- UI ENHANCEMENT: Smoother tooltip animation and better shadow --- */
         .selection-tooltip {
-            position: absolute; /* Changed from fixed to absolute for better positioning relative to scroll */
+            position: absolute;
             z-index: 2000; display: none; gap: 6px; padding: 6px;
             background-color: var(--ink); color: var(--bg); border-radius: 8px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
             opacity: 0;
             transform: translateY(10px);
             transition: opacity 150ms ease-out, transform 150ms ease-out;
+            will-change: opacity, transform;
         }
         .selection-tooltip.visible {
             opacity: 1;
@@ -178,7 +176,6 @@
         .selection-tooltip button:hover { background-color: rgba(255,255,255,0.15); }
         .selection-tooltip i { margin-right: 6px; }
 
-        /* --- UI ENHANCEMENT: Redesigned AI Panel --- */
         .ai-panel {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
             width: min(700px, 90vw); background-color: color-mix(in srgb, var(--bg) 92%, transparent);
@@ -202,14 +199,23 @@
             font-size: 0.95rem;
         }
 
-        .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; }
+        .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; white-space: pre-wrap; word-wrap: break-word; }
         .ai-text-content p { margin: 0 0 1em; }
         .ai-text-content ul { padding-left: 20px; margin: 1em 0; }
         .ai-text-content li { margin-bottom: 0.5em; }
-
         .ai-text-content .thinking { display: flex; align-items: center; gap: 10px; color: var(--subtle); }
         .ai-text-content .thinking .fa-star { animation: pulse 1.5s infinite ease-in-out; }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } }
+        /* --- UI ENHANCEMENT: Blinking cursor for typing effect --- */
+        .ai-text-content .typing-cursor {
+            display: inline-block;
+            background-color: var(--ink);
+            width: 10px; height: 1.2em;
+            animation: blink 1s step-end infinite;
+            vertical-align: bottom;
+        }
+        @keyframes blink { 50% { background-color: transparent; } }
+
 
         .ai-panel-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
         .ai-panel-actions button {
@@ -304,7 +310,6 @@
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
 
         const firebaseConfig = {
-            // Your Firebase config remains here
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
             projectId: "physmathacademy-722b3",
@@ -344,7 +349,7 @@
             tooltipExplain: document.getElementById('btn-explain'),
             tooltipHighlight: document.getElementById('btn-highlight'), tooltipCopy: document.getElementById('btn-copy'),
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
-            aiQuote: document.getElementById('ai-quote'), // New DOM element
+            aiQuote: document.getElementById('ai-quote'),
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
         };
 
@@ -352,23 +357,54 @@
             pdfDoc: null, totalPages: 0, currentPage: 1,
             pagesHTML: [], isRendering: false, lastSelectionText: "",
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-            mode: "light", lastScrollY: 0,
+            mode: "light", lastScrollY: 0, currentAITyping: null,
         };
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
-        // --- UI ENHANCEMENT: Markdown parser for AI responses ---
         function parseMarkdown(text) {
             let html = escapeHTML(text);
-            // Bold: **text** -> <b>text</b>
             html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            // Italic: *text* -> <i>text</i>
             html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
-            // Lists: * item -> <ul><li>item</li></ul>
             html = html.replace(/^\s*\*\s+(.*)/gm, '<li>$1</li>');
             html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-            return html.replace(/\n/g, '<br>'); // Keep line breaks
+            return html.replace(/\n/g, '<br>');
         }
+
+        // --- UI ENHANCEMENT: Typewriter effect for AI responses ---
+        function typewriterEffect(element, text, onComplete) {
+            // If another typing process is running, cancel it
+            if (state.currentAITyping) {
+                clearTimeout(state.currentAITyping);
+            }
+            
+            let i = 0;
+            const speed = 20; // Lower is faster
+            const textNode = document.createTextNode('');
+            const cursorNode = document.createElement('span');
+            cursorNode.className = 'typing-cursor';
+
+            element.innerHTML = '';
+            element.appendChild(textNode);
+            element.appendChild(cursorNode);
+
+            function type() {
+                if (i < text.length) {
+                    textNode.nodeValue += text.charAt(i);
+                    i++;
+                    element.scrollTop = element.scrollHeight; // Auto-scroll
+                    state.currentAITyping = setTimeout(type, speed);
+                } else {
+                    cursorNode.remove(); // Remove cursor when done
+                    state.currentAITyping = null;
+                    if (onComplete) {
+                        onComplete();
+                    }
+                }
+            }
+            type();
+        }
+
 
         function setMode(mode) {
             state.mode = mode;
@@ -454,30 +490,32 @@
             state.isRendering = false;
         }
 
-        // --- BUG FIX: More reliable selection handling ---
+        // --- BUG FIX: Use a timeout to ensure selection state is final before checking ---
         function handleSelection(event) {
-            // Do not trigger on clicks inside the tooltip itself
             if (DOM.tooltip.contains(event.target)) return;
 
-            const sel = window.getSelection();
-            const text = sel.toString().trim();
+            // Use a minimal timeout to allow the browser to update the selection object
+            // after a click or drag-release. This makes deselection detection reliable.
+            setTimeout(() => {
+                const sel = window.getSelection();
+                const text = sel.toString().trim();
 
-            if (text && !sel.isCollapsed) {
-                const rect = sel.getRangeAt(0).getBoundingClientRect();
-                state.lastSelectionText = text;
-                showTooltipAt(rect);
-            } else {
-                hideTooltip();
-            }
+                if (text && !sel.isCollapsed) {
+                    const rect = sel.getRangeAt(0).getBoundingClientRect();
+                    state.lastSelectionText = text;
+                    showTooltipAt(rect);
+                } else {
+                    hideTooltip();
+                }
+            }, 10);
         }
         
         function showTooltipAt(rect) {
             DOM.tooltip.style.display = "flex";
-            // Position relative to the viewport first
             const top = window.scrollY + rect.top - DOM.tooltip.offsetHeight - 8;
             const left = window.scrollX + rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
             
-            DOM.tooltip.style.top = `${Math.max(top, window.scrollY + 10)}px`; // Ensure it doesn't go off-screen top
+            DOM.tooltip.style.top = `${Math.max(top, window.scrollY + 10)}px`;
             DOM.tooltip.style.left = `${left}px`;
             
             requestAnimationFrame(() => {
@@ -487,7 +525,6 @@
         
         function hideTooltip() { 
             DOM.tooltip.classList.remove('visible');
-            // Use a timeout to allow the fade-out animation to complete
             setTimeout(() => {
                 if (!DOM.tooltip.classList.contains('visible')) {
                     DOM.tooltip.style.display = 'none';
@@ -505,9 +542,17 @@
             DOM.aiQuote.classList.remove('hidden');
             DOM.aiPanel.style.display = "flex"; 
             DOM.aiContent.innerHTML = `<div class="thinking"><i class="fa-solid fa-star"></i> Thinking...</div>`;
+            
             try {
                 const { data } = await explainBookTextFn({ text: state.lastSelectionText });
-                DOM.aiContent.innerHTML = parseMarkdown(data?.explanation || "No explanation was returned.");
+                const explanationText = data?.explanation || "No explanation was returned.";
+                
+                // Use the typewriter effect
+                typewriterEffect(DOM.aiContent, explanationText, () => {
+                    // After typing, replace content with fully formatted HTML
+                    DOM.aiContent.innerHTML = parseMarkdown(explanationText);
+                    DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
+                });
             } catch (err) {
                 console.error("AI Explain Error:", err);
                 DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
@@ -532,8 +577,9 @@
         }
 
         function flashAI(msg, duration = 2000) {
-            DOM.aiQuote.classList.add('hidden'); // Hide quote for flash messages
-            DOM.aiPanel.style.display = "flex"; DOM.aiContent.textContent = msg;
+            DOM.aiQuote.classList.add('hidden');
+            DOM.aiPanel.style.display = "flex"; 
+            DOM.aiContent.textContent = msg;
             setTimeout(() => { 
                 if (DOM.aiContent.textContent === msg) {
                     DOM.aiPanel.style.display = "none"; 
@@ -550,14 +596,8 @@
             DOM.fontInc.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1));
             DOM.fontDec.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1));
             
-            // --- BUG FIX: Use mouseup for more reliable selection detection ---
+            // This event handles both selecting and deselecting reliably.
             document.addEventListener("mouseup", handleSelection);
-            document.addEventListener("mousedown", (e) => {
-                // Hide tooltip if clicking anywhere that isn't the tooltip itself
-                if (!DOM.tooltip.contains(e.target)) {
-                    hideTooltip();
-                }
-            });
             window.addEventListener("scroll", hideTooltip, { passive: true });
             
             DOM.tooltipExplain.addEventListener("click", handleExplain);
@@ -568,31 +608,23 @@
             DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied to clipboard!"); });
         }
 
-        // --- UI ENHANCEMENT: Keyboard navigation ---
         function setupKeyboardNav() {
             document.addEventListener('keydown', (e) => {
-                // Ignore if user is typing in an input
                 if (e.target.tagName === 'INPUT') return;
-                if (e.key === 'ArrowLeft') {
-                    DOM.prevBtn.click();
-                } else if (e.key === 'ArrowRight') {
-                    DOM.nextBtn.click();
-                }
+                if (e.key === 'ArrowLeft') DOM.prevBtn.click();
+                else if (e.key === 'ArrowRight') DOM.nextBtn.click();
             });
         }
 
-        // --- UI ENHANCEMENT: Auto-hide header on scroll ---
         function setupHeaderAutohide() {
             document.addEventListener('scroll', () => {
                 const currentScrollY = window.scrollY;
                 if (currentScrollY > state.lastScrollY && currentScrollY > 60) {
-                    // Scrolling down
                     DOM.header.classList.add('hidden');
                 } else {
-                    // Scrolling up
                     DOM.header.classList.remove('hidden');
                 }
-                state.lastScrollY = currentScrollY;
+                state.lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
             }, { passive: true });
         }
 
