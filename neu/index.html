@@ -26,13 +26,11 @@
             --shadow-color: rgba(44, 43, 42, 0.08);
             --font-main: 'Lora', serif;
             --font-ui: 'Poppins', sans-serif;
-            
-            /* --- ENHANCEMENT 1: Added subtle texture for reading comfort --- */
             --bg-texture: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4"><path fill="%23EAE8E4" fill-opacity="0.4" d="M1 3h1v1H1V3zm2-2h1v1H3V1z"></path></svg>');
         }
 
         body.dark-mode {
-            --bg: #21201F;
+            --bg: #1F1E1D;
             --ink: #EAE8E4;
             --subtle: #999591;
             --border-color: #3A3837;
@@ -45,14 +43,35 @@
         body {
             font-family: var(--font-ui);
             background-color: var(--bg);
-            background-image: var(--bg-texture);
             color: var(--ink);
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: background-color 0.4s ease, color 0.4s ease;
             margin: 0;
             padding-top: 60px;
         }
+        
+        /* --- ENHANCEMENT: Ambiance Mode --- */
+        body.ambiance-mode {
+            background-color: color-mix(in srgb, var(--bg) 60%, black);
+        }
 
         .hidden { display: none !important; }
+        
+        /* --- ENHANCEMENT: Reading Progress Bar --- */
+        .progress-bar {
+            position: fixed;
+            top: 60px; /* Positioned below the header */
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--border-color);
+            z-index: 999;
+        }
+        .progress-bar-inner {
+            width: 0%;
+            height: 100%;
+            background-color: var(--accent);
+            transition: width 0.3s ease-out;
+        }
 
         .app-header {
             position: fixed; top: 0; left: 0; width: 100%; height: 60px;
@@ -71,7 +90,7 @@
         }
         body.dark-mode .logo { color: var(--ink); }
 
-        .reader-controls { display: flex; align-items: center; gap: 24px; }
+        .reader-controls { display: flex; align-items: center; gap: 16px; }
         .reader-controls.hidden { display: none; }
         .control-group { display: flex; align-items: center; gap: 8px; }
         .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -90,13 +109,13 @@
         .reader-controls button, .reader-controls a.button {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
-            transition: color 0.2s ease, background-color 0.2s ease;
-            text-decoration: none; display: inline-flex;
+            transition: all 0.2s ease; text-decoration: none; display: inline-flex;
             align-items: center; justify-content: center;
         }
         .reader-controls button:hover, .reader-controls a.button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
         .reader-controls #back-to-library:hover { background-color: color-mix(in srgb, var(--accent) 80%, var(--bg)); color: white; }
+        .reader-controls #ambiance-toggle.active { color: var(--accent); }
 
         main { padding: 48px 24px; }
         
@@ -123,13 +142,22 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- ENHANCEMENT 2: Improved drop shadow for better depth --- */
-        .page-container { filter: drop-shadow(0 4px 6px var(--shadow-color)) drop-shadow(0 10px 20px var(--shadow-color)); }
+        .page-container { 
+            filter: drop-shadow(0 4px 6px var(--shadow-color)) drop-shadow(0 10px 20px var(--shadow-color)); 
+            transition: filter 0.4s ease, transform 0.4s ease;
+        }
+        body.ambiance-mode .page-container {
+            filter: drop-shadow(0 6px 15px rgba(0,0,0,0.2)) drop-shadow(0 20px 40px rgba(0,0,0,0.25)) drop-shadow(0 0 60px color-mix(in srgb, var(--accent) 15%, transparent));
+            transform: scale(1.015);
+        }
+
         .page {
             max-width: 75ch; margin: 0 auto;
             background-color: var(--bg); border: 1px solid var(--border-color);
             border-radius: 8px; padding: 4rem 5rem; position: relative;
             transition: border-color 0.3s ease, background-color 0.3s ease;
+            /* --- ENHANCEMENT: Paper Texture --- */
+            background-image: var(--bg-texture);
         }
         body.dark-mode .page { background-color: #2D2C2B; }
 
@@ -166,7 +194,6 @@
         .selection-tooltip button:hover { background-color: rgba(255,255,255,0.15); }
         .selection-tooltip i { margin-right: 6px; }
 
-        /* --- ENHANCEMENT 3: Redesigned AI Panel for streaming response --- */
         .ai-panel {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
             width: min(700px, 90vw); background-color: color-mix(in srgb, var(--bg) 92%, transparent);
@@ -213,22 +240,27 @@
             <div id="reader-controls" class="reader-controls hidden">
                 <div class="control-group file-info"> <span id="book-title" class="book-title"></span> </div>
                 <div class="control-group navigation">
-                    <button id="prev-page" title="Previous Page (Left Arrow)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button id="prev-page" title="Previous Page (Left Arrow)" aria-label="Previous Page"><i class="fa-solid fa-arrow-left"></i></button>
                     <div class="page-indicator">
                         <input id="page-jump" type="number" min="1" />
                         <span id="page-total">/ 0</span>
                     </div>
-                    <button id="next-page" title="Next Page (Right Arrow)"><i class="fa-solid fa-arrow-right"></i></button>
+                    <button id="next-page" title="Next Page (Right Arrow)" aria-label="Next Page"><i class="fa-solid fa-arrow-right"></i></button>
                 </div>
                 <div class="control-group settings">
-                    <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
-                    <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
-                    <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
-                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                    <button id="ambiance-toggle" title="Ambiance Mode" aria-label="Toggle Ambiance Mode"><i class="fa-solid fa-lightbulb"></i></button>
+                    <button id="font-decrease" title="Decrease Font Size" aria-label="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
+                    <button id="font-increase" title="Increase Font Size" aria-label="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
+                    <button id="mode-toggle" title="Toggle Theme" aria-label="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
+                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library" aria-label="Back to Library"><i class="fa-solid fa-book-open"></i></a>
                 </div>
             </div>
         </div>
     </header>
+    
+    <div id="progress-bar" class="progress-bar">
+        <div id="progress-bar-inner" class="progress-bar-inner"></div>
+    </div>
 
     <main id="main-content">
         <section id="fallback-view" class="fallback-view">
@@ -269,8 +301,8 @@
             <div id="ai-content" class="ai-text-content"></div>
         </div>
         <div class="ai-panel-actions">
-            <button id="ai-copy" title="Copy Explanation"><i class="fa-regular fa-copy"></i></button>
-            <button id="ai-close" title="Close Panel"><i class="fa-solid fa-xmark"></i></button>
+            <button id="ai-copy" title="Copy Explanation" aria-label="Copy Explanation"><i class="fa-regular fa-copy"></i></button>
+            <button id="ai-close" title="Close Panel" aria-label="Close Panel"><i class="fa-solid fa-xmark"></i></button>
         </div>
     </div>
     
@@ -301,7 +333,7 @@
         }
 
         const DOM = {
-            body: document.body, header: document.getElementById('app-header'),
+            body: document.body,
             readerControls: document.getElementById('reader-controls'),  
             fallbackView: document.getElementById('fallback-view'),
             fallbackText: document.getElementById('fallback-text'),
@@ -318,6 +350,8 @@
             tooltipHighlight: document.getElementById('btn-highlight'), tooltipCopy: document.getElementById('btn-copy'),
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
+            progressBar: document.getElementById('progress-bar-inner'),
+            ambianceToggle: document.getElementById('ambiance-toggle'),
         };
 
         const state = {
@@ -325,7 +359,7 @@
             pagesHTML: [], isRendering: false, lastSelection: null,
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
             mode: localStorage.getItem("kaffetishMode") || 'light',
-            isMouseDragging: false,
+            ambiance: localStorage.getItem("kaffetishAmbiance") === 'true',
         };
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
@@ -338,16 +372,30 @@
             localStorage.setItem("kaffetishMode", mode);
         }
 
+        function setAmbiance(isActive) {
+            state.ambiance = isActive;
+            DOM.body.classList.toggle("ambiance-mode", isActive);
+            DOM.ambianceToggle.classList.toggle("active", isActive);
+            localStorage.setItem("kaffetishAmbiance", isActive);
+        }
+
         function setFontRem(rem) {
             state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
             DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
             localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
         }
 
+        function updateProgressBar() {
+            const progress = state.totalPages > 0 ? (state.currentPage / state.totalPages) * 100 : 0;
+            DOM.progressBar.style.width = `${progress}%`;
+        }
+
         function showView(view) {
             [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
             view.classList.remove('hidden');
-            DOM.readerControls.classList.toggle('hidden', view !== DOM.readerView);
+            const isReader = view === DOM.readerView;
+            DOM.readerControls.classList.toggle('hidden', !isReader);
+            DOM.progressBar.parentElement.classList.toggle('hidden', !isReader);
         }
 
         async function loadPdfFromUrl(sourceUrl, title) {
@@ -412,19 +460,19 @@
             DOM.pageTotal.textContent = `/ ${state.totalPages}`;
             DOM.pageJumpInput.value = pageNum; DOM.pageJumpInput.max = state.totalPages;
             DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
-            setFontRem(state.currentFontRem); hideTooltip();
+            setFontRem(state.currentFontRem);
+            updateProgressBar();
+            hideTooltip();
             state.isRendering = false;
         }
 
         function handleSelection() {
             const sel = window.getSelection();
-            if (!sel.rangeCount || sel.isCollapsed) return;
+            if (sel.isCollapsed) return;
             const text = sel.toString().trim();
             if (text.length > 0 && DOM.readerView.contains(sel.anchorNode)) {
                 state.lastSelection = sel;
                 showTooltipAt(sel.getRangeAt(0).getBoundingClientRect());
-            } else {
-                hideTooltip();
             }
         }
 
@@ -441,16 +489,15 @@
             DOM.aiContent.innerHTML = '';
             const cursor = document.createElement('span');
             cursor.className = 'cursor';
-
             let i = 0;
             function type() {
                 if (i < text.length) {
                     DOM.aiContent.append(text.charAt(i));
-                    DOM.aiContent.appendChild(cursor); // Keep cursor at the end
+                    DOM.aiContent.appendChild(cursor);
                     i++;
-                    setTimeout(type, 15); // Adjust speed here
+                    setTimeout(type, 15);
                 } else {
-                    cursor.remove(); // Remove cursor when done
+                    cursor.remove();
                 }
             }
             type();
@@ -461,10 +508,8 @@
             const textToExplain = state.lastSelection.toString().trim();
             hideTooltip();
             if (textToExplain.length < 10) { flashAI("Please select a longer phrase to explain."); return; }
-
             DOM.aiPanel.style.display = "flex";
             DOM.aiContent.innerHTML = `Thinking... <span class="cursor"></span>`;
-            
             try {
                 const { data } = await explainBookTextFn({ text: textToExplain });
                 const explanation = data?.explanation || "No explanation was returned.";
@@ -504,26 +549,23 @@
             DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
             
             DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
+            DOM.ambianceToggle.addEventListener("click", () => setAmbiance(!state.ambiance));
             DOM.fontInc.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1));
             DOM.fontDec.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1));
 
-            // --- BUG FIX: Use mouseup to reliably detect end of selection ---
-            document.addEventListener('mousedown', () => state.isMouseDragging = true);
-            document.addEventListener('mouseup', () => {
-                if(state.isMouseDragging){
-                    setTimeout(handleSelection, 50); // Small delay to let selection register
-                }
-                state.isMouseDragging = false;
+            document.addEventListener('mouseup', (e) => {
+                 // Delay allows browser to finalize selection
+                setTimeout(() => handleSelection(), 50);
             });
-            document.addEventListener('selectionchange', () => {
-                if(!state.isMouseDragging){
-                    const sel = window.getSelection();
-                    if(sel.isCollapsed) hideTooltip();
+            
+            // --- ENHANCEMENT: Close tooltip on any outside click ---
+            document.addEventListener('mousedown', (e) => {
+                if (!DOM.tooltip.contains(e.target)) {
+                    hideTooltip();
                 }
             });
 
             window.addEventListener("scroll", hideTooltip, { passive: true });
-            window.addEventListener("resize", hideTooltip);
             
             DOM.tooltipExplain.addEventListener("click", handleExplain);
             DOM.tooltipHighlight.addEventListener("click", handleHighlight);
@@ -538,11 +580,10 @@
                 flashAI("Copied to clipboard!");
             });
 
-            // --- ENHANCEMENT 4: Add keyboard navigation ---
             document.addEventListener('keydown', (e) => {
-                if (DOM.readerView.classList.contains('hidden')) return; // Only act if reader is visible
-                if (e.key === 'ArrowLeft') renderPage(state.currentPage - 1);
-                if (e.key === 'ArrowRight') renderPage(state.currentPage + 1);
+                if (document.activeElement === DOM.pageJumpInput || DOM.readerView.classList.contains('hidden')) return;
+                if (e.key === 'ArrowLeft') { e.preventDefault(); renderPage(state.currentPage - 1); }
+                if (e.key === 'ArrowRight') { e.preventDefault(); renderPage(state.currentPage + 1); }
             });
         }
 
@@ -560,6 +601,7 @@
 
         function init() {
             setMode(state.mode);
+            setAmbiance(state.ambiance);
             setupEventListeners();
             loadBookFromURLParams();
             if (!explainBookTextFn) {
