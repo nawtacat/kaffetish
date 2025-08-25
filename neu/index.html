@@ -29,14 +29,14 @@
         }
 
         body.dark-mode {
-            --bg: #21201F;
+            --bg: #1F1E1D;
             --ink: #EAE8E4;
             --subtle: #999591;
             --border-color: #3A3837;
             --shadow-color: rgba(0, 0, 0, 0.25);
         }
 
-        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+        ::selection { background-color: var(--accent); color: white; }
 
         body {
             font-family: var(--font-ui);
@@ -48,17 +48,21 @@
         }
 
         .hidden { display: none !important; }
+        
+        .progress-bar {
+            position: fixed; top: 60px; left: 0; width: 100%; height: 3px;
+            background-color: var(--border-color); z-index: 999;
+        }
+        .progress-bar-inner {
+            width: 0%; height: 100%; background-color: var(--accent);
+            transition: width 0.3s ease-out;
+        }
 
-        /* --- UI ENHANCEMENT: Auto-hiding header --- */
         .app-header {
             position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-            background-color: color-mix(in srgb, var(--bg) 85%, transparent);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background-color: color-mix(in srgb, var(--bg) 95%, transparent);
             border-bottom: 1px solid var(--border-color); z-index: 1000;
-            transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease-out;
-        }
-        .app-header.hidden {
-            transform: translateY(-100%);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
         .header-content {
             max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
@@ -70,7 +74,7 @@
         }
         body.dark-mode .logo { color: var(--ink); }
 
-        .reader-controls { display: flex; align-items: center; gap: 24px; }
+        .reader-controls { display: flex; align-items: center; gap: 16px; }
         .reader-controls.hidden { display: none; }
         .control-group { display: flex; align-items: center; gap: 8px; }
         .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -90,10 +94,8 @@
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
             transition: color 0.2s ease, background-color 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            text-decoration: none; display: inline-flex;
+            align-items: center; justify-content: center;
         }
         .reader-controls button:hover, .reader-controls a.button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
@@ -101,7 +103,6 @@
 
         main { padding: 48px 24px; }
         
-        /* Redesigned fallback view for a cleaner look */
         .fallback-view, .loading-view {
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center; min-height: calc(100vh - 156px);
@@ -118,8 +119,6 @@
         .library-link:hover { background-color: color-mix(in srgb, var(--accent) 85%, black); transform: scale(1.03); }
         .library-link i { margin-right: 8px; }
 
-        .error-message { color: var(--accent); margin-top: 16px; font-weight: 500; }
-
         .spinner {
             width: 48px; height: 48px; border-radius: 50%;
             border: 5px solid var(--border-color); border-top-color: var(--accent);
@@ -127,7 +126,10 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .page-container { filter: drop-shadow(0 10px 25px var(--shadow-color)); }
+        .page-container { 
+            box-shadow: 0 10px 30px -5px var(--shadow-color);
+            border-radius: 8px;
+        }
         .page {
             max-width: 75ch; margin: 0 auto;
             background-color: var(--bg); border: 1px solid var(--border-color);
@@ -136,12 +138,12 @@
         }
         body.dark-mode .page { background-color: #2D2C2B; }
 
-        .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; user-select: text; }
+        .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; }
         .content p { margin: 0 0 1.5em; }
         .content p:last-child { margin-bottom: 0; }
         
         .fade-in { animation: fadeIn 250ms ease-out both; }
-        @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .page-number {
             position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
@@ -152,23 +154,12 @@
             background-color: color-mix(in srgb, var(--accent) 25%, transparent);
             border-radius: 3px;
         }
-        body.dark-mode .highlighted-text {
-            background-color: color-mix(in srgb, var(--accent) 40%, transparent);
-        }
+        body.dark-mode .highlighted-text { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 
-        /* --- UI ENHANCEMENT: Smoother tooltip animation and better shadow --- */
         .selection-tooltip {
-            position: absolute; /* Changed from fixed to absolute for better positioning relative to scroll */
-            z-index: 2000; display: none; gap: 6px; padding: 6px;
+            position: fixed; z-index: 2000; display: none; gap: 6px; padding: 6px;
             background-color: var(--ink); color: var(--bg); border-radius: 8px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 150ms ease-out, transform 150ms ease-out;
-        }
-        .selection-tooltip.visible {
-            opacity: 1;
-            transform: translateY(0);
         }
         .selection-tooltip button {
             background: transparent; border: 0; color: var(--bg); padding: 8px 12px;
@@ -178,38 +169,26 @@
         .selection-tooltip button:hover { background-color: rgba(255,255,255,0.15); }
         .selection-tooltip i { margin-right: 6px; }
 
-        /* --- UI ENHANCEMENT: Redesigned AI Panel --- */
         .ai-panel {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-            width: min(700px, 90vw); background-color: color-mix(in srgb, var(--bg) 92%, transparent);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            width: min(850px, 90vw);
+            background-color: var(--bg);
             border: 1px solid var(--border-color); border-radius: 12px;
-            box-shadow: 0 20px 60px var(--shadow-color); z-index: 2100; padding: 20px 24px;
+            box-shadow: 0 20px 60px var(--shadow-color); z-index: 2100; padding: 16px 20px;
             display: none; flex-direction: column; animation: slideUp 0.3s ease-out;
         }
         @keyframes slideUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 
         .ai-panel-content { flex-grow: 1; }
-        .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
-        .ai-title i { color: var(--accent); }
-        .ai-quote {
-            display: block;
-            border-left: 3px solid var(--accent);
-            padding-left: 12px;
-            margin: 0 0 16px 0;
-            font-style: italic;
-            color: var(--subtle);
-            font-size: 0.95rem;
-        }
-
+        .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 12px; }
+        .ai-title i { color: var(--accent); margin-right: 8px; }
         .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; }
-        .ai-text-content p { margin: 0 0 1em; }
-        .ai-text-content ul { padding-left: 20px; margin: 1em 0; }
-        .ai-text-content li { margin-bottom: 0.5em; }
-
-        .ai-text-content .thinking { display: flex; align-items: center; gap: 10px; color: var(--subtle); }
-        .ai-text-content .thinking .fa-star { animation: pulse 1.5s infinite ease-in-out; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } }
+        .ai-text-content .cursor {
+            display: inline-block; width: 10px; height: 1.1em; background-color: var(--accent);
+            animation: blink 1s step-end infinite; vertical-align: text-bottom;
+            margin-left: 2px;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
 
         .ai-panel-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
         .ai-panel-actions button {
@@ -236,22 +215,26 @@
             <div id="reader-controls" class="reader-controls hidden">
                 <div class="control-group file-info"> <span id="book-title" class="book-title"></span> </div>
                 <div class="control-group navigation">
-                    <button id="prev-page" title="Previous Page (←)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <button id="prev-page" title="Previous Page (Left Arrow)" aria-label="Previous Page"><i class="fa-solid fa-arrow-left"></i></button>
                     <div class="page-indicator">
                         <input id="page-jump" type="number" min="1" />
                         <span id="page-total">/ 0</span>
                     </div>
-                    <button id="next-page" title="Next Page (→)"><i class="fa-solid fa-arrow-right"></i></button>
+                    <button id="next-page" title="Next Page (Right Arrow)" aria-label="Next Page"><i class="fa-solid fa-arrow-right"></i></button>
                 </div>
                 <div class="control-group settings">
-                    <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
-                    <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
-                    <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
-                    <a id="back-to-library" class="button" href="https://kaffetish/club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                    <button id="font-decrease" title="Decrease Font Size" aria-label="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
+                    <button id="font-increase" title="Increase Font Size" aria-label="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
+                    <button id="mode-toggle" title="Toggle Theme" aria-label="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
+                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library" aria-label="Back to Library"><i class="fa-solid fa-book-open"></i></a>
                 </div>
             </div>
         </div>
     </header>
+    
+    <div id="progress-bar" class="progress-bar">
+        <div id="progress-bar-inner" class="progress-bar-inner"></div>
+    </div>
 
     <main id="main-content">
         <section id="fallback-view" class="fallback-view">
@@ -272,7 +255,7 @@
 
         <section id="reader-view" class="reader-view hidden">
             <div class="page-container">
-                <article class="page">
+                 <article class="page">
                     <div id="page-content" class="content"></div>
                     <div id="page-number" class="page-number"></div>
                 </article>
@@ -289,12 +272,11 @@
     <div id="ai-panel" class="ai-panel">
         <div class="ai-panel-content">
             <h4 class="ai-title"><i class="fa-solid fa-star"></i> AI Explanation</h4>
-            <blockquote id="ai-quote" class="ai-quote hidden"></blockquote>
             <div id="ai-content" class="ai-text-content"></div>
         </div>
         <div class="ai-panel-actions">
-            <button id="ai-copy" title="Copy Explanation"><i class="fa-regular fa-copy"></i></button>
-            <button id="ai-close" title="Close Panel"><i class="fa-solid fa-xmark"></i></button>
+            <button id="ai-copy" title="Copy Explanation" aria-label="Copy Explanation"><i class="fa-regular fa-copy"></i></button>
+            <button id="ai-close" title="Close Panel" aria-label="Close Panel"><i class="fa-solid fa-xmark"></i></button>
         </div>
     </div>
     
@@ -304,7 +286,6 @@
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
 
         const firebaseConfig = {
-            // Your Firebase config remains here
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
             projectId: "physmathacademy-722b3",
@@ -313,62 +294,44 @@
             appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
         };
         
-        let app, auth, functions, explainBookTextFn;
-        
-        if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            functions = getFunctions(app, "us-central1");
+        let explainBookTextFn;
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const functions = getFunctions(app, "us-central1");
             onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
             explainBookTextFn = httpsCallable(functions, "explainBookText");
-        } else {
-            console.warn("Firebase config is missing. The 'AI Explain' feature will be disabled.");
+        } catch (e) {
+            console.warn("Firebase config is missing or invalid. The 'AI Explain' feature will be disabled.");
         }
 
         const DOM = {
-            body: document.body, header: document.getElementById('app-header'),
-            readerControls: document.getElementById('reader-controls'),
-            fallbackView: document.getElementById('fallback-view'),
-            fallbackText: document.getElementById('fallback-text'),
+            body: document.body, readerControls: document.getElementById('reader-controls'),  
+            fallbackView: document.getElementById('fallback-view'), fallbackText: document.getElementById('fallback-text'),
             readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
-            loadingText: document.getElementById('loading-text'),
-            pageContent: document.getElementById('page-content'),
+            loadingText: document.getElementById('loading-text'), pageContent: document.getElementById('page-content'),
             pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
             pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
             prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
-            backToLibraryBtn: document.getElementById('back-to-library'),
-            modeToggle: document.getElementById('mode-toggle'),
-            modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
-            fontDec: document.getElementById('font-decrease'),
+            modeToggle: document.getElementById('mode-toggle'), modeIcon: document.getElementById('mode-icon'),
+            fontInc: document.getElementById('font-increase'), fontDec: document.getElementById('font-decrease'),
             tooltip: document.getElementById('selection-tooltip'),
             tooltipExplain: document.getElementById('btn-explain'),
             tooltipHighlight: document.getElementById('btn-highlight'), tooltipCopy: document.getElementById('btn-copy'),
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
-            aiQuote: document.getElementById('ai-quote'), // New DOM element
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
+            progressBar: document.getElementById('progress-bar-inner'),
         };
 
         const state = {
             pdfDoc: null, totalPages: 0, currentPage: 1,
-            pagesHTML: [], isRendering: false, lastSelectionText: "",
+            pagesHTML: [], isRendering: false, lastSelection: null,
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-            mode: "light", lastScrollY: 0,
+            mode: localStorage.getItem("kaffetishMode") || 'light',
+            aiStreamInterval: null,
         };
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
-
-        // --- UI ENHANCEMENT: Markdown parser for AI responses ---
-        function parseMarkdown(text) {
-            let html = escapeHTML(text);
-            // Bold: **text** -> <b>text</b>
-            html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            // Italic: *text* -> <i>text</i>
-            html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
-            // Lists: * item -> <ul><li>item</li></ul>
-            html = html.replace(/^\s*\*\s+(.*)/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-            return html.replace(/\n/g, '<br>'); // Keep line breaks
-        }
 
         function setMode(mode) {
             state.mode = mode;
@@ -384,10 +347,17 @@
             localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
         }
 
+        function updateProgressBar() {
+            const progress = state.totalPages > 0 ? (state.currentPage / state.totalPages) * 100 : 0;
+            DOM.progressBar.style.width = `${progress}%`;
+        }
+
         function showView(view) {
             [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
             view.classList.remove('hidden');
-            DOM.readerControls.classList.toggle('hidden', view !== DOM.readerView);
+            const isReader = view === DOM.readerView;
+            DOM.readerControls.classList.toggle('hidden', !isReader);
+            DOM.progressBar.parentElement.classList.toggle('hidden', !isReader);
         }
 
         async function loadPdfFromUrl(sourceUrl, title) {
@@ -450,64 +420,65 @@
             DOM.pageTotal.textContent = `/ ${state.totalPages}`;
             DOM.pageJumpInput.value = pageNum; DOM.pageJumpInput.max = state.totalPages;
             DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
-            setFontRem(state.currentFontRem); hideTooltip();
+            setFontRem(state.currentFontRem);
+            updateProgressBar();
+            hideTooltip();
             state.isRendering = false;
         }
 
-        // --- BUG FIX: More reliable selection handling ---
-        function handleSelection(event) {
-            // Do not trigger on clicks inside the tooltip itself
-            if (DOM.tooltip.contains(event.target)) return;
-
-            const sel = window.getSelection();
-            const text = sel.toString().trim();
-
-            if (text && !sel.isCollapsed) {
-                const rect = sel.getRangeAt(0).getBoundingClientRect();
-                state.lastSelectionText = text;
-                showTooltipAt(rect);
+        function handleSelection(selection) {
+            if (selection.isCollapsed) { hideTooltip(); return; }
+            const text = selection.toString().trim();
+            if (text.length > 0 && DOM.readerView.contains(selection.anchorNode)) {
+                state.lastSelection = selection;
+                showTooltipAt(selection.getRangeAt(0).getBoundingClientRect());
             } else {
                 hideTooltip();
             }
         }
-        
+
         function showTooltipAt(rect) {
+            const pad = 8;
             DOM.tooltip.style.display = "flex";
-            // Position relative to the viewport first
-            const top = window.scrollY + rect.top - DOM.tooltip.offsetHeight - 8;
-            const left = window.scrollX + rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-            
-            DOM.tooltip.style.top = `${Math.max(top, window.scrollY + 10)}px`; // Ensure it doesn't go off-screen top
-            DOM.tooltip.style.left = `${left}px`;
-            
-            requestAnimationFrame(() => {
-                DOM.tooltip.classList.add('visible');
-            });
+            DOM.tooltip.style.left = `${rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2}px`;
+            DOM.tooltip.style.top = `${window.scrollY + rect.top - DOM.tooltip.offsetHeight - pad}px`;
         }
         
-        function hideTooltip() { 
-            DOM.tooltip.classList.remove('visible');
-            // Use a timeout to allow the fade-out animation to complete
-            setTimeout(() => {
-                if (!DOM.tooltip.classList.contains('visible')) {
-                    DOM.tooltip.style.display = 'none';
+        function hideTooltip() { if (DOM.tooltip.style.display !== "none") DOM.tooltip.style.display = "none"; }
+        
+        function streamAIResponse(text) {
+            if (state.aiStreamInterval) clearInterval(state.aiStreamInterval);
+            
+            const contentSpan = document.createElement('span');
+            const cursorSpan = document.createElement('span');
+            cursorSpan.className = 'cursor';
+            DOM.aiContent.innerHTML = '';
+            DOM.aiContent.appendChild(contentSpan);
+            DOM.aiContent.appendChild(cursorSpan);
+
+            let i = 0;
+            state.aiStreamInterval = setInterval(() => {
+                if (i < text.length) {
+                    contentSpan.textContent += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(state.aiStreamInterval);
+                    cursorSpan.remove();
                 }
-            }, 150);
+            }, 20); // Typing speed in milliseconds
         }
 
         async function handleExplain() {
+            if (!state.lastSelection) return;
+            const textToExplain = state.lastSelection.toString().trim();
             hideTooltip();
-            if (!state.lastSelectionText || state.lastSelectionText.length < 10) { 
-                flashAI("Please select a longer phrase to explain."); 
-                return; 
-            }
-            DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-            DOM.aiQuote.classList.remove('hidden');
-            DOM.aiPanel.style.display = "flex"; 
-            DOM.aiContent.innerHTML = `<div class="thinking"><i class="fa-solid fa-star"></i> Thinking...</div>`;
+            if (textToExplain.length < 10) { flashAI("Please select a longer phrase to explain."); return; }
+            DOM.aiPanel.style.display = "flex";
+            DOM.aiContent.innerHTML = `Thinking... <span class="cursor"></span>`;
             try {
-                const { data } = await explainBookTextFn({ text: state.lastSelectionText });
-                DOM.aiContent.innerHTML = parseMarkdown(data?.explanation || "No explanation was returned.");
+                const { data } = await explainBookTextFn({ text: textToExplain });
+                const explanation = data?.explanation || "No explanation was returned.";
+                streamAIResponse(explanation);
             } catch (err) {
                 console.error("AI Explain Error:", err);
                 DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
@@ -515,8 +486,8 @@
         }
         
         function handleHighlight() {
-            const sel = window.getSelection();
-            if (!sel.isCollapsed) {
+            const sel = state.lastSelection;
+            if (sel && !sel.isCollapsed) {
                 try {
                     const range = sel.getRangeAt(0);
                     const span = document.createElement("span");
@@ -528,17 +499,13 @@
                     flashAI("Highlighting across multiple paragraphs is not supported.", 2500);
                 }
             }
-            sel.removeAllRanges(); hideTooltip();
+            window.getSelection().removeAllRanges(); hideTooltip();
         }
 
         function flashAI(msg, duration = 2000) {
-            DOM.aiQuote.classList.add('hidden'); // Hide quote for flash messages
-            DOM.aiPanel.style.display = "flex"; DOM.aiContent.textContent = msg;
-            setTimeout(() => { 
-                if (DOM.aiContent.textContent === msg) {
-                    DOM.aiPanel.style.display = "none"; 
-                }
-            }, duration);
+            DOM.aiPanel.style.display = "flex";
+            DOM.aiContent.textContent = msg;
+            setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
         }
 
         function setupEventListeners() {
@@ -550,57 +517,49 @@
             DOM.fontInc.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1));
             DOM.fontDec.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1));
             
-            // --- BUG FIX: Use mouseup for more reliable selection detection ---
-            document.addEventListener("mouseup", handleSelection);
-            document.addEventListener("mousedown", (e) => {
-                // Hide tooltip if clicking anywhere that isn't the tooltip itself
-                if (!DOM.tooltip.contains(e.target)) {
+            // --- FIX: Robust toolbar hiding logic ---
+            // On mouseup, check if the user created a new selection.
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => {
+                    const selection = window.getSelection();
+                    if (selection && selection.type === 'Range' && selection.toString().trim().length > 0) {
+                        handleSelection(selection);
+                    }
+                }, 10);
+            });
+            // On mousedown, if the click is anywhere outside the tooltip, hide it.
+            document.addEventListener('mousedown', (event) => {
+                if (!DOM.tooltip.contains(event.target)) {
                     hideTooltip();
                 }
             });
+
             window.addEventListener("scroll", hideTooltip, { passive: true });
             
             DOM.tooltipExplain.addEventListener("click", handleExplain);
             DOM.tooltipHighlight.addEventListener("click", handleHighlight);
-            DOM.tooltipCopy.addEventListener("click", () => { if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText); hideTooltip(); });
+            DOM.tooltipCopy.addEventListener("click", () => {
+                if (state.lastSelection) navigator.clipboard.writeText(state.lastSelection.toString());
+                hideTooltip();
+            });
 
             DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-            DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied to clipboard!"); });
-        }
-
-        // --- UI ENHANCEMENT: Keyboard navigation ---
-        function setupKeyboardNav() {
-            document.addEventListener('keydown', (e) => {
-                // Ignore if user is typing in an input
-                if (e.target.tagName === 'INPUT') return;
-                if (e.key === 'ArrowLeft') {
-                    DOM.prevBtn.click();
-                } else if (e.key === 'ArrowRight') {
-                    DOM.nextBtn.click();
-                }
+            DOM.aiCopy.addEventListener("click", () => {
+                if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent);
+                flashAI("Copied to clipboard!");
             });
-        }
 
-        // --- UI ENHANCEMENT: Auto-hide header on scroll ---
-        function setupHeaderAutohide() {
-            document.addEventListener('scroll', () => {
-                const currentScrollY = window.scrollY;
-                if (currentScrollY > state.lastScrollY && currentScrollY > 60) {
-                    // Scrolling down
-                    DOM.header.classList.add('hidden');
-                } else {
-                    // Scrolling up
-                    DOM.header.classList.remove('hidden');
-                }
-                state.lastScrollY = currentScrollY;
-            }, { passive: true });
+            document.addEventListener('keydown', (e) => {
+                if (document.activeElement === DOM.pageJumpInput || DOM.readerView.classList.contains('hidden')) return;
+                if (e.key === 'ArrowLeft') { e.preventDefault(); renderPage(state.currentPage - 1); }
+                if (e.key === 'ArrowRight') { e.preventDefault(); renderPage(state.currentPage + 1); }
+            });
         }
 
         function loadBookFromURLParams() {
             const params = new URLSearchParams(window.location.search);
             const bookUrl = params.get('url');
             const bookTitle = params.get('title') || 'Document';
-
             if (bookUrl) {
                 loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
             } else {
@@ -609,11 +568,8 @@
         }
 
         function init() {
-            const savedMode = localStorage.getItem("kaffetishMode") || 'light';
-            setMode(savedMode);
+            setMode(state.mode);
             setupEventListeners();
-            setupKeyboardNav();
-            setupHeaderAutohide();
             loadBookFromURLParams();
             if (!explainBookTextFn) {
                 DOM.tooltipExplain.style.display = "none";
