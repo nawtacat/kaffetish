@@ -55,22 +55,22 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .logo {
-    display: flex; /* Aligns children in a row */
-    align-items: baseline; /* Aligns text nicely */
-    font-size: 1.6rem;
-    font-weight: 500;
-    letter-spacing: -0.5px;
-    color: var(--accent);
-    font-family: var(--font-main);
-}
+            display: flex;
+            align-items: baseline;
+            font-size: 1.6rem;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+            color: var(--accent);
+            font-family: var(--font-main);
+        }
         .logo .tagline {
-    font-size: 0.6em; /* Slightly larger for better readability */
-    font-style: italic;
-    font-weight: 400;
-    color: var(--subtle);
-    letter-spacing: normal;
-    margin-left: 8px; /* Adds space to the left */
-}
+            font-size: 0.6em;
+            font-style: italic;
+            font-weight: 400;
+            color: var(--subtle);
+            letter-spacing: normal;
+            margin-left: 8px;
+        }
         body.dark-mode .logo { color: var(--ink); }
 
         .header-actions { display: flex; align-items: center; gap: 16px; }
@@ -209,9 +209,9 @@
     <header class="app-header">
         <div class="header-content">
             <h1 class="logo">
-  Kaffetish
-  <span class="tagline">explained by the librarian</span>
-</h1>
+                Kaffetish
+                <span class="tagline">explained by the librarian</span>
+            </h1>
             <div class="header-actions">
                  <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
@@ -232,8 +232,7 @@
                     </div>
                     <div class="author-books">
                         <div id="author-book-grid" class="book-grid">
-                            <!-- Featured author's books go here -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </section>
@@ -245,8 +244,7 @@
                     <input type="search" id="search-input" placeholder="Search all books by title or author...">
                 </div>
                 <div id="book-grid" class="book-grid">
-                    <!-- All books will be dynamically inserted here -->
-                </div>
+                    </div>
             </section>
         </section>
     </main>
@@ -276,15 +274,12 @@
 
         const libraryBooks = [
             { title: "Pride and Prejudice", author: "Jane Austen", cover: "https://www.gutenberg.org/cache/epub/1342/pg1342.cover.medium.jpg", url: "https://www.gutenberg.org/ebooks/1342.pdf.noimages" },
-            // --- THIS IS THE FIX ---
-            // The URL now correctly uses 'firebasestorage.app' instead of 'appspot.com'
-             
-       { 
-        title: "Capital, Volume I", 
-        author: "Karl Marx", 
-        cover: "https://www.gutenberg.org/cache/epub/61/pg61.cover.medium.jpg",
-        url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.appspot.com/o/Capital-Volume-I.pdf?alt=media&token=345f4cb6-9b41-4ce3-9078-2feca894d486" 
-    },
+            { 
+                title: "Capital, Volume I", 
+                author: "Karl Marx", 
+                cover: "https://www.gutenberg.org/cache/epub/61/pg61.cover.medium.jpg",
+                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.appspot.com/o/Capital-Volume-I.pdf?alt=media&token=345f4cb6-9b41-4ce3-9078-2feca894d486" 
+            },
             { title: "Frankenstein", author: "Mary Shelley", cover: "https://www.gutenberg.org/cache/epub/84/pg84.cover.medium.jpg", url: "https://www.gutenberg.org/ebooks/84.pdf.noimages" },
             { title: "A Tale of Two Cities", author: "Charles Dickens", cover: "https://www.gutenberg.org/cache/epub/98/pg98.cover.medium.jpg", url: "https://www.gutenberg.org/ebooks/98.pdf.noimages" },
             { title: "The Adventures of Sherlock Holmes", author: "Arthur Conan Doyle", cover: "https://www.gutenberg.org/cache/epub/1661/pg1661.cover.medium.jpg", url: "https://www.gutenberg.org/ebooks/1661.pdf.noimages" },
