@@ -72,7 +72,10 @@
         .reader-controls { display: flex; align-items: center; gap: 24px; }
         .reader-controls.hidden { display: none; }
         .control-group { display: flex; align-items: center; gap: 8px; }
-        .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+                    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none;     /* IE 10+ and Edge */
+    user-select: none;    }
 
         .page-indicator input {
             width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
