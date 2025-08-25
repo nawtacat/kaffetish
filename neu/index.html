@@ -135,16 +135,14 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* --- OPTIMIZATION: Replaced heavy 'filter' with a simpler, faster 'box-shadow' --- */
-        .page-container { 
-            box-shadow: 0 10px 30px -5px var(--shadow-color);
-            border-radius: 8px; /* Match page radius for clean shadow */
-        }
+        
         .page {
-            max-width: 75ch; margin: 0 auto;
-            background-color: var(--bg); border: 1px solid var(--border-color);
-            border-radius: 8px; padding: 4rem 5rem; position: relative;
-            transition: border-color 0.3s ease, background-color 0.3s ease;
-        }
+    max-width: 75ch;
+    margin: 0 auto;
+    padding: 4rem 5rem;
+    position: relative;
+    /* ... other styles */
+}
         body.dark-mode .page { background-color: #2D2C2B; }
 
         .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; }
