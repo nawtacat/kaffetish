@@ -23,10 +23,9 @@
             --accent: #FF3A44;
             --subtle: #8A8886;
             --border-color: #EAE8E4;
-            --shadow-color: rgba(44, 43, 42, 0.08);
+            --shadow-color: rgba(44, 43, 42, 0.1); /* Simplified shadow color */
             --font-main: 'Lora', serif;
             --font-ui: 'Poppins', sans-serif;
-            --bg-texture: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4"><path fill="%23EAE8E4" fill-opacity="0.4" d="M1 3h1v1H1V3zm2-2h1v1H3V1z"></path></svg>');
         }
 
         body.dark-mode {
@@ -34,32 +33,25 @@
             --ink: #EAE8E4;
             --subtle: #999591;
             --border-color: #3A3837;
-            --shadow-color: rgba(0, 0, 0, 0.2);
-            --bg-texture: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4" viewBox="0 0 4 4"><path fill="%233A3837" fill-opacity="0.4" d="M1 3h1v1H1V3zm2-2h1v1H3V1z"></path></svg>');
+            --shadow-color: rgba(0, 0, 0, 0.25);
         }
 
-        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+        ::selection { background-color: var(--accent); color: white; }
 
         body {
             font-family: var(--font-ui);
             background-color: var(--bg);
             color: var(--ink);
-            transition: background-color 0.4s ease, color 0.4s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
             margin: 0;
             padding-top: 60px;
-        }
-        
-        /* --- ENHANCEMENT: Ambiance Mode --- */
-        body.ambiance-mode {
-            background-color: color-mix(in srgb, var(--bg) 60%, black);
         }
 
         .hidden { display: none !important; }
         
-        /* --- ENHANCEMENT: Reading Progress Bar --- */
         .progress-bar {
             position: fixed;
-            top: 60px; /* Positioned below the header */
+            top: 60px;
             left: 0;
             width: 100%;
             height: 3px;
@@ -73,10 +65,10 @@
             transition: width 0.3s ease-out;
         }
 
+        /* --- OPTIMIZATION: Removed backdrop-filter, using a simple translucent color --- */
         .app-header {
             position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-            background-color: color-mix(in srgb, var(--bg) 85%, transparent);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background-color: color-mix(in srgb, var(--bg) 95%, transparent);
             border-bottom: 1px solid var(--border-color); z-index: 1000;
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
@@ -109,13 +101,13 @@
         .reader-controls button, .reader-controls a.button {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
-            transition: all 0.2s ease; text-decoration: none; display: inline-flex;
+            transition: color 0.2s ease, background-color 0.2s ease;
+            text-decoration: none; display: inline-flex;
             align-items: center; justify-content: center;
         }
         .reader-controls button:hover, .reader-controls a.button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
         .reader-controls #back-to-library:hover { background-color: color-mix(in srgb, var(--accent) 80%, var(--bg)); color: white; }
-        .reader-controls #ambiance-toggle.active { color: var(--accent); }
 
         main { padding: 48px 24px; }
         
@@ -142,22 +134,16 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* --- OPTIMIZATION: Replaced heavy 'filter' with a simpler, faster 'box-shadow' --- */
         .page-container { 
-            filter: drop-shadow(0 4px 6px var(--shadow-color)) drop-shadow(0 10px 20px var(--shadow-color)); 
-            transition: filter 0.4s ease, transform 0.4s ease;
+            box-shadow: 0 10px 30px -5px var(--shadow-color);
+            border-radius: 8px; /* Match page radius for clean shadow */
         }
-        body.ambiance-mode .page-container {
-            filter: drop-shadow(0 6px 15px rgba(0,0,0,0.2)) drop-shadow(0 20px 40px rgba(0,0,0,0.25)) drop-shadow(0 0 60px color-mix(in srgb, var(--accent) 15%, transparent));
-            transform: scale(1.015);
-        }
-
         .page {
             max-width: 75ch; margin: 0 auto;
             background-color: var(--bg); border: 1px solid var(--border-color);
             border-radius: 8px; padding: 4rem 5rem; position: relative;
             transition: border-color 0.3s ease, background-color 0.3s ease;
-            /* --- ENHANCEMENT: Paper Texture --- */
-            background-image: var(--bg-texture);
         }
         body.dark-mode .page { background-color: #2D2C2B; }
 
@@ -166,7 +152,7 @@
         .content p:last-child { margin-bottom: 0; }
         
         .fade-in { animation: fadeIn 250ms ease-out both; }
-        @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .page-number {
             position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
@@ -182,10 +168,8 @@
         .selection-tooltip {
             position: fixed; z-index: 2000; display: none; gap: 6px; padding: 6px;
             background-color: var(--ink); color: var(--bg); border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2); animation: tooltip-pop 0.15s ease-out;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
         }
-        @keyframes tooltip-pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
         .selection-tooltip button {
             background: transparent; border: 0; color: var(--bg); padding: 8px 12px;
             border-radius: 6px; cursor: pointer; font-size: 0.9rem;
@@ -196,8 +180,7 @@
 
         .ai-panel {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-            width: min(700px, 90vw); background-color: color-mix(in srgb, var(--bg) 92%, transparent);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            width: min(700px, 90vw); background-color: var(--bg);
             border: 1px solid var(--border-color); border-radius: 12px;
             box-shadow: 0 20px 60px var(--shadow-color); z-index: 2100; padding: 16px 20px;
             display: none; flex-direction: column; animation: slideUp 0.3s ease-out;
@@ -208,12 +191,6 @@
         .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 12px; }
         .ai-title i { color: var(--accent); margin-right: 8px; }
         .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; }
-        .ai-text-content .cursor {
-            display: inline-block; width: 10px; height: 1.2em; background-color: var(--accent);
-            animation: blink 1s step-end infinite; vertical-align: text-bottom;
-            margin-left: 4px;
-        }
-        @keyframes blink { 50% { opacity: 0; } }
 
         .ai-panel-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
         .ai-panel-actions button {
@@ -248,7 +225,6 @@
                     <button id="next-page" title="Next Page (Right Arrow)" aria-label="Next Page"><i class="fa-solid fa-arrow-right"></i></button>
                 </div>
                 <div class="control-group settings">
-                    <button id="ambiance-toggle" title="Ambiance Mode" aria-label="Toggle Ambiance Mode"><i class="fa-solid fa-lightbulb"></i></button>
                     <button id="font-decrease" title="Decrease Font Size" aria-label="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
                     <button id="font-increase" title="Increase Font Size" aria-label="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
                     <button id="mode-toggle" title="Toggle Theme" aria-label="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
@@ -351,7 +327,6 @@
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
             progressBar: document.getElementById('progress-bar-inner'),
-            ambianceToggle: document.getElementById('ambiance-toggle'),
         };
 
         const state = {
@@ -359,7 +334,7 @@
             pagesHTML: [], isRendering: false, lastSelection: null,
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
             mode: localStorage.getItem("kaffetishMode") || 'light',
-            ambiance: localStorage.getItem("kaffetishAmbiance") === 'true',
+            aiStreamTimer: null,
         };
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
@@ -370,13 +345,6 @@
             DOM.modeIcon.classList.toggle('fa-moon', mode === 'light');
             DOM.modeIcon.classList.toggle('fa-sun', mode === 'dark');
             localStorage.setItem("kaffetishMode", mode);
-        }
-
-        function setAmbiance(isActive) {
-            state.ambiance = isActive;
-            DOM.body.classList.toggle("ambiance-mode", isActive);
-            DOM.ambianceToggle.classList.toggle("active", isActive);
-            localStorage.setItem("kaffetishAmbiance", isActive);
         }
 
         function setFontRem(rem) {
@@ -401,12 +369,10 @@
         async function loadPdfFromUrl(sourceUrl, title) {
             showView(DOM.loadingView);
             DOM.loadingText.textContent = `Loading ${title}...`;
-
             try {
                 const response = await fetch(sourceUrl);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const pdfData = await response.arrayBuffer();
-                
                 await extractTextFromPdf(new Uint8Array(pdfData));
                 DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
                 showView(DOM.readerView);
@@ -468,11 +434,13 @@
 
         function handleSelection() {
             const sel = window.getSelection();
-            if (sel.isCollapsed) return;
+            if (sel.isCollapsed) { hideTooltip(); return; }
             const text = sel.toString().trim();
             if (text.length > 0 && DOM.readerView.contains(sel.anchorNode)) {
                 state.lastSelection = sel;
                 showTooltipAt(sel.getRangeAt(0).getBoundingClientRect());
+            } else {
+                hideTooltip();
             }
         }
 
@@ -485,22 +453,25 @@
         
         function hideTooltip() { if (DOM.tooltip.style.display !== "none") DOM.tooltip.style.display = "none"; }
         
+        // --- OPTIMIZATION: Faster AI text streaming using chunks and requestAnimationFrame ---
         function streamAIResponse(text) {
-            DOM.aiContent.innerHTML = '';
-            const cursor = document.createElement('span');
-            cursor.className = 'cursor';
+            if (state.aiStreamTimer) cancelAnimationFrame(state.aiStreamTimer);
+            DOM.aiContent.textContent = '';
+            let currentText = '';
             let i = 0;
-            function type() {
+            const chunkSize = 3; // Render 3 characters at a time
+
+            function renderChunk() {
                 if (i < text.length) {
-                    DOM.aiContent.append(text.charAt(i));
-                    DOM.aiContent.appendChild(cursor);
-                    i++;
-                    setTimeout(type, 15);
+                    currentText += text.substring(i, i + chunkSize);
+                    DOM.aiContent.textContent = currentText;
+                    i += chunkSize;
+                    state.aiStreamTimer = requestAnimationFrame(renderChunk);
                 } else {
-                    cursor.remove();
+                    DOM.aiContent.textContent = text; // Ensure final text is perfect
                 }
             }
-            type();
+            renderChunk();
         }
 
         async function handleExplain() {
@@ -509,7 +480,7 @@
             hideTooltip();
             if (textToExplain.length < 10) { flashAI("Please select a longer phrase to explain."); return; }
             DOM.aiPanel.style.display = "flex";
-            DOM.aiContent.innerHTML = `Thinking... <span class="cursor"></span>`;
+            DOM.aiContent.textContent = `Thinking...`;
             try {
                 const { data } = await explainBookTextFn({ text: textToExplain });
                 const explanation = data?.explanation || "No explanation was returned.";
@@ -549,22 +520,15 @@
             DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
             
             DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
-            DOM.ambianceToggle.addEventListener("click", () => setAmbiance(!state.ambiance));
             DOM.fontInc.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1));
             DOM.fontDec.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1));
 
-            document.addEventListener('mouseup', (e) => {
-                 // Delay allows browser to finalize selection
-                setTimeout(() => handleSelection(), 50);
-            });
-            
-            // --- ENHANCEMENT: Close tooltip on any outside click ---
+            document.addEventListener('mouseup', handleSelection);
             document.addEventListener('mousedown', (e) => {
                 if (!DOM.tooltip.contains(e.target)) {
                     hideTooltip();
                 }
             });
-
             window.addEventListener("scroll", hideTooltip, { passive: true });
             
             DOM.tooltipExplain.addEventListener("click", handleExplain);
@@ -591,7 +555,6 @@
             const params = new URLSearchParams(window.location.search);
             const bookUrl = params.get('url');
             const bookTitle = params.get('title') || 'Document';
-
             if (bookUrl) {
                 loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
             } else {
@@ -601,7 +564,6 @@
 
         function init() {
             setMode(state.mode);
-            setAmbiance(state.ambiance);
             setupEventListeners();
             loadBookFromURLParams();
             if (!explainBookTextFn) {
