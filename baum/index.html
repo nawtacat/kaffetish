@@ -645,18 +645,16 @@
 
         function setupDesktopHandlers() {
             DOM.mainContent.addEventListener("mouseup", () => {
-                setTimeout(() => {
-                    const sel = window.getSelection();
-                    const text = sel.toString().trim();
-                    if (text && !sel.isCollapsed) {
-                        state.lastSelectionText = text;
-                        state.lastSelectionRange = sel.getRangeAt(0);
-                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                    } else {
-                        hideTooltip();
-                    }
-                }, 10);
-            });
+    setTimeout(() => {
+        const sel = window.getSelection();
+        const text = sel.toString().trim();
+        if (text && !sel.isCollapsed) {
+            state.lastSelectionText = text;
+            state.lastSelectionRange = sel.getRangeAt(0);
+            showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+        }
+    }, 10);
+});
             document.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || state.isRendering) return;
                 if (e.key === 'ArrowLeft') DOM.prevBtn.click();
