@@ -561,10 +561,10 @@
                 const selectionText = sel.toString().trim();
 
                 if (selectionText) {
+                    // UPDATED: More aggressive trick
+                    // We clear and immediately add the range back in the same breath.
                     sel.removeAllRanges();
-                    requestAnimationFrame(() => {
-                        window.getSelection().addRange(savedRange);
-                    });
+                    sel.addRange(savedRange); 
                     
                     state.lastSelectionText = selectionText;
                     const rect = savedRange.getBoundingClientRect();
