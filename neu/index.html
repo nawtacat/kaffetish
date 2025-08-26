@@ -133,7 +133,7 @@
 
         .content {
             font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8;
-            user-select: text; -webkit-touch-callout: none; /* Re-enable native callout for selection */
+            user-select: text;
         }
         .content p { margin: 0 0 1.5em; overflow-wrap: break-word; }
         .content p:last-child { margin-bottom: 0; }
@@ -202,7 +202,6 @@
         }
         .ai-panel-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
 
-        /* --- Redesigned Mobile Menu Styles --- */
         .mobile-menu-toggle { display: none; }
         .mobile-menu-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -285,6 +284,25 @@
             .page { padding: 2.5rem 1.5rem; }
             .page-number { bottom: 1rem; }
         }
+
+        /* --- NEW: iOS Custom Selection Styles --- */
+        .ios .content {
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-touch-callout: none !important;
+            touch-action: none;
+        }
+        .ios a, .ios .content * {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .w.sel {
+            background: color-mix(in srgb, var(--accent) 25%, transparent);
+            border-radius: 3px;
+        }
+        body.dark-mode .w.sel {
+            background: color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+        
     </style>
 </head>
 <body>
@@ -385,8 +403,15 @@
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
 
-        // WARNING: Storing API keys in client-side code is a security risk.
-        // Consider using environment variables and a build process for production.
+        const isIOS = /iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+        document.documentElement.classList.toggle('ios', isIOS);
+
+        if (isIOS) {
+            document.addEventListener('selectstart', e => e.preventDefault(), { passive: false });
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -446,12 +471,12 @@
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
             mode: "light", lastScrollY: 0, currentAITyping: null,
             touchStartX: 0, touchStartTime: 0,
-            // --- NEW: Store selection details ---
             lastSelectionText: "",
             lastSelectionRange: null,
         };
         
         const baseFontRem = 1.15;
+        let selStart = null, selEnd = null; // For iOS custom selection
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
         
@@ -539,10 +564,36 @@
             return paragraphs.map(p => `<p>${escapeHTML(p.trim())}</p>`).join("\n");
         }
 
+        function spanify(container) {
+            let idx = 0;
+            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+            const edits = [];
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                const txt = node.nodeValue;
+                if (!txt || !txt.trim()) continue;
+
+                const frag = document.createDocumentFragment();
+                txt.split(/(\s+)/).forEach(tok => {
+                    if (/^\s+$/.test(tok)) { 
+                        frag.appendChild(document.createTextNode(tok)); 
+                    } else if (tok) {
+                        const s = document.createElement('span');
+                        s.className = 'w';
+                        s.dataset.idx = idx++;
+                        s.textContent = tok;
+                        frag.appendChild(s);
+                    }
+                });
+                edits.push([node, frag]);
+            }
+            edits.forEach(([n, f]) => n.parentNode.replaceChild(f, n));
+        }
+
         async function renderPage(pageNum) {
             if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
             
-            clearSelection(); // Clear selection and hide tooltip on page turn
+            clearSelection();
             
             state.isRendering = true; state.currentPage = pageNum;
             if (!state.pagesHTML[pageNum - 1]) {
@@ -556,6 +607,11 @@
                 }
             }
             DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
+            
+            if (isIOS) {
+                spanify(DOM.pageContent);
+            }
+
             DOM.pageContent.classList.add("fade-in");
             setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
             DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
@@ -565,26 +621,18 @@
             state.isRendering = false;
         }
 
-        // --- REFACTORED SELECTION LOGIC ---
-
         function handleSelection() {
-            // Use a timeout to allow the browser to finalize the selection, especially on mobile.
+            if (isIOS) return; // iOS uses a custom handler now
             setTimeout(() => {
                 const sel = window.getSelection();
                 const selectionText = sel.toString().trim();
-
-                // If no text is selected, or the selection is just a caret, hide the tooltip.
                 if (!selectionText || sel.isCollapsed) {
                     hideTooltip();
                     return;
                 }
-
-                // Store the selection details in the state for other functions to use.
                 const range = sel.getRangeAt(0);
                 state.lastSelectionText = selectionText;
                 state.lastSelectionRange = range;
-                
-                // Show our custom tooltip at the selection's position.
                 const rect = range.getBoundingClientRect();
                 showTooltipAt(rect);
             }, 10);
@@ -594,35 +642,30 @@
             DOM.tooltip.style.display = "flex";
             const top = window.scrollY + rect.top - DOM.tooltip.offsetHeight - 8;
             let left = window.scrollX + rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-            
-            // Keep tooltip within viewport bounds
             left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
-            
             DOM.tooltip.style.top = `${Math.max(top, window.scrollY + 10)}px`;
             DOM.tooltip.style.left = `${left}px`;
-            
-            // Use requestAnimationFrame to ensure the display change has been painted before adding transition class.
             requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
         }
         
         function hideTooltip() { 
             DOM.tooltip.classList.remove('visible');
-            state.lastSelectionRange = null; // Clear saved range
+            state.lastSelectionRange = null;
             setTimeout(() => {
-                // Only hide the element after the transition is complete.
                 if (!DOM.tooltip.classList.contains('visible')) {
                     DOM.tooltip.style.display = 'none';
                 }
             }, 150);
         }
 
-        // --- NEW: A robust function to clear selection and hide UI ---
         function clearSelection() {
-            window.getSelection().removeAllRanges();
-            hideTooltip();
+            if (isIOS) {
+                clearCustomSelection();
+            } else {
+                window.getSelection().removeAllRanges();
+                hideTooltip();
+            }
         }
-
-        // --- UPDATED TOOLTIP ACTION HANDLERS ---
 
         async function handleExplain() {
             if (!state.lastSelectionText || state.lastSelectionText.length < 10) { 
@@ -635,7 +678,6 @@
             DOM.aiPanel.style.display = "flex"; 
             DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
             
-            // Important: Clear the selection *after* we've captured the text.
             clearSelection();
 
             try {
@@ -649,29 +691,33 @@
         }
         
         function handleHighlight() {
-            // Use the range saved in the state from the handleSelection function.
-            if (state.lastSelectionRange) {
+            if (isIOS) {
+                DOM.pageContent.querySelectorAll('.w.sel').forEach(s => {
+                    s.classList.remove('sel');
+                    s.classList.add('highlighted-text');
+                });
+                state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+                clearCustomSelection();
+            } else if (state.lastSelectionRange) {
                 try {
                     const range = state.lastSelectionRange;
                     const span = document.createElement("span");
                     span.className = "highlighted-text";
                     range.surroundContents(span);
-                    // Persist the highlight in our cached HTML for the page.
                     state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
                 } catch (e) {
                     console.error("Highlighting failed:", e);
                     flashAI("Highlighting across multiple paragraphs is not supported.", 2500);
                 }
+                clearSelection();
             }
-            // After highlighting, clear the selection and hide the tooltip.
-            clearSelection();
         }
 
         function handleCopy() {
             if (state.lastSelectionText) {
                 navigator.clipboard.writeText(state.lastSelectionText)
                     .then(() => flashAI("Copied to clipboard!"))
-                    .catch(err => console.error("Copy failed:", err));
+                    .catch(console.error);
             }
             clearSelection();
         }
@@ -684,6 +730,38 @@
                 if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; 
             }, duration);
         }
+        
+        // --- iOS Custom Selection Implementation ---
+        function wordFromTouch(touch) {
+            const el = document.elementFromPoint(touch.clientX, touch.clientY);
+            return el && el.closest('.w');
+        }
+
+        function paintSelection(a, b) {
+            DOM.pageContent.querySelectorAll('.w.sel').forEach(s => s.classList.remove('sel'));
+            if (!a || !b) return;
+            const start = Math.min(+a.dataset.idx, +b.dataset.idx);
+            const end   = Math.max(+a.dataset.idx, +b.dataset.idx);
+            for (const s of DOM.pageContent.querySelectorAll('.w')) {
+                const i = +s.dataset.idx;
+                if (i >= start && i <= end) s.classList.add('sel');
+            }
+        }
+
+        function currentCustomText() {
+            const selected = [...DOM.pageContent.querySelectorAll('.w.sel')];
+            if (!selected.length) return '';
+            return selected.map(s => {
+                const space = s.nextSibling && s.nextSibling.nodeType === 3 ? s.nextSibling.nodeValue.match(/^\s+/)?.[0] ?? '' : '';
+                return s.textContent + space;
+            }).join('').trim();
+        }
+
+        function clearCustomSelection() {
+            selStart = selEnd = null;
+            paintSelection(null, null);
+            hideTooltip();
+        }
 
         function setupEventListeners() {
             DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
@@ -692,13 +770,56 @@
             [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
             [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
             
-            // Listen for selection events on the main content area.
+            // Native selection for non-iOS
             DOM.mainContent.addEventListener("mouseup", handleSelection);
-            DOM.mainContent.addEventListener("touchend", handleSelection);
             
-            // --- NEW: Click/touch away listener to dismiss selection UI ---
+            // Custom selection for iOS
+            DOM.pageContent.addEventListener('touchstart', e => {
+                if (!isIOS) return;
+                const t = e.changedTouches[0];
+                const w = wordFromTouch(t);
+                if (!w) {
+                    clearCustomSelection();
+                    return;
+                }
+                e.preventDefault();
+                selStart = selEnd = w;
+                paintSelection(selStart, selEnd);
+            }, { passive: false });
+
+            DOM.pageContent.addEventListener('touchmove', e => {
+                if (!isIOS || !selStart) return;
+                const t = e.changedTouches[0];
+                const w = wordFromTouch(t);
+                if (!w) return;
+                e.preventDefault();
+                selEnd = w;
+                paintSelection(selStart, selEnd);
+            }, { passive: false });
+
+            DOM.pageContent.addEventListener('touchend', e => {
+                if (!isIOS || !selStart || !selEnd) return;
+                e.preventDefault();
+                state.lastSelectionText = currentCustomText();
+                if (!state.lastSelectionText) {
+                    clearCustomSelection();
+                    return;
+                }
+                const first = DOM.pageContent.querySelector('.w.sel');
+                const last  = [...DOM.pageContent.querySelectorAll('.w.sel')].pop();
+                if (first && last) {
+                    const r1 = first.getBoundingClientRect();
+                    const r2 = last.getBoundingClientRect();
+                    const rect = {
+                        top: Math.min(r1.top, r2.top),
+                        left: Math.min(r1.left, r2.left),
+                        width: Math.max(r1.right, r2.right) - Math.min(r1.left, r2.left)
+                    };
+                    showTooltipAt(rect);
+                }
+            }, { passive: false });
+
             document.addEventListener('mousedown', (e) => {
-                // If a selection is active and the click is outside the reader content and the tooltip, clear it.
                 if (state.lastSelectionRange && !DOM.pageContent.contains(e.target) && !DOM.tooltip.contains(e.target)) {
                     clearSelection();
                 }
@@ -706,7 +827,6 @@
 
             window.addEventListener("scroll", hideTooltip, { passive: true });
             
-            // Hook up the refactored action handlers.
             DOM.tooltipExplain.addEventListener("click", handleExplain);
             DOM.tooltipHighlight.addEventListener("click", handleHighlight);
             DOM.tooltipCopy.addEventListener("click", handleCopy);
@@ -730,7 +850,6 @@
                 const deltaX = touchEndX - state.touchStartX;
                 const timeElapsed = Date.now() - state.touchStartTime;
                 
-                // Only trigger swipe if it's fast and long enough, to avoid conflict with selection.
                 if (timeElapsed < 300 && Math.abs(deltaX) > 50) {
                     if (deltaX > 0) {
                         renderPage(state.currentPage - 1);
