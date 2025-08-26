@@ -230,9 +230,46 @@
         .page-jump-control input::-webkit-outer-spin-button, .page-jump-control input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .page-jump-control span { font-size: 1rem; color: var(--subtle); }
         
-        .touch-device .content { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+        /* Touch Device Selection */
+        .touch-device .content { user-select: none !important; -webkit-user-select: none !important; -webkit-touch-callout: none !important; }
         .touch-device .content span.c.sel { background-color: color-mix(in srgb, var(--accent) 25%, transparent); }
         .touch-device.dark-mode .content span.c.sel { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+
+        /* NEW: Selection Handle Styles */
+        .selection-handle {
+            position: absolute;
+            display: none; /* Hidden by default */
+            width: 28px;
+            height: 28px;
+            background-color: transparent;
+            z-index: 2001; /* Above the text */
+            cursor: pointer;
+            touch-action: none; /* Prevents scrolling while dragging */
+        }
+        .selection-handle::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 18px;
+            background-color: var(--accent);
+        }
+        .selection-handle::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--accent);
+            background-color: var(--bg);
+            border-radius: 50%;
+            transform: translateX(-50%);
+        }
+        #selection-handle-start::after { top: 0; }
+        #selection-handle-start::before { top: 16px; }
+        #selection-handle-end::after { bottom: 0; }
+        #selection-handle-end::before { bottom: 16px; }
         
         @media (max-width: 860px) {
             .header-content { display: grid; grid-template-columns: 1fr auto 1fr; padding: 0 16px; }
@@ -247,60 +284,14 @@
             .page-container { filter: none; box-shadow: 0 8px 20px var(--shadow-color); }
         }
         /* Custom Desktop Scrollbar */
-html:not(.touch-device) main::-webkit-scrollbar {
-    width: 12px;
-}
-
-html:not(.touch-device) main::-webkit-scrollbar-track {
-    background: var(--bg);
-}
-
-html:not(.touch-device) main::-webkit-scrollbar-thumb {
-    background-color: var(--ink);
-    border-radius: 6px;
-    border: 3px solid var(--bg);
-}
-
-html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
-    background-color: var(--subtle);
-}
-        .selection-handle {
-    position: absolute;
-    display: none; /* We control visibility with JS */
-    width: 28px;
-    height: 28px;
-    z-index: 2001;
-    touch-action: none; /* Important for smooth dragging */
-}
-
-/* This CSS creates the "lollipop" look of the handles */
-.selection-handle::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 3px;
-    height: 18px;
-    background-color: var(--accent);
-}
-
-.selection-handle::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--accent);
-    background-color: var(--bg);
-    border-radius: 50%;
-    transform: translateX(-50%);
-}
-
-#selection-handle-start::after { top: 0; }
-#selection-handle-start::before { top: 16px; }
-
-#selection-handle-end::after { bottom: 0; }
-#selection-handle-end::before { bottom: 16px; }
+        html:not(.touch-device) main::-webkit-scrollbar { width: 12px; }
+        html:not(.touch-device) main::-webkit-scrollbar-track { background: var(--bg); }
+        html:not(.touch-device) main::-webkit-scrollbar-thumb {
+            background-color: var(--ink);
+            border-radius: 6px;
+            border: 3px solid var(--bg);
+        }
+        html:not(.touch-device) main::-webkit-scrollbar-thumb:hover { background-color: var(--subtle); }
     </style>
 </head>
 <body>
@@ -404,8 +395,10 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             <button id="ai-close" title="Close Panel" aria-label="Close Panel"><i class="fa-solid fa-xmark"></i></button>
         </div>
     </div>
+    
     <div id="selection-handle-start" class="selection-handle"></div>
     <div id="selection-handle-end" class="selection-handle"></div>
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -468,6 +461,9 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
             mobilePageJumpInput: document.getElementById('mobile-page-jump'),
             mobilePageTotal: document.getElementById('mobile-page-total'),
+            // NEW: Add handles to DOM object
+            handleStart: document.getElementById('selection-handle-start'),
+            handleEnd: document.getElementById('selection-handle-end'),
         };
 
         const state = {
@@ -475,7 +471,7 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             pagesHTML: [], isRendering: false,    
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
             mode: "light",
-            touch: { startX: 0, startY: 0, startTime: 0, isSelecting: false, longPressTimer: null, selStartChar: null, selEndChar: null },
+            touch: { longPressTimer: null },
             lastSelectionText: "",
             lastSelectionRange: null,
         };
@@ -489,8 +485,8 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             const isDark = mode === 'dark';
             [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
                 if(icon) {
-                   icon.classList.toggle('fa-moon', !isDark);
-                   icon.classList.toggle('fa-sun', isDark);
+                  icon.classList.toggle('fa-moon', !isDark);
+                  icon.classList.toggle('fa-sun', isDark);
                 }
             });
             localStorage.setItem("kaffetishMode", mode);
@@ -609,7 +605,7 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
 
         function showTooltipAt(rect) {
             DOM.tooltip.style.display = "flex";
-            const scrollOffset = isTouchDevice ? DOM.mainContent.scrollTop : window.scrollY;
+            const scrollOffset = DOM.mainContent.scrollTop;
             const top = scrollOffset + rect.top - DOM.tooltip.offsetHeight - 8;
             let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
             left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
@@ -623,15 +619,29 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
         }
 
+        // UPDATED: clearSelection now also hides handles
         function clearSelection() {
             hideTooltip();
             if (isTouchDevice) {
+                DOM.handleStart.style.display = 'none';
+                DOM.handleEnd.style.display = 'none';
                 DOM.pageContent.querySelectorAll('span.c.sel').forEach(c => c.classList.remove('sel'));
             } else {
                 window.getSelection()?.removeAllRanges();
             }
         }
         
+        // NEW: Helper to get text from selected spans
+        function getSelectedText() {
+            const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
+            if (selectedChars.length === 0) return "";
+            return Array.from(selectedChars).map(c => {
+                const nextNode = c.nextSibling;
+                const space = (nextNode && nextNode.nodeType === 3) ? (nextNode.nodeValue.match(/^\s+/) || [''])[0] : '';
+                return c.textContent + space;
+            }).join('').trim();
+        }
+
         async function handleExplain() {
             if (!explainBookTextFn) {
                 flashAI("Explanation feature is not available.");
@@ -719,147 +729,148 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             });
         }
         
-        // Add these to your DOM variables object
-DOM.handleStart = document.getElementById('selection-handle-start');
-DOM.handleEnd = document.getElementById('selection-handle-end');
+        // REPLACED: Entire touch handling logic for the new UX
+        function setupTouchHandlers() {
+            const longPressDuration = 300;
+            let activeHandle = null;
 
-// Helper function to get text from your selected spans
-function getSelectedText() {
-    const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
-    if (selectedChars.length === 0) return "";
-    return Array.from(selectedChars).map(c => {
-        const nextNode = c.nextSibling;
-        const space = (nextNode && nextNode.nodeType === 3) ? (nextNode.nodeValue.match(/^\s+/) || [''])[0] : '';
-        return c.textContent + space;
-    }).join('').trim();
-}
+            function findWordAtPoint(targetChar) {
+                if (!targetChar) return null;
+                const chars = Array.from(DOM.pageContent.querySelectorAll('span.c'));
+                const allText = chars.map(c => c.textContent).join('');
+                const targetIndex = parseInt(targetChar.dataset.idx, 10);
+                
+                const startBoundary = allText.lastIndexOf(' ', targetIndex) + 1;
+                let endBoundary = allText.indexOf(' ', targetIndex);
+                if (endBoundary === -1) endBoundary = allText.length;
 
-// Modify your existing clearSelection function
-function clearSelection() {
-    hideTooltip();
-    DOM.handleStart.style.display = 'none'; // Hide our custom handles
-    DOM.handleEnd.style.display = 'none';   // Hide our custom handles
-    
-    if (isTouchDevice) {
-        DOM.pageContent.querySelectorAll('span.c.sel').forEach(c => c.classList.remove('sel'));
-    } else {
-        window.getSelection()?.removeAllRanges();
-    }
-}
-
-// REPLACE your old setupTouchHandlers function with this new one.
-function setupTouchHandlers() {
-    const longPressDuration = 300;
-    let activeHandle = null; // Tracks which of our custom handles is being dragged
-
-    // This helper finds a word using your existing `span.c` elements
-    function findWordAtPoint(targetChar) {
-        if (!targetChar) return null;
-        const chars = Array.from(DOM.pageContent.querySelectorAll('span.c'));
-        const allText = chars.map(c => c.textContent).join('');
-        const targetIndex = parseInt(targetChar.dataset.idx, 10);
-        
-        const startBoundary = allText.lastIndexOf(' ', targetIndex) + 1;
-        let endBoundary = allText.indexOf(' ', targetIndex);
-        if (endBoundary === -1) endBoundary = allText.length;
-
-        const startChar = chars[startBoundary];
-        const endChar = chars[endBoundary - 1];
-        
-        return { startChar, endChar };
-    }
-
-    // This helper positions our custom handles and your tooltip
-    function positionControls() {
-        const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
-        if (selectedChars.length === 0) {
-            clearSelection();
-            return;
-        }
-
-        const firstChar = selectedChars[0];
-        const lastChar = selectedChars[selectedChars.length - 1];
-        const r1 = firstChar.getBoundingClientRect();
-        const r2 = lastChar.getBoundingClientRect();
-        
-        // Position our start handle
-        DOM.handleStart.style.display = 'block';
-        DOM.handleStart.style.top = `${r1.top - 28 + DOM.mainContent.scrollTop}px`;
-        DOM.handleStart.style.left = `${r1.left - 14}px`;
-
-        // Position our end handle
-        DOM.handleEnd.style.display = 'block';
-        DOM.handleEnd.style.top = `${r2.bottom + DOM.mainContent.scrollTop}px`;
-        DOM.handleEnd.style.left = `${r2.right - 14}px`;
-        
-        const rect = { top: r1.top, left: r1.left, width: r2.right - r1.left, height: r2.bottom - r1.top };
-        showTooltipAt(rect);
-    }
-    
-    // Stage 1: Long press on the page content to initiate selection
-    DOM.pageContainer.addEventListener('touchstart', e => {
-        if (e.target.closest('.selection-handle')) return;
-
-        if (DOM.pageContent.querySelector('span.c.sel')) {
-            clearSelection();
-            return;
-        }
-
-        clearTimeout(state.touch.longPressTimer);
-        const touch = e.touches[0];
-        
-        state.touch.longPressTimer = setTimeout(() => {
-            const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
-            if (char) {
-                if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback
-                const word = findWordAtPoint(char);
-                if (word) {
-                    paintCharSelection(word.startChar, word.endChar); // Uses your existing paint function
-                    state.lastSelectionText = getSelectedText();
-                    positionControls(); // Shows our handles and the tooltip
+                const startChar = chars[startBoundary];
+                const endChar = chars[endBoundary - 1];
+                return { startChar, endChar };
+            }
+            
+            function paintCharSelection(startChar, endChar) {
+                DOM.pageContent.querySelectorAll('span.c.sel').forEach(c => c.classList.remove('sel'));
+                if (!startChar) return;
+                const end = endChar || startChar;
+                const chars = Array.from(DOM.pageContent.querySelectorAll('span.c'));
+                const startIndex = parseInt(startChar.dataset.idx, 10);
+                const endIndex = parseInt(end.dataset.idx, 10);
+                if (isNaN(startIndex) || isNaN(endIndex)) return;
+                const min = Math.min(startIndex, endIndex);
+                const max = Math.max(startIndex, endIndex);
+                for (let i = min; i <= max; i++) {
+                    if (chars[i]) chars[i].classList.add('sel');
                 }
             }
-        }, longPressDuration);
-    });
 
-    DOM.pageContainer.addEventListener('touchmove', e => { clearTimeout(state.touch.longPressTimer); });
-    DOM.pageContainer.addEventListener('touchend', e => { clearTimeout(state.touch.longPressTimer); });
+            function positionControls() {
+                const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
+                if (selectedChars.length === 0) {
+                    clearSelection();
+                    return;
+                }
+                const firstChar = selectedChars[0];
+                const lastChar = selectedChars[selectedChars.length - 1];
+                const r1 = firstChar.getBoundingClientRect();
+                const r2 = lastChar.getBoundingClientRect();
+                
+                DOM.handleStart.style.display = 'block';
+                DOM.handleStart.style.top = `${r1.top - 28 + DOM.mainContent.scrollTop}px`;
+                DOM.handleStart.style.left = `${r1.left - 14}px`;
 
-    // Stage 2: Dragging one of our custom handles
-    function handleTouchStart(e) {
-        activeHandle = e.target.id === 'selection-handle-start' ? 'start' : 'end';
-        e.preventDefault();
-    }
-    
-    function handleTouchMove(e) {
-        if (!activeHandle) return;
-        const touch = e.touches[0];
-        const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
-        if (char) {
-            const selectedSpans = DOM.pageContent.querySelectorAll('span.c.sel');
-            let startChar = activeHandle === 'start' ? char : selectedSpans[0];
-            let endChar = activeHandle === 'end' ? char : selectedSpans[selectedSpans.length - 1];
-            // This is the key: we re-paint your spans as our handle moves
-            paintCharSelection(startChar, endChar);
+                DOM.handleEnd.style.display = 'block';
+                DOM.handleEnd.style.top = `${r2.bottom + DOM.mainContent.scrollTop}px`;
+                DOM.handleEnd.style.left = `${r2.right - 14}px`;
+                
+                const rect = { top: r1.top, left: r1.left, width: r2.right - r1.left };
+                showTooltipAt(rect);
+            }
+            
+            DOM.pageContainer.addEventListener('touchstart', e => {
+                if (e.target.closest('.selection-handle')) return;
+                if (DOM.pageContent.querySelector('span.c.sel')) {
+                    clearSelection();
+                    return;
+                }
+                clearTimeout(state.touch.longPressTimer);
+                const touch = e.touches[0];
+                
+                state.touch.longPressTimer = setTimeout(() => {
+                    const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
+                    if (char) {
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        const word = findWordAtPoint(char);
+                        if (word) {
+                            paintCharSelection(word.startChar, word.endChar);
+                            state.lastSelectionText = getSelectedText();
+                            positionControls();
+                        }
+                    }
+                }, longPressDuration);
+            });
+
+            DOM.pageContainer.addEventListener('touchmove', e => { clearTimeout(state.touch.longPressTimer); });
+            DOM.pageContainer.addEventListener('touchend', e => { clearTimeout(state.touch.longPressTimer); });
+
+            function handleTouchStart(e) {
+                activeHandle = e.target.id === 'selection-handle-start' ? 'start' : 'end';
+                e.preventDefault();
+            }
+            
+            function handleTouchMove(e) {
+                if (!activeHandle) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
+                if (char) {
+                    const selectedSpans = DOM.pageContent.querySelectorAll('span.c.sel');
+                    let startChar = activeHandle === 'start' ? char : selectedSpans[0];
+                    let endChar = activeHandle === 'end' ? char : selectedSpans[selectedSpans.length - 1];
+                    paintCharSelection(startChar, endChar);
+                }
+            }
+
+            function handleTouchEnd(e) {
+                if (!activeHandle) return;
+                activeHandle = null;
+                state.lastSelectionText = getSelectedText();
+                positionControls();
+            }
+            
+            DOM.handleStart.addEventListener('touchstart', handleTouchStart, { passive: false });
+            DOM.handleEnd.addEventListener('touchstart', handleTouchStart, { passive: false });
+            
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd);
         }
-    }
+        
+        function setupEventListeners() {
+            DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
+            DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
+            DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
+            [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
+            [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
+            [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+            DOM.tooltipExplain.addEventListener("click", handleExplain);
+            DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+            DOM.tooltipCopy.addEventListener("click", handleCopy);
+            DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
+            DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
+            DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+            DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+            DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+            DOM.mobilePageJumpInput.addEventListener("change", () => {
+                const p = parseInt(DOM.mobilePageJumpInput.value, 10);
+                if (!isNaN(p)) {
+                    renderPage(p);
+                    DOM.body.classList.remove('menu-open');
+                }
+            });
 
-    function handleTouchEnd(e) {
-        if (!activeHandle) return;
-        activeHandle = null;
-        state.lastSelectionText = getSelectedText();
-        positionControls(); // Reposition everything after dragging
-    }
-    
-    DOM.handleStart.addEventListener('touchstart', handleTouchStart);
-    DOM.handleEnd.addEventListener('touchstart', handleTouchStart);
-    
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-
-    // Note: The `paintCharSelection` function does not need to be changed.
-    // It works perfectly with this new system.
-}
+            if (isTouchDevice) { setupTouchHandlers(); }    
+            else { setupDesktopHandlers(); }
+        }
 
         function init() {
             setMode(localStorage.getItem("kaffetishMode") || 'light');
