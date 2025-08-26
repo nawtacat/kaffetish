@@ -96,8 +96,7 @@
         }
         .reader-controls button:hover, .reader-controls a.button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
-        .reader-controls #back-to-library:hover { background-color: color-mix(in srgb, var(--accent) 80%, var(--bg)); color: white; }
-
+        
         main { padding: 48px 24px; }
         
         .fallback-view, .loading-view {
@@ -133,16 +132,10 @@
         body.dark-mode .page { background-color: #2D2C2B; }
 
         .content {
-            font-family: var(--font-main);
-            font-size: 1.15rem;
-            line-height: 1.8;
-            user-select: text;
-            -webkit-touch-callout: none; /* UPDATED: Disables the iOS menu on text selection */
+            font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8;
+            user-select: text; -webkit-touch-callout: none;
         }
-        .content p {
-            margin: 0 0 1.5em;
-            overflow-wrap: break-word; /* UPDATED: Forces long words to break */
-        }
+        .content p { margin: 0 0 1.5em; overflow-wrap: break-word; }
         .content p:last-child { margin-bottom: 0; }
         
         .fade-in { animation: fadeIn 250ms ease-out both; }
@@ -187,7 +180,6 @@
             display: none; flex-direction: column; animation: slideUp 0.3s ease-out;
         }
         @keyframes slideUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-
         .ai-panel-content { flex-grow: 1; }
         .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
         .ai-title i { color: var(--accent); }
@@ -196,19 +188,12 @@
             margin: 0 0 16px 0; font-style: italic; color: var(--subtle); font-size: 0.95rem;
         }
         .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; white-space: pre-wrap; word-wrap: break-word; }
-        .ai-text-content p { margin: 0 0 1em; }
-        .ai-text-content ul { padding-left: 20px; margin: 1em 0; }
-        .ai-text-content li { margin-bottom: 0.5em; }
-        .ai-text-content .thinking { display: flex; align-items: center; gap: 10px; color: var(--subtle); }
-        .ai-text-content .thinking .fa-star { animation: pulse 1.5s infinite ease-in-out; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } }
         .ai-text-content .typing-cursor {
             display: inline-block; background-color: var(--ink);
             width: 10px; height: 1.2em;
             animation: blink 1s step-end infinite; vertical-align: bottom;
         }
         @keyframes blink { 50% { background-color: transparent; } }
-
         .ai-panel-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
         .ai-panel-actions button {
             background: var(--border-color); color: var(--subtle); border: 0;
@@ -217,56 +202,85 @@
         }
         .ai-panel-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
 
+        /* --- Redesigned Mobile Menu Styles --- */
         .mobile-menu-toggle { display: none; }
         .mobile-menu-overlay {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.4);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
             z-index: 1500; opacity: 0; transition: opacity 0.3s ease;
+            pointer-events: none;
         }
         .mobile-nav-menu {
-            position: fixed; top: 0; right: 0; width: 280px; height: 100%;
-            background-color: var(--bg); z-index: 1600;
-            transform: translateX(100%); transition: transform 0.3s ease-out;
-            padding: 80px 24px 24px; display: flex; flex-direction: column; gap: 8px;
+            position: fixed; top: 0; right: 0; width: 300px; height: 100%;
+            background-color: color-mix(in srgb, var(--bg) 90%, transparent);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            z-index: 1600;
+            transform: translateX(100%); transition: transform 0.35s ease-out;
+            padding: 16px; display: flex; flex-direction: column; gap: 24px;
             box-shadow: -10px 0 30px rgba(0,0,0,0.1);
             border-left: 1px solid var(--border-color);
         }
-        .mobile-nav-menu .control-group { flex-direction: column; align-items: stretch; gap: 16px; }
-        .mobile-nav-menu button, .mobile-nav-menu a.button {
-            width: 100%; padding: 12px; font-size: 1rem;
-            justify-content: flex-start; gap: 12px;
-            background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
-            color: var(--ink);
-        }
-        body.menu-open .mobile-menu-overlay { display: block; opacity: 1; }
+        body.menu-open .mobile-menu-overlay { opacity: 1; pointer-events: auto; }
         body.menu-open .mobile-nav-menu { transform: translateX(0); }
+        .mobile-menu-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px;
+        }
+        .mobile-menu-header h3 {
+            margin: 0; font-size: 1.2rem; font-weight: 500;
+        }
+        #mobile-menu-close {
+            background: none; border: 0; font-size: 1.5rem; color: var(--subtle);
+            cursor: pointer; transition: color 0.2s; padding: 4px 8px;
+        }
+        #mobile-menu-close:hover { color: var(--ink); }
+        .menu-section { display: flex; flex-direction: column; gap: 12px; }
+        .menu-section-title {
+            font-size: 0.8rem; font-weight: 500; color: var(--subtle);
+            text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px;
+        }
+        .menu-divider { border: 0; height: 1px; background: var(--border-color); margin: 0; }
+        .font-control {
+            display: flex; align-items: center; justify-content: space-between;
+            background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+            border-radius: 8px; padding: 8px;
+        }
+        .font-control button {
+            background: none; border: 1px solid var(--border-color); color: var(--ink);
+            width: 36px; height: 36px; border-radius: 50%;
+            font-size: 1.1rem; cursor: pointer; transition: background-color 0.2s;
+        }
+        .font-control button:hover { background-color: var(--border-color); }
+        .font-control .font-size-display { font-weight: 500; font-size: 1rem; }
+        .menu-button {
+            display: flex; align-items: center; gap: 12px;
+            background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+            border: 0; border-radius: 8px; padding: 12px; text-decoration: none;
+            font-size: 1rem; color: var(--ink); text-align: left;
+            width: 100%; cursor: pointer; transition: background-color 0.2s;
+        }
+        .menu-button:hover { background-color: var(--border-color); }
+        .menu-button i { color: var(--subtle); width: 20px; text-align: center; }
+        .menu-section > * {
+            opacity: 0; transform: translateX(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        body.menu-open .menu-section > * { opacity: 1; transform: translateX(0); }
+        body.menu-open .menu-section > *:nth-child(2) { transition-delay: 0.05s; }
+        body.menu-open .menu-section > *:nth-child(3) { transition-delay: 0.1s; }
 
         @media (max-width: 768px) {
-            .header-content {
-                padding: 0 16px;
-                position: relative; /* UPDATED: Establish positioning context */
-            }
+            .header-content { padding: 0 16px; position: relative; }
             .control-group.file-info, .control-group.settings { display: none; }
-
-            .reader-controls { /* UPDATED: Make container full-width */
-                width: 100%;
-                position: static;
-            }
-            .reader-controls .navigation { /* UPDATED: Center navigation */
-                position: absolute;
-                left: 50%;
-                top: 50%;
+            .reader-controls { width: 100%; position: static; }
+            .reader-controls .navigation {
+                position: absolute; left: 50%; top: 50%;
                 transform: translate(-50%, -50%);
             }
-            
             .mobile-menu-toggle {
-                display: inline-flex;
-                position: absolute; /* UPDATED: Position menu toggle */
-                right: 16px;
-                top: 50%;
-                transform: translateY(-50%);
+                display: inline-flex; position: absolute;
+                right: 16px; top: 50%; transform: translateY(-50%);
             }
-
             main { padding: 24px 16px; }
             .page { padding: 2.5rem 1.5rem; }
             .page-number { bottom: 1rem; }
@@ -281,18 +295,16 @@
             <div id="reader-controls" class="reader-controls hidden">
                 <div class="control-group file-info"> <span id="book-title" class="book-title"></span> </div>
                 <div class="control-group navigation">
-                    <button id="prev-page" title="Previous Page (←)" aria-label="Previous Page"><i class="fa-solid fa-arrow-left"></i></button>
                     <div class="page-indicator">
                         <input id="page-jump" type="number" min="1" aria-label="Jump to page" />
                         <span id="page-total">/ 0</span>
                     </div>
-                    <button id="next-page" title="Next Page (→)" aria-label="Next Page"><i class="fa-solid fa-arrow-right"></i></button>
                 </div>
                 <div class="control-group settings">
-                    <button id="font-decrease" title="Decrease Font Size" aria-label="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
-                    <button id="font-increase" title="Increase Font Size" aria-label="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
-                    <button id="mode-toggle" title="Toggle Theme" aria-label="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
-                    <a id="back-to-library" class="button" href="https://kaffetish/club" title="Back to Library" aria-label="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                    <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
+                    <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
+                    <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
+                    <a class="button" href="https://kaffetish.club"><i class="fa-solid fa-book-open"></i></a>
                 </div>
                 <button id="mobile-menu-toggle" class="mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
             </div>
@@ -301,7 +313,7 @@
 
     <main id="main-content">
         <section id="fallback-view" class="fallback-view">
-            <div class="fallback-content">
+             <div class="fallback-content">
                 <div class="fallback-icon"><i class="fa-solid fa-book-sparkles"></i></div>
                 <h2 class="fallback-title">No Book Loaded</h2>
                 <p class="fallback-text" id="fallback-text">
@@ -317,7 +329,7 @@
         </section>
 
         <section id="reader-view" class="reader-view hidden">
-            <div class="page-container">
+            <div class="page-container" id="page-container">
                 <article class="page">
                     <div id="page-content" class="content"></div>
                     <div id="page-number" class="page-number"></div>
@@ -328,11 +340,32 @@
 
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
     <nav id="mobile-nav-menu" class="mobile-nav-menu">
-        <div class="control-group">
-            <button id="mobile-font-decrease"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i> Decrease Font Size</button>
-            <button id="mobile-font-increase"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i> Increase Font Size</button>
-            <button id="mobile-mode-toggle"><i id="mobile-mode-icon" class="fa-solid fa-moon"></i> Toggle Theme</button>
-            <a id="mobile-back-to-library" class="button" href="https://kaffetish/club"><i class="fa-solid fa-book-open"></i> Back to Library</a>
+        <div class="mobile-menu-header">
+            <h3>Settings</h3>
+            <button id="mobile-menu-close" aria-label="Close Menu">&times;</button>
+        </div>
+        
+        <div class="menu-section">
+            <h4 class="menu-section-title">Appearance</h4>
+            <div class="font-control">
+                <button id="mobile-font-decrease" aria-label="Decrease Font Size">A-</button>
+                <span id="mobile-font-size-display" class="font-size-display">100%</span>
+                <button id="mobile-font-increase" aria-label="Increase Font Size">A+</button>
+            </div>
+            <button id="mobile-mode-toggle" class="menu-button">
+                <i id="mobile-mode-icon" class="fa-solid fa-moon"></i>
+                <span>Toggle Theme</span>
+            </button>
+        </div>
+
+        <hr class="menu-divider" />
+
+        <div class="menu-section">
+            <h4 class="menu-section-title">Navigation</h4>
+            <a href="https://kaffetish.club" class="menu-button">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Back to Library</span>
+            </a>
         </div>
     </nav>
     
@@ -359,7 +392,6 @@
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
 
-        // !! IMPORTANT: Move this configuration to environment variables !!
         const firebaseConfig = {
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -388,10 +420,10 @@
             fallbackText: document.getElementById('fallback-text'),
             readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
             loadingText: document.getElementById('loading-text'),
+            pageContainer: document.getElementById('page-container'),
             pageContent: document.getElementById('page-content'),
             pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
             pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
-            prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
             modeToggle: document.getElementById('mode-toggle'),
             modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
             fontDec: document.getElementById('font-decrease'),
@@ -404,10 +436,12 @@
             mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
             mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
             mobileNavMenu: document.getElementById('mobile-nav-menu'),
+            mobileMenuClose: document.getElementById('mobile-menu-close'),
             mobileModeToggle: document.getElementById('mobile-mode-toggle'),
             mobileModeIcon: document.getElementById('mobile-mode-icon'),
             mobileFontInc: document.getElementById('mobile-font-increase'),
             mobileFontDec: document.getElementById('mobile-font-decrease'),
+            mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
         };
 
         const state = {
@@ -415,7 +449,10 @@
             pagesHTML: [], isRendering: false, lastSelectionText: "",
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
             mode: "light", lastScrollY: 0, currentAITyping: null,
+            touchStartX: 0,
         };
+        
+        const baseFontRem = 1.15;
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
@@ -470,6 +507,8 @@
             state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
             DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
             localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
+            const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
+            DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
         }
 
         function showView(view) {
@@ -537,7 +576,6 @@
             DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
             DOM.pageTotal.textContent = `/ ${state.totalPages}`;
             DOM.pageJumpInput.value = pageNum; DOM.pageJumpInput.max = state.totalPages;
-            DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
             setFontRem(state.currentFontRem); hideTooltip();
             state.isRendering = false;
         }
@@ -628,8 +666,6 @@
         }
 
         function setupEventListeners() {
-            DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
-            DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
             DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
             
             [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
@@ -649,13 +685,24 @@
 
             DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
             DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+            DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
         }
 
-        function setupKeyboardNav() {
-            document.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT') return;
-                if (e.key === 'ArrowLeft') DOM.prevBtn.click();
-                else if (e.key === 'ArrowRight') DOM.nextBtn.click();
+        function setupSwipeNavigation() {
+            DOM.pageContainer.addEventListener('touchstart', (e) => {
+                state.touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            DOM.pageContainer.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                const deltaX = touchEndX - state.touchStartX;
+                const swipeThreshold = 50;
+
+                if (deltaX > swipeThreshold) {
+                    renderPage(state.currentPage - 1);
+                } else if (deltaX < -swipeThreshold) {
+                    renderPage(state.currentPage + 1);
+                }
             });
         }
 
@@ -686,8 +733,9 @@
         function init() {
             const savedMode = localStorage.getItem("kaffetishMode") || 'light';
             setMode(savedMode);
+            setFontRem(state.currentFontRem);
             setupEventListeners();
-            setupKeyboardNav();
+            setupSwipeNavigation();
             setupHeaderAutohide();
             loadBookFromURLParams();
             if (!explainBookTextFn) {
