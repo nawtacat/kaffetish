@@ -596,32 +596,30 @@
         }
 
         async function handleExplain() {
-            const textToExplain = state.lastSelectionText;
-            window.getSelection().removeAllRanges(); // Clear selection, which also hides the tooltip
+    const textToExplain = state.lastSelectionText;
+    window.getSelection().removeAllRanges(); // Clear selection, which also hides the tooltip
 
-            if (!textToExplain || textToExplain.length < 10) { 
-                flashAI("Please select a longer phrase to explain."); 
-      _CONTEXT_OF_USER_QUERY_
-I need you to enhance the mobile experience. Basically we are using a technique to hide the iOS native toolbar upon text selection, but it got pretty messed up.  The user should be able to properly select text on mobile, use Highlight or Explain. Please give me full updated code with a robust mobile experience
-_END_OF_CONTEXT_            return; 
-            }
+    if (!textToExplain || textToExplain.length < 10) {
+        flashAI("Please select a longer phrase to explain.");
+        return;
+    }
 
-            DOM.aiQuote.textContent = `"${textToExplain}"`;
-            DOM.aiQuote.classList.remove('hidden');
-            DOM.aiPanel.style.display = "flex"; 
-            DOM.aiContent.innerHTML = `<div class="thinking"><i class="fa-solid fa-star"></i> Thinking...</div>`;
-            try {
-                const { data } = await explainBookTextFn({ text: textToExplain });
-                const explanationText = data?.explanation || "No explanation was returned.";
-                typewriterEffect(DOM.aiContent, explanationText, () => {
-                    DOM.aiContent.innerHTML = parseMarkdown(explanationText);
-                    DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
-                });
-            } catch (err) {
-                console.error("AI Explain Error:", err);
-                DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
-            }
-        }
+    DOM.aiQuote.textContent = `"${textToExplain}"`;
+    DOM.aiQuote.classList.remove('hidden');
+    DOM.aiPanel.style.display = "flex";
+    DOM.aiContent.innerHTML = `<div class="thinking"><i class="fa-solid fa-star"></i> Thinking...</div>`;
+    try {
+        const { data } = await explainBookTextFn({ text: textToExplain });
+        const explanationText = data?.explanation || "No explanation was returned.";
+        typewriterEffect(DOM.aiContent, explanationText, () => {
+            DOM.aiContent.innerHTML = parseMarkdown(explanationText);
+            DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
+        });
+    } catch (err) {
+        console.error("AI Explain Error:", err);
+        DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+    }
+}
         
         function handleHighlight() { // UPDATED: Relies on stored range
             if (state.lastSelectionRange) {
