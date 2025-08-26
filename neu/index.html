@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Kaffetish</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -290,16 +290,15 @@
             -webkit-user-select: none !important;
             user-select: none !important;
             -webkit-touch-callout: none !important;
-            touch-action: none;
         }
         .ios a, .ios .content * {
             -webkit-tap-highlight-color: transparent;
         }
-        .w.sel {
+        .content p.sel {
             background: color-mix(in srgb, var(--accent) 25%, transparent);
             border-radius: 3px;
         }
-        body.dark-mode .w.sel {
+        body.dark-mode .content p.sel {
             background: color-mix(in srgb, var(--accent) 40%, transparent);
         }
         
@@ -409,7 +408,6 @@
         if (isIOS) {
             document.addEventListener('selectstart', e => e.preventDefault(), { passive: false });
             document.addEventListener('contextmenu', e => e.preventDefault());
-            document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
         }
 
         const firebaseConfig = {
@@ -470,13 +468,12 @@
             pagesHTML: [], isRendering: false, 
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
             mode: "light", lastScrollY: 0, currentAITyping: null,
-            touchStartX: 0, touchStartTime: 0,
+            touch: { startX: 0, startY: 0, startTime: 0, isSelecting: false, isSwiping: false, selStartPara: null, selEndPara: null },
             lastSelectionText: "",
             lastSelectionRange: null,
         };
         
         const baseFontRem = 1.15;
-        let selStart = null, selEnd = null; // For iOS custom selection
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
         
@@ -564,32 +561,6 @@
             return paragraphs.map(p => `<p>${escapeHTML(p.trim())}</p>`).join("\n");
         }
 
-        function spanify(container) {
-            let idx = 0;
-            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-            const edits = [];
-            while (walker.nextNode()) {
-                const node = walker.currentNode;
-                const txt = node.nodeValue;
-                if (!txt || !txt.trim()) continue;
-
-                const frag = document.createDocumentFragment();
-                txt.split(/(\s+)/).forEach(tok => {
-                    if (/^\s+$/.test(tok)) { 
-                        frag.appendChild(document.createTextNode(tok)); 
-                    } else if (tok) {
-                        const s = document.createElement('span');
-                        s.className = 'w';
-                        s.dataset.idx = idx++;
-                        s.textContent = tok;
-                        frag.appendChild(s);
-                    }
-                });
-                edits.push([node, frag]);
-            }
-            edits.forEach(([n, f]) => n.parentNode.replaceChild(f, n));
-        }
-
         async function renderPage(pageNum) {
             if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
             
@@ -608,10 +579,6 @@
             }
             DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
             
-            if (isIOS) {
-                spanify(DOM.pageContent);
-            }
-
             DOM.pageContent.classList.add("fade-in");
             setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
             DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
@@ -622,7 +589,7 @@
         }
 
         function handleSelection() {
-            if (isIOS) return; // iOS uses a custom handler now
+            if (isIOS) return; // iOS uses a custom handler
             setTimeout(() => {
                 const sel = window.getSelection();
                 const selectionText = sel.toString().trim();
@@ -650,7 +617,6 @@
         
         function hideTooltip() { 
             DOM.tooltip.classList.remove('visible');
-            state.lastSelectionRange = null;
             setTimeout(() => {
                 if (!DOM.tooltip.classList.contains('visible')) {
                     DOM.tooltip.style.display = 'none';
@@ -660,7 +626,8 @@
 
         function clearSelection() {
             if (isIOS) {
-                clearCustomSelection();
+                paintParaSelection(null, null);
+                hideTooltip();
             } else {
                 window.getSelection().removeAllRanges();
                 hideTooltip();
@@ -692,12 +659,11 @@
         
         function handleHighlight() {
             if (isIOS) {
-                DOM.pageContent.querySelectorAll('.w.sel').forEach(s => {
-                    s.classList.remove('sel');
-                    s.classList.add('highlighted-text');
+                DOM.pageContent.querySelectorAll('p.sel').forEach(p => {
+                    p.classList.remove('sel');
+                    p.classList.add('highlighted-text');
                 });
                 state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
-                clearCustomSelection();
             } else if (state.lastSelectionRange) {
                 try {
                     const range = state.lastSelectionRange;
@@ -709,8 +675,8 @@
                     console.error("Highlighting failed:", e);
                     flashAI("Highlighting across multiple paragraphs is not supported.", 2500);
                 }
-                clearSelection();
             }
+            clearSelection();
         }
 
         function handleCopy() {
@@ -731,36 +697,22 @@
             }, duration);
         }
         
-        // --- iOS Custom Selection Implementation ---
-        function wordFromTouch(touch) {
-            const el = document.elementFromPoint(touch.clientX, touch.clientY);
-            return el && el.closest('.w');
-        }
+        function paintParaSelection(startPara, endPara) {
+            DOM.pageContent.querySelectorAll('p.sel').forEach(p => p.classList.remove('sel'));
+            if (!startPara || !endPara) return;
 
-        function paintSelection(a, b) {
-            DOM.pageContent.querySelectorAll('.w.sel').forEach(s => s.classList.remove('sel'));
-            if (!a || !b) return;
-            const start = Math.min(+a.dataset.idx, +b.dataset.idx);
-            const end   = Math.max(+a.dataset.idx, +b.dataset.idx);
-            for (const s of DOM.pageContent.querySelectorAll('.w')) {
-                const i = +s.dataset.idx;
-                if (i >= start && i <= end) s.classList.add('sel');
+            const paras = Array.from(DOM.pageContent.querySelectorAll('p'));
+            const startIndex = paras.indexOf(startPara);
+            const endIndex = paras.indexOf(endPara);
+
+            if (startIndex === -1 || endIndex === -1) return;
+
+            const min = Math.min(startIndex, endIndex);
+            const max = Math.max(startIndex, endIndex);
+
+            for (let i = min; i <= max; i++) {
+                paras[i].classList.add('sel');
             }
-        }
-
-        function currentCustomText() {
-            const selected = [...DOM.pageContent.querySelectorAll('.w.sel')];
-            if (!selected.length) return '';
-            return selected.map(s => {
-                const space = s.nextSibling && s.nextSibling.nodeType === 3 ? s.nextSibling.nodeValue.match(/^\s+/)?.[0] ?? '' : '';
-                return s.textContent + space;
-            }).join('').trim();
-        }
-
-        function clearCustomSelection() {
-            selStart = selEnd = null;
-            paintSelection(null, null);
-            hideTooltip();
         }
 
         function setupEventListeners() {
@@ -770,57 +722,15 @@
             [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
             [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
             
-            // Native selection for non-iOS
-            DOM.mainContent.addEventListener("mouseup", handleSelection);
-            
-            // Custom selection for iOS
-            DOM.pageContent.addEventListener('touchstart', e => {
-                if (!isIOS) return;
-                const t = e.changedTouches[0];
-                const w = wordFromTouch(t);
-                if (!w) {
-                    clearCustomSelection();
-                    return;
-                }
-                e.preventDefault();
-                selStart = selEnd = w;
-                paintSelection(selStart, selEnd);
-            }, { passive: false });
-
-            DOM.pageContent.addEventListener('touchmove', e => {
-                if (!isIOS || !selStart) return;
-                const t = e.changedTouches[0];
-                const w = wordFromTouch(t);
-                if (!w) return;
-                e.preventDefault();
-                selEnd = w;
-                paintSelection(selStart, selEnd);
-            }, { passive: false });
-
-            DOM.pageContent.addEventListener('touchend', e => {
-                if (!isIOS || !selStart || !selEnd) return;
-                e.preventDefault();
-                state.lastSelectionText = currentCustomText();
-                if (!state.lastSelectionText) {
-                    clearCustomSelection();
-                    return;
-                }
-                const first = DOM.pageContent.querySelector('.w.sel');
-                const last  = [...DOM.pageContent.querySelectorAll('.w.sel')].pop();
-                if (first && last) {
-                    const r1 = first.getBoundingClientRect();
-                    const r2 = last.getBoundingClientRect();
-                    const rect = {
-                        top: Math.min(r1.top, r2.top),
-                        left: Math.min(r1.left, r2.left),
-                        width: Math.max(r1.right, r2.right) - Math.min(r1.left, r2.left)
-                    };
-                    showTooltipAt(rect);
-                }
-            }, { passive: false });
+            if (isIOS) {
+                setupIOSTouchHandlers();
+            } else {
+                DOM.mainContent.addEventListener("mouseup", handleSelection);
+                setupSwipeNavigation();
+            }
 
             document.addEventListener('mousedown', (e) => {
-                if (state.lastSelectionRange && !DOM.pageContent.contains(e.target) && !DOM.tooltip.contains(e.target)) {
+                if (!isIOS && state.lastSelectionRange && !DOM.pageContent.contains(e.target) && !DOM.tooltip.contains(e.target)) {
                     clearSelection();
                 }
             });
@@ -839,23 +749,85 @@
             DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
         }
 
-        function setupSwipeNavigation() {
+        function setupIOSTouchHandlers() {
+            DOM.pageContainer.addEventListener('touchstart', e => {
+                const touch = e.touches[0];
+                state.touch.startX = touch.screenX;
+                state.touch.startY = touch.screenY;
+                state.touch.startTime = Date.now();
+                state.touch.selStartPara = e.target.closest('p');
+                state.touch.isSelecting = false;
+                state.touch.isSwiping = false;
+            }, { passive: true });
+
+            DOM.pageContainer.addEventListener('touchmove', e => {
+                if (e.touches.length > 1) return;
+                const touch = e.touches[0];
+                const deltaX = touch.screenX - state.touch.startX;
+                const deltaY = touch.screenY - state.touch.startY;
+
+                if (!state.touch.isSwiping && !state.touch.isSelecting) {
+                    if (Math.abs(deltaX) > 10 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                        state.touch.isSwiping = true;
+                    } else if (Math.abs(deltaY) > 10 && state.touch.selStartPara) {
+                        state.touch.isSelecting = true;
+                    }
+                }
+
+                if (state.touch.isSelecting) {
+                    e.preventDefault();
+                    state.touch.selEndPara = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('p');
+                    paintParaSelection(state.touch.selStartPara, state.touch.selEndPara);
+                }
+            }, { passive: false });
+
+            DOM.pageContainer.addEventListener('touchend', e => {
+                const touch = e.changedTouches[0];
+                const deltaX = touch.screenX - state.touch.startX;
+                const timeElapsed = Date.now() - state.touch.startTime;
+
+                if (state.touch.isSwiping && timeElapsed < 350 && Math.abs(deltaX) > 50) {
+                    if (deltaX > 0) renderPage(state.currentPage - 1);
+                    else renderPage(state.currentPage + 1);
+                } else if (state.touch.isSelecting) {
+                    const selectedParas = DOM.pageContent.querySelectorAll('p.sel');
+                    if (selectedParas.length > 0) {
+                        state.lastSelectionText = Array.from(selectedParas).map(p => p.textContent).join('\n').trim();
+                        
+                        const first = selectedParas[0];
+                        const last = selectedParas[selectedParas.length - 1];
+                        const r1 = first.getBoundingClientRect();
+                        const r2 = last.getBoundingClientRect();
+                        const rect = {
+                            top: Math.min(r1.top, r2.top),
+                            left: Math.min(r1.left, r2.left),
+                            width: Math.max(r1.right, r2.right) - Math.min(r1.left, r2.left)
+                        };
+                        showTooltipAt(rect);
+                    }
+                } else if (!state.touch.isSwiping && !state.touch.isSelecting) {
+                    clearSelection();
+                }
+                
+                // Reset touch state
+                Object.assign(state.touch, { isSelecting: false, isSwiping: false, selStartPara: null, selEndPara: null });
+            });
+        }
+
+        function setupSwipeNavigation() { // For non-iOS
             DOM.pageContainer.addEventListener('touchstart', (e) => {
-                state.touchStartX = e.changedTouches[0].screenX;
-                state.touchStartTime = Date.now();
+                state.touch.startX = e.changedTouches[0].screenX;
+                state.touch.startTime = Date.now();
             }, { passive: true });
 
             DOM.pageContainer.addEventListener('touchend', (e) => {
                 const touchEndX = e.changedTouches[0].screenX;
-                const deltaX = touchEndX - state.touchStartX;
-                const timeElapsed = Date.now() - state.touchStartTime;
+                const deltaX = touchEndX - state.touch.startX;
+                const timeElapsed = Date.now() - state.touch.startTime;
                 
                 if (timeElapsed < 300 && Math.abs(deltaX) > 50) {
-                    if (deltaX > 0) {
-                        renderPage(state.currentPage - 1);
-                    } else {
-                        renderPage(state.currentPage + 1);
-                    }
+                    if (deltaX > 0) renderPage(state.currentPage - 1);
+                    else renderPage(state.currentPage + 1);
                 }
             });
         }
@@ -889,7 +861,6 @@
             setMode(savedMode);
             setFontRem(state.currentFontRem);
             setupEventListeners();
-            setupSwipeNavigation();
             setupHeaderAutohide();
             loadBookFromURLParams();
             if (!explainBookTextFn) {
