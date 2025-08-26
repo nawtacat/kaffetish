@@ -577,16 +577,40 @@
 
         function handleSelection(event) {
             if (DOM.tooltip.contains(event.target)) return;
+
+            // Use a minimal timeout to let the browser finalize the selection
             setTimeout(() => {
                 const sel = window.getSelection();
-                const text = sel.toString().trim();
-                if (text && !sel.isCollapsed) {
-                    const rect = sel.getRangeAt(0).getBoundingClientRect();
-                    state.lastSelectionText = text;
+                if (!sel.rangeCount || sel.isCollapsed) {
+                    hideTooltip();
+                    return;
+                }
+
+                // --- THE TRICK STARTS HERE ---
+
+                // 1. Save the user's selection range
+                const savedRange = sel.getRangeAt(0).cloneRange();
+                const selectionText = sel.toString().trim();
+
+                if (selectionText) {
+                    // 2. Instantly clear the selection. This is the misdirection
+                    //    that prevents the native iOS menu from triggering.
+                    sel.removeAllRanges();
+
+                    // 3. In the very next "paint" cycle, add the selection back.
+                    //    This makes the blue highlight reappear for the user.
+                    requestAnimationFrame(() => {
+                        window.getSelection().addRange(savedRange);
+                    });
+                    
+                    // 4. Now, show our custom tooltip as normal
+                    state.lastSelectionText = selectionText;
+                    const rect = savedRange.getBoundingClientRect();
                     showTooltipAt(rect);
                 } else {
                     hideTooltip();
                 }
+
             }, 10);
         }
         
