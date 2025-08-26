@@ -60,6 +60,7 @@
         .header-content {
             max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
             display: flex; justify-content: space-between; align-items: center;
+            position: relative; /* For positioning mobile menu button */
         }
         .logo {
             font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
@@ -81,7 +82,7 @@
         .page-indicator input::-webkit-outer-spin-button, .page-indicator input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .page-indicator span { color: var(--subtle); user-select: none; }
 
-        .reader-controls button, .reader-controls a.button {
+        .reader-controls button, .reader-controls a.button, .mobile-menu-toggle {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
             transition: color 0.2s ease, background-color 0.2s ease;
@@ -89,7 +90,8 @@
             align-items: center; justify-content: center; user-select: none;
         }
         .reader-controls button:hover, .reader-controls button:active,
-        .reader-controls a.button:hover, .reader-controls a.button:active {
+        .reader-controls a.button:hover, .reader-controls a.button:active,
+        .mobile-menu-toggle:hover, .mobile-menu-toggle:active {
             color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
         }
         .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
@@ -172,23 +174,10 @@
         .ai-panel-content { flex-grow: 1; }
         .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
         .ai-title i { color: var(--accent); }
-        .ai-quote {
-            display: block; border-left: 3px solid var(--accent); padding-left: 12px;
-            margin: 0 0 16px 0; font-style: italic; color: var(--subtle); font-size: 0.95rem;
-        }
+        .ai-quote { display: block; border-left: 3px solid var(--accent); padding-left: 12px; margin: 0 0 16px 0; font-style: italic; color: var(--subtle); font-size: 0.95rem; }
         .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; white-space: pre-wrap; word-wrap: break-word; }
-        .ai-text-content .typing-cursor {
-            display: inline-block; background-color: var(--ink);
-            width: 10px; height: 1.2em;
-            animation: blink 1s step-end infinite; vertical-align: bottom;
-        }
-        @keyframes blink { 50% { background-color: transparent; } }
         .ai-panel-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
-        .ai-panel-actions button {
-            background: var(--border-color); color: var(--subtle); border: 0;
-            width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
-            transition: color 0.2s ease, background-color 0.2s ease;
-        }
+        .ai-panel-actions button { background: var(--border-color); color: var(--subtle); border: 0; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: color 0.2s ease, background-color 0.2s ease; }
         .ai-panel-actions button:hover, .ai-panel-actions button:active { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
 
         .mobile-menu-toggle { display: none; }
@@ -235,23 +224,26 @@
         
         /* --- RESPONSIVE & PERFORMANCE TWEAKS --- */
         @media (max-width: 860px) {
-            .header-content { padding: 0 16px; position: relative; }
-            .control-group.file-info, .control-group.settings { display: none; }
-            .reader-controls { width: 100%; position: static; }
-            .reader-controls .navigation { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-            .mobile-menu-toggle { display: inline-flex; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
+            .header-content { padding: 0 16px; justify-content: center; }
+            .logo { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); }
+            .control-group.file-info, .control-group.settings, .control-group.navigation { display: none; }
+            .mobile-menu-toggle { 
+                display: inline-flex; 
+                position: absolute;
+                right: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
             main { padding: 24px 16px; }
             .page { padding: 2.5rem 1.5rem; }
             .page-number { bottom: 1rem; }
-
-            /* PERFORMANCE: Disable expensive effects on smaller screens */
             .app-header, .ai-panel, .mobile-nav-menu, .mobile-menu-overlay {
                 backdrop-filter: none; -webkit-backdrop-filter: none;
                 background-color: color-mix(in srgb, var(--bg) 95%, transparent);
             }
             .page-container {
                 filter: none;
-                box-shadow: 0 8px 20px var(--shadow-color); /* Fallback shadow */
+                box-shadow: 0 8px 20px var(--shadow-color);
             }
         }
     </style>
@@ -260,7 +252,7 @@
     <header id="app-header" class="app-header">
         <div class="header-content">
             <h1 class="logo">Kaffetish</h1>
-            <div id="reader-controls" class="reader-controls hidden">
+            <div id="reader-controls" class="reader-controls">
                 <div class="control-group file-info"> <span id="book-title" class="book-title"></span> </div>
                 <div class="control-group navigation">
                     <button id="prev-page" title="Previous Page (←)"><i class="fa-solid fa-arrow-left"></i></button>
@@ -276,8 +268,8 @@
                     <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
                     <a class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
                 </div>
-                <button id="mobile-menu-toggle" class="reader-controls mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
             </div>
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
         </div>
     </header>
 
@@ -357,14 +349,24 @@
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
-        const firebaseConfig = { /* Your Firebase Config Here */ };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+            authDomain: "physmathacademy-722b3.firebaseapp.com",
+            projectId: "physmathacademy-722b3",
+            storageBucket: "physmathacademy-722b3.appspot.com",
+            messagingSenderId: "1093640992262",
+            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+        };
+
         let app, auth, functions, explainBookTextFn;
-        if (firebaseConfig.apiKey) {
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             functions = getFunctions(app, "us-central1");
             onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
             explainBookTextFn = httpsCallable(functions, "explainBookText");
+        } else {
+            console.warn("Firebase config is missing or incomplete. The 'Explain' feature will be disabled.");
         }
 
         const DOM = {
@@ -404,7 +406,7 @@
             pdfDoc: null, totalPages: 0, currentPage: 1,
             pagesHTML: [], isRendering: false,    
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-            mode: "light", lastScrollY: 0, currentAITyping: null,
+            mode: "light", lastScrollY: 0,
             touch: { startX: 0, startY: 0, startTime: 0, isSelecting: false, longPressTimer: null, selStartChar: null, selEndChar: null },
             lastSelectionText: "",
             lastSelectionRange: null,
@@ -413,7 +415,6 @@
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
         
-        // --- Core Application Logic ---
         function setMode(mode) {
             state.mode = mode;
             DOM.body.classList.toggle("dark-mode", mode === 'dark');
@@ -439,6 +440,7 @@
             [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
             view.classList.remove('hidden');
             DOM.readerControls.classList.toggle('hidden', view !== DOM.readerView);
+            DOM.mobileMenuToggle.classList.toggle('hidden', view !== DOM.readerView);
         }
 
         async function loadPdfFromUrl(sourceUrl, title) {
@@ -451,10 +453,10 @@
                 
                 const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
                 state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
-                state.pagesHTML = new Array(state.totalPages).fill(null); state.currentPage = 1;
+                state.pagesHTML = new Array(state.totalPages).fill(null);
                 
                 DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-                await renderPage(state.currentPage);
+                await renderPage(1); // Start at page 1
                 showView(DOM.readerView);
             } catch (err) {
                 console.error("PDF Loading/Processing Error:", err);
@@ -471,7 +473,7 @@
                 const item = items[i];
                 if (item.str.trim() === "") continue;
                 const yGap = Math.abs(lastY - item.y);
-                if (yGap > lastHeight * 1.5) { paragraphs.push(currentPara); currentPara = item.str; }
+                if (yGap > lastHeight * 1.2) { paragraphs.push(currentPara); currentPara = item.str; }
                 else { if (!/\s|-$/.test(currentPara)) currentPara += " "; currentPara += item.str; }
                 lastY = item.y; lastHeight = item.height || lastHeight;
             }
@@ -479,7 +481,7 @@
             return paragraphs.map(p => `<p>${escapeHTML(p.trim())}</p>`).join("\n");
         }
 
-        function spanify(container) { /* This expensive function only runs on touch devices */
+        function spanify(container) {
             let idx = 0;
             const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
             const edits = [];
@@ -530,7 +532,6 @@
             state.isRendering = false;
         }
 
-        // --- Selection & Tooltip Logic ---
         function showTooltipAt(rect) {
             DOM.tooltip.style.display = "flex";
             const top = window.scrollY + rect.top - DOM.tooltip.offsetHeight - 8;
@@ -555,8 +556,11 @@
             }
         }
         
-        // --- Action Handlers (Explain, Highlight, Copy) ---
-        function handleExplain() {
+        async function handleExplain() {
+            if (!explainBookTextFn) {
+                flashAI("Explanation feature is not available.");
+                return;
+            }
             if (!state.lastSelectionText || state.lastSelectionText.length < 5) {    
                 flashAI("Please select a longer phrase to explain.");    
                 clearSelection(); return;    
@@ -565,8 +569,17 @@
             DOM.aiQuote.classList.remove('hidden');
             DOM.aiPanel.style.display = "flex";    
             DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+            const textToExplain = state.lastSelectionText;
             clearSelection();
-            // In a real app, call the AI function here
+            
+            try {
+                const { data } = await explainBookTextFn({ text: textToExplain });
+                const explanationText = data?.explanation || "No explanation was returned.";
+                DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
+            } catch (err) {
+                console.error("AI Explain Error:", err);
+                DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+            }
         }
         
         function handleHighlight() {
@@ -601,9 +614,7 @@
             setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
         }
 
-        // --- PLATFORM-SPECIFIC EVENT HANDLERS ---
         function setupDesktopHandlers() {
-            // 1. Desktop Selection
             DOM.mainContent.addEventListener("mouseup", () => {
                 setTimeout(() => {
                     const sel = window.getSelection();
@@ -617,15 +628,13 @@
                     }
                 }, 10);
             });
-
-            // 2. Desktop Navigation
             document.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || state.isRendering) return;
                 if (e.key === 'ArrowLeft') DOM.prevBtn.click();
                 else if (e.key === 'ArrowRight') DOM.nextBtn.click();
             });
             DOM.pageContainer.addEventListener('click', (e) => {
-                if (window.getSelection().toString() || e.target.closest('a')) return;
+                if (window.getSelection().toString() || e.target.closest('a') || DOM.tooltip.contains(e.target)) return;
                 const rect = DOM.pageContainer.getBoundingClientRect();
                 const clickX = e.clientX - rect.left;
                 const clickArea = rect.width * 0.2;
@@ -635,9 +644,9 @@
         }
         
         function setupTouchHandlers() {
-            // 1. Custom Touch Selection
             const longPressDuration = 200, swipeThreshold = 15;
             DOM.pageContainer.addEventListener('touchstart', e => {
+                if (e.touches.length > 1) return;
                 clearTimeout(state.touch.longPressTimer);
                 const touch = e.touches[0];
                 state.touch.startX = touch.screenX; state.touch.startY = touch.screenY; state.touch.startTime = Date.now();
@@ -652,17 +661,15 @@
             }, { passive: true });
 
             DOM.pageContainer.addEventListener('touchmove', e => {
-                if (e.touches.length > 1) return;
+                if (e.touches.length > 1 || !state.touch.isSelecting) return;
+                e.preventDefault();
                 const touch = e.touches[0];
                 const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
                 if (Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold) clearTimeout(state.touch.longPressTimer);
-                if (state.touch.isSelecting) {
-                    e.preventDefault();
-                    const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
-                    if (char) {
-                        state.touch.selEndChar = char;
-                        paintCharSelection(state.touch.selStartChar, state.touch.selEndChar);
-                    }
+                const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
+                if (char) {
+                    state.touch.selEndChar = char;
+                    paintCharSelection(state.touch.selStartChar, state.touch.selEndChar);
                 }
             }, { passive: false });
 
@@ -671,13 +678,17 @@
                 if (state.touch.isSelecting) {
                     const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
                     if (selectedChars.length > 0) {
-                        state.lastSelectionText = Array.from(selectedChars).map(c => c.textContent).join('');
+                        state.lastSelectionText = Array.from(selectedChars).map(c => {
+                            const nextNode = c.nextSibling;
+                            const space = (nextNode && nextNode.nodeType === 3) ? (nextNode.nodeValue.match(/^\s+/) || [''])[0] : '';
+                            return c.textContent + space;
+                        }).join('').trim();
                         const first = selectedChars[0], last = selectedChars[selectedChars.length - 1];
                         const r1 = first.getBoundingClientRect(), r2 = last.getBoundingClientRect();
                         const rect = { top: Math.min(r1.top, r2.top), left: Math.min(r1.left, r2.left), width: Math.max(r1.right, r2.right) - Math.min(r1.left, r2.left) };
                         showTooltipAt(rect);
                     }
-                } else { // 2. Swipe Navigation
+                } else {
                     const touch = e.changedTouches[0];
                     const deltaX = touch.screenX - state.touch.startX;
                     const timeElapsed = Date.now() - state.touch.startTime;
@@ -706,7 +717,6 @@
         }
         
         function setupEventListeners() {
-            // Universal Listeners
             DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
             DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
             DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
@@ -722,16 +732,12 @@
             DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
             DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
             window.addEventListener("scroll", hideTooltip, { passive: true });
-            document.addEventListener('click', (e) => { // Global click-off to hide things
+            document.addEventListener('click', (e) => {
                 if (!DOM.pageContent.contains(e.target) && !DOM.tooltip.contains(e.target)) clearSelection();
             });
 
-            // Platform-specific setup
-            if (isTouchDevice) {
-                setupTouchHandlers();
-            } else {
-                setupDesktopHandlers();
-            }
+            if (isTouchDevice) { setupTouchHandlers(); } 
+            else { setupDesktopHandlers(); }
         }
 
         function setupHeaderAutohide() {
