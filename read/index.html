@@ -302,7 +302,7 @@
 
     <div id="ai-panel" class="ai-panel">
         <div class="ai-panel-content">
-            <h4 class="ai-title"><i class="fa-solid fa-star"></i> AI Explanation</h4>
+            <h4 class="ai-title"><i class="fa-solid fa-star"></i>Explanation</h4>
             <blockquote id="ai-quote" class="ai-quote hidden"></blockquote>
             <div id="ai-content" class="ai-text-content"></div>
         </div>
@@ -335,7 +335,7 @@
             onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
             explainBookTextFn = httpsCallable(functions, "explainBookText");
         } else {
-            console.warn("Firebase config is missing. The 'AI Explain' feature will be disabled.");
+            console.warn("Firebase config is missing. The 'Explain' feature will be disabled.");
         }
 
         const DOM = {
