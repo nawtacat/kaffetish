@@ -46,8 +46,8 @@
             margin: 0;
             padding-top: 60px;
             -webkit-user-select: none; /* Safari */
-    -ms-user-select: none;     /* IE 10+ and Edge */
-    user-select: none;         /* Standard syntax */
+            -ms-user-select: none;     /* IE 10+ and Edge */
+            user-select: none;         /* Standard syntax */
         }
 
         .hidden { display: none !important; }
@@ -76,9 +76,9 @@
         .reader-controls.hidden { display: none; }
         .control-group { display: flex; align-items: center; gap: 8px; }
         .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-                    -webkit-user-select: none; /* Safari */
-    -ms-user-select: none;     /* IE 10+ and Edge */
-    user-select: none;    }
+                      -webkit-user-select: none; /* Safari */
+                      -ms-user-select: none;     /* IE 10+ and Edge */
+                      user-select: none;   }
 
         .page-indicator input {
             width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
@@ -141,18 +141,27 @@
         body.dark-mode .page { background-color: #2D2C2B; }
 
         .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; user-select: text; -webkit-user-select: text; /* Safari */
-    -ms-user-select: text;     /* IE 10+ and Edge */
-    user-select: text;         /* Standard syntax */ }
+        -ms-user-select: text;     /* IE 10+ and Edge */
+        user-select: text;         /* Standard syntax */ }
         .content p { margin: 0 0 1.5em; }
         .content p:last-child { margin-bottom: 0; }
         
         .fade-in { animation: fadeIn 250ms ease-out both; }
         @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
 
-        .page-number {
+        .page-number-container {
             position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
             color: var(--subtle); font-size: 0.9rem;
+            display: flex; align-items: center; gap: 20px;
         }
+        .page-nav-arrow {
+            background: transparent; border: 0; color: var(--subtle); font-size: 1.1em;
+            cursor: pointer; padding: 8px 12px; border-radius: 50%;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .page-nav-arrow:hover { background-color: var(--border-color); color: var(--ink); }
+        .page-nav-arrow:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; }
 
         .highlighted-text {
             background-color: color-mix(in srgb, var(--accent) 25%, transparent);
@@ -207,7 +216,13 @@
             font-size: 0.95rem;
         }
 
-        .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; white-space: pre-wrap; word-wrap: break-word; }
+        .ai-text-content {
+            max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px;
+            white-space: pre-wrap; word-wrap: break-word;
+            /* FIX: Force Left-to-Right text direction to prevent reversal */
+            direction: ltr !important;
+            unicode-bidi: normal !important;
+        }
         .ai-text-content p { margin: 0 0 1em; }
         .ai-text-content ul { padding-left: 20px; margin: 1em 0; }
         .ai-text-content li { margin-bottom: 0.5em; }
@@ -224,7 +239,6 @@
         }
         @keyframes blink { 50% { background-color: transparent; } }
 
-
         .ai-panel-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
         .ai-panel-actions button {
             background: var(--border-color); color: var(--subtle); border: 0;
@@ -238,7 +252,15 @@
             .control-group.file-info, .control-group.settings { display: none; }
             main { padding: 24px 16px; }
             .page { padding: 2.5rem 1.5rem; }
-            .page-number { bottom: 1rem; }
+            .page-number-container { bottom: 1rem; }
+            .page-nav-arrow { display: none; }
+        }
+
+        /* Hides hamburger menu on screens wider than 768px (Desktop) */
+        @media (min-width: 769px) {
+            #hamburger-btn {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -262,6 +284,7 @@
                     <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
                     <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
                     <a id="back-to-library" class="button" href="https://kaffetish/club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                    <button id="hamburger-btn" title="Menu"><i class="fa-solid fa-bars"></i></button>
                 </div>
             </div>
         </div>
@@ -288,7 +311,11 @@
             <div class="page-container">
                 <article class="page">
                     <div id="page-content" class="content"></div>
-                    <div id="page-number" class="page-number"></div>
+                    <div class="page-number-container">
+                        <button id="bottom-prev-page" class="page-nav-arrow" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div id="page-number"></div>
+                        <button id="bottom-next-page" class="page-nav-arrow" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
                 </article>
             </div>
         </section>
@@ -359,6 +386,8 @@
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
             aiQuote: document.getElementById('ai-quote'),
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
+            bottomPrevBtn: document.getElementById('bottom-prev-page'),
+            bottomNextBtn: document.getElementById('bottom-next-page'),
         };
 
         const state = {
@@ -493,7 +522,10 @@
             DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
             DOM.pageTotal.textContent = `/ ${state.totalPages}`;
             DOM.pageJumpInput.value = pageNum; DOM.pageJumpInput.max = state.totalPages;
-            DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
+            DOM.prevBtn.disabled = pageNum <= 1;
+            DOM.nextBtn.disabled = pageNum >= state.totalPages;
+            DOM.bottomPrevBtn.disabled = pageNum <= 1;
+            DOM.bottomNextBtn.disabled = pageNum >= state.totalPages;
             setFontRem(state.currentFontRem); hideTooltip();
             state.isRendering = false;
         }
@@ -614,6 +646,9 @@
 
             DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
             DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied to clipboard!"); });
+
+            DOM.bottomPrevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
+            DOM.bottomNextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
         }
 
         function setupKeyboardNav() {
