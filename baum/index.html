@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500&display=swap" rel="stylesheet" />
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
@@ -36,6 +35,7 @@
             --shadow-color: rgba(0, 0, 0, 0.25);
         }
 
+        * { -webkit-tap-highlight-color: transparent; }
         ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
 
         body {
@@ -56,24 +56,21 @@
             border-bottom: 1px solid var(--border-color); z-index: 1000;
             transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease-out;
         }
-        .app-header.hidden {
-            transform: translateY(-100%);
-        }
+        .app-header.hidden { transform: translateY(-100%); }
         .header-content {
             max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
             display: flex; justify-content: space-between; align-items: center;
         }
         .logo {
             font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
-            color: var(--accent); font-family: var(--font-main);
+            color: var(--accent); font-family: var(--font-main); user-select: none;
         }
         body.dark-mode .logo { color: var(--ink); }
 
         .reader-controls { display: flex; align-items: center; gap: 24px; }
         .reader-controls.hidden { display: none; }
         .control-group { display: flex; align-items: center; gap: 8px; }
-        .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
+        .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
         .page-indicator input {
             width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
             padding: 6px; border: 1px solid var(--border-color); background-color: var(--bg);
@@ -81,24 +78,22 @@
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         .page-indicator input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
-        .page-indicator input::-webkit-outer-spin-button,
-        .page-indicator input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .page-indicator span { color: var(--subtle); }
+        .page-indicator input::-webkit-outer-spin-button, .page-indicator input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .page-indicator span { color: var(--subtle); user-select: none; }
 
         .reader-controls button, .reader-controls a.button {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
             transition: color 0.2s ease, background-color 0.2s ease;
             text-decoration: none; display: inline-flex;
-            align-items: center; justify-content: center;
+            align-items: center; justify-content: center; user-select: none;
         }
-        .reader-controls button:hover, .reader-controls a.button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        .reader-controls button:hover, .reader-controls button:active,
+        .reader-controls a.button:hover, .reader-controls a.button:active {
+            color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+        }
         .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
-        .reader-controls #back-to-library:hover { background-color: color-mix(in srgb, var(--accent) 80%, var(--bg)); color: white; }
         
-        /* --- NEW: Hamburger Menu Button --- */
-        #mobile-menu-btn { display: none; }
-
         main { padding: 48px 24px; }
         
         .fallback-view, .loading-view {
@@ -114,11 +109,8 @@
             padding: 12px 24px; border-radius: 24px; text-decoration: none;
             font-weight: 500; transition: background-color 0.2s, transform 0.2s;
         }
-        .library-link:hover { background-color: color-mix(in srgb, var(--accent) 85%, black); transform: scale(1.03); }
+        .library-link:hover, .library-link:active { background-color: color-mix(in srgb, var(--accent) 85%, black); transform: scale(1.03); }
         .library-link i { margin-right: 8px; }
-
-        .error-message { color: var(--accent); margin-top: 16px; font-weight: 500; }
-
         .spinner {
             width: 48px; height: 48px; border-radius: 50%;
             border: 5px solid var(--border-color); border-top-color: var(--accent);
@@ -127,6 +119,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .page-container { filter: drop-shadow(0 10px 25px var(--shadow-color)); }
+        html:not(.touch-device) .page-container { cursor: pointer; }
         .page {
             max-width: 75ch; margin: 0 auto;
             background-color: var(--bg); border: 1px solid var(--border-color);
@@ -134,45 +127,37 @@
             transition: border-color 0.3s ease, background-color 0.3s ease;
         }
         body.dark-mode .page { background-color: #2D2C2B; }
-
-        .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; -webkit-user-select: text; user-select: text; }
-        .content p { margin: 0 0 1.5em; }
+        .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; }
+        .content p { margin: 0 0 1.5em; overflow-wrap: break-word; }
         .content p:last-child { margin-bottom: 0; }
-        
         .fade-in { animation: fadeIn 250ms ease-out both; }
         @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
-
         .page-number {
             position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-            color: var(--subtle); font-size: 0.9rem;
+            color: var(--subtle); font-size: 0.9rem; user-select: none;
         }
 
         .highlighted-text {
             background-color: color-mix(in srgb, var(--accent) 25%, transparent);
             border-radius: 3px;
         }
-        body.dark-mode .highlighted-text {
-            background-color: color-mix(in srgb, var(--accent) 40%, transparent);
-        }
+        body.dark-mode .highlighted-text { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 
         .selection-tooltip {
-            position: absolute;
-            z-index: 2000; display: none; gap: 6px; padding: 6px;
+            position: absolute; z-index: 2000; display: none; gap: 6px; padding: 6px;
             background-color: var(--ink); color: var(--bg); border-radius: 8px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
             opacity: 0; transform: translateY(10px);
             transition: opacity 150ms ease-out, transform 150ms ease-out;
             will-change: opacity, transform;
         }
-        .selection-tooltip.visible {
-            opacity: 1; transform: translateY(0);
-        }
+        .selection-tooltip.visible { opacity: 1; transform: translateY(0); }
         .selection-tooltip button {
             background: transparent; border: 0; color: var(--bg); padding: 8px 12px;
             border-radius: 6px; cursor: pointer; font-size: 0.9rem;
             font-family: var(--font-ui); transition: background-color 0.2s ease;
         }
-        .selection-tooltip button:hover { background-color: rgba(255,255,255,0.15); }
+        .selection-tooltip button:hover, .selection-tooltip button:active { background-color: rgba(255,255,255,0.15); }
         .selection-tooltip i { margin-right: 6px; }
 
         .ai-panel {
@@ -184,89 +169,103 @@
             display: none; flex-direction: column; animation: slideUp 0.3s ease-out;
         }
         @keyframes slideUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-
         .ai-panel-content { flex-grow: 1; }
         .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
         .ai-title i { color: var(--accent); }
-        
-        /* --- MODIFIED: AI Quote style --- */
         .ai-quote {
-            display: block; border-left: 3px solid var(--accent);
-            padding-left: 12px; margin: -4px 0 16px 0;
-            font-style: italic; color: var(--subtle);
-            font-size: 0.95rem; max-height: 6em; overflow: hidden; text-overflow: ellipsis;
+            display: block; border-left: 3px solid var(--accent); padding-left: 12px;
+            margin: 0 0 16px 0; font-style: italic; color: var(--subtle); font-size: 0.95rem;
         }
-
         .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; white-space: pre-wrap; word-wrap: break-word; }
-        .ai-text-content p { margin: 0 0 1em; }
-        .ai-text-content ul { padding-left: 20px; margin: 1em 0; }
-        .ai-text-content li { margin-bottom: 0.5em; }
-        .ai-text-content .thinking { display: flex; align-items: center; gap: 10px; color: var(--subtle); }
-        .ai-text-content .thinking .fa-star { animation: pulse 1.5s infinite ease-in-out; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } }
         .ai-text-content .typing-cursor {
             display: inline-block; background-color: var(--ink);
             width: 10px; height: 1.2em;
-            animation: blink 1s step-end infinite;
-            vertical-align: bottom;
+            animation: blink 1s step-end infinite; vertical-align: bottom;
         }
         @keyframes blink { 50% { background-color: transparent; } }
-
         .ai-panel-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; }
         .ai-panel-actions button {
             background: var(--border-color); color: var(--subtle); border: 0;
             width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
             transition: color 0.2s ease, background-color 0.2s ease;
         }
-        .ai-panel-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
-        
-        /* --- MODIFIED: Responsive styles for mobile menu --- */
-        @media (max-width: 768px) {
-            .header-content { padding: 0 16px; position: relative; }
-            .control-group.file-info { display: none; } /* Hide book title on mobile header */
-            
-            /* Show hamburger menu and hide settings group by default */
-            #mobile-menu-btn { display: inline-flex; }
-            .control-group.settings { display: none; }
-            
-            /* Style for the mobile menu when active */
-            body.mobile-menu-open .control-group.settings {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-                position: absolute;
-                top: 55px; /* Position below the header */
-                right: 16px;
-                background-color: var(--bg);
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 8px;
-                box-shadow: 0 10px 30px var(--shadow-color);
-            }
-            body.mobile-menu-open .control-group.settings > * {
-                width: 100%;
-                justify-content: flex-start;
-            }
+        .ai-panel-actions button:hover, .ai-panel-actions button:active { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
 
+        .mobile-menu-toggle { display: none; }
+        .mobile-menu-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            z-index: 1500; opacity: 0; transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .mobile-nav-menu {
+            position: fixed; top: 0; right: 0; width: 300px; height: 100%;
+            background-color: color-mix(in srgb, var(--bg) 90%, transparent);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            z-index: 1600;
+            transform: translateX(100%); transition: transform 0.35s ease-out;
+            padding: 16px; display: flex; flex-direction: column; gap: 24px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+            border-left: 1px solid var(--border-color);
+        }
+        body.menu-open .mobile-menu-overlay { opacity: 1; pointer-events: auto; }
+        body.menu-open .mobile-nav-menu { transform: translateX(0); }
+        .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; padding: 8px; }
+        .mobile-menu-header h3 { margin: 0; font-size: 1.2rem; font-weight: 500; }
+        #mobile-menu-close { background: none; border: 0; font-size: 1.5rem; color: var(--subtle); cursor: pointer; transition: color 0.2s; padding: 4px 8px; }
+        .menu-section { display: flex; flex-direction: column; gap: 12px; }
+        .menu-section-title { font-size: 0.8rem; font-weight: 500; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; }
+        .menu-divider { border: 0; height: 1px; background: var(--border-color); margin: 0; }
+        .font-control { display: flex; align-items: center; justify-content: space-between; background-color: color-mix(in srgb, var(--border-color) 60%, transparent); border-radius: 8px; padding: 8px; }
+        .font-control button { background: none; border: 1px solid var(--border-color); color: var(--ink); width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; transition: background-color 0.2s; }
+        .menu-button { display: flex; align-items: center; gap: 12px; background-color: color-mix(in srgb, var(--border-color) 60%, transparent); border: 0; border-radius: 8px; padding: 12px; text-decoration: none; font-size: 1rem; color: var(--ink); text-align: left; width: 100%; cursor: pointer; transition: background-color 0.2s; }
+        .menu-button i { color: var(--subtle); width: 20px; text-align: center; }
+        .menu-section > * { opacity: 0; transform: translateX(20px); transition: opacity 0.3s ease, transform 0.3s ease; }
+        body.menu-open .menu-section > * { opacity: 1; transform: translateX(0); }
+        body.menu-open .menu-section > *:nth-child(2) { transition-delay: 0.05s; }
+        body.menu-open .menu-section > *:nth-child(3) { transition-delay: 0.1s; }
+        
+        /* --- Custom Touch Selection Styles --- */
+        .touch-device .content {
+            -webkit-user-select: none !important; user-select: none !important;
+            -webkit-touch-callout: none !important;
+        }
+        .touch-device .content span.c.sel { background-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+        .touch-device.dark-mode .content span.c.sel { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+        
+        /* --- RESPONSIVE & PERFORMANCE TWEAKS --- */
+        @media (max-width: 860px) {
+            .header-content { padding: 0 16px; position: relative; }
+            .control-group.file-info, .control-group.settings { display: none; }
+            .reader-controls { width: 100%; position: static; }
+            .reader-controls .navigation { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+            .mobile-menu-toggle { display: inline-flex; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); }
             main { padding: 24px 16px; }
             .page { padding: 2.5rem 1.5rem; }
             .page-number { bottom: 1rem; }
+
+            /* PERFORMANCE: Disable expensive effects on smaller screens */
+            .app-header, .ai-panel, .mobile-nav-menu, .mobile-menu-overlay {
+                backdrop-filter: none; -webkit-backdrop-filter: none;
+                background-color: color-mix(in srgb, var(--bg) 95%, transparent);
+            }
+            .page-container {
+                filter: none;
+                box-shadow: 0 8px 20px var(--shadow-color); /* Fallback shadow */
+            }
         }
     </style>
 </head>
-
 <body>
     <header id="app-header" class="app-header">
         <div class="header-content">
             <h1 class="logo">Kaffetish</h1>
             <div id="reader-controls" class="reader-controls hidden">
-                <div class="control-group file-info">
-                    <span id="book-title" class="book-title"></span>
-                </div>
+                <div class="control-group file-info"> <span id="book-title" class="book-title"></span> </div>
                 <div class="control-group navigation">
                     <button id="prev-page" title="Previous Page (←)"><i class="fa-solid fa-arrow-left"></i></button>
                     <div class="page-indicator">
-                        <input id="page-jump" type="number" min="1" />
+                        <input id="page-jump" type="number" min="1" aria-label="Jump to page" />
                         <span id="page-total">/ 0</span>
                     </div>
                     <button id="next-page" title="Next Page (→)"><i class="fa-solid fa-arrow-right"></i></button>
@@ -275,32 +274,28 @@
                     <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
                     <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
                     <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
-                    <a id="back-to-library" class="button" href="https://kaffetish/club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                    <a class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
                 </div>
-                <button id="mobile-menu-btn" title="Menu"><i class="fa-solid fa-bars"></i></button>
+                <button id="mobile-menu-toggle" class="reader-controls mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
             </div>
         </div>
     </header>
 
     <main id="main-content">
         <section id="fallback-view" class="fallback-view">
-            <div class="fallback-content">
+             <div class="fallback-content">
                 <div class="fallback-icon"><i class="fa-solid fa-book-sparkles"></i></div>
                 <h2 class="fallback-title">No Book Loaded</h2>
-                <p class="fallback-text" id="fallback-text">
-                    It looks like there was an issue loading your book, or no book was selected. Please return to the library to choose a title.
-                </p>
+                <p class="fallback-text" id="fallback-text">It looks like there was an issue loading your book. Please return to the library to choose a title.</p>
                 <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
             </div>
         </section>
-
         <section id="loading-view" class="loading-view hidden">
             <div class="spinner"></div>
             <p id="loading-text">Brewing your document...</p>
         </section>
-
         <section id="reader-view" class="reader-view hidden">
-            <div class="page-container">
+            <div class="page-container" id="page-container">
                 <article class="page">
                     <div id="page-content" class="content"></div>
                     <div id="page-number" class="page-number"></div>
@@ -309,12 +304,39 @@
         </section>
     </main>
 
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+    <nav id="mobile-nav-menu" class="mobile-nav-menu">
+        <div class="mobile-menu-header">
+            <h3>Settings</h3>
+            <button id="mobile-menu-close" aria-label="Close Menu">&times;</button>
+        </div>
+        <div class="menu-section">
+            <h4 class="menu-section-title">Appearance</h4>
+            <div class="font-control">
+                <button id="mobile-font-decrease" aria-label="Decrease Font Size">A-</button>
+                <span id="mobile-font-size-display" class="font-size-display">100%</span>
+                <button id="mobile-font-increase" aria-label="Increase Font Size">A+</button>
+            </div>
+            <button id="mobile-mode-toggle" class="menu-button">
+                <i id="mobile-mode-icon" class="fa-solid fa-moon"></i>
+                <span>Toggle Theme</span>
+            </button>
+        </div>
+        <hr class="menu-divider" />
+        <div class="menu-section">
+            <h4 class="menu-section-title">Navigation</h4>
+            <a href="https://kaffetish.club" class="menu-button">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Back to Library</span>
+            </a>
+        </div>
+    </nav>
+    
     <div id="selection-tooltip" class="selection-tooltip">
         <button id="btn-explain"><i class="fa-solid fa-wand-magic-sparkles"></i> Explain</button>
         <button id="btn-highlight"><i class="fa-solid fa-marker"></i> Highlight</button>
         <button id="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
     </div>
-
     <div id="ai-panel" class="ai-panel">
         <div class="ai-panel-content">
             <h4 class="ai-title"><i class="fa-solid fa-star"></i>Explanation</h4>
@@ -322,8 +344,8 @@
             <div id="ai-content" class="ai-text-content"></div>
         </div>
         <div class="ai-panel-actions">
-            <button id="ai-copy" title="Copy Explanation"><i class="fa-regular fa-copy"></i></button>
-            <button id="ai-close" title="Close Panel"><i class="fa-solid fa-xmark"></i></button>
+            <button id="ai-copy" title="Copy Explanation" aria-label="Copy Explanation"><i class="fa-regular fa-copy"></i></button>
+            <button id="ai-close" title="Close Panel" aria-label="Close Panel"><i class="fa-solid fa-xmark"></i></button>
         </div>
     </div>
     
@@ -332,39 +354,32 @@
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-            authDomain: "physmathacademy-722b3.firebaseapp.com",
-            projectId: "physmathacademy-722b3",
-            storageBucket: "physmathacademy-722b3.appspot.com",
-            messagingSenderId: "1093640992262",
-            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
-        };
-        
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        document.documentElement.classList.toggle('touch-device', isTouchDevice);
+
+        const firebaseConfig = { /* Your Firebase Config Here */ };
         let app, auth, functions, explainBookTextFn;
-        
-        if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
+        if (firebaseConfig.apiKey) {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             functions = getFunctions(app, "us-central1");
             onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
             explainBookTextFn = httpsCallable(functions, "explainBookText");
-        } else {
-            console.warn("Firebase config is missing. The 'Explain' feature will be disabled.");
         }
 
         const DOM = {
             body: document.body, header: document.getElementById('app-header'),
+            mainContent: document.getElementById('main-content'),
             readerControls: document.getElementById('reader-controls'),
             fallbackView: document.getElementById('fallback-view'),
             fallbackText: document.getElementById('fallback-text'),
             readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
             loadingText: document.getElementById('loading-text'),
+            pageContainer: document.getElementById('page-container'),
             pageContent: document.getElementById('page-content'),
             pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
             pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
             prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
-            backToLibraryBtn: document.getElementById('back-to-library'),
             modeToggle: document.getElementById('mode-toggle'),
             modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
             fontDec: document.getElementById('font-decrease'),
@@ -374,58 +389,41 @@
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
             aiQuote: document.getElementById('ai-quote'),
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
-            // NEW: Mobile menu button
-            mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+            mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+            mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
+            mobileNavMenu: document.getElementById('mobile-nav-menu'),
+            mobileMenuClose: document.getElementById('mobile-menu-close'),
+            mobileModeToggle: document.getElementById('mobile-mode-toggle'),
+            mobileModeIcon: document.getElementById('mobile-mode-icon'),
+            mobileFontInc: document.getElementById('mobile-font-increase'),
+            mobileFontDec: document.getElementById('mobile-font-decrease'),
+            mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
         };
 
         const state = {
             pdfDoc: null, totalPages: 0, currentPage: 1,
-            pagesHTML: [], isRendering: false, lastSelectionText: "",
+            pagesHTML: [], isRendering: false,    
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-            mode: "light", lastScrollY: 0,
+            mode: "light", lastScrollY: 0, currentAITyping: null,
+            touch: { startX: 0, startY: 0, startTime: 0, isSelecting: false, longPressTimer: null, selStartChar: null, selEndChar: null },
+            lastSelectionText: "",
+            lastSelectionRange: null,
         };
+        const baseFontRem = 1.15;
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
-
-        function parseMarkdown(text) {
-            let html = escapeHTML(text);
-            html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
-            html = html.replace(/^\s*\*\s+(.*)/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-            return html.replace(/\n/g, '<br>');
-        }
-
-        function typewriterEffect(element, text, onComplete) {
-            let i = 0;
-            const speed = 20;
-            const textNode = document.createTextNode('');
-            const cursorNode = document.createElement('span');
-            cursorNode.className = 'typing-cursor';
-
-            element.innerHTML = '';
-            element.appendChild(textNode);
-            element.appendChild(cursorNode);
-
-            function type() {
-                if (i < text.length) {
-                    textNode.nodeValue += text.charAt(i);
-                    i++;
-                    element.scrollTop = element.scrollHeight;
-                    setTimeout(type, speed);
-                } else {
-                    cursorNode.remove();
-                    if (onComplete) onComplete();
-                }
-            }
-            type();
-        }
-
+        
+        // --- Core Application Logic ---
         function setMode(mode) {
             state.mode = mode;
             DOM.body.classList.toggle("dark-mode", mode === 'dark');
-            DOM.modeIcon.classList.toggle('fa-moon', mode === 'light');
-            DOM.modeIcon.classList.toggle('fa-sun', mode === 'dark');
+            const isDark = mode === 'dark';
+            [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
+                if(icon) {
+                   icon.classList.toggle('fa-moon', !isDark);
+                   icon.classList.toggle('fa-sun', isDark);
+                }
+            });
             localStorage.setItem("kaffetishMode", mode);
         }
 
@@ -433,6 +431,8 @@
             state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
             DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
             localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
+            const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
+            DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
         }
 
         function showView(view) {
@@ -448,21 +448,19 @@
                 const response = await fetch(sourceUrl);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const pdfData = await response.arrayBuffer();
-                await extractTextFromPdf(new Uint8Array(pdfData));
+                
+                const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+                state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
+                state.pagesHTML = new Array(state.totalPages).fill(null); state.currentPage = 1;
+                
                 DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+                await renderPage(state.currentPage);
                 showView(DOM.readerView);
             } catch (err) {
                 console.error("PDF Loading/Processing Error:", err);
                 DOM.fallbackText.textContent = `There was an error loading the book "${title}". The link may be broken or the file may be corrupted.`;
                 showView(DOM.fallbackView);
             }
-        }
-
-        async function extractTextFromPdf(pdfData) {
-            const pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
-            state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
-            state.pagesHTML = new Array(state.totalPages).fill(null); state.currentPage = 1;
-            await renderPage(state.currentPage);
         }
 
         function paragraphize(textContent) {
@@ -473,7 +471,7 @@
                 const item = items[i];
                 if (item.str.trim() === "") continue;
                 const yGap = Math.abs(lastY - item.y);
-                if (yGap > lastHeight * 1.5) { paragraphs.push(currentPara); currentPara = item.str; } 
+                if (yGap > lastHeight * 1.5) { paragraphs.push(currentPara); currentPara = item.str; }
                 else { if (!/\s|-$/.test(currentPara)) currentPara += " "; currentPara += item.str; }
                 lastY = item.y; lastHeight = item.height || lastHeight;
             }
@@ -481,8 +479,32 @@
             return paragraphs.map(p => `<p>${escapeHTML(p.trim())}</p>`).join("\n");
         }
 
+        function spanify(container) { /* This expensive function only runs on touch devices */
+            let idx = 0;
+            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+            const edits = [];
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                const txt = node.nodeValue;
+                if (!txt || !txt.trim()) continue;
+                const frag = document.createDocumentFragment();
+                txt.split('').forEach(char => {
+                    if (/\s/.test(char)) {
+                        frag.appendChild(document.createTextNode(char));
+                    } else {
+                        const s = document.createElement('span');
+                        s.className = 'c'; s.dataset.idx = idx++; s.textContent = char;
+                        frag.appendChild(s);
+                    }
+                });
+                edits.push([node, frag]);
+            }
+            edits.forEach(([n, f]) => n.parentNode.replaceChild(f, n));
+        }
+
         async function renderPage(pageNum) {
             if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
+            clearSelection();
             state.isRendering = true; state.currentPage = pageNum;
             if (!state.pagesHTML[pageNum - 1]) {
                 try {
@@ -495,143 +517,221 @@
                 }
             }
             DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
+            
+            if (isTouchDevice) { spanify(DOM.pageContent); }
+
             DOM.pageContent.classList.add("fade-in");
             setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
             DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
             DOM.pageTotal.textContent = `/ ${state.totalPages}`;
             DOM.pageJumpInput.value = pageNum; DOM.pageJumpInput.max = state.totalPages;
             DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
-            setFontRem(state.currentFontRem); hideTooltip();
+            setFontRem(state.currentFontRem);
             state.isRendering = false;
         }
 
-        function handleSelection(event) {
-            if (DOM.tooltip.contains(event.target)) return;
-            setTimeout(() => {
-                const sel = window.getSelection();
-                const text = sel.toString().trim();
-                if (text && !sel.isCollapsed) {
-                    const rect = sel.getRangeAt(0).getBoundingClientRect();
-                    state.lastSelectionText = text;
-                    showTooltipAt(rect);
-                } else {
-                    hideTooltip();
-                }
-            }, 10);
-        }
-        
+        // --- Selection & Tooltip Logic ---
         function showTooltipAt(rect) {
             DOM.tooltip.style.display = "flex";
             const top = window.scrollY + rect.top - DOM.tooltip.offsetHeight - 8;
-            const left = window.scrollX + rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-            
+            let left = window.scrollX + rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+            left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
             DOM.tooltip.style.top = `${Math.max(top, window.scrollY + 10)}px`;
             DOM.tooltip.style.left = `${left}px`;
-            
-            requestAnimationFrame(() => DOM.tooltip.classList.add('visible'));
+            requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
         }
         
-        function hideTooltip() { 
+        function hideTooltip() {    
             DOM.tooltip.classList.remove('visible');
-            setTimeout(() => {
-                if (!DOM.tooltip.classList.contains('visible')) {
-                    DOM.tooltip.style.display = 'none';
-                }
-            }, 150);
+            setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
         }
 
-        async function handleExplain() {
+        function clearSelection() {
             hideTooltip();
-            if (!state.lastSelectionText || state.lastSelectionText.length < 10) { 
-                flashAI("Please select a longer phrase to explain."); 
-                return; 
+            if (isTouchDevice) {
+                DOM.pageContent.querySelectorAll('span.c.sel').forEach(c => c.classList.remove('sel'));
+            } else {
+                window.getSelection()?.removeAllRanges();
             }
-            // MODIFIED: Re-enabled the quote display
+        }
+        
+        // --- Action Handlers (Explain, Highlight, Copy) ---
+        function handleExplain() {
+            if (!state.lastSelectionText || state.lastSelectionText.length < 5) {    
+                flashAI("Please select a longer phrase to explain.");    
+                clearSelection(); return;    
+            }
             DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
             DOM.aiQuote.classList.remove('hidden');
-            DOM.aiPanel.style.display = "flex"; 
-            DOM.aiContent.innerHTML = `<div class="thinking"><i class="fa-solid fa-star"></i> Thinking...</div>`;
-            
-            try {
-                const { data } = await explainBookTextFn({ text: state.lastSelectionText });
-                const explanationText = data?.explanation || "No explanation was returned.";
-                
-                typewriterEffect(DOM.aiContent, explanationText, () => {
-                    DOM.aiContent.innerHTML = parseMarkdown(explanationText);
-                    DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
-                });
-            } catch (err) {
-                console.error("AI Explain Error:", err);
-                DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
-            }
+            DOM.aiPanel.style.display = "flex";    
+            DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+            clearSelection();
+            // In a real app, call the AI function here
         }
         
         function handleHighlight() {
-            const sel = window.getSelection();
-            if (!sel.isCollapsed) {
+            if (isTouchDevice) {
+                const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
+                if (selectedChars.length === 0) { clearSelection(); return; }
+                const newHighlight = document.createElement('span');
+                newHighlight.className = 'highlighted-text';
+                newHighlight.textContent = state.lastSelectionText;
+                selectedChars[0].parentNode.insertBefore(newHighlight, selectedChars[0]);
+                selectedChars.forEach(c => c.remove());
+            } else if (state.lastSelectionRange) {
                 try {
-                    const range = sel.getRangeAt(0);
                     const span = document.createElement("span");
                     span.className = "highlighted-text";
-                    range.surroundContents(span);
-                    state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
-                } catch (e) {
-                    console.error("Highlighting failed:", e);
-                    flashAI("Highlighting across multiple paragraphs is not supported.", 2500);
-                }
+                    state.lastSelectionRange.surroundContents(span);
+                } catch (e) { console.error("Highlighting failed:", e); }
             }
-            sel.removeAllRanges(); hideTooltip();
+            state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+            clearSelection();
+        }
+
+        function handleCopy() {
+            if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
+            clearSelection();
         }
 
         function flashAI(msg, duration = 2000) {
             DOM.aiQuote.classList.add('hidden');
-            DOM.aiPanel.style.display = "flex"; 
+            DOM.aiPanel.style.display = "flex";    
             DOM.aiContent.textContent = msg;
-            setTimeout(() => { 
-                if (DOM.aiContent.textContent === msg) {
-                    DOM.aiPanel.style.display = "none"; 
-                }
-            }, duration);
+            setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
         }
 
-        function setupEventListeners() {
-            DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
-            DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
-            DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
-            
-            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
-            DOM.fontInc.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1));
-            DOM.fontDec.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1));
-            
-            document.addEventListener("mouseup", handleSelection);
-            window.addEventListener("scroll", hideTooltip, { passive: true });
-            
-            DOM.tooltipExplain.addEventListener("click", handleExplain);
-            DOM.tooltipHighlight.addEventListener("click", handleHighlight);
-            DOM.tooltipCopy.addEventListener("click", () => { if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText); hideTooltip(); });
-
-            DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-            DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied to clipboard!"); });
-            
-            // NEW: Mobile menu toggle logic
-            DOM.mobileMenuBtn.addEventListener("click", (e) => {
-                e.stopPropagation(); // Prevent the click from closing the menu immediately
-                DOM.body.classList.toggle('mobile-menu-open');
+        // --- PLATFORM-SPECIFIC EVENT HANDLERS ---
+        function setupDesktopHandlers() {
+            // 1. Desktop Selection
+            DOM.mainContent.addEventListener("mouseup", () => {
+                setTimeout(() => {
+                    const sel = window.getSelection();
+                    const text = sel.toString().trim();
+                    if (text && !sel.isCollapsed) {
+                        state.lastSelectionText = text;
+                        state.lastSelectionRange = sel.getRangeAt(0);
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+                    } else {
+                        hideTooltip();
+                    }
+                }, 10);
             });
-            // Close menu if clicking outside of it
-            document.addEventListener("click", (e) => {
-                if (DOM.body.classList.contains('mobile-menu-open') && !e.target.closest('.control-group.settings')) {
-                    DOM.body.classList.remove('mobile-menu-open');
-                }
-            });
-        }
 
-        function setupKeyboardNav() {
+            // 2. Desktop Navigation
             document.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT') return;
+                if (e.target.tagName === 'INPUT' || state.isRendering) return;
                 if (e.key === 'ArrowLeft') DOM.prevBtn.click();
                 else if (e.key === 'ArrowRight') DOM.nextBtn.click();
             });
+            DOM.pageContainer.addEventListener('click', (e) => {
+                if (window.getSelection().toString() || e.target.closest('a')) return;
+                const rect = DOM.pageContainer.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickArea = rect.width * 0.2;
+                if (clickX < clickArea) DOM.prevBtn.click();
+                else if (clickX > rect.width - clickArea) DOM.nextBtn.click();
+            });
+        }
+        
+        function setupTouchHandlers() {
+            // 1. Custom Touch Selection
+            const longPressDuration = 200, swipeThreshold = 15;
+            DOM.pageContainer.addEventListener('touchstart', e => {
+                clearTimeout(state.touch.longPressTimer);
+                const touch = e.touches[0];
+                state.touch.startX = touch.screenX; state.touch.startY = touch.screenY; state.touch.startTime = Date.now();
+                state.touch.longPressTimer = setTimeout(() => {
+                    const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
+                    if(char) {
+                        state.touch.isSelecting = true;
+                        state.touch.selStartChar = char;
+                        paintCharSelection(char, char);
+                    }
+                }, longPressDuration);
+            }, { passive: true });
+
+            DOM.pageContainer.addEventListener('touchmove', e => {
+                if (e.touches.length > 1) return;
+                const touch = e.touches[0];
+                const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
+                if (Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold) clearTimeout(state.touch.longPressTimer);
+                if (state.touch.isSelecting) {
+                    e.preventDefault();
+                    const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
+                    if (char) {
+                        state.touch.selEndChar = char;
+                        paintCharSelection(state.touch.selStartChar, state.touch.selEndChar);
+                    }
+                }
+            }, { passive: false });
+
+            DOM.pageContainer.addEventListener('touchend', e => {
+                clearTimeout(state.touch.longPressTimer);
+                if (state.touch.isSelecting) {
+                    const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
+                    if (selectedChars.length > 0) {
+                        state.lastSelectionText = Array.from(selectedChars).map(c => c.textContent).join('');
+                        const first = selectedChars[0], last = selectedChars[selectedChars.length - 1];
+                        const r1 = first.getBoundingClientRect(), r2 = last.getBoundingClientRect();
+                        const rect = { top: Math.min(r1.top, r2.top), left: Math.min(r1.left, r2.left), width: Math.max(r1.right, r2.right) - Math.min(r1.left, r2.left) };
+                        showTooltipAt(rect);
+                    }
+                } else { // 2. Swipe Navigation
+                    const touch = e.changedTouches[0];
+                    const deltaX = touch.screenX - state.touch.startX;
+                    const timeElapsed = Date.now() - state.touch.startTime;
+                    if (Math.abs(deltaX) > 50 && timeElapsed < 350) {
+                        if (deltaX > 0) DOM.prevBtn.click(); else DOM.nextBtn.click();
+                    } else {
+                        clearSelection();
+                    }
+                }
+                Object.assign(state.touch, { isSelecting: false, selStartChar: null, selEndChar: null });
+            });
+
+            function paintCharSelection(startChar, endChar) {
+                DOM.pageContent.querySelectorAll('span.c.sel').forEach(c => c.classList.remove('sel'));
+                if (!startChar) return;
+                const end = endChar || startChar;
+                const chars = Array.from(DOM.pageContent.querySelectorAll('span.c'));
+                const startIndex = parseInt(startChar.dataset.idx, 10), endIndex = parseInt(end.dataset.idx, 10);
+                if (isNaN(startIndex) || isNaN(endIndex)) return;
+                const min = Math.min(startIndex, endIndex), max = Math.max(startIndex, endIndex);
+                for (let i = min; i <= max; i++) {
+                    const charSpan = chars[i];
+                    if (charSpan) charSpan.classList.add('sel');
+                }
+            }
+        }
+        
+        function setupEventListeners() {
+            // Universal Listeners
+            DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
+            DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
+            DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
+            [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
+            [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
+            [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+            DOM.tooltipExplain.addEventListener("click", handleExplain);
+            DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+            DOM.tooltipCopy.addEventListener("click", handleCopy);
+            DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
+            DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
+            DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+            DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+            DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+            window.addEventListener("scroll", hideTooltip, { passive: true });
+            document.addEventListener('click', (e) => { // Global click-off to hide things
+                if (!DOM.pageContent.contains(e.target) && !DOM.tooltip.contains(e.target)) clearSelection();
+            });
+
+            // Platform-specific setup
+            if (isTouchDevice) {
+                setupTouchHandlers();
+            } else {
+                setupDesktopHandlers();
+            }
         }
 
         function setupHeaderAutohide() {
@@ -646,28 +746,20 @@
             }, { passive: true });
         }
 
-        function loadBookFromURLParams() {
+        function init() {
+            setMode(localStorage.getItem("kaffetishMode") || 'light');
+            setFontRem(state.currentFontRem);
+            setupEventListeners();
+            setupHeaderAutohide();
+            
             const params = new URLSearchParams(window.location.search);
-            const bookUrl = params.get('url');
-            const bookTitle = params.get('title') || 'Document';
-
+            const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
             if (bookUrl) {
                 loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
             } else {
                 showView(DOM.fallbackView);
             }
-        }
-
-        function init() {
-            const savedMode = localStorage.getItem("kaffetishMode") || 'light';
-            setMode(savedMode);
-            setupEventListeners();
-            setupKeyboardNav();
-            setupHeaderAutohide();
-            loadBookFromURLParams();
-            if (!explainBookTextFn) {
-                DOM.tooltipExplain.style.display = "none";
-            }
+            if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
         }
 
         init();
