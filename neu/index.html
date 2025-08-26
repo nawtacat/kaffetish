@@ -800,6 +800,7 @@
                 const touch = e.touches[0];
                 state.touch.startX = touch.screenX;
                 state.touch.startY = touch.screenY;
+                state.touch.startTime = Date.now(); // <<< THIS LINE FIXES THE SWIPE
 
                 state.touch.longPressTimer = setTimeout(() => {
                     const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
