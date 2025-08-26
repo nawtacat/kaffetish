@@ -322,12 +322,10 @@
                 <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
             </div>
         </section>
-
         <section id="loading-view" class="loading-view hidden">
             <div class="spinner"></div>
             <p id="loading-text">Brewing your document...</p>
         </section>
-
         <section id="reader-view" class="reader-view hidden">
             <div class="page-container" id="page-container">
                 <article class="page">
@@ -344,7 +342,6 @@
             <h3>Settings</h3>
             <button id="mobile-menu-close" aria-label="Close Menu">&times;</button>
         </div>
-        
         <div class="menu-section">
             <h4 class="menu-section-title">Appearance</h4>
             <div class="font-control">
@@ -357,9 +354,7 @@
                 <span>Toggle Theme</span>
             </button>
         </div>
-
         <hr class="menu-divider" />
-
         <div class="menu-section">
             <h4 class="menu-section-title">Navigation</h4>
             <a href="https://kaffetish.club" class="menu-button">
@@ -374,7 +369,6 @@
         <button id="btn-highlight"><i class="fa-solid fa-marker"></i> Highlight</button>
         <button id="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
     </div>
-
     <div id="ai-panel" class="ai-panel">
         <div class="ai-panel-content">
             <h4 class="ai-title"><i class="fa-solid fa-star"></i>Explanation</h4>
@@ -450,6 +444,7 @@
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
             mode: "light", lastScrollY: 0, currentAITyping: null,
             touchStartX: 0,
+            touchStartTime: 0, // UPDATED: For gesture timing
         };
         
         const baseFontRem = 1.15;
@@ -691,17 +686,22 @@
         function setupSwipeNavigation() {
             DOM.pageContainer.addEventListener('touchstart', (e) => {
                 state.touchStartX = e.changedTouches[0].screenX;
+                state.touchStartTime = Date.now();
             }, { passive: true });
 
             DOM.pageContainer.addEventListener('touchend', (e) => {
                 const touchEndX = e.changedTouches[0].screenX;
                 const deltaX = touchEndX - state.touchStartX;
+                const timeElapsed = Date.now() - state.touchStartTime;
                 const swipeThreshold = 50;
+                const maxSwipeTime = 300; // Only count as a swipe if it's a quick flick
 
-                if (deltaX > swipeThreshold) {
-                    renderPage(state.currentPage - 1);
-                } else if (deltaX < -swipeThreshold) {
-                    renderPage(state.currentPage + 1);
+                if (timeElapsed < maxSwipeTime) {
+                    if (deltaX > swipeThreshold) {
+                        renderPage(state.currentPage - 1);
+                    } else if (deltaX < -swipeThreshold) {
+                        renderPage(state.currentPage + 1);
+                    }
                 }
             });
         }
