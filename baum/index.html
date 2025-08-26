@@ -45,9 +45,6 @@
             transition: background-color 0.3s ease, color 0.3s ease;
             margin: 0;
             padding-top: 60px;
-            -webkit-user-select: none; /* Safari */
-            -ms-user-select: none;     /* IE 10+ and Edge */
-            user-select: none;         /* Standard syntax */
         }
 
         .hidden { display: none !important; }
@@ -75,10 +72,7 @@
         .reader-controls { display: flex; align-items: center; gap: 24px; }
         .reader-controls.hidden { display: none; }
         .control-group { display: flex; align-items: center; gap: 8px; }
-        .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-                      -webkit-user-select: none; /* Safari */
-                      -ms-user-select: none;     /* IE 10+ and Edge */
-                      user-select: none;   }
+        .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .page-indicator input {
             width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
@@ -95,14 +89,15 @@
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
             transition: color 0.2s ease, background-color 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            text-decoration: none; display: inline-flex;
+            align-items: center; justify-content: center;
         }
         .reader-controls button:hover, .reader-controls a.button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
         .reader-controls #back-to-library:hover { background-color: color-mix(in srgb, var(--accent) 80%, var(--bg)); color: white; }
+        
+        /* --- NEW: Hamburger Menu Button --- */
+        #mobile-menu-btn { display: none; }
 
         main { padding: 48px 24px; }
         
@@ -140,28 +135,17 @@
         }
         body.dark-mode .page { background-color: #2D2C2B; }
 
-        .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; user-select: text; -webkit-user-select: text; /* Safari */
-        -ms-user-select: text;     /* IE 10+ and Edge */
-        user-select: text;         /* Standard syntax */ }
+        .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; -webkit-user-select: text; user-select: text; }
         .content p { margin: 0 0 1.5em; }
         .content p:last-child { margin-bottom: 0; }
         
         .fade-in { animation: fadeIn 250ms ease-out both; }
         @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
 
-        .page-number-container {
+        .page-number {
             position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
             color: var(--subtle); font-size: 0.9rem;
-            display: flex; align-items: center; gap: 20px;
         }
-        .page-nav-arrow {
-            background: transparent; border: 0; color: var(--subtle); font-size: 1.1em;
-            cursor: pointer; padding: 8px 12px; border-radius: 50%;
-            transition: all 0.2s ease;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .page-nav-arrow:hover { background-color: var(--border-color); color: var(--ink); }
-        .page-nav-arrow:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; }
 
         .highlighted-text {
             background-color: color-mix(in srgb, var(--accent) 25%, transparent);
@@ -176,14 +160,12 @@
             z-index: 2000; display: none; gap: 6px; padding: 6px;
             background-color: var(--ink); color: var(--bg); border-radius: 8px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            opacity: 0;
-            transform: translateY(10px);
+            opacity: 0; transform: translateY(10px);
             transition: opacity 150ms ease-out, transform 150ms ease-out;
             will-change: opacity, transform;
         }
         .selection-tooltip.visible {
-            opacity: 1;
-            transform: translateY(0);
+            opacity: 1; transform: translateY(0);
         }
         .selection-tooltip button {
             background: transparent; border: 0; color: var(--bg); padding: 8px 12px;
@@ -206,33 +188,24 @@
         .ai-panel-content { flex-grow: 1; }
         .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
         .ai-title i { color: var(--accent); }
+        
+        /* --- MODIFIED: AI Quote style --- */
         .ai-quote {
-            display: block;
-            border-left: 3px solid var(--accent);
-            padding-left: 12px;
-            margin: 0 0 16px 0;
-            font-style: italic;
-            color: var(--subtle);
-            font-size: 0.95rem;
+            display: block; border-left: 3px solid var(--accent);
+            padding-left: 12px; margin: -4px 0 16px 0;
+            font-style: italic; color: var(--subtle);
+            font-size: 0.95rem; max-height: 6em; overflow: hidden; text-overflow: ellipsis;
         }
 
-        .ai-text-content {
-            max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px;
-            white-space: pre-wrap; word-wrap: break-word;
-            /* FIX: Force Left-to-Right text direction to prevent reversal */
-            direction: ltr !important;
-            unicode-bidi: normal !important;
-        }
+        .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; white-space: pre-wrap; word-wrap: break-word; }
         .ai-text-content p { margin: 0 0 1em; }
         .ai-text-content ul { padding-left: 20px; margin: 1em 0; }
         .ai-text-content li { margin-bottom: 0.5em; }
         .ai-text-content .thinking { display: flex; align-items: center; gap: 10px; color: var(--subtle); }
         .ai-text-content .thinking .fa-star { animation: pulse 1.5s infinite ease-in-out; }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.7; } }
-        /* --- UI ENHANCEMENT: Blinking cursor for typing effect --- */
         .ai-text-content .typing-cursor {
-            display: inline-block;
-            background-color: var(--ink);
+            display: inline-block; background-color: var(--ink);
             width: 10px; height: 1.2em;
             animation: blink 1s step-end infinite;
             vertical-align: bottom;
@@ -246,21 +219,38 @@
             transition: color 0.2s ease, background-color 0.2s ease;
         }
         .ai-panel-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
-
+        
+        /* --- MODIFIED: Responsive styles for mobile menu --- */
         @media (max-width: 768px) {
-            .header-content { padding: 0 16px; }
-            .control-group.file-info, .control-group.settings { display: none; }
+            .header-content { padding: 0 16px; position: relative; }
+            .control-group.file-info { display: none; } /* Hide book title on mobile header */
+            
+            /* Show hamburger menu and hide settings group by default */
+            #mobile-menu-btn { display: inline-flex; }
+            .control-group.settings { display: none; }
+            
+            /* Style for the mobile menu when active */
+            body.mobile-menu-open .control-group.settings {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                position: absolute;
+                top: 55px; /* Position below the header */
+                right: 16px;
+                background-color: var(--bg);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 8px;
+                box-shadow: 0 10px 30px var(--shadow-color);
+            }
+            body.mobile-menu-open .control-group.settings > * {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
             main { padding: 24px 16px; }
             .page { padding: 2.5rem 1.5rem; }
-            .page-number-container { bottom: 1rem; }
-            .page-nav-arrow { display: none; }
-        }
-
-        /* Hides hamburger menu on screens wider than 768px (Desktop) */
-        @media (min-width: 769px) {
-            #hamburger-btn {
-                display: none;
-            }
+            .page-number { bottom: 1rem; }
         }
     </style>
 </head>
@@ -270,7 +260,9 @@
         <div class="header-content">
             <h1 class="logo">Kaffetish</h1>
             <div id="reader-controls" class="reader-controls hidden">
-                <div class="control-group file-info"> <span id="book-title" class="book-title"></span> </div>
+                <div class="control-group file-info">
+                    <span id="book-title" class="book-title"></span>
+                </div>
                 <div class="control-group navigation">
                     <button id="prev-page" title="Previous Page (←)"><i class="fa-solid fa-arrow-left"></i></button>
                     <div class="page-indicator">
@@ -284,8 +276,8 @@
                     <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
                     <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
                     <a id="back-to-library" class="button" href="https://kaffetish/club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
-                    <button id="hamburger-btn" title="Menu"><i class="fa-solid fa-bars"></i></button>
                 </div>
+                <button id="mobile-menu-btn" title="Menu"><i class="fa-solid fa-bars"></i></button>
             </div>
         </div>
     </header>
@@ -311,11 +303,7 @@
             <div class="page-container">
                 <article class="page">
                     <div id="page-content" class="content"></div>
-                    <div class="page-number-container">
-                        <button id="bottom-prev-page" class="page-nav-arrow" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
-                        <div id="page-number"></div>
-                        <button id="bottom-next-page" class="page-nav-arrow" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
+                    <div id="page-number" class="page-number"></div>
                 </article>
             </div>
         </section>
@@ -386,15 +374,15 @@
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
             aiQuote: document.getElementById('ai-quote'),
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
-            bottomPrevBtn: document.getElementById('bottom-prev-page'),
-            bottomNextBtn: document.getElementById('bottom-next-page'),
+            // NEW: Mobile menu button
+            mobileMenuBtn: document.getElementById('mobile-menu-btn'),
         };
 
         const state = {
             pdfDoc: null, totalPages: 0, currentPage: 1,
             pagesHTML: [], isRendering: false, lastSelectionText: "",
             currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-            mode: "light", lastScrollY: 0, currentAITyping: null,
+            mode: "light", lastScrollY: 0,
         };
 
         const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
@@ -408,15 +396,9 @@
             return html.replace(/\n/g, '<br>');
         }
 
-        // --- UI ENHANCEMENT: Typewriter effect for AI responses ---
         function typewriterEffect(element, text, onComplete) {
-            // If another typing process is running, cancel it
-            if (state.currentAITyping) {
-                clearTimeout(state.currentAITyping);
-            }
-            
             let i = 0;
-            const speed = 20; // Lower is faster
+            const speed = 20;
             const textNode = document.createTextNode('');
             const cursorNode = document.createElement('span');
             cursorNode.className = 'typing-cursor';
@@ -429,19 +411,15 @@
                 if (i < text.length) {
                     textNode.nodeValue += text.charAt(i);
                     i++;
-                    element.scrollTop = element.scrollHeight; // Auto-scroll
-                    state.currentAITyping = setTimeout(type, speed);
+                    element.scrollTop = element.scrollHeight;
+                    setTimeout(type, speed);
                 } else {
-                    cursorNode.remove(); // Remove cursor when done
-                    state.currentAITyping = null;
-                    if (onComplete) {
-                        onComplete();
-                    }
+                    cursorNode.remove();
+                    if (onComplete) onComplete();
                 }
             }
             type();
         }
-
 
         function setMode(mode) {
             state.mode = mode;
@@ -495,7 +473,7 @@
                 const item = items[i];
                 if (item.str.trim() === "") continue;
                 const yGap = Math.abs(lastY - item.y);
-                if (yGap > lastHeight * 1.5) { paragraphs.push(currentPara); currentPara = item.str; }
+                if (yGap > lastHeight * 1.5) { paragraphs.push(currentPara); currentPara = item.str; } 
                 else { if (!/\s|-$/.test(currentPara)) currentPara += " "; currentPara += item.str; }
                 lastY = item.y; lastHeight = item.height || lastHeight;
             }
@@ -522,24 +500,16 @@
             DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
             DOM.pageTotal.textContent = `/ ${state.totalPages}`;
             DOM.pageJumpInput.value = pageNum; DOM.pageJumpInput.max = state.totalPages;
-            DOM.prevBtn.disabled = pageNum <= 1;
-            DOM.nextBtn.disabled = pageNum >= state.totalPages;
-            DOM.bottomPrevBtn.disabled = pageNum <= 1;
-            DOM.bottomNextBtn.disabled = pageNum >= state.totalPages;
+            DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
             setFontRem(state.currentFontRem); hideTooltip();
             state.isRendering = false;
         }
 
-        // --- BUG FIX: Use a timeout to ensure selection state is final before checking ---
         function handleSelection(event) {
             if (DOM.tooltip.contains(event.target)) return;
-
-            // Use a minimal timeout to allow the browser to update the selection object
-            // after a click or drag-release. This makes deselection detection reliable.
             setTimeout(() => {
                 const sel = window.getSelection();
                 const text = sel.toString().trim();
-
                 if (text && !sel.isCollapsed) {
                     const rect = sel.getRangeAt(0).getBoundingClientRect();
                     state.lastSelectionText = text;
@@ -558,9 +528,7 @@
             DOM.tooltip.style.top = `${Math.max(top, window.scrollY + 10)}px`;
             DOM.tooltip.style.left = `${left}px`;
             
-            requestAnimationFrame(() => {
-                DOM.tooltip.classList.add('visible');
-            });
+            requestAnimationFrame(() => DOM.tooltip.classList.add('visible'));
         }
         
         function hideTooltip() { 
@@ -578,6 +546,7 @@
                 flashAI("Please select a longer phrase to explain."); 
                 return; 
             }
+            // MODIFIED: Re-enabled the quote display
             DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
             DOM.aiQuote.classList.remove('hidden');
             DOM.aiPanel.style.display = "flex"; 
@@ -587,9 +556,7 @@
                 const { data } = await explainBookTextFn({ text: state.lastSelectionText });
                 const explanationText = data?.explanation || "No explanation was returned.";
                 
-                // Use the typewriter effect
                 typewriterEffect(DOM.aiContent, explanationText, () => {
-                    // After typing, replace content with fully formatted HTML
                     DOM.aiContent.innerHTML = parseMarkdown(explanationText);
                     DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
                 });
@@ -636,7 +603,6 @@
             DOM.fontInc.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1));
             DOM.fontDec.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1));
             
-            // This event handles both selecting and deselecting reliably.
             document.addEventListener("mouseup", handleSelection);
             window.addEventListener("scroll", hideTooltip, { passive: true });
             
@@ -646,9 +612,18 @@
 
             DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
             DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied to clipboard!"); });
-
-            DOM.bottomPrevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
-            DOM.bottomNextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
+            
+            // NEW: Mobile menu toggle logic
+            DOM.mobileMenuBtn.addEventListener("click", (e) => {
+                e.stopPropagation(); // Prevent the click from closing the menu immediately
+                DOM.body.classList.toggle('mobile-menu-open');
+            });
+            // Close menu if clicking outside of it
+            document.addEventListener("click", (e) => {
+                if (DOM.body.classList.contains('mobile-menu-open') && !e.target.closest('.control-group.settings')) {
+                    DOM.body.classList.remove('mobile-menu-open');
+                }
+            });
         }
 
         function setupKeyboardNav() {
