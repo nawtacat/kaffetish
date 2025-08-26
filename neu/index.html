@@ -841,7 +841,14 @@
                 if (state.touch.isSelecting) {
                     const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
                     if (selectedChars.length > 0) {
-                        state.lastSelectionText = Array.from(selectedChars).map(c => c.textContent).join('');
+                        // --- THIS BLOCK IS THE FIX ---
+                        // It rebuilds the string by checking for space nodes after each character span
+                        state.lastSelectionText = Array.from(selectedChars).map(c => {
+                            const nextNode = c.nextSibling;
+                            const space = (nextNode && nextNode.nodeType === 3) ? nextNode.nodeValue.match(/^\s+/)?.[0] || '' : '';
+                            return c.textContent + space;
+                        }).join('').trim();
+                        // --- END OF FIX ---
                         
                         const first = selectedChars[0];
                         const last = selectedChars[selectedChars.length - 1];
@@ -855,7 +862,6 @@
                         showTooltipAt(rect);
                     }
                 } else if (!state.touch.isSelecting && Math.abs(deltaX) > 50 && timeElapsed < 350) {
-                     // It's a swipe, not a selection
                     if (deltaX > 0) renderPage(state.currentPage - 1);
                     else renderPage(state.currentPage + 1);
                 } else {
