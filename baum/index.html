@@ -264,6 +264,43 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb {
 html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
     background-color: var(--subtle);
 }
+        .selection-handle {
+    position: absolute;
+    display: none; /* We control visibility with JS */
+    width: 28px;
+    height: 28px;
+    z-index: 2001;
+    touch-action: none; /* Important for smooth dragging */
+}
+
+/* This CSS creates the "lollipop" look of the handles */
+.selection-handle::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3px;
+    height: 18px;
+    background-color: var(--accent);
+}
+
+.selection-handle::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--accent);
+    background-color: var(--bg);
+    border-radius: 50%;
+    transform: translateX(-50%);
+}
+
+#selection-handle-start::after { top: 0; }
+#selection-handle-start::before { top: 16px; }
+
+#selection-handle-end::after { bottom: 0; }
+#selection-handle-end::before { bottom: 16px; }
     </style>
 </head>
 <body>
@@ -367,7 +404,8 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             <button id="ai-close" title="Close Panel" aria-label="Close Panel"><i class="fa-solid fa-xmark"></i></button>
         </div>
     </div>
-    
+    <div id="selection-handle-start" class="selection-handle"></div>
+    <div id="selection-handle-end" class="selection-handle"></div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
@@ -681,105 +719,147 @@ html:not(.touch-device) main::-webkit-scrollbar-thumb:hover {
             });
         }
         
-        function setupTouchHandlers() {
-            const longPressDuration = 200, swipeThreshold = 15;
-            DOM.pageContainer.addEventListener('touchstart', e => {
-                if (e.touches.length > 1) return;
-                clearTimeout(state.touch.longPressTimer);
-                const touch = e.touches[0];
-                state.touch.startX = touch.screenX; state.touch.startY = touch.screenY; state.touch.startTime = Date.now();
-                state.touch.longPressTimer = setTimeout(() => {
-                    const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
-                    if(char) {
-                        state.touch.isSelecting = true;
-                        state.touch.selStartChar = char;
-                        paintCharSelection(char, char);
-                    }
-                }, longPressDuration);
-            }, { passive: true });
+        // Add these to your DOM variables object
+DOM.handleStart = document.getElementById('selection-handle-start');
+DOM.handleEnd = document.getElementById('selection-handle-end');
 
-            DOM.pageContainer.addEventListener('touchmove', e => {
-                if (e.touches.length > 1 || !state.touch.isSelecting) return;
-                e.preventDefault();
-                const touch = e.touches[0];
-                const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
-                if (Math.abs(deltaX) > swipeThreshold || Math.abs(deltaY) > swipeThreshold) clearTimeout(state.touch.longPressTimer);
-                const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
-                if (char) {
-                    state.touch.selEndChar = char;
-                    paintCharSelection(state.touch.selStartChar, state.touch.selEndChar);
-                }
-            }, { passive: false });
+// Helper function to get text from your selected spans
+function getSelectedText() {
+    const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
+    if (selectedChars.length === 0) return "";
+    return Array.from(selectedChars).map(c => {
+        const nextNode = c.nextSibling;
+        const space = (nextNode && nextNode.nodeType === 3) ? (nextNode.nodeValue.match(/^\s+/) || [''])[0] : '';
+        return c.textContent + space;
+    }).join('').trim();
+}
 
-            DOM.pageContainer.addEventListener('touchend', e => {
-                clearTimeout(state.touch.longPressTimer);
-                if (state.touch.isSelecting) {
-                    const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
-                    if (selectedChars.length > 0) {
-                        state.lastSelectionText = Array.from(selectedChars).map(c => {
-                            const nextNode = c.nextSibling;
-                            const space = (nextNode && nextNode.nodeType === 3) ? (nextNode.nodeValue.match(/^\s+/) || [''])[0] : '';
-                            return c.textContent + space;
-                        }).join('').trim();
-                        const first = selectedChars[0], last = selectedChars[selectedChars.length - 1];
-                        const r1 = first.getBoundingClientRect(), r2 = last.getBoundingClientRect();
-                        const rect = { top: Math.min(r1.top, r2.top), left: Math.min(r1.left, r2.left), width: Math.max(r1.right, r2.right) - Math.min(r1.left, r2.left) };
-                        showTooltipAt(rect);
-                    }
-                } else {
-                    const touch = e.changedTouches[0];
-                    const deltaX = touch.screenX - state.touch.startX;
-                    const timeElapsed = Date.now() - state.touch.startTime;
-                    if (Math.abs(deltaX) > 50 && timeElapsed < 350) {
-                        if (deltaX > 0) DOM.prevBtn.click(); else DOM.nextBtn.click();
-                    } else {
-                        clearSelection();
-                    }
-                }
-                Object.assign(state.touch, { isSelecting: false, selStartChar: null, selEndChar: null });
-            });
+// Modify your existing clearSelection function
+function clearSelection() {
+    hideTooltip();
+    DOM.handleStart.style.display = 'none'; // Hide our custom handles
+    DOM.handleEnd.style.display = 'none';   // Hide our custom handles
+    
+    if (isTouchDevice) {
+        DOM.pageContent.querySelectorAll('span.c.sel').forEach(c => c.classList.remove('sel'));
+    } else {
+        window.getSelection()?.removeAllRanges();
+    }
+}
 
-            function paintCharSelection(startChar, endChar) {
-                DOM.pageContent.querySelectorAll('span.c.sel').forEach(c => c.classList.remove('sel'));
-                if (!startChar) return;
-                const end = endChar || startChar;
-                const chars = Array.from(DOM.pageContent.querySelectorAll('span.c'));
-                const startIndex = parseInt(startChar.dataset.idx, 10), endIndex = parseInt(end.dataset.idx, 10);
-                if (isNaN(startIndex) || isNaN(endIndex)) return;
-                const min = Math.min(startIndex, endIndex), max = Math.max(startIndex, endIndex);
-                for (let i = min; i <= max; i++) {
-                    const charSpan = chars[i];
-                    if (charSpan) charSpan.classList.add('sel');
+// REPLACE your old setupTouchHandlers function with this new one.
+function setupTouchHandlers() {
+    const longPressDuration = 300;
+    let activeHandle = null; // Tracks which of our custom handles is being dragged
+
+    // This helper finds a word using your existing `span.c` elements
+    function findWordAtPoint(targetChar) {
+        if (!targetChar) return null;
+        const chars = Array.from(DOM.pageContent.querySelectorAll('span.c'));
+        const allText = chars.map(c => c.textContent).join('');
+        const targetIndex = parseInt(targetChar.dataset.idx, 10);
+        
+        const startBoundary = allText.lastIndexOf(' ', targetIndex) + 1;
+        let endBoundary = allText.indexOf(' ', targetIndex);
+        if (endBoundary === -1) endBoundary = allText.length;
+
+        const startChar = chars[startBoundary];
+        const endChar = chars[endBoundary - 1];
+        
+        return { startChar, endChar };
+    }
+
+    // This helper positions our custom handles and your tooltip
+    function positionControls() {
+        const selectedChars = DOM.pageContent.querySelectorAll('span.c.sel');
+        if (selectedChars.length === 0) {
+            clearSelection();
+            return;
+        }
+
+        const firstChar = selectedChars[0];
+        const lastChar = selectedChars[selectedChars.length - 1];
+        const r1 = firstChar.getBoundingClientRect();
+        const r2 = lastChar.getBoundingClientRect();
+        
+        // Position our start handle
+        DOM.handleStart.style.display = 'block';
+        DOM.handleStart.style.top = `${r1.top - 28 + DOM.mainContent.scrollTop}px`;
+        DOM.handleStart.style.left = `${r1.left - 14}px`;
+
+        // Position our end handle
+        DOM.handleEnd.style.display = 'block';
+        DOM.handleEnd.style.top = `${r2.bottom + DOM.mainContent.scrollTop}px`;
+        DOM.handleEnd.style.left = `${r2.right - 14}px`;
+        
+        const rect = { top: r1.top, left: r1.left, width: r2.right - r1.left, height: r2.bottom - r1.top };
+        showTooltipAt(rect);
+    }
+    
+    // Stage 1: Long press on the page content to initiate selection
+    DOM.pageContainer.addEventListener('touchstart', e => {
+        if (e.target.closest('.selection-handle')) return;
+
+        if (DOM.pageContent.querySelector('span.c.sel')) {
+            clearSelection();
+            return;
+        }
+
+        clearTimeout(state.touch.longPressTimer);
+        const touch = e.touches[0];
+        
+        state.touch.longPressTimer = setTimeout(() => {
+            const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
+            if (char) {
+                if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback
+                const word = findWordAtPoint(char);
+                if (word) {
+                    paintCharSelection(word.startChar, word.endChar); // Uses your existing paint function
+                    state.lastSelectionText = getSelectedText();
+                    positionControls(); // Shows our handles and the tooltip
                 }
             }
-        }
-        
-        function setupEventListeners() {
-            DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
-            DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
-            DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
-            [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
-            [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
-            [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
-            DOM.tooltipExplain.addEventListener("click", handleExplain);
-            DOM.tooltipHighlight.addEventListener("click", handleHighlight);
-            DOM.tooltipCopy.addEventListener("click", handleCopy);
-            DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-            DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
-            DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
-            DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-            DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-            DOM.mobilePageJumpInput.addEventListener("change", () => {
-                const p = parseInt(DOM.mobilePageJumpInput.value, 10);
-                if (!isNaN(p)) {
-                    renderPage(p);
-                    DOM.body.classList.remove('menu-open');
-                }
-            });
+        }, longPressDuration);
+    });
 
-            if (isTouchDevice) { setupTouchHandlers(); } 
-            else { setupDesktopHandlers(); }
+    DOM.pageContainer.addEventListener('touchmove', e => { clearTimeout(state.touch.longPressTimer); });
+    DOM.pageContainer.addEventListener('touchend', e => { clearTimeout(state.touch.longPressTimer); });
+
+    // Stage 2: Dragging one of our custom handles
+    function handleTouchStart(e) {
+        activeHandle = e.target.id === 'selection-handle-start' ? 'start' : 'end';
+        e.preventDefault();
+    }
+    
+    function handleTouchMove(e) {
+        if (!activeHandle) return;
+        const touch = e.touches[0];
+        const char = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('span.c');
+        if (char) {
+            const selectedSpans = DOM.pageContent.querySelectorAll('span.c.sel');
+            let startChar = activeHandle === 'start' ? char : selectedSpans[0];
+            let endChar = activeHandle === 'end' ? char : selectedSpans[selectedSpans.length - 1];
+            // This is the key: we re-paint your spans as our handle moves
+            paintCharSelection(startChar, endChar);
         }
+    }
+
+    function handleTouchEnd(e) {
+        if (!activeHandle) return;
+        activeHandle = null;
+        state.lastSelectionText = getSelectedText();
+        positionControls(); // Reposition everything after dragging
+    }
+    
+    DOM.handleStart.addEventListener('touchstart', handleTouchStart);
+    DOM.handleEnd.addEventListener('touchstart', handleTouchStart);
+    
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+
+    // Note: The `paintCharSelection` function does not need to be changed.
+    // It works perfectly with this new system.
+}
 
         function init() {
             setMode(localStorage.getItem("kaffetishMode") || 'light');
