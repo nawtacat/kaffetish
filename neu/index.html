@@ -66,7 +66,7 @@
         .logo {
             font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
             color: var(--accent); font-family: var(--font-main);
-            user-select: none; /* Make logo non-selectable */
+            user-select: none;
         }
         body.dark-mode .logo { color: var(--ink); }
 
@@ -132,8 +132,17 @@
         }
         body.dark-mode .page { background-color: #2D2C2B; }
 
-        .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; user-select: text; }
-        .content p { margin: 0 0 1.5em; }
+        .content {
+            font-family: var(--font-main);
+            font-size: 1.15rem;
+            line-height: 1.8;
+            user-select: text;
+            -webkit-touch-callout: none; /* UPDATED: Disables the iOS menu on text selection */
+        }
+        .content p {
+            margin: 0 0 1.5em;
+            overflow-wrap: break-word; /* UPDATED: Forces long words to break */
+        }
         .content p:last-child { margin-bottom: 0; }
         
         .fade-in { animation: fadeIn 250ms ease-out both; }
@@ -208,7 +217,6 @@
         }
         .ai-panel-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
 
-        /* --- NEW: Mobile Menu Styles --- */
         .mobile-menu-toggle { display: none; }
         .mobile-menu-overlay {
             display: none; position: fixed; top: 0; left: 0;
@@ -232,13 +240,32 @@
         }
         body.menu-open .mobile-menu-overlay { display: block; opacity: 1; }
         body.menu-open .mobile-nav-menu { transform: translateX(0); }
-        /* --- END: Mobile Menu Styles --- */
 
         @media (max-width: 768px) {
-            .header-content { padding: 0 16px; }
-            /* HIDE desktop controls, SHOW mobile toggle */
+            .header-content {
+                padding: 0 16px;
+                position: relative; /* UPDATED: Establish positioning context */
+            }
             .control-group.file-info, .control-group.settings { display: none; }
-            .mobile-menu-toggle { display: inline-flex; }
+
+            .reader-controls { /* UPDATED: Make container full-width */
+                width: 100%;
+                position: static;
+            }
+            .reader-controls .navigation { /* UPDATED: Center navigation */
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+            }
+            
+            .mobile-menu-toggle {
+                display: inline-flex;
+                position: absolute; /* UPDATED: Position menu toggle */
+                right: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
 
             main { padding: 24px 16px; }
             .page { padding: 2.5rem 1.5rem; }
@@ -374,7 +401,6 @@
             aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
             aiQuote: document.getElementById('ai-quote'),
             aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
-            // NEW: Mobile menu elements
             mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
             mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
             mobileNavMenu: document.getElementById('mobile-nav-menu'),
@@ -431,7 +457,6 @@
             state.mode = mode;
             DOM.body.classList.toggle("dark-mode", mode === 'dark');
             const isDark = mode === 'dark';
-            // Sync both desktop and mobile icons
             [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
                 if(icon) {
                    icon.classList.toggle('fa-moon', !isDark);
@@ -517,7 +542,6 @@
             state.isRendering = false;
         }
 
-        // CHANGE: Simplified handler for both touch and mouse.
         function handleSelection(event) {
             if (DOM.tooltip.contains(event.target)) return;
             setTimeout(() => {
@@ -533,13 +557,11 @@
             }, 10);
         }
         
-        // CHANGE: Improved positioning to stay within viewport
         function showTooltipAt(rect) {
             DOM.tooltip.style.display = "flex";
             const top = window.scrollY + rect.top - DOM.tooltip.offsetHeight - 8;
             let left = window.scrollX + rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
             
-            // Prevent tooltip from going off-screen
             left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
 
             DOM.tooltip.style.top = `${Math.max(top, window.scrollY + 10)}px`;
@@ -610,12 +632,10 @@
             DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
             DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
             
-            // Sync settings for both desktop and mobile
             [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
             [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
             [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
             
-            // CHANGE: Listen for both mouse and touch events for reliable selection
             document.addEventListener("mouseup", handleSelection);
             document.addEventListener("touchend", handleSelection);
             window.addEventListener("scroll", hideTooltip, { passive: true });
@@ -627,7 +647,6 @@
             DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
             DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied to clipboard!"); });
 
-            // NEW: Mobile menu event listeners
             DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
             DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
         }
