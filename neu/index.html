@@ -548,30 +548,44 @@
         }
 
         function handleSelection(event) {
+            // Prevent interference from clicks on our own UI
             if (DOM.tooltip.contains(event.target)) return;
 
             setTimeout(() => {
                 const sel = window.getSelection();
-                if (!sel.rangeCount || sel.isCollapsed) {
+                const selectionText = sel.toString().trim();
+
+                // If there's no real selection, just hide any existing UI and stop
+                if (!selectionText || sel.isCollapsed) {
                     hideTooltip();
                     return;
                 }
-                
-                const savedRange = sel.getRangeAt(0).cloneRange();
-                const selectionText = sel.toString().trim();
 
-                if (selectionText) {
-                    // UPDATED: More aggressive trick
-                    // We clear and immediately add the range back in the same breath.
-                    sel.removeAllRanges();
-                    sel.addRange(savedRange); 
-                    
-                    state.lastSelectionText = selectionText;
-                    const rect = savedRange.getBoundingClientRect();
-                    showTooltipAt(rect);
-                } else {
-                    hideTooltip();
+                // 1. Get the range of the user's selection
+                const range = sel.getRangeAt(0);
+                const rect = range.getBoundingClientRect();
+                state.lastSelectionText = selectionText;
+
+                // 2. Create our own permanent highlight by wrapping the
+                //    selected content in a <span> with our custom class.
+                //    This uses the same style as your "Highlight" button.
+                try {
+                    const highlightSpan = document.createElement("span");
+                    highlightSpan.className = "highlighted-text";
+                    // Note: This will fail if the selection crosses paragraph boundaries.
+                    // Highlighting is kept within a single element for stability.
+                    range.surroundContents(highlightSpan);
+                } catch (e) {
+                    console.error("Selection could not be wrapped:", e);
                 }
+
+                // 3. IMMEDIATELY destroy the native browser selection.
+                //    Since the native selection is gone, the iOS toolbar has nothing
+                //    to attach to, so it never appears.
+                sel.removeAllRanges();
+
+                // 4. Show our custom tooltip at the position of the new highlight.
+                showTooltipAt(rect);
 
             }, 10);
         }
