@@ -792,7 +792,6 @@
             setMode(localStorage.getItem("kaffetishMode") || 'light');
             setFontRem(state.currentFontRem);
             setupEventListeners();
-            setupHeaderAutohide();
             
             const params = new URLSearchParams(window.location.search);
             const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
