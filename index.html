@@ -210,21 +210,24 @@
         margin-bottom: 24px; 
     }
 
+    /* This hides the tagline on mobile */
+    .logo .tagline {
+        display: none;
+    }
+
     /* --- LAYOUT FIX STARTS HERE --- */
 
-    /* 1. This rule keeps the main "Browse" section as a multi-column grid */
     .browse-section .book-grid {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 24px;
     }
     
-    /* 2. This NEW rule targets ONLY the featured books and stacks them */
     .author-books .book-grid {
         display: grid;
-        grid-template-columns: 1fr; /* This creates a single, stacked column */
-        gap: 32px; /* A larger vertical gap for the stack */
-        max-width: 280px; /* Optional: Prevents books from becoming too wide */
-        margin: 0 auto; /* Optional: Centers the stack if max-width is used */
+        grid-template-columns: 1fr;
+        gap: 32px;
+        max-width: 280px;
+        margin: 0 auto;
     }
 }
     </style>
