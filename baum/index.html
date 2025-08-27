@@ -651,35 +651,35 @@
     }
 
     function setupSelectionHandler() {
-    // Use the 'pointerup' event. It's the modern, reliable standard for
-    // detecting the end of an interaction on both desktop and mobile.
-    document.addEventListener('pointerup', () => {
-        // Ignore this event if it happened immediately after a page swipe.
-        if (isTouchDevice && state.touch.justSwiped) {
-            return;
-        }
+    let selectionTimer;
 
-        // Use a short delay to allow the browser to finalize the selection state.
-        setTimeout(() => {
+    // This is the browser's dedicated event for any change to text selection.
+    document.addEventListener('selectionchange', () => {
+        // Clear any existing timer to reset the delay.
+        clearTimeout(selectionTimer);
+
+        // Start a timer. If the user keeps dragging the selection handles,
+        // this event will keep firing, and the timer will keep resetting.
+        // The code inside will only run after the user has STOPPED for 200ms.
+        selectionTimer = setTimeout(() => {
             const sel = window.getSelection();
             const text = sel ? sel.toString().trim() : '';
 
             if (text && !sel.isCollapsed) {
+                // A valid selection exists, so we store it and show the button.
                 state.lastSelectionText = text;
                 state.lastSelectionRange = sel.getRangeAt(0);
                 
                 if (isTouchDevice) {
-                    // Show the button fixed to the bottom of the screen.
                     DOM.mobileExplainBtn.classList.add('visible');
                 } else {
-                    // Show the tooltip next to the selection on desktop.
                     showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
                 }
             } else {
-                // If there's no text selected, hide any popups.
+                // No selection exists, so hide any popups.
                 clearSelection();
             }
-        }, 100);
+        }, 200); // A 200ms delay is a good balance.
     });
 
     // Keep the desktop-only click-to-turn-page behavior.
