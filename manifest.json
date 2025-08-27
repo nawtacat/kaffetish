@@ -8,14 +8,20 @@
   "description": "Explained by the librarian.",
   "icons": [
     {
-      "src": "https://kaffetish.club/img/kaffetish192.svg",
-      "type": "image/svg+xml",
+      "src": "/img/kaffetish192.png",
+      "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://kaffetish.club/img/kaffetish192.svg",
-      "type": "image/svg+xml",
+      "src": "/img/kaffetish512.png",
+      "type": "image/png",
       "sizes": "512x512"
+    },
+    {
+      "src": "/img/kaffetish-maskable.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
     }
   ]
 }
