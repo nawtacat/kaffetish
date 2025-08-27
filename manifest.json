@@ -1,0 +1,21 @@
+{
+  "name": "Kaffetish",
+  "short_name": "Kaffetish",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FF3A44",
+  "theme_color": "#FF3A44",
+  "description": "Explained by the librarian.",
+  "icons": [
+    {
+      "src": "https://kaffetish.club/img/kaffetish192.svg",
+      "type": "image/svg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://kaffetish.club/img/kaffetish192.svg",
+      "type": "image/svg",
+      "sizes": "512x512"
+    }
+  ]
+}
