@@ -564,17 +564,21 @@
         }
 
         function paragraphize(textContent) {
-    // Normalize tokens (PDF.js can give us stray spaces, line items, etc.)
+    const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
+
     const items = textContent.items.map(it => ({
         str: it.str,
+        x: it.transform[4],
         y: it.transform[5],
+        fontSize: it.transform[0], // horizontal scale ~ font size
         height: it.height,
         hasEOL: it.hasEOL || false
     }));
-    if (items.length === 0) return "";
 
+    if (items.length === 0) return "";
     let paragraphs = [];
     let currentLine = "";
+    let currentStyle = null;
     let lastY = items[0].y;
     let lastHeight = items[0].height || 10;
 
@@ -583,27 +587,34 @@
         if (!item.str.trim()) continue;
 
         const yGap = Math.abs(lastY - item.y);
-
-        // Paragraph break if vertical gap is clearly larger than a normal line height
         const isParagraphBreak = yGap > lastHeight * 1.8;
 
+        // detect style
+        let style = "p";
+        if (item.fontSize > 15) style = "h2";
+        if (item.fontSize > 20) style = "h1";
+        if (Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.1) {
+            // near center
+            style = "center";
+        }
+
         if (isParagraphBreak) {
-            if (currentLine.trim()) paragraphs.push(currentLine.trim());
-            paragraphs.push(""); // true blank line
+            if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+            paragraphs.push({ text: "", style: "br" });
             currentLine = item.str;
+            currentStyle = style;
         } else {
-            // Hyphen clean-up: if current line ends with a hyphen and next word starts lowercase
             if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) {
-                currentLine = currentLine.slice(0, -1); // remove the hyphen
+                currentLine = currentLine.slice(0, -1);
             } else if (!/[\s-]$/.test(currentLine)) {
                 currentLine += " ";
             }
             currentLine += item.str;
-
-            // End-of-line hint from PDF.js → push current line as separate
+            currentStyle = style;
             if (item.hasEOL) {
-                if (currentLine.trim()) paragraphs.push(currentLine.trim());
+                paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
                 currentLine = "";
+                currentStyle = null;
             }
         }
 
@@ -611,26 +622,16 @@
         lastHeight = item.height || lastHeight;
     }
 
-    if (currentLine.trim()) paragraphs.push(currentLine.trim());
+    if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
 
-    // Merge lines into <p> paragraphs, treating "" as separator
-    let htmlParas = [];
-    let buffer = [];
-    for (const p of paragraphs) {
-        if (p === "") {
-            if (buffer.length) {
-                htmlParas.push(`<p>${escapeHTML(buffer.join(" "))}</p>`);
-                buffer = [];
-            }
-        } else {
-            buffer.push(p);
-        }
-    }
-    if (buffer.length) {
-        htmlParas.push(`<p>${escapeHTML(buffer.join(" "))}</p>`);
-    }
-
-    return htmlParas.join("\n");
+    // render HTML
+    return paragraphs.map(p => {
+        if (p.style === "h1") return `<h1 style="text-align:center">${escapeHTML(p.text)}</h1>`;
+        if (p.style === "h2") return `<h2 style="text-align:center">${escapeHTML(p.text)}</h2>`;
+        if (p.style === "center") return `<p style="text-align:center">${escapeHTML(p.text)}</p>`;
+        if (p.style === "br") return "<br>";
+        return `<p>${escapeHTML(p.text)}</p>`;
+    }).join("\n");
 }
 
 
