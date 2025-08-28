@@ -524,8 +524,6 @@
         if (!auth.currentUser || !db) return;
         const userDocRef = doc(db, "users", auth.currentUser.uid);
         try {
-            // Using `setDoc` with `merge: true` will create the doc if it doesn't exist
-            // or update it if it does. `createdAt` will only be set on the first write.
             await setDoc(userDocRef, {
                 lastSeen: serverTimestamp(),
                 createdAt: serverTimestamp()
@@ -533,12 +531,12 @@
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
 
-    // Starts a new reading session when a book is loaded
     async function startReadingSession(bookTitle) {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
-        state.bookTitle = bookTitle; // Store book title for other tracking events
-        const sessionsColRef = collection(db, "private_events/reading_sessions");
+        state.bookTitle = bookTitle;
+        // ✅ CORRECTED PATH
+        const sessionsColRef = collection(db, "reading_sessions");
         try {
             const sessionDocRef = await addDoc(sessionsColRef, {
                 userId: auth.currentUser.uid,
@@ -546,25 +544,25 @@
                 startTime: serverTimestamp(),
                 endTime: null
             });
-            state.currentSessionId = sessionDocRef.id; // Save session ID to state
+            state.currentSessionId = sessionDocRef.id;
         } catch (e) { console.error("Error starting session:", e); }
     }
 
-    // Ends the current reading session
     async function endReadingSession() {
         if (!state.currentSessionId || !db) return;
-        const sessionDocRef = doc(db, "private_events/reading_sessions", state.currentSessionId);
+        // ✅ CORRECTED PATH
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
         try {
             await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-            state.currentSessionId = null; // Clear session ID
+            state.currentSessionId = null;
         } catch (e) { console.error("Error ending session:", e); }
     }
 
-    // Tracks when a user requests an explanation
     async function trackExplanationRequest(text) {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
-        const explanationsColRef = collection(db, "private_events/explanation_requests");
+        // ✅ CORRECTED PATH
+        const explanationsColRef = collection(db, "explanation_requests");
         try {
             await addDoc(explanationsColRef, {
                 userId: auth.currentUser.uid,
@@ -574,7 +572,6 @@
             });
         } catch (e) { console.error("Error tracking explanation:", e); }
     }
-
     const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
     function setMode(mode) {
