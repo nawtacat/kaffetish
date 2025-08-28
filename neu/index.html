@@ -572,7 +572,7 @@
                 if (item.str.trim() === "") continue;
                 const yGap = Math.abs(lastY - item.y);
                 if (yGap > lastHeight * 1.2) { paragraphs.push(currentPara); currentPara = item.str; }
-                else { if (!/\s|-$/.test(currentPara)) currentPara += " "; currentPara += item.str; }
+                else { if (!/[\s-]$/.test(currentPara)) currentPara += " "; currentPara += item.str; }
                 lastY = item.y; lastHeight = item.height || lastHeight;
             }
             paragraphs.push(currentPara);
@@ -586,7 +586,7 @@
             if (!state.pagesHTML[pageNum - 1]) {
                 try {
                     const page = await state.pdfDoc.getPage(pageNum);
-                    const textContent = await page.getTextContent();
+                    const textContent = await page.getTextContent({ normalizeWhitespace: true });
                     state.pagesHTML[pageNum - 1] = paragraphize(textContent);
                 } catch (e) {
                     console.error(`Failed to render page ${pageNum}:`, e);
