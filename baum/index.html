@@ -583,30 +583,33 @@
     let lastHeight = items[0].height || 10;
 
     const getStyle = (item) => {
+        const trimmedStr = item.str.trim();
+        const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15;
+
         // Rule 1: Very large font is always a title
         if (item.fontSize > 20) return "h1";
 
         // Rule 2: Slightly larger font is a reliable sign of a heading
         if (item.fontSize > 13) return "h2";
 
-        // Rule 3: All-caps text is a heading ONLY if it's more than a single character.
-        // This stops it from matching the word "I". We also limit the total length
-        // to avoid matching long, fully-capitalized sentences.
-        if (/^[A-Z\s\d\.\-]+$/.test(item.str.trim()) && item.str.trim().length > 1 && item.str.length < 50) {
+        // Rule 3: A specific heading PATTERN, e.g., "Chapter 1"
+        if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) {
             return "h2";
         }
 
-        // Rule 4: Check for specific keywords if other rules don't apply
-        if (/^(CHAPTER|PART|BOOK)\b/i.test(item.str)) return "h2";
-        
+        // Rule 4 (IMPROVED): An all-caps string is only a heading if it's ALSO centered.
+        // This is a much safer check.
+        if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) {
+            return "h2";
+        }
+
         // Rule 5: Centered text that isn't a heading
-        if (Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15) {
+        if (isCentered) {
             return "center";
         }
 
         return "p"; // Default to a normal paragraph
     };
-
     for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (!item.str.trim()) continue;
