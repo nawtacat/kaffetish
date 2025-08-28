@@ -898,11 +898,8 @@
 
         // ✅ --- THIS IS THE FINAL, CORRECTED CODE --- ✅
         // Replaced the old 'beforeunload' event with this more reliable one.
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                endReadingSession();
-            }
-        });
+        // Use 'pagehide' for a more reliable "end of session" signal when the user leaves.
+document.addEventListener('pagehide', endReadingSession);
 
         setupSelectionHandler();
         if (isTouchDevice) {
