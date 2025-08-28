@@ -587,7 +587,12 @@
         if (!item.str.trim()) continue;
 
         const yGap = Math.abs(lastY - item.y);
-        const isParagraphBreak = yGap > lastHeight * 1.8;
+        // A test to see if the current text item looks like a standalone heading.
+// The length check prevents it from matching long sentences that happen to be in all caps.
+const looksLikeHeading = /^[A-Z\s\d\.\-]+$/.test(item.str) && item.str.length < 30;
+
+// Create a new paragraph if there's a vertical gap OR if a heading appears.
+const isParagraphBreak = (yGap > lastHeight * 1.6) || (looksLikeHeading && currentLine.length > 0);
 
         // detect style
         let style = "p";
