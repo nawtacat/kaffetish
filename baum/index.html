@@ -861,6 +861,8 @@
         }, { passive: true });
     }
 
+    // ⬇️ WE ARE ONLY CHANGING THE `setupEventListeners` FUNCTION ⬇️
+
     function setupEventListeners() {
         DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
         DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
@@ -894,8 +896,13 @@
             else if (e.key === 'ArrowRight') DOM.nextBtn.click();
         });
 
-        // --- ⬇️ END READING SESSION WHEN USER LEAVES ⬇️ ---
-        window.addEventListener('beforeunload', endReadingSession);
+        // ✅ --- THIS IS THE FINAL, CORRECTED CODE --- ✅
+        // Replaced the old 'beforeunload' event with this more reliable one.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                endReadingSession();
+            }
+        });
 
         setupSelectionHandler();
         if (isTouchDevice) {
