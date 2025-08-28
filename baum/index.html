@@ -797,16 +797,16 @@
             }
 
             // Keep the desktop-only click-to-turn-page behavior.
-            if (!isTouchDevice) {
-                DOM.pageContainer.addEventListener('click', (e) => {
-                    if (window.getSelection().toString() || e.target.closest('a') || DOM.tooltip.contains(e.target)) return;
-                    const rect = DOM.pageContainer.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const clickArea = rect.width * 0.2;
-                    if (clickX < clickArea) DOM.prevBtn.click();
-                    else if (clickX > rect.width - clickArea) DOM.nextBtn.click();
-                });
-            }
+            // if (!isTouchDevice) {
+            //     DOM.pageContainer.addEventListener('click', (e) => {
+            //         if (window.getSelection().toString() || e.target.closest('a') || DOM.tooltip.contains(e.target)) return;
+            //         const rect = DOM.pageContainer.getBoundingClientRect();
+            //         const clickX = e.clientX - rect.left;
+            //         const clickArea = rect.width * 0.2;
+            //         if (clickX < clickArea) DOM.prevBtn.click();
+            //         else if (clickX > rect.width - clickArea) DOM.nextBtn.click();
+            //     });
+            // }
         }
 
         function setupSwipeNavigation() {
