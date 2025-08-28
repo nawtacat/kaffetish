@@ -245,13 +245,13 @@
         // --- Data Fetching and Rendering ---
         async function fetchDashboardData(db) {
             try {
-                // Fetch summary document
-                const summaryRef = db.doc("public_metrics/summary");
+                // Fetch summary document from the 'public_summary' collection
+                const summaryRef = db.doc("public_summary/kpi");
                 const summaryDoc = await summaryRef.get();
                 const summaryData = summaryDoc.exists ? summaryDoc.data() : {};
 
-                // Fetch top 10 books
-                const booksRef = db.collection("public_metrics/book_stats").orderBy("totalHours", "desc").limit(10);
+                // Fetch top 10 books from the 'public_book_stats' collection
+                const booksRef = db.collection("public_book_stats").orderBy("totalHours", "desc").limit(10);
                 const booksSnapshot = await booksRef.get();
                 const topBooksData = [];
                 booksSnapshot.forEach(doc => topBooksData.push(doc.data()));
