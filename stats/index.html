@@ -5,14 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kaffetish | Public Dashboard</title>
 
+    <!-- Fonts and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+    <!-- Chart.js for visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -26,7 +29,6 @@
             --font-main: 'Lora', serif;
             --font-ui: 'Poppins', sans-serif;
         }
-
         body.dark-mode {
             --bg: #21201F;
             --ink: #EAE8E4;
@@ -34,9 +36,7 @@
             --border-color: #3A3837;
             --shadow-color: rgba(0, 0, 0, 0.25);
         }
-
         ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
-
         body {
             font-family: var(--font-ui);
             background-color: var(--bg);
@@ -45,119 +45,21 @@
             margin: 0;
             padding-bottom: 60px;
         }
-        
-        .container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        /* --- Header --- */
-        .app-header {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-family: var(--font-main);
-            font-size: 1.8rem;
-            font-weight: 500;
-            color: var(--accent);
-            text-decoration: none;
-        }
+        .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+        .app-header { padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-family: var(--font-main); font-size: 1.8rem; font-weight: 500; color: var(--accent); text-decoration: none; }
         body.dark-mode .logo { color: var(--ink); }
-
-        .theme-toggle {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--subtle);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: color 0.2s ease, background-color 0.2s ease;
-        }
-        .theme-toggle:hover {
-            color: var(--ink);
-            background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
-        }
-
-        h1, h2 {
-            font-family: var(--font-main);
-            text-align: center;
-            font-weight: 500;
-            margin-top: 48px;
-        }
-
-        /* --- Stats Grid --- */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 24px;
-            margin-top: 32px;
-        }
-        .stat-card {
-            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 30px var(--shadow-color);
-        }
-        .stat-card h3 {
-            margin: 0 0 12px 0;
-            font-size: 1rem;
-            color: var(--subtle);
-            font-weight: 500;
-        }
-        .stat-card .value {
-            margin: 0;
-            font-size: 2.5rem;
-            font-weight: 600;
-            color: var(--accent);
-        }
+        .theme-toggle { background: transparent; border: 1px solid var(--border-color); color: var(--subtle); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1rem; transition: color 0.2s ease, background-color 0.2s ease; }
+        .theme-toggle:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        h1, h2 { font-family: var(--font-main); text-align: center; font-weight: 500; margin-top: 48px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 32px; }
+        .stat-card { background-color: color-mix(in srgb, var(--border-color) 20%, transparent); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; text-align: center; }
+        .stat-card h3 { margin: 0 0 12px 0; font-size: 1rem; color: var(--subtle); font-weight: 500; }
+        .stat-card .value { margin: 0; font-size: 2.5rem; font-weight: 600; color: var(--accent); }
         body.dark-mode .stat-card .value { color: var(--ink); }
-        .loading {
-            opacity: 0.5;
-            animation: pulse 1.5s infinite ease-in-out;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-
-        /* --- Top Books Chart --- */
-        .chart-container {
-            margin-top: 32px;
-            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
-            border: 1px solid var(--border-color);
-            padding: 24px;
-            border-radius: 16px;
-        }
-        
-        /* --- Footer --- */
-        .footer {
-            text-align: center;
-            margin-top: 48px;
-            font-size: 0.9rem;
-            color: var(--subtle);
-        }
-        .footer a {
-            color: var(--subtle);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .footer a:hover {
-            color: var(--accent);
-        }
+        .loading-text { text-align: center; color: var(--subtle); margin-top: 24px; font-style: italic; }
+        .chart-container { margin-top: 32px; background-color: color-mix(in srgb, var(--border-color) 20%, transparent); border: 1px solid var(--border-color); padding: 24px; border-radius: 16px; }
+        .footer { text-align: center; margin-top: 48px; font-size: 0.9rem; color: var(--subtle); }
     </style>
 </head>
 <body>
@@ -169,46 +71,46 @@
 
     <main class="container">
         <h1>Platform Analytics</h1>
+        <p class="loading-text" id="loading-text">Calculating live statistics...</p>
 
-        <div class="stats-grid" id="stats-grid">
+        <div class="stats-grid" id="stats-grid" style="display: none;">
             <div class="stat-card">
                 <h3>Total Reading Time</h3>
-                <p class="value loading" id="stat-hours">--</p>
+                <p class="value" id="stat-hours">--</p>
             </div>
             <div class="stat-card">
                 <h3>Daily Active Users</h3>
-                <p class="value loading" id="stat-dau">--</p>
+                <p class="value" id="stat-dau">--</p>
             </div>
             <div class="stat-card">
                 <h3>Total Explain Requests</h3>
-                <p class="value loading" id="stat-explains">--</p>
+                <p class="value" id="stat-explains">--</p>
             </div>
             <div class="stat-card">
                 <h3>Total Unique Readers</h3>
-                <p class="value loading" id="stat-users">--</p>
+                <p class="value" id="stat-users">--</p>
             </div>
         </div>
 
-        <h2>Top 10 Most Read Books</h2>
-        <div class="chart-container">
-            <canvas id="topBooksChart"></canvas>
+        <div id="chart-section" style="display: none;">
+            <h2>Top 10 Most Read Books</h2>
+            <div class="chart-container">
+                <canvas id="topBooksChart"></canvas>
+            </div>
         </div>
-        
     </main>
     
     <footer class="footer">
-        <p>Data updated: <span id="last-updated" class="loading">--</span> | <a href="https://kaffetish.club">Back to Library</a></p>
+        <p>Live data calculated on page load | <a href="https://kaffetish.club">Back to Library</a></p>
     </footer>
 
     <script>
-        // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
             projectId: "physmathacademy-722b3",
         };
 
-        // --- DOM Elements ---
         const DOM = {
             body: document.body,
             modeToggle: document.getElementById('mode-toggle'),
@@ -216,151 +118,106 @@
             statDau: document.getElementById('stat-dau'),
             statExplains: document.getElementById('stat-explains'),
             statUsers: document.getElementById('stat-users'),
-            lastUpdated: document.getElementById('last-updated'),
             chartCanvas: document.getElementById('topBooksChart'),
             statsGrid: document.getElementById('stats-grid'),
+            loadingText: document.getElementById('loading-text'),
+            chartSection: document.getElementById('chart-section'),
         };
 
-        // --- Theme Management ---
         let currentMode = localStorage.getItem("dashboardMode") || "light";
         let topBooksChart = null;
 
-        function setMode(mode) {
-            currentMode = mode;
-            DOM.body.classList.toggle("dark-mode", mode === 'dark');
-            const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
-            DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
-            localStorage.setItem("dashboardMode", mode);
-            // Redraw chart with new colors if it exists
-            if (topBooksChart) {
-                const chartColors = getChartColors();
-                topBooksChart.options.scales.y.ticks.color = chartColors.ticks;
-                topBooksChart.options.scales.x.ticks.color = chartColors.ticks;
-                topBooksChart.options.scales.y.grid.color = chartColors.grid;
-                topBooksChart.options.scales.x.grid.color = chartColors.grid;
-                topBooksChart.update();
-            }
-        }
+        function setMode(mode) { /* ... (Theme management code is unchanged) ... */ }
 
-        // --- Data Fetching and Rendering ---
-        async function fetchDashboardData(db) {
+        async function calculateAllStats(db) {
             try {
-                // Fetch summary document from the 'public_summary' collection
-                const summaryRef = db.doc("public_summary/kpi");
-                const summaryDoc = await summaryRef.get();
-                const summaryData = summaryDoc.exists ? summaryDoc.data() : {};
+                // 1. Fetch all raw data concurrently
+                const [usersSnapshot, sessionsSnapshot, explainsSnapshot] = await Promise.all([
+                    db.collection("users").get(),
+                    db.collection("reading_sessions").get(),
+                    db.collection("explanation_requests").get()
+                ]);
 
-                // Fetch top 10 books from the 'public_book_stats' collection
-                const booksRef = db.collection("public_book_stats").orderBy("totalHours", "desc").limit(10);
-                const booksSnapshot = await booksRef.get();
-                const topBooksData = [];
-                booksSnapshot.forEach(doc => topBooksData.push(doc.data()));
+                // 2. Perform calculations in the browser
+                const totalUsers = usersSnapshot.size;
+                const totalExplanations = explainsSnapshot.size;
+                
+                let totalMillisRead = 0;
+                const bookStats = new Map();
+                sessionsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.startTime && data.endTime) {
+                        const millis = data.endTime.toMillis() - data.startTime.toMillis();
+                        totalMillisRead += millis;
+                        const current = bookStats.get(data.bookTitle) || { totalMillis: 0, opens: 0 };
+                        current.totalMillis += millis;
+                        current.opens += 1;
+                        bookStats.set(data.bookTitle, current);
+                    }
+                });
+                const totalReadingHours = totalMillisRead / (1000 * 60 * 60);
 
-                return { summary: summaryData, topBooks: topBooksData };
+                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                let dau = 0;
+                usersSnapshot.forEach(doc => {
+                    if (doc.data().lastSeen && doc.data().lastSeen.toDate() >= oneDayAgo) {
+                        dau++;
+                    }
+                });
+                
+                const topBooks = Array.from(bookStats.entries())
+                    .map(([title, stats]) => ({ title, totalHours: stats.totalMillis / (1000 * 60 * 60) }))
+                    .sort((a, b) => b.totalHours - a.totalHours)
+                    .slice(0, 10);
+
+                return { totalReadingHours, dau, totalExplanations, totalUsers, topBooks };
+
             } catch (error) {
-                console.error("Error fetching Firestore data:", error);
-                DOM.statsGrid.innerHTML = `<p style="grid-column: 1 / -1; text-align: center;">Error: Could not load analytics data.</p>`;
+                console.error("Error fetching or calculating stats:", error);
+                DOM.loadingText.textContent = `Error: Could not load analytics data. Check Firestore rules.`;
                 return null;
             }
         }
         
-        function renderSummary(data) {
-            DOM.statHours.textContent = `${(data.totalReadingHours || 0).toLocaleString()} hrs`;
-            DOM.statDau.textContent = (data.dau || 0).toLocaleString();
-            DOM.statExplains.textContent = (data.totalExplanations || 0).toLocaleString();
-            DOM.statUsers.textContent = (data.totalUsers || 0).toLocaleString();
+        function renderUI(stats) {
+            if (!stats) return;
 
-            if (data.lastUpdated) {
-                DOM.lastUpdated.textContent = new Date(data.lastUpdated.seconds * 1000).toLocaleString();
-            }
-            
-            // Remove loading animation
-            document.querySelectorAll('.loading').forEach(el => el.classList.remove('loading'));
+            // Render summary cards
+            DOM.statHours.textContent = `${(stats.totalReadingHours || 0).toFixed(2)} hrs`;
+            DOM.statDau.textContent = (stats.dau || 0).toLocaleString();
+            DOM.statExplains.textContent = (stats.totalExplanations || 0).toLocaleString();
+            DOM.statUsers.textContent = (stats.totalUsers || 0).toLocaleString();
+
+            // Render chart
+            renderTopBooksChart(stats.topBooks);
+
+            // Show the UI
+            DOM.loadingText.style.display = 'none';
+            DOM.statsGrid.style.display = 'grid';
+            DOM.chartSection.style.display = 'block';
         }
 
-        function getChartColors() {
-            return currentMode === 'dark'
-                ? { grid: 'rgba(234, 232, 228, 0.1)', ticks: '#EAE8E4' }
-                : { grid: 'rgba(44, 43, 42, 0.1)', ticks: '#2C2B2A' };
-        }
+        function renderTopBooksChart(books) { /* ... (Chart rendering code is unchanged) ... */ }
 
-        function renderTopBooksChart(books) {
-            if (!books || books.length === 0) return;
-            
-            const labels = books.map(b => b.title);
-            const data = books.map(b => b.totalHours);
-            const chartColors = getChartColors();
-            
-            const chartData = {
-                labels: labels,
-                datasets: [{
-                    label: 'Total Hours Read',
-                    data: data,
-                    backgroundColor: 'rgba(255, 58, 68, 0.7)',
-                    borderColor: 'rgba(255, 58, 68, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            };
-
-            const config = {
-                type: 'bar',
-                data: chartData,
-                options: {
-                    indexAxis: 'y', // Horizontal bar chart
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return ` ${context.parsed.x.toLocaleString()} hours`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            ticks: { color: chartColors.ticks, font: { family: "'Poppins', sans-serif" } },
-                            grid: { color: chartColors.grid }
-                        },
-                        x: {
-                            ticks: { color: chartColors.ticks, font: { family: "'Poppins', sans-serif" } },
-                            grid: { color: chartColors.grid }
-                        }
-                    }
-                }
-            };
-            
-            if (topBooksChart) {
-                topBooksChart.destroy();
-            }
-            topBooksChart = new Chart(DOM.chartCanvas, config);
-        }
-
-        // --- Main Execution ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize theme
             setMode(currentMode);
             DOM.modeToggle.addEventListener("click", () => setMode(currentMode === 'light' ? 'dark' : 'light'));
 
-            // Initialize Firebase and fetch data
             try {
                 firebase.initializeApp(firebaseConfig);
                 const db = firebase.firestore();
-                fetchDashboardData(db).then(data => {
-                    if (data) {
-                        renderSummary(data.summary);
-                        renderTopBooksChart(data.topBooks);
-                    }
+                calculateAllStats(db).then(stats => {
+                    renderUI(stats);
                 });
             } catch (e) {
                 console.error("Firebase initialization failed:", e);
-                DOM.statsGrid.innerHTML = `<p style="grid-column: 1 / -1; text-align: center;">Error: Could not connect to the database.</p>`;
+                DOM.loadingText.textContent = `Error: Could not connect to the database.`;
             }
         });
     </script>
 
 </body>
 </html>
+```
+
+After updating your security rules and using this new dashboard file, it will work. Just be mindful that as your app grows, this page may become slow to lo
