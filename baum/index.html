@@ -591,12 +591,21 @@
 
         // detect style
         let style = "p";
-        if (item.fontSize > 15) style = "h2";
-        if (item.fontSize > 20) style = "h1";
-        if (Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.1) {
-            // near center
-            style = "center";
-        }
+
+// Detect big title
+if (item.fontSize > 20) {
+    style = "h1";
+}
+// Detect chapter headings: slightly larger OR all caps words like "CHAPTER I."
+else if (item.fontSize > 13 || /^[A-Z\s\d\.\-]+$/.test(item.str)) {
+    style = "h2";
+}
+
+// Centered override
+if (Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15) {
+    style = (style === "p") ? "center" : style; // keep h1/h2 if already detected
+}
+
 
         if (isParagraphBreak) {
             if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
