@@ -432,7 +432,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
-    // --- ⬇️ ADD FIRESTORE IMPORTS ⬇️ ---
     import { getFirestore, doc, setDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -447,13 +446,12 @@
         appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
     };
 
-    // --- ⬇️ ADD `db` VARIABLE ⬇️ ---
     let app, auth, functions, explainBookTextFn, db;
     if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         functions = getFunctions(app, "us-central1");
-        db = getFirestore(app); // Initialize Firestore
+        db = getFirestore(app);
         onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
         explainBookTextFn = httpsCallable(functions, "explainBookText");
     } else {
@@ -505,15 +503,13 @@
         touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
         lastSelectionText: "",
         lastSelectionRange: null,
-        // --- ⬇️ ADD NEW STATE PROPERTIES ⬇️ ---
         currentSessionId: null,
         bookTitle: null,
+        // --- NEW: Add state for the heartbeat timer ---
+        sessionUpdateInterval: null,
     };
     const baseFontRem = 1.15;
 
-    // --- ⬇️ ADD NEW TRACKING FUNCTIONS ⬇️ ---
-
-    // Tracks when a user is active for DAU/MAU stats
     async function trackUserActivity() {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
@@ -525,12 +521,31 @@
             }, { merge: true });
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
+    
+    // --- NEW: Function to periodically update the session ---
+    async function updateSessionHeartbeat() {
+        if (!state.currentSessionId || !db) {
+            if (state.sessionUpdateInterval) clearInterval(state.sessionUpdateInterval);
+            return;
+        }
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+        try {
+            // This update acts as a "last seen" timestamp.
+            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+        } catch (e) {
+            console.error("Error updating session heartbeat:", e);
+        }
+    }
 
+    // --- MODIFIED: Start the heartbeat on session start ---
     async function startReadingSession(bookTitle) {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
+        
+        // End any previous session before starting a new one
+        await endReadingSession();
+        
         state.bookTitle = bookTitle;
-        // ✅ CORRECTED PATH
         const sessionsColRef = collection(db, "reading_sessions");
         try {
             const sessionDocRef = await addDoc(sessionsColRef, {
@@ -540,14 +555,26 @@
                 endTime: null
             });
             state.currentSessionId = sessionDocRef.id;
+            
+            // Start a new interval to update the session every 60 seconds
+            state.sessionUpdateInterval = setInterval(updateSessionHeartbeat, 60000);
+
         } catch (e) { console.error("Error starting session:", e); }
     }
 
+    // --- MODIFIED: Clear the interval when the session ends ---
     async function endReadingSession() {
+        // Stop the periodic updates
+        if (state.sessionUpdateInterval) {
+            clearInterval(state.sessionUpdateInterval);
+            state.sessionUpdateInterval = null;
+        }
+
         if (!state.currentSessionId || !db) return;
-        // ✅ CORRECTED PATH
+        
         const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
         try {
+            // Attempt one final, precise update
             await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
             state.currentSessionId = null;
         } catch (e) { console.error("Error ending session:", e); }
@@ -556,7 +583,6 @@
     async function trackExplanationRequest(text) {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
-        // ✅ CORRECTED PATH
         const explanationsColRef = collection(db, "explanation_requests");
         try {
             await addDoc(explanationsColRef, {
@@ -567,6 +593,7 @@
             });
         } catch (e) { console.error("Error tracking explanation:", e); }
     }
+
     const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
     function setMode(mode) {
@@ -610,8 +637,7 @@
             const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
             state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
             state.pagesHTML = new Array(state.totalPages).fill(null);
-
-            // --- ⬇️ START TRACKING SESSION ⬇️ ---
+            
             await startReadingSession(title);
 
             DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
@@ -627,37 +653,22 @@
     function paragraphize(textContent) {
         const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
         const items = textContent.items.map(it => ({
-            str: it.str,
-            x: it.transform[4],
-            y: it.transform[5],
-            fontSize: it.transform[0],
-            height: it.height,
-            hasEOL: it.hasEOL || false
+            str: it.str, x: it.transform[4], y: it.transform[5],
+            fontSize: it.transform[0], height: it.height, hasEOL: it.hasEOL || false
         }));
         if (items.length === 0) return "";
-        let paragraphs = [];
-        let currentLine = "";
-        let currentStyle = null;
-        let lastY = items[0].y;
-        let lastHeight = items[0].height || 10;
+        let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
         const getStyle = (item) => {
             const trimmedStr = item.str.trim();
             const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15;
             if (item.fontSize > 20) return "h1";
             if (item.fontSize > 13) return "h2";
-            if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) {
-                return "h2";
-            }
-            if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) {
-                return "h2";
-            }
-            if (isCentered) {
-                return "center";
-            }
+            if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) return "h2";
+            if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) return "h2";
+            if (isCentered) return "center";
             return "p";
         };
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
+        for (const item of items) {
             if (!item.str.trim()) continue;
             const newStyle = getStyle(item);
             const yGap = Math.abs(lastY - item.y);
@@ -668,11 +679,8 @@
                 currentLine = item.str;
                 currentStyle = newStyle;
             } else {
-                if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) {
-                    currentLine = currentLine.slice(0, -1);
-                } else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) {
-                    currentLine += " ";
-                }
+                if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) currentLine = currentLine.slice(0, -1);
+                else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) currentLine += " ";
                 currentLine += item.str;
                 currentStyle = newStyle;
             }
@@ -760,10 +768,7 @@
         DOM.aiPanel.style.display = "flex";
         DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
         const textToExplain = state.lastSelectionText;
-
-        // --- ⬇️ TRACK EXPLANATION REQUEST ⬇️ ---
         trackExplanationRequest(textToExplain);
-
         clearSelection();
         try {
             const { data } = await explainBookTextFn({ text: textToExplain });
@@ -836,22 +841,17 @@
         DOM.mainContent.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) return;
             const touch = e.touches[0];
-            state.touch.startX = touch.screenX;
-            state.touch.startY = touch.screenY;
+            state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
             state.touch.startTime = Date.now();
         }, { passive: true });
         DOM.mainContent.addEventListener('touchend', (e) => {
             if (e.touches.length > 0) return;
             const touch = e.changedTouches[0];
-            const deltaX = touch.screenX - state.touch.startX;
-            const deltaY = touch.screenY - state.touch.startY;
+            const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
             const elapsedTime = Date.now() - state.touch.startTime;
             if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                if (deltaX > 0) {
-                    DOM.prevBtn.click();
-                } else {
-                    DOM.nextBtn.click();
-                }
+                if (deltaX > 0) DOM.prevBtn.click();
+                else DOM.nextBtn.click();
             }
         }, { passive: true });
     }
@@ -873,10 +873,7 @@
         DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
         DOM.mobilePageJumpInput.addEventListener("change", () => {
             const p = parseInt(DOM.mobilePageJumpInput.value, 10);
-            if (!isNaN(p)) {
-                renderPage(p);
-                DOM.body.classList.remove('menu-open');
-            }
+            if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
         });
         DOM.mobileExplainBtn.addEventListener("click", () => {
             DOM.mobileExplainBtn.classList.remove('visible');
@@ -889,8 +886,7 @@
             else if (e.key === 'ArrowRight') DOM.nextBtn.click();
         });
 
-        // ✅ --- THIS IS THE FIX --- ✅
-        // Use 'pagehide' for a more reliable "end of session" signal when the user leaves.
+        // Use 'pagehide' for the final update attempt.
         document.addEventListener('pagehide', endReadingSession);
 
         setupSelectionHandler();
@@ -902,12 +898,8 @@
     function init() {
         setMode(localStorage.getItem("kaffetishMode") || 'light');
         setFontRem(state.currentFontRem);
-        
-        // --- ⬇️ TRACK USER ACTIVITY ON LOAD ⬇️ ---
         trackUserActivity();
-        
         setupEventListeners();
-
         const params = new URLSearchParams(window.location.search);
         const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
         if (bookUrl) {
