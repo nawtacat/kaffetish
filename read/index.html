@@ -267,11 +267,8 @@
     
     @media (max-width: 860px) {
         .font-control button {
-    /* Remove the circle */
     border: none;
-    border-radius: 6px; /* A slight radius looks softer than sharp corners */
-
-    /* Adjust sizing and spacing */
+    border-radius: 6px;
     width: auto;
     height: auto;
     padding: 8px 12px;
@@ -287,35 +284,32 @@
             display: grid;
             grid-template-columns: 1fr auto 1fr;
             padding: 0 16px;
-            align-items: center; /* UPDATED: Better vertical alignment */
+            align-items: center;
         }
         .logo { grid-column: 1 / 2; justify-self: start; }
         .reader-controls { display: none; }
         .mobile-page-indicator { display: block; grid-column: 2 / 3; justify-self: center; color: var(--subtle); font-size: 0.9rem; user-select: none; }
         .mobile-menu-toggle { display: inline-flex; grid-column: 3 / 4; justify-self: end; }
         main { padding: 16px; }
-        .page-number { display: none; } /* Hide old page number */
+        .page-number { display: none; }
         .app-header, .ai-panel, .mobile-nav-menu, .mobile-menu-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: color-mix(in srgb, var(--bg) 95%, transparent); }
         
         .ai-panel-actions {
-            right: 16px; /* UPDATED: Moved left from 12px */
+            right: 16px;
         }
 
-        /* --- Mobile Menu Unification Fix --- */
         .font-control,
         .page-jump-control {
             width: 100%;
             box-sizing: border-box;
-            padding: 12px; /* Standardizes padding with other menu buttons */
+            padding: 12px;
         }
         
-        /* Styles for seamless mobile layout */
         .page-container { filter: none; box-shadow: none; }
         .page { border: none; padding: 0; border-radius: 0; background-color: transparent; }
         body.dark-mode .page { background-color: transparent; }
     }
     
-    /* Custom Desktop Scrollbar */
     html:not(.touch-device) main::-webkit-scrollbar { width: 12px; }
     html:not(.touch-device) main::-webkit-scrollbar-track { background: var(--bg); }
     html:not(.touch-device) main::-webkit-scrollbar-thumb {
@@ -345,7 +339,8 @@
                     <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
                     <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
                     <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
-                    <a class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+
                 </div>
             </div>
             <button id="mobile-menu-toggle" class="mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
@@ -434,465 +429,492 @@
     </button>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
+    import { getFirestore, doc, setDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        document.documentElement.classList.toggle('touch-device', isTouchDevice);
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-            authDomain: "physmathacademy-722b3.firebaseapp.com",
-            projectId: "physmathacademy-722b3",
-            storageBucket: "physmathacademy-722b3.appspot.com",
-            messagingSenderId: "1093640992262",
-            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
-        };
-
-        let app, auth, functions, explainBookTextFn;
-        if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            functions = getFunctions(app, "us-central1");
-            onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
-            explainBookTextFn = httpsCallable(functions, "explainBookText");
-        } else {
-            console.warn("Firebase config is missing or incomplete. The 'Explain' feature will be disabled.");
-        }
-
-        const DOM = {
-            body: document.body, header: document.getElementById('app-header'),
-            mainContent: document.getElementById('main-content'),
-            readerControls: document.getElementById('reader-controls'),
-            fallbackView: document.getElementById('fallback-view'),
-            fallbackText: document.getElementById('fallback-text'),
-            readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
-            loadingText: document.getElementById('loading-text'),
-            pageContainer: document.getElementById('page-container'),
-            pageContent: document.getElementById('page-content'),
-            pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
-            pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
-            prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
-            modeToggle: document.getElementById('mode-toggle'),
-            modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
-            fontDec: document.getElementById('font-decrease'),
-            tooltip: document.getElementById('selection-tooltip'),
-            tooltipExplain: document.getElementById('btn-explain'),
-            tooltipHighlight: document.getElementById('btn-highlight'), tooltipCopy: document.getElementById('btn-copy'),
-            aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
-            aiQuote: document.getElementById('ai-quote'),
-            aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
-            mobilePageIndicator: document.getElementById('mobile-page-indicator'),
-            mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
-            mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
-            mobileNavMenu: document.getElementById('mobile-nav-menu'),
-            mobileMenuClose: document.getElementById('mobile-menu-close'),
-            mobileModeToggle: document.getElementById('mobile-mode-toggle'),
-            mobileModeIcon: document.getElementById('mobile-mode-icon'),
-            mobileFontInc: document.getElementById('mobile-font-increase'),
-            mobileFontDec: document.getElementById('mobile-font-decrease'),
-            mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
-            mobilePageJumpInput: document.getElementById('mobile-page-jump'),
-            mobilePageTotal: document.getElementById('mobile-page-total'),
-            mobileExplainBtn: document.getElementById('mobile-explain-btn'),
-        };
-
-        const state = {
-            pdfDoc: null, totalPages: 0, currentPage: 1,
-            pagesHTML: [], isRendering: false,    
-            currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-            mode: "light",
-            touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
-            lastSelectionText: "",
-            lastSelectionRange: null,
-        };
-        const baseFontRem = 1.15;
-
-        const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
-        
-        function setMode(mode) {
-            state.mode = mode;
-            DOM.body.classList.toggle("dark-mode", mode === 'dark');
-            const isDark = mode === 'dark';
-            [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
-                if(icon) {
-                   icon.classList.toggle('fa-moon', !isDark);
-                   icon.classList.toggle('fa-sun', isDark);
-                }
-            });
-            localStorage.setItem("kaffetishMode", mode);
-        }
-
-        function setFontRem(rem) {
-            state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
-            DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
-            localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
-            const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
-            DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
-        }
-
-        function showView(view) {
-            [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
-            view.classList.remove('hidden');
-            const isReader = view === DOM.readerView;
-            DOM.readerControls.classList.toggle('hidden', !isReader);
-            DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
-            DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
-        }
-
-        async function loadPdfFromUrl(sourceUrl, title) {
-            showView(DOM.loadingView);
-            DOM.loadingText.textContent = `Loading ${title}...`;
-            try {
-                const response = await fetch(sourceUrl);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const pdfData = await response.arrayBuffer();
-                
-                const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
-                state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
-                state.pagesHTML = new Array(state.totalPages).fill(null);
-                
-                DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-                await renderPage(1);
-                showView(DOM.readerView);
-            } catch (err) {
-                console.error("PDF Loading/Processing Error:", err);
-                DOM.fallbackText.textContent = `There was an error loading the book "${title}". The link may be broken or the file may be corrupted.`;
-                showView(DOM.fallbackView);
-            }
-        }
-
-       function paragraphize(textContent) {
-    const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
-
-    const items = textContent.items.map(it => ({
-        str: it.str,
-        x: it.transform[4],
-        y: it.transform[5],
-        fontSize: it.transform[0],
-        height: it.height,
-        hasEOL: it.hasEOL || false
-    }));
-
-    if (items.length === 0) return "";
-    let paragraphs = [];
-    let currentLine = "";
-    let currentStyle = null;
-    let lastY = items[0].y;
-    let lastHeight = items[0].height || 10;
-
-    const getStyle = (item) => {
-        const trimmedStr = item.str.trim();
-        const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15;
-
-        // Rule 1: Very large font is always a title
-        if (item.fontSize > 20) return "h1";
-
-        // Rule 2: Slightly larger font is a reliable sign of a heading
-        if (item.fontSize > 13) return "h2";
-
-        // Rule 3: A specific heading PATTERN, e.g., "Chapter 1"
-        if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) {
-            return "h2";
-        }
-
-        // Rule 4 (IMPROVED): An all-caps string is only a heading if it's ALSO centered.
-        // This is a much safer check.
-        if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) {
-            return "h2";
-        }
-
-        // Rule 5: Centered text that isn't a heading
-        if (isCentered) {
-            return "center";
-        }
-
-        return "p"; // Default to a normal paragraph
+    const firebaseConfig = {
+        apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+        authDomain: "physmathacademy-722b3.firebaseapp.com",
+        projectId: "physmathacademy-722b3",
+        storageBucket: "physmathacademy-722b3.appspot.com",
+        messagingSenderId: "1093640992262",
+        appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
     };
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (!item.str.trim()) continue;
 
-        const newStyle = getStyle(item);
-        const yGap = Math.abs(lastY - item.y);
-
-        // A break happens if there's a large vertical gap,
-        // OR if the style fundamentally changes (e.g., from heading to paragraph).
-        const isStyleBreak = currentStyle && newStyle !== currentStyle && (currentStyle.startsWith('h') || newStyle.startsWith('h'));
-        const isParagraphBreak = yGap > lastHeight * 1.6 || isStyleBreak;
-
-        if (isParagraphBreak) {
-            if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
-            currentLine = item.str;
-            currentStyle = newStyle;
-        } else {
-            if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) {
-                currentLine = currentLine.slice(0, -1);
-            } else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) {
-                currentLine += " ";
-            }
-            currentLine += item.str;
-            // Update the line's style to the style of the latest item
-            currentStyle = newStyle; 
-        }
-
-        lastY = item.y;
-        lastHeight = item.height || lastHeight;
+    let app, auth, functions, explainBookTextFn, db;
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        functions = getFunctions(app, "us-central1");
+        db = getFirestore(app);
+        onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
+        explainBookTextFn = httpsCallable(functions, "explainBookText");
+    } else {
+        console.warn("Firebase config is missing or incomplete. The 'Explain' feature will be disabled.");
     }
 
-    if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+    const DOM = {
+        body: document.body, header: document.getElementById('app-header'),
+        mainContent: document.getElementById('main-content'),
+        readerControls: document.getElementById('reader-controls'),
+        fallbackView: document.getElementById('fallback-view'),
+        fallbackText: document.getElementById('fallback-text'),
+        readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
+        loadingText: document.getElementById('loading-text'),
+        pageContainer: document.getElementById('page-container'),
+        pageContent: document.getElementById('page-content'),
+        pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
+        pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
+        prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
+        modeToggle: document.getElementById('mode-toggle'),
+        modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
+        fontDec: document.getElementById('font-decrease'),
+        tooltip: document.getElementById('selection-tooltip'),
+        tooltipExplain: document.getElementById('btn-explain'),
+        tooltipHighlight: document.getElementById('btn-highlight'), tooltipCopy: document.getElementById('btn-copy'),
+        aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
+        aiQuote: document.getElementById('ai-quote'),
+        aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
+        mobilePageIndicator: document.getElementById('mobile-page-indicator'),
+        mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+        mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
+        mobileNavMenu: document.getElementById('mobile-nav-menu'),
+        mobileMenuClose: document.getElementById('mobile-menu-close'),
+        mobileModeToggle: document.getElementById('mobile-mode-toggle'),
+        mobileModeIcon: document.getElementById('mobile-mode-icon'),
+        mobileFontInc: document.getElementById('mobile-font-increase'),
+        mobileFontDec: document.getElementById('mobile-font-decrease'),
+        mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
+        mobilePageJumpInput: document.getElementById('mobile-page-jump'),
+        mobilePageTotal: document.getElementById('mobile-page-total'),
+        mobileExplainBtn: document.getElementById('mobile-explain-btn'),
+    };
 
-    return paragraphs.map(p => {
-        const text = escapeHTML(p.text);
-        switch(p.style) {
-            case "h1": return `<h1 style="text-align:center">${text}</h1>`;
-            case "h2": return `<h2 style="text-align:center">${text}</h2>`;
-            case "center": return `<p style="text-align:center">${text}</p>`;
-            default: return `<p>${text}</p>`;
+    const state = {
+        pdfDoc: null, totalPages: 0, currentPage: 1,
+        pagesHTML: [], isRendering: false,
+        currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
+        mode: "light",
+        touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
+        lastSelectionText: "",
+        lastSelectionRange: null,
+        currentSessionId: null,
+        bookTitle: null,
+        sessionUpdateInterval: null,
+    };
+    const baseFontRem = 1.15;
+
+    async function trackUserActivity() {
+        await auth.authStateReady();
+        if (!auth.currentUser || !db) return;
+        const userDocRef = doc(db, "users", auth.currentUser.uid);
+        try {
+            await setDoc(userDocRef, {
+                lastSeen: serverTimestamp(),
+                createdAt: serverTimestamp()
+            }, { merge: true });
+        } catch (e) { console.error("Error tracking user activity:", e); }
+    }
+
+    async function updateSessionHeartbeat() {
+        if (!state.currentSessionId || !db) {
+            if (state.sessionUpdateInterval) clearInterval(state.sessionUpdateInterval);
+            return;
         }
-    }).join("\n");
-}
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+        try {
+            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+        } catch (e) {
+            console.error("Error updating session heartbeat:", e);
+        }
+    }
 
-        async function renderPage(pageNum) {
-            if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
-            clearSelection();
-            state.isRendering = true; state.currentPage = pageNum;
-            if (!state.pagesHTML[pageNum - 1]) {
-                try {
-                    const page = await state.pdfDoc.getPage(pageNum);
-                    const textContent = await page.getTextContent({ normalizeWhitespace: true });
-                    state.pagesHTML[pageNum - 1] = paragraphize(textContent);
-                } catch (e) {
-                    console.error(`Failed to render page ${pageNum}:`, e);
-                    state.pagesHTML[pageNum - 1] = "<p>Error loading this page.</p>";
-                }
-            }
-            DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
+    async function startReadingSession(bookTitle) {
+        await auth.authStateReady();
+        if (!auth.currentUser || !db || state.currentSessionId) return; // Prevent starting a session if one is active
+
+        state.bookTitle = bookTitle;
+        const sessionsColRef = collection(db, "reading_sessions");
+        try {
+            const sessionDocRef = await addDoc(sessionsColRef, {
+                userId: auth.currentUser.uid,
+                bookTitle: bookTitle,
+                startTime: serverTimestamp(),
+                endTime: null
+            });
+            state.currentSessionId = sessionDocRef.id;
+
+            if (state.sessionUpdateInterval) clearInterval(state.sessionUpdateInterval);
+            state.sessionUpdateInterval = setInterval(updateSessionHeartbeat, 60000);
+
+        } catch (e) { console.error("Error starting session:", e); }
+    }
+
+    async function endReadingSession() {
+        if (state.sessionUpdateInterval) {
+            clearInterval(state.sessionUpdateInterval);
+            state.sessionUpdateInterval = null;
+        }
+
+        if (!state.currentSessionId || !db) return;
         
-            DOM.pageContent.classList.add("fade-in");
-            setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
-            DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
-            DOM.pageTotal.textContent = `/ ${state.totalPages}`;
-            DOM.pageJumpInput.value = pageNum;
-            DOM.mobilePageIndicator.textContent = `${pageNum} / ${state.totalPages}`;
-            DOM.mobilePageJumpInput.value = pageNum;
-            DOM.mobilePageJumpInput.max = state.totalPages;
-            DOM.mobilePageTotal.textContent = `/ ${state.totalPages}`;
-            DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
-            setFontRem(state.currentFontRem);
-            DOM.mainContent.scrollTop = 0;
-            state.isRendering = false;
-        }
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+        try {
+            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+            state.currentSessionId = null; // Mark session as ended
+        } catch (e) { console.error("Error ending session:", e); }
+    }
 
-        function showTooltipAt(rect) {
-            DOM.tooltip.style.display = "flex";
-            const scrollOffset = DOM.mainContent.scrollTop;
-            const top = scrollOffset + rect.top - DOM.tooltip.offsetHeight - 8;
-            let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-            left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
-            DOM.tooltip.style.top = `${Math.max(top, scrollOffset + 10)}px`;
-            DOM.tooltip.style.left = `${left}px`;
-            requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
-        }
-    
-        function hideTooltip() {    
-            DOM.tooltip.classList.remove('visible');
-            setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
-        }
+    async function trackExplanationRequest(text) {
+        await auth.authStateReady();
+        if (!auth.currentUser || !db) return;
+        const explanationsColRef = collection(db, "explanation_requests");
+        try {
+            await addDoc(explanationsColRef, {
+                userId: auth.currentUser.uid,
+                bookTitle: state.bookTitle,
+                requestedText: text,
+                timestamp: serverTimestamp()
+            });
+        } catch (e) { console.error("Error tracking explanation:", e); }
+    }
 
-        function clearSelection() {
-            hideTooltip();
-            DOM.mobileExplainBtn.classList.remove('visible');
-            DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-            if (window.getSelection) {
-                window.getSelection().removeAllRanges();
+    const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+    function setMode(mode) {
+        state.mode = mode;
+        DOM.body.classList.toggle("dark-mode", mode === 'dark');
+        const isDark = mode === 'dark';
+        [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
+            if(icon) {
+                icon.classList.toggle('fa-moon', !isDark);
+                icon.classList.toggle('fa-sun', isDark);
             }
+        });
+        localStorage.setItem("kaffetishMode", mode);
+    }
+
+    function setFontRem(rem) {
+        state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
+        DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
+        localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
+        const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
+        DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
+    }
+
+    function showView(view) {
+        [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
+        view.classList.remove('hidden');
+        const isReader = view === DOM.readerView;
+        DOM.readerControls.classList.toggle('hidden', !isReader);
+        DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
+        DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
+    }
+
+    async function loadPdfFromUrl(sourceUrl, title) {
+        showView(DOM.loadingView);
+        DOM.loadingText.textContent = `Loading ${title}...`;
+        try {
+            const response = await fetch(sourceUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const pdfData = await response.arrayBuffer();
+
+            const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+            state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
+            state.pagesHTML = new Array(state.totalPages).fill(null);
+            
+            await startReadingSession(title);
+
+            DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+            await renderPage(1);
+            showView(DOM.readerView);
+        } catch (err) {
+            console.error("PDF Loading/Processing Error:", err);
+            DOM.fallbackText.textContent = `There was an error loading the book "${title}". The link may be broken or the file may be corrupted.`;
+            showView(DOM.fallbackView);
         }
-    
-        async function handleExplain() {
-            if (!explainBookTextFn) {
-                flashAI("Explanation feature is not available.");
-                return;
+    }
+
+    function paragraphize(textContent) {
+        const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
+        const items = textContent.items.map(it => ({
+            str: it.str, x: it.transform[4], y: it.transform[5],
+            fontSize: it.transform[0], height: it.height, hasEOL: it.hasEOL || false
+        }));
+        if (items.length === 0) return "";
+        let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
+        const getStyle = (item) => {
+            const trimmedStr = item.str.trim();
+            const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15;
+            if (item.fontSize > 20) return "h1";
+            if (item.fontSize > 13) return "h2";
+            if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) return "h2";
+            if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) return "h2";
+            if (isCentered) return "center";
+            return "p";
+        };
+        for (const item of items) {
+            if (!item.str.trim()) continue;
+            const newStyle = getStyle(item);
+            const yGap = Math.abs(lastY - item.y);
+            const isStyleBreak = currentStyle && newStyle !== currentStyle && (currentStyle.startsWith('h') || newStyle.startsWith('h'));
+            const isParagraphBreak = yGap > lastHeight * 1.6 || isStyleBreak;
+            if (isParagraphBreak) {
+                if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+                currentLine = item.str;
+                currentStyle = newStyle;
+            } else {
+                if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) currentLine = currentLine.slice(0, -1);
+                else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) currentLine += " ";
+                currentLine += item.str;
+                currentStyle = newStyle;
             }
-            if (!state.lastSelectionText || state.lastSelectionText.length < 5) {    
-                flashAI("Please select a longer phrase to explain.");    
-                clearSelection(); return;    
+            lastY = item.y;
+            lastHeight = item.height || lastHeight;
+        }
+        if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+        return paragraphs.map(p => {
+            const text = escapeHTML(p.text);
+            switch(p.style) {
+                case "h1": return `<h1 style="text-align:center">${text}</h1>`;
+                case "h2": return `<h2 style="text-align:center">${text}</h2>`;
+                case "center": return `<p style="text-align:center">${text}</p>`;
+                default: return `<p>${text}</p>`;
             }
-            DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-            DOM.aiQuote.classList.remove('hidden');
-            DOM.aiPanel.style.display = "flex";    
-            DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
-            const textToExplain = state.lastSelectionText;
-            clearSelection();
-        
+        }).join("\n");
+    }
+
+    async function renderPage(pageNum) {
+        if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
+        clearSelection();
+        state.isRendering = true; state.currentPage = pageNum;
+        if (!state.pagesHTML[pageNum - 1]) {
             try {
-                const { data } = await explainBookTextFn({ text: textToExplain });
-                const explanationText = data?.explanation || "No explanation was returned.";
-                DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
-            } catch (err) {
-                console.error("AI Explain Error:", err);
-                DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+                const page = await state.pdfDoc.getPage(pageNum);
+                const textContent = await page.getTextContent({ normalizeWhitespace: true });
+                state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+            } catch (e) {
+                console.error(`Failed to render page ${pageNum}:`, e);
+                state.pagesHTML[pageNum - 1] = "<p>Error loading this page.</p>";
             }
         }
-    
-        function handleHighlight() {
-            if (state.lastSelectionRange) {
-                try {
-                    const span = document.createElement("span");
-                    span.className = "highlighted-text";
-                    state.lastSelectionRange.surroundContents(span);
-                } catch (e) { console.error("Highlighting failed:", e); }
-            }
-            state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
-            clearSelection();
-        }
+        DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
+        DOM.pageContent.classList.add("fade-in");
+        setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
+        DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
+        DOM.pageTotal.textContent = `/ ${state.totalPages}`;
+        DOM.pageJumpInput.value = pageNum;
+        DOM.mobilePageIndicator.textContent = `${pageNum} / ${state.totalPages}`;
+        DOM.mobilePageJumpInput.value = pageNum;
+        DOM.mobilePageJumpInput.max = state.totalPages;
+        DOM.mobilePageTotal.textContent = `/ ${state.totalPages}`;
+        DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
+        setFontRem(state.currentFontRem);
+        DOM.mainContent.scrollTop = 0;
+        state.isRendering = false;
+    }
 
-        function handleCopy() {
-            if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
-            clearSelection();
-        }
+    function showTooltipAt(rect) {
+        DOM.tooltip.style.display = "flex";
+        const scrollOffset = DOM.mainContent.scrollTop;
+        const top = scrollOffset + rect.top - DOM.tooltip.offsetHeight - 8;
+        let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
+        DOM.tooltip.style.top = `${Math.max(top, scrollOffset + 10)}px`;
+        DOM.tooltip.style.left = `${left}px`;
+        requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
+    }
 
-        function flashAI(msg, duration = 2000) {
-            DOM.aiQuote.classList.add('hidden');
-            DOM.aiPanel.style.display = "flex";    
-            DOM.aiContent.textContent = msg;
-            setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
-        }
+    function hideTooltip() {
+        DOM.tooltip.classList.remove('visible');
+        setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
+    }
 
-        function setupSelectionHandler() {
-            // Mobile-specific, highly reliable handler using selectionchange
-            if (isTouchDevice) {
-                document.addEventListener('selectionchange', () => {
+    function clearSelection() {
+        hideTooltip();
+        DOM.mobileExplainBtn.classList.remove('visible');
+        DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+        if (window.getSelection) {
+            window.getSelection().removeAllRanges();
+        }
+    }
+
+    async function handleExplain() {
+        if (!explainBookTextFn) {
+            flashAI("Explanation feature is not available.");
+            return;
+        }
+        if (!state.lastSelectionText || state.lastSelectionText.length < 5) {
+            flashAI("Please select a longer phrase to explain.");
+            clearSelection(); return;
+        }
+        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
+        DOM.aiQuote.classList.remove('hidden');
+        DOM.aiPanel.style.display = "flex";
+        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+        const textToExplain = state.lastSelectionText;
+        trackExplanationRequest(textToExplain);
+        clearSelection();
+        try {
+            const { data } = await explainBookTextFn({ text: textToExplain });
+            const explanationText = data?.explanation || "No explanation was returned.";
+            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
+        } catch (err) {
+            console.error("AI Explain Error:", err);
+            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+        }
+    }
+
+    function handleHighlight() {
+        if (state.lastSelectionRange) {
+            try {
+                const span = document.createElement("span");
+                span.className = "highlighted-text";
+                state.lastSelectionRange.surroundContents(span);
+            } catch (e) { console.error("Highlighting failed:", e); }
+        }
+        state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+        clearSelection();
+    }
+
+    function handleCopy() {
+        if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
+        clearSelection();
+    }
+
+    function flashAI(msg, duration = 2000) {
+        DOM.aiQuote.classList.add('hidden');
+        DOM.aiPanel.style.display = "flex";
+        DOM.aiContent.textContent = msg;
+        setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
+    }
+
+    function setupSelectionHandler() {
+        if (isTouchDevice) {
+            document.addEventListener('selectionchange', () => {
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
+                if (text && !sel.isCollapsed) {
+                    state.lastSelectionText = text;
+                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
+                    DOM.mobileExplainBtn.classList.add('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
+                } else {
+                    DOM.mobileExplainBtn.classList.remove('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+                }
+            });
+        }
+        else {
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => {
                     const sel = window.getSelection();
-                    const text = sel ? sel.toString().trim() : '';
-
+                    const text = sel.toString().trim();
                     if (text && !sel.isCollapsed) {
                         state.lastSelectionText = text;
-                        try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
-                        
-                        DOM.mobileExplainBtn.classList.add('visible');
-                        DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
+                        state.lastSelectionRange = sel.getRangeAt(0);
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
                     } else {
-                        DOM.mobileExplainBtn.classList.remove('visible');
-                        DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+                        hideTooltip();
                     }
-                });
-            } 
-            // Desktop-specific handler using mouseup
-            else {
-                document.addEventListener('mouseup', () => {
-                    setTimeout(() => {
-                        const sel = window.getSelection();
-                        const text = sel.toString().trim();
-                        if (text && !sel.isCollapsed) {
-                            state.lastSelectionText = text;
-                            state.lastSelectionRange = sel.getRangeAt(0);
-                            showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                        } else {
-                            hideTooltip();
-                        }
-                    }, 50);
-                });
-            }
-
-            // Keep the desktop-only click-to-turn-page behavior.
-            // if (!isTouchDevice) {
-            //     DOM.pageContainer.addEventListener('click', (e) => {
-            //         if (window.getSelection().toString() || e.target.closest('a') || DOM.tooltip.contains(e.target)) return;
-            //         const rect = DOM.pageContainer.getBoundingClientRect();
-            //         const clickX = e.clientX - rect.left;
-            //         const clickArea = rect.width * 0.2;
-            //         if (clickX < clickArea) DOM.prevBtn.click();
-            //         else if (clickX > rect.width - clickArea) DOM.nextBtn.click();
-            //     });
-            // }
+                }, 50);
+            });
         }
+    }
 
-        function setupSwipeNavigation() {
-            DOM.mainContent.addEventListener('touchstart', (e) => {
-                if (e.touches.length > 1) return;
-                const touch = e.touches[0];
-                state.touch.startX = touch.screenX;
-                state.touch.startY = touch.screenY;
-                state.touch.startTime = Date.now();
-            }, { passive: true });
+    function setupSwipeNavigation() {
+        DOM.mainContent.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) return;
+            const touch = e.touches[0];
+            state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
+            state.touch.startTime = Date.now();
+        }, { passive: true });
+        DOM.mainContent.addEventListener('touchend', (e) => {
+            if (e.touches.length > 0) return;
+            const touch = e.changedTouches[0];
+            const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
+            const elapsedTime = Date.now() - state.touch.startTime;
+            if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX > 0) DOM.prevBtn.click();
+                else DOM.nextBtn.click();
+            }
+        }, { passive: true });
+    }
 
-            DOM.mainContent.addEventListener('touchend', (e) => {
-                if (e.touches.length > 0) return;
-            
-                const touch = e.changedTouches[0];
-                const deltaX = touch.screenX - state.touch.startX;
-                const deltaY = touch.screenY - state.touch.startY;
-                const elapsedTime = Date.now() - state.touch.startTime;
+    // --- MODIFIED: This is the core of the new, correct logic ---
+    function setupEventListeners() {
+        DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
+        DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
+        DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
+        [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
+        [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
+        [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+        DOM.tooltipExplain.addEventListener("click", handleExplain);
+        DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+        DOM.tooltipCopy.addEventListener("click", handleCopy);
+        DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
+        DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
+        DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+        DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+        DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+        DOM.mobilePageJumpInput.addEventListener("change", () => {
+            const p = parseInt(DOM.mobilePageJumpInput.value, 10);
+            if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
+        });
+        DOM.mobileExplainBtn.addEventListener("click", () => {
+            DOM.mobileExplainBtn.classList.remove('visible');
+            DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+            handleExplain();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || state.isRendering) return;
+            if (e.key === 'ArrowLeft') DOM.prevBtn.click();
+            else if (e.key === 'ArrowRight') DOM.nextBtn.click();
+        });
 
-                if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                    if (deltaX > 0) {
-                        DOM.prevBtn.click();
-                    } else {
-                        DOM.nextBtn.click();
-                    }
+        // Use 'visibilitychange' to intelligently end and start sessions
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                // User has tabbed away or minimized. End the current session.
+                endReadingSession();
+            } else if (document.visibilityState === 'visible') {
+                // User has returned. Start a fresh session if a book is loaded.
+                if (state.pdfDoc && state.bookTitle) {
+                    startReadingSession(state.bookTitle);
                 }
-            }, { passive: true });
-        }
-    
-        function setupEventListeners() {
-            DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
-            DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
-            DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
-            [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
-            [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
-            [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
-            DOM.tooltipExplain.addEventListener("click", handleExplain);
-            DOM.tooltipHighlight.addEventListener("click", handleHighlight);
-            DOM.tooltipCopy.addEventListener("click", handleCopy);
-            DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-            DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
-            DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
-            DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-            DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-            DOM.mobilePageJumpInput.addEventListener("change", () => {
-                const p = parseInt(DOM.mobilePageJumpInput.value, 10);
-                if (!isNaN(p)) {
-                    renderPage(p);
-                    DOM.body.classList.remove('menu-open');
-                }
-            });
-
-            DOM.mobileExplainBtn.addEventListener("click", () => {
-                DOM.mobileExplainBtn.classList.remove('visible');
-                DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-                handleExplain();
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.target.tagName === 'INPUT' || state.isRendering) return;
-                if (e.key === 'ArrowLeft') DOM.prevBtn.click();
-                else if (e.key === 'ArrowRight') DOM.nextBtn.click();
-            });
-
-            setupSelectionHandler();
-            if (isTouchDevice) {
-                setupSwipeNavigation();
             }
-        }
+        });
 
-        function init() {
-            setMode(localStorage.getItem("kaffetishMode") || 'light');
-            setFontRem(state.currentFontRem);
-            setupEventListeners();
-        
-            const params = new URLSearchParams(window.location.search);
-            const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
-            if (bookUrl) {
-                loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
-            } else {
-                showView(DOM.fallbackView);
-            }
-            if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
-        }
+        // Use 'pagehide' as a final backup to end the session when closing the tab.
+        document.addEventListener('pagehide', endReadingSession);
 
-        init();
-    </script>
+        setupSelectionHandler();
+        if (isTouchDevice) {
+            setupSwipeNavigation();
+        }
+    }
+
+    function init() {
+        setMode(localStorage.getItem("kaffetishMode") || 'light');
+        setFontRem(state.currentFontRem);
+        trackUserActivity();
+        setupEventListeners();
+        const params = new URLSearchParams(window.location.search);
+        const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
+        if (bookUrl) {
+            loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
+        } else {
+            showView(DOM.fallbackView);
+        }
+        if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
+    }
+
+    init();
+</script>
 </body>
 </html>
