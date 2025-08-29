@@ -444,6 +444,8 @@
             messagingSenderId: "1093640992262",
             appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
         };
+        // >>> ADD: HTTPS Function endpoint for sendBeacon
+const END_SESSION_URL = "https://<REGION>-<PROJECT>.cloudfunctions.net/endReadingSession"; // <-- replace with your deployed URL
 
         let app, auth, functions, explainBookTextFn, db;
         if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
@@ -505,6 +507,26 @@
             currentSessionId: null,
             bookTitle: null,
         };
+        // >>> ADD: heartbeat holder
+let heartbeatTimer = null;
+
+function startHeartbeat() {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(async () => {
+    try {
+      if (!state.currentSessionId || !db) return;
+      await updateDoc(doc(db, "reading_sessions", state.currentSessionId), {
+        lastSeen: serverTimestamp()
+      });
+    } catch (_) {}
+  }, 30_000);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) clearInterval(heartbeatTimer);
+  heartbeatTimer = null;
+}
+
         const baseFontRem = 1.15;
 
         async function trackUserActivity() {
@@ -544,6 +566,29 @@
                 state.currentSessionId = null; 
             } catch (e) { console.error("Error ending session:", e); }
         }
+        // >>> ADD: end via navigator.sendBeacon for unload/hidden cases
+function endSessionBeacon() {
+  try {
+    if (!state.currentSessionId) return;
+
+    const payload = JSON.stringify({
+      sessionId: state.currentSessionId,
+      uid: auth?.currentUser?.uid || null
+    });
+    const blob = new Blob([payload], { type: "application/json" });
+
+    // Fire-and-forget; allowed to complete after navigation starts
+    navigator.sendBeacon(END_SESSION_URL, blob);
+
+    // Prevent double-writes and stop heartbeat
+    state.currentSessionId = null;
+    stopHeartbeat();
+  } catch (e) {
+    // Last-ditch fallback (may still be killed by the browser)
+    endReadingSession();
+  }
+}
+
 
         async function trackExplanationRequest(text) {
             await auth.authStateReady();
@@ -605,6 +650,7 @@
                 await startReadingSession(title);
 
                 DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+                startHeartbeat();
                 await renderPage(1);
                 showView(DOM.readerView);
             } catch (err) {
