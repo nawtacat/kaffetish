@@ -339,7 +339,8 @@
                     <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
                     <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
                     <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
-                    <a class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+
                 </div>
             </div>
             <button id="mobile-menu-toggle" class="mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
@@ -562,6 +563,7 @@ function stopHeartbeat() {
             const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
             try {
                 await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+                stopHeartbeat();
                 // Set the session ID to null immediately so this function doesn't run twice.
                 state.currentSessionId = null; 
             } catch (e) { console.error("Error ending session:", e); }
@@ -914,14 +916,28 @@ function endSessionBeacon() {
 
             // ✅ --- THIS IS THE FINAL, MORE ROBUST METHOD --- ✅
             // This fires when the page is hidden (e.g., user switches tabs).
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'hidden') {
-                    endReadingSession();
-                }
-            });
-            // This is a fallback for older browsers or when a tab is closed directly.
-            window.addEventListener('pagehide', endReadingSession);
+            // >>> REPLACE WITH BEACON-BASED HANDLERS
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    endSessionBeacon();
+  }
+});
+// pagehide covers BFCache navigations too
+window.addEventListener('pagehide', () => {
+  endSessionBeacon();
+});
 
+            const backBtn = document.getElementById('back-to-library');
+if (backBtn) {
+  backBtn.addEventListener('click', (e) => {
+    if (state.currentSessionId) {
+      e.preventDefault();
+      endSessionBeacon();
+      // allow a microtask to queue the beacon, then navigate
+      setTimeout(() => { window.location.href = backBtn.href; }, 0);
+    }
+  });
+}
             setupSelectionHandler();
             if (isTouchDevice) {
                 setupSwipeNavigation();
