@@ -720,15 +720,22 @@
     }
 
     function showTooltipAt(rect) {
-        DOM.tooltip.style.display = "flex";
-        const scrollOffset = DOM.mainContent.scrollTop;
-        const top = scrollOffset + rect.top - DOM.tooltip.offsetHeight - 8;
-        let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-        left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
-        DOM.tooltip.style.top = `${Math.max(top, scrollOffset + 10)}px`;
-        DOM.tooltip.style.left = `${left}px`;
-        requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
-    }
+    DOM.tooltip.style.display = "flex";
+    // The header is 60px high, so the tooltip shouldn't go above that.
+    const topBoundary = 68; // 60px for header + 8px margin
+    
+    // Calculate top position based on the selection's viewport position (rect.top).
+    // No scrollOffset is needed because the tooltip is not inside the scrolling container.
+    const top = rect.top - DOM.tooltip.offsetHeight - 8;
+    
+    let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
+    
+    // Apply the calculated position, ensuring it doesn't go above the top boundary.
+    DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
+    DOM.tooltip.style.left = `${left}px`;
+    requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
+}
 
     function hideTooltip() {
         DOM.tooltip.classList.remove('visible');
