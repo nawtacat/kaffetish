@@ -505,7 +505,6 @@
         lastSelectionRange: null,
         currentSessionId: null,
         bookTitle: null,
-        // --- NEW: Add state for the heartbeat timer ---
         sessionUpdateInterval: null,
     };
     const baseFontRem = 1.15;
@@ -521,8 +520,7 @@
             }, { merge: true });
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
-    
-    // --- NEW: Function to periodically update the session ---
+
     async function updateSessionHeartbeat() {
         if (!state.currentSessionId || !db) {
             if (state.sessionUpdateInterval) clearInterval(state.sessionUpdateInterval);
@@ -530,21 +528,16 @@
         }
         const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
         try {
-            // This update acts as a "last seen" timestamp.
             await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
         } catch (e) {
             console.error("Error updating session heartbeat:", e);
         }
     }
 
-    // --- MODIFIED: Start the heartbeat on session start ---
     async function startReadingSession(bookTitle) {
         await auth.authStateReady();
-        if (!auth.currentUser || !db) return;
-        
-        // End any previous session before starting a new one
-        await endReadingSession();
-        
+        if (!auth.currentUser || !db || state.currentSessionId) return; // Prevent starting a session if one is active
+
         state.bookTitle = bookTitle;
         const sessionsColRef = collection(db, "reading_sessions");
         try {
@@ -555,16 +548,14 @@
                 endTime: null
             });
             state.currentSessionId = sessionDocRef.id;
-            
-            // Start a new interval to update the session every 60 seconds
+
+            if (state.sessionUpdateInterval) clearInterval(state.sessionUpdateInterval);
             state.sessionUpdateInterval = setInterval(updateSessionHeartbeat, 60000);
 
         } catch (e) { console.error("Error starting session:", e); }
     }
 
-    // --- MODIFIED: Clear the interval when the session ends ---
     async function endReadingSession() {
-        // Stop the periodic updates
         if (state.sessionUpdateInterval) {
             clearInterval(state.sessionUpdateInterval);
             state.sessionUpdateInterval = null;
@@ -574,9 +565,8 @@
         
         const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
         try {
-            // Attempt one final, precise update
             await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-            state.currentSessionId = null;
+            state.currentSessionId = null; // Mark session as ended
         } catch (e) { console.error("Error ending session:", e); }
     }
 
@@ -856,6 +846,7 @@
         }, { passive: true });
     }
 
+    // --- MODIFIED: This is the core of the new, correct logic ---
     function setupEventListeners() {
         DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
         DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
@@ -886,7 +877,20 @@
             else if (e.key === 'ArrowRight') DOM.nextBtn.click();
         });
 
-        // Use 'pagehide' for the final update attempt.
+        // Use 'visibilitychange' to intelligently end and start sessions
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                // User has tabbed away or minimized. End the current session.
+                endReadingSession();
+            } else if (document.visibilityState === 'visible') {
+                // User has returned. Start a fresh session if a book is loaded.
+                if (state.pdfDoc && state.bookTitle) {
+                    startReadingSession(state.bookTitle);
+                }
+            }
+        });
+
+        // Use 'pagehide' as a final backup to end the session when closing the tab.
         document.addEventListener('pagehide', endReadingSession);
 
         setupSelectionHandler();
