@@ -1,0 +1,450 @@
+neu<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaffetish</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    
+    <style>
+        :root {
+            --bg: #FDFBF7;
+            --ink: #2C2B2A;
+            --accent: #FF3A44;
+            --subtle: #8A8886;
+            --border-color: #EAE8E4;
+            --shadow-color: rgba(44, 43, 42, 0.1);
+            --font-main: 'Lora', serif;
+            --font-ui: 'Poppins', sans-serif;
+        }
+
+        body.dark-mode {
+            --bg: #21201F;
+            --ink: #EAE8E4;
+            --subtle: #999591;
+            --border-color: #3A3837;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+        }
+
+        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg);
+            color: var(--ink);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            padding-top: 60px;
+        }
+
+        /* --- Header --- */
+        .app-header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .header-content {
+            max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo {
+            display: flex; align-items: baseline; font-size: 1.6rem;
+            font-weight: 500; letter-spacing: -0.5px; color: var(--accent);
+            font-family: var(--font-main);
+        }
+        .logo .tagline {
+            font-size: 0.6em; font-style: italic; font-weight: 400;
+            color: var(--subtle); letter-spacing: normal; margin-left: 8px;
+        }
+        body.dark-mode .logo { color: var(--ink); }
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+        .header-actions button {
+            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+            padding: 8px 10px; cursor: pointer; font-size: 1rem;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        
+        /* --- Main Content --- */
+        main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
+
+        /* --- NEW Hero Section --- */
+        .hero-section {
+            text-align: center;
+            padding: 48px 24px 64px;
+        }
+        .hero-title {
+            font-family: var(--font-main);
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin: 0 0 32px 0;
+            position: relative;
+            display: inline-block;
+        }
+        .hero-title::after {
+            content: ''; position: absolute; bottom: -8px;
+            left: 50%; transform: translateX(-50%); width: 70%; height: 4px;
+            background-color: var(--accent); border-radius: 2px;
+        }
+
+        /* --- Search Bar (now in Hero) --- */
+        .search-container {
+            position: relative; width: 100%; max-width: 500px; margin: 0 auto;
+        }
+        #search-input {
+            width: 100%; padding: 12px 16px 12px 40px; font-size: 1rem;
+            font-family: var(--font-ui); border: 1px solid var(--border-color);
+            border-radius: 24px; background-color: var(--bg); color: var(--ink);
+            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #search-input:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+        }
+        .search-container .fa-search {
+            position: absolute; left: 16px; top: 50%;
+            transform: translateY(-50%); color: var(--subtle);
+        }
+
+        /* --- Featured Author Section --- */
+        .featured-author-section {
+            margin-bottom: 64px; border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 32px;
+            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+        }
+        .featured-author-header h3 {
+            font-family: var(--font-main); font-size: 1.5rem; font-weight: 500;
+            margin: 0 0 24px 0; text-align: left; position: relative;
+        }
+        .featured-author-header h3::after {
+            content: ''; position: absolute; left: 0; bottom: -8px;
+            width: 50px; height: 2px; background-color: var(--accent);
+        }
+        .featured-author-content { display: flex; gap: 32px; align-items: flex-start; }
+        .author-info { flex: 0 0 220px; text-align: center; }
+        .author-info img {
+            width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+            margin-bottom: 16px; border: 4px solid var(--bg);
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+        .author-info h4 { font-size: 1.2rem; font-weight: 600; margin: 0 0 8px 0; }
+        .author-info p { font-size: 0.9rem; color: var(--subtle); line-height: 1.6; margin: 0; }
+        .author-books { flex: 1; }
+        
+        /* --- Browse Section --- */
+        .browse-section {
+            padding: 48px 0;
+            border-top: 1px solid var(--border-color);
+        }
+        .browse-section-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .browse-section-header h2 {
+            font-family: var(--font-main); font-size: 2.5rem; font-weight: 500; margin: 0;
+        }
+
+        /* --- Book Grids --- */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 32px 24px;
+        }
+        .author-books .book-grid {
+             grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        }
+        .book-card {
+            text-decoration: none; cursor: pointer; text-align: center;
+            transition: transform 0.2s ease-out; display: block;
+        }
+        .book-card:hover { transform: translateY(-5px); }
+        .book-cover {
+            width: 100%; aspect-ratio: 2 / 3; border-radius: 8px;
+            overflow: hidden; box-shadow: 0 8px 20px var(--shadow-color);
+            margin-bottom: 12px; background-color: var(--border-color);
+        }
+        .book-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .book-card-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); }
+        .book-card-author { font-size: 0.8rem; color: var(--subtle); }
+        
+        .no-results {
+            text-align: center; color: var(--subtle); padding: 40px;
+            grid-column: 1 / -1;
+        }
+
+        /* --- NEW Featured Book Section --- */
+        .featured-book-section {
+            margin-top: 64px;
+            padding: 32px;
+            border-radius: 16px;
+            background-color: color-mix(in srgb, var(--accent) 5%, transparent);
+            border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+        }
+        .featured-book-header h3 {
+            font-family: var(--font-main); font-size: 1.5rem; font-weight: 500;
+            margin: 0 0 24px 0; position: relative;
+        }
+        .featured-book-header h3::after {
+             content: ''; position: absolute; left: 0; bottom: -8px;
+            width: 50px; height: 2px; background-color: var(--accent);
+        }
+        .featured-book-content {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+        .featured-book-content .book-cover { flex-shrink: 0; width: 150px; }
+        .featured-book-description {
+            font-size: 0.95rem;
+            color: var(--subtle);
+            line-height: 1.7;
+            margin: 16px 0;
+        }
+        .btn-read-now {
+            display: inline-block;
+            background-color: var(--accent);
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-read-now:hover {
+            background-color: color-mix(in srgb, var(--accent) 85%, #000);
+            transform: translateY(-2px);
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 992px) {
+            main { padding: 24px 16px; }
+            .hero-title { font-size: 2.5rem; }
+            .featured-author-content { flex-direction: column; align-items: center; }
+            .author-info { flex: 0 0 auto; margin-bottom: 24px; }
+            .logo .tagline { display: none; }
+            .browse-section .book-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 24px;
+            }
+            .featured-book-content { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="logo">
+                Kaffetish
+                <span class="tagline">explained by the librarian</span>
+            </h1>
+            <div class="header-actions">
+                 <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero-section">
+            <h2 class="hero-title">What Will You Read Today?</h2>
+            <div class="search-container">
+                <i class="fa-solid fa-search"></i>
+                <input type="search" id="search-input" placeholder="Search by title or author...">
+            </div>
+        </section>
+
+        <section class="featured-author-section">
+            <div class="featured-author-header">
+                <h3>Featured Author</h3>
+            </div>
+            <div class="featured-author-content">
+                <div class="author-info">
+                    <img id="author-portrait" src="" alt="Portrait of the featured author">
+                    <h4 id="author-name"></h4>
+                    <p id="author-bio"></p>
+                </div>
+                <div class="author-books">
+                    <div id="author-book-grid" class="book-grid">
+                        </div>
+                </div>
+            </div>
+        </section>
+    
+        <section class="browse-section">
+             <div class="browse-section-header">
+                <h2>Browse the Collection</h2>
+            </div>
+            <div id="book-grid" class="book-grid">
+                </div>
+        </section>
+
+        <section class="featured-book-section">
+            <div class="featured-book-header">
+                <h3>An Intense, Short Read</h3>
+            </div>
+            <div class="featured-book-content">
+                <div class="book-cover" id="featured-book-cover">
+                    </div>
+                <div class="book-info">
+                    <h4 id="featured-book-title"></h4>
+                    <p id="featured-book-author"></p>
+                    <p class="featured-book-description">A haunting classic that delves into themes of mental health and feminism. Perfect for a powerful literary experience you can finish in a single sitting.</p>
+                    <a id="featured-book-link" href="#" class="btn-read-now" target="_blank">Read Now</a>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <script>
+        const DOM = {
+            body: document.body,
+            bookGrid: document.getElementById('book-grid'),
+            authorBookGrid: document.getElementById('author-book-grid'),
+            authorPortrait: document.getElementById('author-portrait'),
+            authorName: document.getElementById('author-name'),
+            authorBio: document.getElementById('author-bio'),
+            searchInput: document.getElementById('search-input'),
+            modeToggle: document.getElementById('mode-toggle'),
+            featuredBookCover: document.getElementById('featured-book-cover'),
+            featuredBookTitle: document.getElementById('featured-book-title'),
+            featuredBookAuthor: document.getElementById('featured-book-author'),
+            featuredBookLink: document.getElementById('featured-book-link'),
+        };
+
+        const state = {
+            mode: localStorage.getItem("kaffetishMode") || "light",
+        };
+
+        const authors = {
+            "Friedrich Nietzsche": {
+                bio: "A German philosopher and cultural critic whose work has exerted a profound influence on modern intellectual history.",
+                portrait: "https://upload.wikimedia.org/wikipedia/commons/1/1b/Nietzsche187a.jpg"
+            },
+            "Charlotte Perkins Gilman": {
+                bio: "An American humanist, novelist, and writer of short stories, poetry, and nonfiction, and a lecturer for social reform.",
+                portrait: "https://upload.wikimedia.org/wikipedia/commons/4/40/Charlotte_Perkins_Gilman_circa_1900.jpg"
+            }
+        };
+
+        const libraryBooks = [
+            { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.gutenberg.org/cache/epub/1342/pg1342.cover.medium.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
+            { title: "Capital, Volume I", author: "Karl Marx", cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af" },
+            { title: "The Communist Manifesto", author: "Karl Marx", cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2" },
+            { title: "Frankenstein", author: "Mary Shelley", cover: "https://wordsworth-editions.com/wp-content/uploads/2022/07/9781840228342.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
+            { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
+            { title: "Beyond Good and Evil", author: "Friedrich Nietzsche", cover: "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781625586100/beyond-good-and-evil-9781625586100_hr.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
+            { title: "The Antichrist", author: "Friedrich Nietzsche", cover: "https://cdn.kobo.com/book-images/4bc3d45d-3de4-482f-95a4-759fb593d11e/353/569/90/False/the-anti-christ.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/antichrist.pdf?alt=media&token=6ed7b8ac-4fc7-481c-94fc-3522bb3791a7" },
+            { title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman", cover: "https://images.penguinrandomhouse.com/cover/9780593230343", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" },
+        ];
+
+        function setMode(mode) {
+            state.mode = mode;
+            DOM.body.classList.toggle("dark-mode", mode === 'dark');
+            const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
+            DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
+            localStorage.setItem("kaffetishMode", mode);
+        }
+
+        function createBookCard(book) {
+            const card = document.createElement('a');
+            card.className = 'book-card';
+            
+            const readerBaseUrl = 'https://kaffetish.club/read/';
+            const readerUrl = `${readerBaseUrl}?url=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`;
+            
+            card.href = readerUrl;
+            card.target = "_blank";
+            card.setAttribute('aria-label', `Read ${book.title} by ${book.author}`);
+            
+            card.innerHTML = `
+                <div class="book-cover">
+                    <img src="${book.cover}" alt="Cover of ${book.title}" loading="lazy" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x600/EAE8E4/2C2B2A?text=Cover';">
+                </div>
+                <div class="book-card-title">${book.title}</div>
+                <div class="book-card-author">${book.author}</div>
+            `;
+            return card;
+        }
+
+        function renderFeaturedAuthor(authorName) {
+            const authorData = authors[authorName];
+            if (!authorData) return;
+
+            const authorBooks = libraryBooks.filter(book => book.author === authorName);
+
+            DOM.authorPortrait.src = authorData.portrait;
+            DOM.authorPortrait.alt = `Portrait of ${authorName}`;
+            DOM.authorName.textContent = authorName;
+            DOM.authorBio.textContent = authorData.bio;
+
+            DOM.authorBookGrid.innerHTML = '';
+            authorBooks.forEach(book => {
+                DOM.authorBookGrid.appendChild(createBookCard(book));
+            });
+        }
+
+        function renderFeaturedBook() {
+            const book = libraryBooks.find(b => b.title === "The Yellow Wallpaper");
+            if (!book) return; 
+
+            const readerBaseUrl = 'https://kaffetish.club/read/';
+            const readerUrl = `${readerBaseUrl}?url=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`;
+
+            DOM.featuredBookCover.innerHTML = `<img src="${book.cover}" alt="Cover of ${book.title}">`;
+            DOM.featuredBookTitle.textContent = book.title;
+            DOM.featuredBookAuthor.textContent = `by ${book.author}`;
+            DOM.featuredBookLink.href = readerUrl;
+        }
+
+        function renderMainLibrary() {
+            const searchTerm = DOM.searchInput.value.toLowerCase();
+            DOM.bookGrid.innerHTML = ''; 
+
+            const filteredBooks = libraryBooks.filter(book => 
+                book.title.toLowerCase().includes(searchTerm) || 
+                book.author.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredBooks.length === 0) {
+                DOM.bookGrid.innerHTML = '<p class="no-results">No books found matching your search.</p>';
+                return;
+            }
+
+            filteredBooks.forEach(book => {
+                DOM.bookGrid.appendChild(createBookCard(book));
+            });
+        }
+        
+        const debounce = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(this, args), delay);
+            };
+        };
+
+        function setupEventListeners() {
+            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
+            DOM.searchInput.addEventListener('input', debounce(renderMainLibrary, 300));
+        }
+
+        function init() {
+            const savedMode = localStorage.getItem("kaffetishMode") || 'light';
+            setMode(savedMode);
+            
+            renderFeaturedAuthor("Friedrich Nietzsche");
+            renderMainLibrary();
+            renderFeaturedBook();
+            setupEventListeners();
+        }
+
+        init();
+    </script>
+</body>
+</html>
