@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Opinionate | Kaffetish</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    
+    <style>
+        /* --- Core Theme & Variables --- */
+        :root {
+            /* Kaffetish Base Palette */
+            --bg-light: #FDFBF7;
+            --ink-light: #2C2B2A;
+            --accent-light: #FF3A44;
+            --subtle-light: #8A8886;
+            --border-light: #EAE8E4;
+            --shadow-light: rgba(44, 43, 42, 0.1);
+
+            /* Opinionate "Dim Void" Palette */
+            --bg: #121214; /* Charcoal background */
+            --ink: #EAE8E4;
+            --accent-teal: #00f5d4;
+            --accent-amber: #ffb703;
+            --accent-crimson: #d90429;
+            --subtle: #8A8886;
+            --border-color: #3A3837;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+            
+            --font-main: 'Lora', serif;
+            --font-ui: 'Poppins', sans-serif;
+        }
+
+        /* The Heresy: Light Mode (by user choice) */
+        body.light-mode {
+            --bg: var(--bg-light);
+            --ink: var(--ink-light);
+            --subtle: var(--subtle-light);
+            --border-color: var(--border-light);
+            --shadow-color: var(--shadow-light);
+        }
+
+        ::selection { background-color: var(--accent-teal); color: black; opacity: 0.9; }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg);
+            color: var(--ink);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            padding-top: 60px;
+            overflow-x: hidden;
+        }
+
+        /* --- Reusable Components & Header --- */
+        .app-header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+        }
+        .header-content {
+            max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo {
+            font-size: 1.6rem; font-weight: 500; color: var(--accent-light);
+            font-family: var(--font-main);
+        }
+        body.light-mode .logo { color: var(--ink); }
+
+        .app-nav { display: flex; align-items: center; gap: 8px; }
+        .app-nav a {
+            font-family: var(--font-ui); font-size: 0.9rem; font-weight: 500;
+            text-decoration: none; color: var(--subtle); padding: 8px 16px;
+            border-radius: 6px; transition: color 0.2s, background-color 0.2s;
+        }
+        .app-nav a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        .app-nav a.active { color: var(--accent-teal); }
+        body.light-mode .app-nav a.active { color: var(--accent-light); }
+
+        /* --- Feature: Floating Concept Cloud (Home View) --- */
+        #opinionate-home {
+            position: fixed;
+            top: 60px; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+            overflow: hidden;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        #opinionate-home.hidden {
+            opacity: 0;
+            transform: scale(1.1);
+            pointer-events: none;
+        }
+        #concept-cloud {
+            width: 100%; height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .concept-word {
+            position: absolute;
+            font-family: var(--font-main);
+            font-weight: 500;
+            color: var(--subtle);
+            cursor: pointer;
+            transition: color 0.3s, text-shadow 0.3s, transform 0.3s;
+            animation: drift 20s linear infinite alternate;
+            will-change: transform;
+        }
+        .concept-word:hover {
+            color: var(--accent-teal);
+            text-shadow: 0 0 10px var(--accent-teal), 0 0 20px color-mix(in srgb, var(--accent-teal) 50%, transparent);
+            transform: scale(1.1) translateZ(50px) !important;
+        }
+        @keyframes drift {
+            from { transform: translateX(-2vw) translateY(3vh) rotateZ(-2deg); }
+            to { transform: translateX(2vw) translateY(-3vh) rotateZ(2deg); }
+        }
+        
+        /* --- Feature: Concept Detail View --- */
+        #concept-detail-view {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 48px 24px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-in, transform 0.5s ease-in;
+        }
+        #concept-detail-view.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .back-to-cloud {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: none; border: none; color: var(--subtle);
+            font-family: var(--font-ui); font-size: 0.9rem;
+            cursor: pointer; margin-bottom: 32px;
+            transition: color 0.2s;
+        }
+        .back-to-cloud:hover { color: var(--accent-teal); }
+
+        .concept-title {
+            font-family: var(--font-main);
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin: 0 0 48px 0;
+            text-align: left;
+            line-height: 1.1;
+            color: var(--ink);
+            text-shadow: 0 0 15px color-mix(in srgb, var(--accent-amber) 30%, transparent);
+        }
+
+        .module { margin-bottom: 64px; }
+        .module-title {
+            font-family: var(--font-ui);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--subtle);
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        .module-content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; }
+        .module-content p { margin: 0 0 1.5em; }
+        .module-content p:last-child { margin-bottom: 0; }
+        
+        /* Skeleton Key Module */
+        .perspective-toggle { display: flex; gap: 8px; margin-bottom: 24px; }
+        .perspective-toggle button {
+            background: color-mix(in srgb, var(--border-color) 40%, transparent);
+            border: 1px solid var(--border-color); color: var(--subtle);
+            padding: 8px 16px; border-radius: 20px; cursor: pointer;
+            font-family: var(--font-ui); font-size: 0.9rem; transition: all 0.2s;
+        }
+        .perspective-toggle button:hover { border-color: var(--accent-teal); color: var(--accent-teal); }
+        .perspective-toggle button.active {
+            background-color: var(--accent-teal); color: var(--bg);
+            border-color: var(--accent-teal); font-weight: 500;
+        }
+        .perspective-content { display: none; }
+        .perspective-content.active { display: block; }
+
+        /* Ideological Spectrum Module */
+        .spectrum-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+        .spectrum-tabs button {
+            background: none; border: none;
+            color: var(--subtle); padding: 12px 20px;
+            cursor: pointer; font-family: var(--font-ui); font-size: 1rem;
+            position: relative; transition: color 0.2s;
+        }
+        .spectrum-tabs button:hover { color: var(--ink); }
+        .spectrum-tabs button.active {
+            color: var(--accent-amber);
+            font-weight: 500;
+        }
+        .spectrum-tabs button.active::after {
+            content: '';
+            position: absolute; bottom: -1px; left: 0; right: 0;
+            height: 2px; background-color: var(--accent-amber);
+        }
+        .spectrum-content { display: none; }
+        .spectrum-content.active { display: block; }
+        
+        /* Cultural Mirror Module */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 24px;
+        }
+        .media-card {
+            background: color-mix(in srgb, var(--border-color) 20%, transparent);
+            border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 20px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .media-card:hover { border-color: var(--subtle); transform: translateY(-4px); }
+        .media-card.quote .content { font-style: italic; font-size: 1.1rem; }
+        .media-card .source {
+            display: block; margin-top: 16px;
+            font-family: var(--font-ui); font-size: 0.8rem; color: var(--subtle);
+        }
+        .media-card.video .content {
+            aspect-ratio: 16/9; background-color: #000;
+            border-radius: 4px; display: flex; align-items: center; justify-content: center;
+        }
+        .media-card.video i { font-size: 2rem; color: var(--accent-crimson); }
+        
+        /* Threaded Concepts Module */
+        .threaded-concepts-list { display: flex; flex-wrap: wrap; gap: 12px; }
+        .concept-link {
+            background: color-mix(in srgb, var(--border-color) 40%, transparent);
+            border: 1px solid var(--border-color); color: var(--subtle);
+            padding: 8px 16px; border-radius: 20px;
+            font-family: var(--font-ui); font-size: 0.9rem;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .concept-link:hover { border-color: var(--accent-crimson); color: var(--accent-crimson); }
+        
+        /* Questions Module */
+        .questions-list { list-style: none; padding-left: 0; }
+        .questions-list li {
+            position: relative; padding-left: 24px; margin-bottom: 16px;
+            font-family: var(--font-main); font-size: 1.25rem; font-style: italic;
+        }
+        .questions-list li::before {
+            content: '“';
+            position: absolute; left: 0; top: 0;
+            font-size: 1.5rem; color: var(--accent-amber);
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="logo">Kaffetish</h1>
+            <nav class="app-nav">
+                <a href="/index.html">Library</a>
+                <a href="/opinionate.html" class="active">Opinionate</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="opinionate-home">
+            <div id="concept-cloud">
+                </div>
+        </section>
+
+        <section id="concept-detail-view" class="hidden">
+            <button class="back-to-cloud"><i class="fa-solid fa-arrow-left"></i> Back to the Cloud</button>
+            <h2 id="concept-title" class="concept-title"></h2>
+
+            <div id="skeleton-key" class="module">
+                <h3 class="module-title">Skeleton Key</h3>
+                <div class="perspective-toggle">
+                    <button data-perspective="neutral" class="active">Neutral</button>
+                    <button data-perspective="critical">Critical</button>
+                    <button data-perspective="radical">Radical</button>
+                </div>
+                <div id="skeleton-key-content" class="module-content">
+                    </div>
+            </div>
+
+            <div id="ideological-spectrum" class="module">
+                <h3 class="module-title">Ideological Spectrum</h3>
+                <div class="spectrum-tabs">
+                    <button data-spectrum="critic" class="active">The Critic</button>
+                    <button data-spectrum="apologist">The Apologist</button>
+                </div>
+                <div id="ideological-spectrum-content" class="module-content">
+                    </div>
+            </div>
+
+            <div id="cultural-mirror" class="module">
+                <h3 class="module-title">Cultural Mirror</h3>
+                <div id="media-grid" class="media-grid">
+                    </div>
+            </div>
+
+             <div id="threaded-concepts" class="module">
+                <h3 class="module-title">Threaded Concepts</h3>
+                <div id="threaded-concepts-list" class="threaded-concepts-list">
+                    </div>
+            </div>
+
+            <div id="questions-that-slap" class="module">
+                <h3 class="module-title">Questions That Slap</h3>
+                <ul id="questions-list" class="questions-list">
+                     </ul>
+            </div>
+        </section>
+    </main>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Elements ---
+        const DOM = {
+            homeView: document.getElementById('opinionate-home'),
+            detailView: document.getElementById('concept-detail-view'),
+            conceptCloud: document.getElementById('concept-cloud'),
+            backButton: document.querySelector('.back-to-cloud'),
+            conceptTitle: document.getElementById('concept-title'),
+            skeletonKey: {
+                container: document.getElementById('skeleton-key'),
+                toggle: document.querySelector('.perspective-toggle'),
+                content: document.getElementById('skeleton-key-content'),
+            },
+            spectrum: {
+                container: document.getElementById('ideological-spectrum'),
+                tabs: document.querySelector('.spectrum-tabs'),
+                content: document.getElementById('ideological-spectrum-content'),
+            },
+            culturalMirror: {
+                grid: document.getElementById('media-grid'),
+            },
+            threadedConcepts: {
+                list: document.getElementById('threaded-concepts-list'),
+            },
+            questions: {
+                list: document.getElementById('questions-list'),
+            }
+        };
+
+        // --- Mock Data Store (Replace with Firebase Fetch) ---
+        const conceptData = {
+            "Consumerism": {
+                skeletonKey: {
+                    neutral: "<p>Consumerism is a social and economic order that encourages the acquisition of goods and services in ever-increasing amounts. It is driven by advertising, mass media, and a culture that equates personal happiness with material possessions.</p>",
+                    critical: "<p>A system that manufactures desire to fuel endless economic growth, consumerism alienates individuals from their true needs, commodifies human relationships, and accelerates ecological devastation. It is the cultural logic of late capitalism.</p>",
+                    radical: "<p>Consumerism is a form of social control. By channeling dissent and desire into the passive act of purchasing, it neutralizes revolutionary potential and maintains the power structures that benefit from mass consumption and debt.</p>"
+                },
+                spectrum: {
+                    critic: "<blockquote>The things you own end up owning you. It's only after you lose everything that you're free to do anything.</blockquote><p>Critics, from Marxists to anarcho-primitivists, argue that consumerism creates a 'false consciousness,' where the pursuit of commodities replaces the pursuit of authentic freedom and community. It is seen as a primary driver of social inequality and psychological distress.</p>",
+                    apologist: "<p>Apologists argue that consumer choice is a fundamental expression of individual freedom and a key driver of innovation and economic prosperity. The ability for individuals to purchase goods that improve their quality of life is seen as a triumph of modern market economies, leading to higher standards of living for all.</p>"
+                },
+                media: [
+                    { type: 'quote', content: 'We are consumers. We are the byproducts of a lifestyle obsession.', source: 'Fight Club' },
+                    { type: 'video', id: 'd46-a-kGZ-c', source: 'Adam Curtis - Century of the Self' },
+                    { type: 'quote', content: 'Advertising makes us feel that we are not enough.', source: 'Jean Kilbourne' },
+                    { type: 'quote', content: 'Too many people spend money they haven\'t earned to buy things they don\'t want to impress people they don\'t like.', source: 'Will Rogers' }
+                ],
+                linkedConcepts: ["Alienation", "Capital", "Class", "Neoliberalism", "Propaganda"],
+                questions: [
+                    "If your identity is not defined by what you own, what is it defined by?",
+                    "Can a society be truly free if its primary cultural activity is shopping?",
+                    "What is one thing you desire that cannot be bought?",
+                ]
+            },
+            // Add other concepts here...
+        };
+        const conceptList = ["Consumerism", "Existentialism", "Postmodernism", "Alienation", "Capital", "Ideology", "Power", "Biopolitics", "The Absurd", "Utopia", "Dystopia", "Nihilism"];
+
+        // --- Functions ---
+        
+        /**
+         * Initializes the floating concept cloud on the home view.
+         */
+        function initCloud() {
+            DOM.conceptCloud.innerHTML = ''; // Clear previous
+            conceptList.forEach(word => {
+                const el = document.createElement('span');
+                el.className = 'concept-word';
+                el.textContent = word;
+                
+                // Randomize position, size, and animation
+                const size = 1 + Math.random() * 2.5; // font-size in rem
+                el.style.fontSize = `${size}rem`;
+                el.style.top = `${10 + Math.random() * 80}%`;
+                el.style.left = `${10 + Math.random() * 80}%`;
+                el.style.animationDuration = `${15 + Math.random() * 15}s`;
+                el.style.animationDelay = `${Math.random() * 5}s`;
+
+                el.addEventListener('click', () => showDetailView(word));
+                DOM.conceptCloud.appendChild(el);
+            });
+        }
+
+        /**
+         * Hides the cloud and displays the detail view for a selected concept.
+         * @param {string} conceptName - The name of the concept to display.
+         */
+        function showDetailView(conceptName) {
+            const data = conceptData[conceptName];
+            if (!data) return;
+
+            // 1. Populate the detail view with data
+            DOM.conceptTitle.textContent = conceptName;
+            
+            // Skeleton Key
+            DOM.skeletonKey.content.innerHTML = `
+                <div data-id="neutral" class="perspective-content active">${data.skeletonKey.neutral}</div>
+                <div data-id="critical" class="perspective-content">${data.skeletonKey.critical}</div>
+                <div data-id="radical" class="perspective-content">${data.skeletonKey.radical}</div>
+            `;
+            // Reset active button
+            DOM.skeletonKey.toggle.querySelector('.active').classList.remove('active');
+            DOM.skeletonKey.toggle.querySelector('[data-perspective="neutral"]').classList.add('active');
+
+            // Spectrum
+            DOM.spectrum.content.innerHTML = `
+                <div data-id="critic" class="spectrum-content active">${data.spectrum.critic}</div>
+                <div data-id="apologist" class="spectrum-content">${data.spectrum.apologist}</div>
+            `;
+            // Reset active tab
+            DOM.spectrum.tabs.querySelector('.active').classList.remove('active');
+            DOM.spectrum.tabs.querySelector('[data-spectrum="critic"]').classList.add('active');
+            
+            // Cultural Mirror
+            DOM.culturalMirror.grid.innerHTML = data.media.map(item => {
+                if (item.type === 'quote') {
+                    return `
+                        <div class="media-card quote">
+                            <p class="content">${item.content}</p>
+                            <span class="source">${item.source}</span>
+                        </div>`;
+                }
+                if (item.type === 'video') {
+                     return `
+                        <div class="media-card video">
+                            <div class="content"><i class="fa-brands fa-youtube"></i></div>
+                            <span class="source">${item.source}</span>
+                        </div>`;
+                }
+            }).join('');
+            
+            // Threaded Concepts
+            DOM.threadedConcepts.list.innerHTML = data.linkedConcepts.map(link => 
+                `<a href="#" class="concept-link">${link}</a>`
+            ).join('');
+
+            // Questions
+            DOM.questions.list.innerHTML = data.questions.map(q => `<li>${q}</li>`).join('');
+
+            // 2. Animate the view transition
+            DOM.homeView.classList.add('hidden');
+            DOM.detailView.classList.remove('hidden');
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+                DOM.detailView.classList.add('visible');
+            }, 50);
+        }
+
+        /**
+         * Hides the detail view and returns to the concept cloud.
+         */
+        function showHomeView() {
+            DOM.detailView.classList.remove('visible');
+            setTimeout(() => {
+                DOM.detailView.classList.add('hidden');
+                DOM.homeView.classList.remove('hidden');
+            }, 500);
+        }
+
+        // --- Event Listeners ---
+        DOM.backButton.addEventListener('click', showHomeView);
+
+        DOM.skeletonKey.toggle.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const perspective = e.target.dataset.perspective;
+                DOM.skeletonKey.toggle.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+
+                DOM.skeletonKey.content.querySelector('.active').classList.remove('active');
+                DOM.skeletonKey.content.querySelector(`[data-id="${perspective}"]`).classList.add('active');
+            }
+        });
+        
+        DOM.spectrum.tabs.addEventListener('click', (e) => {
+             if (e.target.tagName === 'BUTTON') {
+                const spectrum = e.target.dataset.spectrum;
+                DOM.spectrum.tabs.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+
+                DOM.spectrum.content.querySelector('.active').classList.remove('active');
+                DOM.spectrum.content.querySelector(`[data-id="${spectrum}"]`).classList.add('active');
+            }
+        });
+
+        // --- Initial Load ---
+        initCloud();
+    });
+    </script>
+</body>
+</html>
