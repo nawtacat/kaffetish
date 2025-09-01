@@ -40,6 +40,16 @@
             margin-bottom: 2rem;
             letter-spacing: -0.5px;
         }
+        h2 {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            font-size: 1.5rem;
+        }
+        .stats-container {
+            margin-bottom: 3rem;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -61,10 +71,14 @@
         tbody tr:hover {
             background-color: #f9f9f9;
         }
-        td:nth-child(1), td:nth-child(2) {
+        .sessions-table td:nth-child(1), .sessions-table td:nth-child(2) {
             font-family: var(--font-mono);
             font-size: 0.9rem;
             color: var(--subtle);
+        }
+        .stats-table td:first-child {
+            font-weight: 600;
+            color: var(--accent);
         }
         .status-message {
             text-align: center;
@@ -81,6 +95,26 @@
 
     <main>
         <h1>Reader Sessions Dashboard</h1>
+
+        <div class="stats-container">
+            <h2>Top Read Books</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Book Title</th>
+                        <th>Total Reading Time</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-table-body" class="stats-table">
+                    <tr>
+                         <td colspan="3" class="status-message">Loading stats...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <h2>All Sessions</h2>
         <div id="table-container">
             <table>
                 <thead>
@@ -92,7 +126,7 @@
                         <th>Duration</th>
                     </tr>
                 </thead>
-                <tbody id="sessions-table-body">
+                <tbody id="sessions-table-body" class="sessions-table">
                     <tr>
                         <td colspan="5" class="status-message">Loading session data...</td>
                     </tr>
@@ -108,8 +142,6 @@
         import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
         // --- PASTE YOUR FIREBASE CONFIGURATION HERE ---
-        // WARNING: This key is visible on the client-side.
-        // Ensure your Firestore Security Rules are properly configured to protect your data.
         const firebaseConfig = {
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -125,8 +157,6 @@
 
         /**
          * Formats a duration from total seconds into a HH:MM:SS string.
-         * @param {number} totalSeconds - The total duration in seconds.
-         * @returns {string} The formatted duration string.
          */
         function formatDuration(totalSeconds) {
             if (isNaN(totalSeconds) || totalSeconds < 0) {
@@ -148,10 +178,11 @@
         }
         
         /**
-         * Fetches all reading sessions from Firestore, processes them, and displays them in a table.
+         * Fetches all reading sessions, processes them, and displays them in tables.
          */
-        async function fetchAndDisplaySessions() {
-            const tableBody = document.getElementById('sessions-table-body');
+        async function fetchAndDisplayData() {
+            const sessionsTableBody = document.getElementById('sessions-table-body');
+            const statsTableBody = document.getElementById('stats-table-body');
             const errorContainer = document.getElementById('error-container');
 
             try {
@@ -159,37 +190,58 @@
                 const querySnapshot = await getDocs(sessionsCollectionRef);
 
                 if (querySnapshot.empty) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="status-message">No reading sessions found.</td></tr>`;
+                    statsTableBody.innerHTML = `<tr><td colspan="3" class="status-message">No data to calculate stats.</td></tr>`;
+                    sessionsTableBody.innerHTML = `<tr><td colspan="5" class="status-message">No reading sessions found.</td></tr>`;
                     return;
                 }
 
                 const sessions = [];
+                const bookStats = {};
+
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    // Ensure both startTime and endTime exist to calculate a valid duration
                     if (data.startTime instanceof Timestamp && data.endTime instanceof Timestamp) {
-                        const startTime = data.startTime.toDate();
-                        const endTime = data.endTime.toDate();
-                        const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
-                        
+                        const durationSeconds = (data.endTime.toDate().getTime() - data.startTime.toDate().getTime()) / 1000;
+                        if (durationSeconds < 0) return; // Skip invalid sessions
+
+                        const bookTitle = data.bookTitle || "Unknown Title";
+
+                        // 1. Add to the detailed session list
                         sessions.push({
-                            docId: doc.id, // <-- Capture the document ID here
+                            docId: doc.id,
                             userId: data.userId,
-                            bookTitle: data.bookTitle || "Unknown Title",
-                            date: startTime.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                            bookTitle: bookTitle,
+                            date: data.startTime.toDate().toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
                             durationSeconds: durationSeconds,
-                            formattedDuration: formatDuration(durationSeconds)
                         });
+
+                        // 2. Aggregate data for the stats table
+                        if (!bookStats[bookTitle]) {
+                            bookStats[bookTitle] = { totalDuration: 0 };
+                        }
+                        bookStats[bookTitle].totalDuration += durationSeconds;
                     }
                 });
 
-                // Sort sessions by duration in descending order (longest first)
+                // --- Render the Top Books Stats Table ---
+                const sortedBooks = Object.entries(bookStats)
+                    .map(([title, data]) => ({ title, totalDuration: data.totalDuration }))
+                    .sort((a, b) => b.totalDuration - a.totalDuration);
+
+                statsTableBody.innerHTML = ''; // Clear loading message
+                sortedBooks.forEach((book, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>#${index + 1}</td>
+                        <td>${book.title}</td>
+                        <td>${formatDuration(book.totalDuration)}</td>
+                    `;
+                    statsTableBody.appendChild(row);
+                });
+
+                // --- Render the All Sessions Table ---
                 sessions.sort((a, b) => b.durationSeconds - a.durationSeconds);
-
-                // Clear the loading message
-                tableBody.innerHTML = '';
-
-                // Populate the table with sorted session data
+                sessionsTableBody.innerHTML = ''; // Clear loading message
                 sessions.forEach(session => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -197,21 +249,22 @@
                         <td>${session.userId}</td>
                         <td>${session.bookTitle}</td>
                         <td>${session.date}</td>
-                        <td>${session.formattedDuration}</td>
+                        <td>${formatDuration(session.durationSeconds)}</td>
                     `;
-                    tableBody.appendChild(row);
+                    sessionsTableBody.appendChild(row);
                 });
 
             } catch (error) {
                 console.error("Error fetching sessions:", error);
-                errorContainer.textContent = `Error: Could not load session data. Please check your Firestore security rules and the browser console for more details.`;
+                errorContainer.textContent = `Error: Could not load data. Please check your Firestore security rules and the browser console.`;
                 errorContainer.style.display = 'block';
-                tableBody.innerHTML = ''; // Hide the loading message
+                statsTableBody.innerHTML = ''; 
+                sessionsTableBody.innerHTML = '';
             }
         }
 
         // Run the function when the page loads
-        document.addEventListener('DOMContentLoaded', fetchAndDisplaySessions);
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayData);
     </script>
 
 </body>
