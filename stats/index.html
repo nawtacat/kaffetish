@@ -3,22 +3,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kaffetish | Public Dashboard</title>
+    <title>Kaffetish | Unified Analytics Dashboard</title>
 
-    <!-- Fonts and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&family=Roboto+Mono&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <!-- Chart.js for visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+        /* --- CORE STYLES & VARIABLES --- */
         :root {
             --bg: #FDFBF7;
             --ink: #2C2B2A;
@@ -28,6 +23,7 @@
             --shadow-color: rgba(44, 43, 42, 0.1);
             --font-main: 'Lora', serif;
             --font-ui: 'Poppins', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
         }
         body.dark-mode {
             --bg: #21201F;
@@ -45,21 +41,59 @@
             margin: 0;
             padding-bottom: 60px;
         }
-        .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+
+        /* --- LAYOUT & TYPOGRAPHY --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
         .app-header { padding: 16px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .logo { font-family: var(--font-main); font-size: 1.8rem; font-weight: 500; color: var(--accent); text-decoration: none; }
         body.dark-mode .logo { color: var(--ink); }
+        h1, h2 { font-family: var(--font-main); text-align: center; font-weight: 500; margin-top: 48px; margin-bottom: 24px; }
+        .loading-text { text-align: center; color: var(--subtle); margin-top: 24px; font-style: italic; }
+        .footer { text-align: center; margin-top: 48px; font-size: 0.9rem; color: var(--subtle); }
+
+        /* --- COMPONENTS --- */
         .theme-toggle { background: transparent; border: 1px solid var(--border-color); color: var(--subtle); border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1rem; transition: color 0.2s ease, background-color 0.2s ease; }
         .theme-toggle:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
-        h1, h2 { font-family: var(--font-main); text-align: center; font-weight: 500; margin-top: 48px; }
+        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 32px; }
         .stat-card { background-color: color-mix(in srgb, var(--border-color) 20%, transparent); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; text-align: center; }
         .stat-card h3 { margin: 0 0 12px 0; font-size: 1rem; color: var(--subtle); font-weight: 500; }
         .stat-card .value { margin: 0; font-size: 2.5rem; font-weight: 600; color: var(--accent); }
         body.dark-mode .stat-card .value { color: var(--ink); }
-        .loading-text { text-align: center; color: var(--subtle); margin-top: 24px; font-style: italic; }
-        .chart-container { margin-top: 32px; background-color: color-mix(in srgb, var(--border-color) 20%, transparent); border: 1px solid var(--border-color); padding: 24px; border-radius: 16px; }
-        .footer { text-align: center; margin-top: 48px; font-size: 0.9rem; color: var(--subtle); }
+        
+        .content-block { margin-top: 32px; background-color: color-mix(in srgb, var(--border-color) 20%, transparent); border: 1px solid var(--border-color); padding: 24px; border-radius: 16px; }
+
+        /* --- SESSIONS TABLE STYLES (FROM FILE 2) --- */
+        #sessions-section { margin-top: 48px; }
+        .table-wrapper { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        thead th {
+            font-weight: 600;
+            color: var(--subtle);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        tbody tr:hover {
+            background-color: color-mix(in srgb, var(--border-color) 40%, transparent);
+        }
+        td:nth-child(1), td:nth-child(2) {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--subtle);
+        }
+        .status-message { text-align: center; color: var(--subtle); padding: 2rem; }
+        .error-message { color: var(--accent); font-weight: 500; }
     </style>
 </head>
 <body>
@@ -94,8 +128,33 @@
 
         <div id="chart-section" style="display: none;">
             <h2>Top 10 Most Read Books</h2>
-            <div class="chart-container">
+            <div class="content-block">
                 <canvas id="topBooksChart"></canvas>
+            </div>
+        </div>
+        
+        <div id="sessions-section" style="display: none;">
+            <h2>Reader Sessions Log</h2>
+             <div class="content-block">
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Session ID</th>
+                                <th>Anonymous User ID</th>
+                                <th>Book Title</th>
+                                <th>Session Date</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessions-table-body">
+                            <tr>
+                                <td colspan="5" class="status-message">Loading session data...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="error-container" class="status-message error-message" style="display: none;"></div>
             </div>
         </div>
     </main>
@@ -104,13 +163,23 @@
         <p>Live data calculated on page load | <a href="https://kaffetish.club">Back to Library</a></p>
     </footer>
 
-    <script>
+    <script type="module">
+        // Import the necessary functions from the Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+        // --- FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
             projectId: "physmathacademy-722b3",
         };
 
+        // --- INITIALIZE FIREBASE ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- DOM ELEMENT REFERENCES ---
         const DOM = {
             body: document.body,
             modeToggle: document.getElementById('mode-toggle'),
@@ -122,23 +191,39 @@
             statsGrid: document.getElementById('stats-grid'),
             loadingText: document.getElementById('loading-text'),
             chartSection: document.getElementById('chart-section'),
+            sessionsSection: document.getElementById('sessions-section'),
+            sessionsTableBody: document.getElementById('sessions-table-body'),
+            errorContainer: document.getElementById('error-container'),
         };
 
         let currentMode = localStorage.getItem("dashboardMode") || "light";
         let topBooksChart = null;
 
-        function setMode(mode) { /* ... (Theme management code is unchanged) ... */ }
+        // --- THEME MANAGEMENT ---
+        function setMode(mode) {
+            currentMode = mode;
+            DOM.body.classList.toggle("dark-mode", mode === "dark");
+            DOM.modeToggle.innerHTML = mode === "dark" ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+            localStorage.setItem("dashboardMode", mode);
+            if (topBooksChart) { // Redraw chart on theme change
+                renderTopBooksChart(topBooksChart.config.data.datasets[0].data.map((hours, i) => ({
+                    title: topBooksChart.config.data.labels[i],
+                    totalHours: hours
+                })));
+            }
+        }
 
-        async function calculateAllStats(db) {
+        // --- SUMMARY STATS & TOP BOOKS LOGIC ---
+        async function calculateAllStats() {
             try {
-                // 1. Fetch all raw data concurrently
+                // Fetch all raw data concurrently
                 const [usersSnapshot, sessionsSnapshot, explainsSnapshot] = await Promise.all([
-                    db.collection("users").get(),
-                    db.collection("reading_sessions").get(),
-                    db.collection("explanation_requests").get()
+                    getDocs(collection(db, "users")),
+                    getDocs(collection(db, "reading_sessions")),
+                    getDocs(collection(db, "explanation_requests"))
                 ]);
 
-                // 2. Perform calculations in the browser
+                // Perform calculations
                 const totalUsers = usersSnapshot.size;
                 const totalExplanations = explainsSnapshot.size;
                 
@@ -174,45 +259,145 @@
 
             } catch (error) {
                 console.error("Error fetching or calculating stats:", error);
-                DOM.loadingText.textContent = `Error: Could not load analytics data. Check Firestore rules.`;
+                DOM.loadingText.textContent = `Error: Could not load summary analytics.`;
                 return null;
             }
         }
         
-        function renderUI(stats) {
+        function renderSummaryUI(stats) {
             if (!stats) return;
-
-            // Render summary cards
             DOM.statHours.textContent = `${(stats.totalReadingHours || 0).toFixed(2)} hrs`;
             DOM.statDau.textContent = (stats.dau || 0).toLocaleString();
             DOM.statExplains.textContent = (stats.totalExplanations || 0).toLocaleString();
             DOM.statUsers.textContent = (stats.totalUsers || 0).toLocaleString();
-
-            // Render chart
             renderTopBooksChart(stats.topBooks);
-
-            // Show the UI
-            DOM.loadingText.style.display = 'none';
             DOM.statsGrid.style.display = 'grid';
             DOM.chartSection.style.display = 'block';
         }
 
-        function renderTopBooksChart(books) { /* ... (Chart rendering code is unchanged) ... */ }
+        function renderTopBooksChart(books) {
+            if (!books || books.length === 0) return;
+            if (topBooksChart) topBooksChart.destroy();
+            
+            const isDarkMode = currentMode === 'dark';
+            const inkColor = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+            const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
 
+            const labels = books.map(b => b.title);
+            const data = books.map(b => b.totalHours);
+
+            topBooksChart = new Chart(DOM.chartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Hours Read',
+                        data: data,
+                        backgroundColor: accentColor,
+                        borderColor: accentColor,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: { label: (context) => `${context.parsed.x.toFixed(2)} hours` }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: isDarkMode ? '#444' : '#eee' },
+                            ticks: { color: inkColor }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: inkColor }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // --- READER SESSIONS TABLE LOGIC ---
+        function formatDuration(totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds < 0) return "N/A";
+            if (totalSeconds < 60) return `${Math.floor(totalSeconds)}s`;
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const hh = String(hours).padStart(2, '0');
+            const mm = String(minutes).padStart(2, '0');
+            const ss = String(seconds).padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
+        }
+        
+        async function fetchAndDisplaySessions() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'reading_sessions'));
+                if (querySnapshot.empty) {
+                    DOM.sessionsTableBody.innerHTML = `<tr><td colspan="5" class="status-message">No reading sessions found.</td></tr>`;
+                    return;
+                }
+
+                const sessions = [];
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.startTime instanceof Timestamp && data.endTime instanceof Timestamp) {
+                        const startTime = data.startTime.toDate();
+                        const endTime = data.endTime.toDate();
+                        const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+                        
+                        sessions.push({
+                            docId: doc.id,
+                            userId: data.userId,
+                            bookTitle: data.bookTitle || "Unknown Title",
+                            date: startTime.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                            durationSeconds: durationSeconds,
+                        });
+                    }
+                });
+
+                sessions.sort((a, b) => b.durationSeconds - a.durationSeconds);
+                DOM.sessionsTableBody.innerHTML = ''; // Clear loading message
+
+                sessions.forEach(session => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${session.docId}</td>
+                        <td>${session.userId}</td>
+                        <td>${session.bookTitle}</td>
+                        <td>${session.date}</td>
+                        <td>${formatDuration(session.durationSeconds)}</td>
+                    `;
+                    DOM.sessionsTableBody.appendChild(row);
+                });
+                DOM.sessionsSection.style.display = 'block';
+
+            } catch (error) {
+                console.error("Error fetching sessions:", error);
+                DOM.errorContainer.textContent = `Error: Could not load session data. Please check Firestore security rules.`;
+                DOM.errorContainer.style.display = 'block';
+                DOM.sessionsTableBody.innerHTML = '';
+            }
+        }
+        
+        // --- PAGE INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', () => {
             setMode(currentMode);
             DOM.modeToggle.addEventListener("click", () => setMode(currentMode === 'light' ? 'dark' : 'light'));
 
-            try {
-                firebase.initializeApp(firebaseConfig);
-                const db = firebase.firestore();
-                calculateAllStats(db).then(stats => {
-                    renderUI(stats);
-                });
-            } catch (e) {
-                console.error("Firebase initialization failed:", e);
-                DOM.loadingText.textContent = `Error: Could not connect to the database.`;
-            }
+            // Fetch all data concurrently
+            Promise.all([
+                calculateAllStats().then(renderSummaryUI),
+                fetchAndDisplaySessions()
+            ]).finally(() => {
+                DOM.loadingText.style.display = 'none';
+            });
         });
     </script>
 
