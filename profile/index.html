@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile | Kaffetish</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+    <style>
+        :root {
+            --bg: #FDFBF7;
+            --ink: #2C2B2A;
+            --accent: #FF3A44;
+            --subtle: #8A8886;
+            --border-color: #EAE8E4;
+            --shadow-color: rgba(44, 43, 42, 0.1);
+            --font-main: 'Lora', serif;
+            --font-ui: 'Poppins', sans-serif;
+            --success: #28a745;
+            --warning: #ffc107;
+        }
+
+        body.dark-mode {
+            --bg: #21201F;
+            --ink: #EAE8E4;
+            --subtle: #999591;
+            --border-color: #3A3837;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+            --success: #3ddc63;
+            --warning: #f3ca5c;
+        }
+
+        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg);
+            color: var(--ink);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            padding-top: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .app-header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+        }
+        .header-content {
+            max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo-link { text-decoration: none; }
+        .logo {
+            font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
+            color: var(--accent); font-family: var(--font-main);
+        }
+        body.dark-mode .logo { color: var(--ink); }
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+        .header-actions button {
+            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+            padding: 8px 10px; cursor: pointer; font-size: 1rem;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+
+        main { padding: 48px 24px; width: 100%; }
+
+        .profile-container {
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px 40px;
+            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+        }
+
+        .panel-header { text-align: center; margin-bottom: 32px; }
+        .panel-header .icon {
+            font-size: 2.5rem; color: var(--accent);
+            margin-bottom: 16px;
+        }
+        .panel-header h2 {
+            font-family: var(--font-main); font-size: 2rem;
+            font-weight: 500; margin: 0 0 12px 0;
+        }
+        .panel-header p { color: var(--subtle); margin: 0; line-height: 1.6; }
+
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group.full-width { grid-column: 1 / -1; }
+
+        .form-group label {
+            display: block; font-weight: 500;
+            margin-bottom: 8px; font-size: 0.9rem;
+        }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px 16px; font-size: 1rem;
+            font-family: var(--font-ui); border: 1px solid var(--border-color);
+            border-radius: 8px; background-color: var(--bg); color: var(--ink);
+            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+        }
+
+        .btn {
+            width: 100%; padding: 14px; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s, color 0.2s;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-primary:hover {
+            background-color: color-mix(in srgb, var(--accent) 85%, black);
+            transform: translateY(-2px);
+        }
+        .btn-primary:disabled {
+            background-color: var(--subtle); cursor: not-allowed; transform: none;
+        }
+        .btn-secondary {
+            background-color: transparent; color: var(--subtle);
+            border: 1px solid var(--border-color); margin-top: 16px;
+        }
+        .btn-secondary:hover { background-color: var(--border-color); color: var(--ink); }
+
+        .message-box {
+            padding: 12px 16px; border-radius: 8px; margin-top: 24px;
+            font-size: 0.9rem; text-align: center; display: none;
+        }
+        .message-box.error { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: color-mix(in srgb, var(--accent) 90%, black); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+        .message-box.success { background-color: color-mix(in srgb, var(--success) 15%, transparent); color: color-mix(in srgb, var(--success) 90%, black); border: 1px solid color-mix(in srgb, var(--success) 30%, transparent); }
+        .message-box.warning { background-color: color-mix(in srgb, var(--warning) 25%, transparent); color: color-mix(in srgb, var(--warning) 95%, black); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent); }
+        body.dark-mode .message-box.warning { color: var(--ink); }
+
+        .spinner {
+            width: 1.2em; height: 1.2em; border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .profile-info-grid { display: grid; grid-template-columns: auto 1fr; gap: 12px 20px; align-items: center; }
+        .profile-info-grid dt { font-weight: 500; color: var(--subtle); }
+        .profile-info-grid dd { margin: 0; font-weight: 500; }
+        .status-verified { color: var(--success); }
+        .status-unverified { color: var(--warning); }
+        .status-unverified button {
+            font-size: 0.85rem; margin-left: 8px; background: none; border: none;
+            color: var(--accent); cursor: pointer; text-decoration: underline; padding: 2px;
+        }
+
+        .hidden { display: none; }
+        @media (max-width: 576px) {
+            main { padding: 24px 16px; }
+            .panel { padding: 24px; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <a href="/" class="logo-link"><h1 class="logo">Kaffetish</h1></a>
+            <div class="header-actions">
+                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="profile-container">
+            <div id="signup-view" class="panel hidden">
+                <div class="panel-header">
+                    <div class="icon"><i class="fa-solid fa-user-shield"></i></div>
+                    <h2>Save Your Progress</h2>
+                    <p>Create a permanent account to save your highlights and sync your reading history across all your devices.</p>
+                </div>
+                <form id="signup-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" required autocomplete="given-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" required autocomplete="family-name">
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="country">Country</label>
+                        <select id="country" required autocomplete="country-name"></select>
+                    </div>
+                    <hr style="border:0; height:1px; background-color: var(--border-color); margin: 10px 0 20px;">
+                    <div class="form-group full-width">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" required autocomplete="email">
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="password">Password (min. 6 characters)</label>
+                        <input type="password" id="password" required minlength="6" autocomplete="new-password">
+                    </div>
+                    <button type="submit" id="submit-button" class="btn btn-primary">
+                        <span id="button-text">Create My Account</span>
+                        <div id="button-spinner" class="spinner" style="display: none;"></div>
+                    </button>
+                </form>
+                <div id="signup-message-box" class="message-box"></div>
+            </div>
+
+            <div id="profile-view" class="panel hidden">
+                <div class="panel-header">
+                    <div class="icon"><i class="fa-solid fa-user-check"></i></div>
+                    <h2>Your Profile</h2>
+                    <p>This is your personal information. You can log out at any time.</p>
+                </div>
+                <dl class="profile-info-grid">
+                    <dt>Name</dt>
+                    <dd id="profile-name">...</dd>
+                    <dt>Country</dt>
+                    <dd id="profile-country">...</dd>
+                    <dt>Email</dt>
+                    <dd id="profile-email">...</dd>
+                    <dt>Status</dt>
+                    <dd id="profile-status">...</dd>
+                </dl>
+                <div id="profile-message-box" class="message-box"></div>
+                <button id="logout-button" class="btn btn-secondary">Log Out</button>
+            </div>
+
+             <div id="loading-view" class="panel" style="text-align: center;">
+                <p>Loading Profile...</p>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, linkWithCredential, EmailAuthProvider, updateProfile, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+        // 🔥 IMPORTANT: Add your Firebase configuration object here
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+            authDomain: "physmathacademy-722b3.firebaseapp.com",
+            projectId: "physmathacademy-722b3",
+            storageBucket: "physmathacademy-722b3.appspot.com",
+            messagingSenderId: "1093640992262",
+            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const DOM = {
+            body: document.body,
+            modeToggle: document.getElementById('mode-toggle'),
+            signupView: document.getElementById('signup-view'),
+            profileView: document.getElementById('profile-view'),
+            loadingView: document.getElementById('loading-view'),
+            signupForm: document.getElementById('signup-form'),
+            submitButton: document.getElementById('submit-button'),
+            buttonText: document.getElementById('button-text'),
+            buttonSpinner: document.getElementById('button-spinner'),
+            signupMessageBox: document.getElementById('signup-message-box'),
+            profileMessageBox: document.getElementById('profile-message-box'),
+            logoutButton: document.getElementById('logout-button'),
+            countrySelect: document.getElementById('country'),
+        };
+
+        function setMode(mode) {
+            DOM.body.classList.toggle("dark-mode", mode === 'dark');
+            DOM.modeToggle.querySelector('i').className = `fa-solid ${mode === 'light' ? 'fa-moon' : 'fa-sun'}`;
+            localStorage.setItem("kaffetishMode", mode);
+        }
+
+        function showView(view) {
+            DOM.signupView.classList.add('hidden');
+            DOM.profileView.classList.add('hidden');
+            DOM.loadingView.classList.add('hidden');
+            if(view) view.classList.remove('hidden');
+        }
+        
+        function showMessage(box, type, text) {
+            box.textContent = text;
+            box.className = `message-box ${type}`;
+            box.style.display = 'block';
+        }
+
+        function setLoadingState(isLoading) {
+            DOM.submitButton.disabled = isLoading;
+            DOM.buttonText.style.display = isLoading ? 'none' : 'block';
+            DOM.buttonSpinner.style.display = isLoading ? 'block' : 'none';
+        }
+
+        async function populateCountries() {
+            try {
+                const response = await fetch('https://restcountries.com/v3.1/all?fields=name');
+                if (!response.ok) throw new Error('Failed to fetch countries');
+                const countries = await response.json();
+                const sorted = countries.map(c => c.name.common).sort();
+                
+                DOM.countrySelect.innerHTML = '<option value="" disabled selected>Select your country</option>';
+                sorted.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    DOM.countrySelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Country fetch error:", error);
+                DOM.countrySelect.innerHTML = '<option value="">Could not load countries</option>';
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            setLoadingState(true);
+            DOM.signupMessageBox.style.display = 'none';
+
+            const { firstName, lastName, country, email, password } = e.target.elements;
+            const displayName = `${firstName.value.trim()} ${lastName.value.trim()}`;
+
+            try {
+                if (!auth.currentUser || !auth.currentUser.isAnonymous) {
+                   throw new Error("No active anonymous session to upgrade.");
+                }
+
+                const credential = EmailAuthProvider.credential(email.value, password.value);
+                // Link the anonymous account with the new email/password
+                await linkWithCredential(auth.currentUser, credential);
+                
+                // Update the user's profile with their name
+                await updateProfile(auth.currentUser, { displayName: displayName });
+
+                // Save additional info (like country) to Firestore
+                const userDocRef = doc(db, "users", auth.currentUser.uid);
+                await setDoc(userDocRef, {
+                    uid: auth.currentUser.uid,
+                    displayName: displayName,
+                    email: email.value,
+                    country: country.value,
+                }, { merge: true });
+
+                // Send verification email
+                await sendEmailVerification(auth.currentUser);
+
+                showMessage(DOM.signupMessageBox, 'success', 'Success! Please check your email to verify your account.');
+                DOM.signupForm.reset();
+                
+            } catch (error) {
+                let msg = 'An unexpected error occurred.';
+                if (error.code === 'auth/email-already-in-use') msg = 'This email is already taken.';
+                else if (error.code === 'auth/weak-password') msg = 'Password must be at least 6 characters.';
+                else if (error.code === 'auth/invalid-email') msg = 'Please enter a valid email address.';
+                console.error("Signup error:", error);
+                showMessage(DOM.signupMessageBox, 'error', msg);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function renderProfile(user) {
+            document.getElementById('profile-name').textContent = user.displayName || 'Not set';
+            document.getElementById('profile-email').textContent = user.email;
+
+            // Ideally, fetch country from your Firestore document here
+            // For now, we'll leave it placeholder
+            document.getElementById('profile-country').textContent = '...'; 
+
+            const statusEl = document.getElementById('profile-status');
+            if (user.emailVerified) {
+                statusEl.innerHTML = '<span class="status-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>';
+                DOM.profileMessageBox.style.display = 'none';
+            } else {
+                statusEl.innerHTML = `<span class="status-unverified"><i class="fa-solid fa-circle-exclamation"></i> Unverified</span> <button id="resend-verification">Resend Email</button>`;
+                showMessage(DOM.profileMessageBox, 'warning', 'Please check your inbox (and spam folder) to verify your email address.');
+                
+                document.getElementById('resend-verification').addEventListener('click', async () => {
+                    try {
+                        await sendEmailVerification(auth.currentUser);
+                        showMessage(DOM.profileMessageBox, 'success', 'Verification email sent!');
+                    } catch (error) {
+                        showMessage(DOM.profileMessageBox, 'error', 'Failed to send email. Please try again later.');
+                    }
+                });
+            }
+        }
+
+        function init() {
+            setMode(localStorage.getItem("kaffetishMode") || 'light');
+            DOM.modeToggle.addEventListener("click", () => setMode(DOM.body.classList.contains('dark-mode') ? 'light' : 'dark'));
+
+            populateCountries();
+            DOM.signupForm.addEventListener('submit', handleSignup);
+            DOM.logoutButton.addEventListener('click', () => signOut(auth));
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    if (user.isAnonymous) {
+                        showView(DOM.signupView);
+                    } else {
+                        renderProfile(user);
+                        showView(DOM.profileView);
+                    }
+                } else {
+                    signInAnonymously(auth).catch((error) => {
+                        console.error("Anonymous sign-in failed:", error);
+                        showView(null); // Hide all views
+                        // Optionally, show a full-page error message
+                    });
+                }
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>
