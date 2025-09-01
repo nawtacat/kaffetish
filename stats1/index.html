@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaffetish - Reader Sessions Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #FDFBF7;
+            --ink: #2C2B2A;
+            --border-color: #EAE8E4;
+            --subtle: #8A8886;
+            --accent: #FF3A44;
+            --font-ui: 'Poppins', sans-serif;
+        }
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg);
+            color: var(--ink);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+            border: 1px solid var(--border-color);
+        }
+        h1 {
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 2rem;
+            letter-spacing: -0.5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        thead th {
+            font-weight: 600;
+            color: var(--subtle);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+        tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+        td:first-child {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: var(--subtle);
+        }
+        .status-message {
+            text-align: center;
+            color: var(--subtle);
+            padding: 2rem;
+        }
+        .error-message {
+            color: var(--accent);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <h1>Reader Sessions Dashboard</h1>
+        <div id="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Anonymous User ID</th>
+                        <th>Book Title</th>
+                        <th>Session Date</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody id="sessions-table-body">
+                    <tr>
+                        <td colspan="4" class="status-message">Loading session data...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="error-container" class="status-message error-message" style="display: none;"></div>
+    </main>
+
+    <script type="module">
+        // Import the necessary functions from the Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getFirestore, collection, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+        // --- PASTE YOUR FIREBASE CONFIGURATION HERE ---
+        // WARNING: This key is visible on the client-side.
+        // Ensure your Firestore Security Rules are properly configured to protect your data.
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+            authDomain: "physmathacademy-722b3.firebaseapp.com",
+            projectId: "physmathacademy-722b3",
+            storageBucket: "physmathacademy-722b3.appspot.com",
+            messagingSenderId: "1093640992262",
+            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        /**
+         * Formats a duration from total seconds into a HH:MM:SS string.
+         * @param {number} totalSeconds - The total duration in seconds.
+         * @returns {string} The formatted duration string.
+         */
+        function formatDuration(totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds < 0) {
+                return "N/A";
+            }
+            if (totalSeconds < 60) {
+                return `${Math.floor(totalSeconds)}s`;
+            }
+
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+
+            const hh = String(hours).padStart(2, '0');
+            const mm = String(minutes).padStart(2, '0');
+            const ss = String(seconds).padStart(2, '0');
+
+            return `${hh}:${mm}:${ss}`;
+        }
+        
+        /**
+         * Fetches all reading sessions from Firestore, processes them, and displays them in a table.
+         */
+        async function fetchAndDisplaySessions() {
+            const tableBody = document.getElementById('sessions-table-body');
+            const errorContainer = document.getElementById('error-container');
+
+            try {
+                const sessionsCollectionRef = collection(db, 'reading_sessions');
+                const querySnapshot = await getDocs(sessionsCollectionRef);
+
+                if (querySnapshot.empty) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="status-message">No reading sessions found.</td></tr>`;
+                    return;
+                }
+
+                const sessions = [];
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Ensure both startTime and endTime exist to calculate a valid duration
+                    if (data.startTime instanceof Timestamp && data.endTime instanceof Timestamp) {
+                        const startTime = data.startTime.toDate();
+                        const endTime = data.endTime.toDate();
+                        const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
+                        
+                        sessions.push({
+                            userId: data.userId,
+                            bookTitle: data.bookTitle || "Unknown Title",
+                            date: startTime.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                            durationSeconds: durationSeconds,
+                            formattedDuration: formatDuration(durationSeconds)
+                        });
+                    }
+                });
+
+                // Sort sessions by duration in descending order (longest first)
+                sessions.sort((a, b) => b.durationSeconds - a.durationSeconds);
+
+                // Clear the loading message
+                tableBody.innerHTML = '';
+
+                // Populate the table with sorted session data
+                sessions.forEach(session => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${session.userId}</td>
+                        <td>${session.bookTitle}</td>
+                        <td>${session.date}</td>
+                        <td>${session.formattedDuration}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+            } catch (error) {
+                console.error("Error fetching sessions:", error);
+                errorContainer.textContent = `Error: Could not load session data. Please check your Firestore security rules and the browser console for more details.`;
+                errorContainer.style.display = 'block';
+                tableBody.innerHTML = ''; // Hide the loading message
+            }
+        }
+
+        // Run the function when the page loads
+        document.addEventListener('DOMContentLoaded', fetchAndDisplaySessions);
+    </script>
+
+</body>
+</html>
