@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Membership | The Athenaeum</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <title>Membership | Kaffetish</title> <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -13,7 +12,7 @@
         :root {
             --bg: #FDFBF7;
             --ink: #2C2B2A;
-            --accent: #FF3A44;
+            --accent: #FF3A44; /* Kaffetish Red! */
             --subtle: #8A8886;
             --border-color: #EAE8E4;
             --shadow-color: rgba(44, 43, 42, 0.1);
@@ -60,66 +59,81 @@
             overflow: hidden;
         }
 
-        /* 1. Atmospheric Panel (Left Side) */
+        /* 1. Atmospheric Panel (Left Side) - Kaffetish Red Overlay */
         .atmospheric-panel {
-            background: linear-gradient(rgba(10, 10, 10, 0.7), rgba(10, 10, 10, 0.7)), url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070') no-repeat center center;
+            /* Using a variable for the accent color to ensure dark mode compatibility if needed */
+            background: linear-gradient(rgba(var(--accent-rgb, 255, 58, 68), 0.6), rgba(var(--accent-rgb, 255, 58, 68), 0.6)), url('https://images.unsplash.com/photo-1521587760476-6c12a4b040da?q=80&w=2070') no-repeat center center;
             background-size: cover;
             color: #FFFFFF;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 60px;
-            text-align: left;
+            text-align: center; /* Centered text for bolder look */
         }
         .atmospheric-panel .panel-content { max-width: 400px; }
         .atmospheric-panel .logo {
-            font-size: 2.5rem;
-            color: #FFFFFF;
-            margin-bottom: 30px;
+            font-size: 3rem; /* Make the logo grander */
+            color: #FFFFFF; /* Ensure white over red overlay */
+            margin-bottom: 20px;
+            font-family: var(--font-main); /* Keep Lora for logo */
+            letter-spacing: -1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .atmospheric-panel h2 {
             font-family: var(--font-main);
-            font-size: 2.8rem;
-            font-weight: 500;
-            line-height: 1.2;
+            font-size: 3.5rem; /* Larger and bolder for the main message */
+            font-weight: 700; /* Bolder */
+            line-height: 1.1;
             margin-bottom: 40px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .atmospheric-panel ul {
             list-style: none;
             padding: 0;
             font-size: 1.1rem;
             line-height: 2;
+            text-align: left; /* Align bullet points left */
         }
         .atmospheric-panel ul i {
-            color: var(--accent);
+            color: #FFFFFF; /* White icons on red overlay */
             margin-right: 15px;
             width: 20px;
             text-align: center;
         }
 
-        /* 2. Form Panel (Right Side) */
+        /* 2. Form Panel (Right Side) - Reduced Element Sizes */
         .form-panel {
             background-color: var(--bg);
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 60px;
+            padding: 40px; /* Slightly less padding to make room */
             box-sizing: border-box;
-            overflow-y: auto; /* Allow scrolling on small heights */
+            overflow-y: auto;
         }
-        .form-panel .form-container { width: 100%; max-width: 420px; }
+        .form-panel .form-container { width: 100%; max-width: 380px; } /* Slightly narrower max-width */
         .form-panel h3 {
             font-family: var(--font-main);
-            font-size: 2.2rem;
+            font-size: 2rem; /* Slightly smaller */
             font-weight: 500;
             margin: 0 0 8px 0;
             color: var(--ink);
         }
-        .form-panel p { color: var(--subtle); margin-bottom: 40px; }
+        .form-panel p { color: var(--subtle); margin-bottom: 30px; } /* Slightly less margin */
+        
+        .form-group label { font-size: 0.85rem; } /* Smaller label font */
+        .form-group input, .form-group select {
+            padding: 10px 14px; /* Reduced padding */
+            font-size: 0.95rem; /* Slightly smaller input font */
+        }
+
+        .btn { padding: 12px; font-size: 0.95rem; } /* Reduced button padding/font */
+
         .login-prompt {
             text-align: center;
-            margin-top: 24px;
-            font-size: 0.9rem;
+            margin-top: 20px; /* Reduced margin */
+            font-size: 0.85rem; /* Smaller font */
             color: var(--subtle);
         }
         .login-prompt a {
@@ -130,7 +144,7 @@
         .login-prompt a:hover { text-decoration: underline; }
 
 
-        /* --- ORIGINAL AND SHARED STYLES --- */
+        /* --- ORIGINAL AND SHARED STYLES (KEEP AS IS OR MINOR ADJUSTMENTS) --- */
 
         .app-header {
             position: fixed; top: 0; left: 0; width: 100%; height: 60px;
@@ -142,12 +156,14 @@
             max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .logo-link { text-decoration: none; }
-        .logo {
+        /* Changed Kaffetish to be white when it's the main header logo */
+        .logo-link .logo {
             font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
-            color: var(--accent); font-family: var(--font-main);
+            color: var(--accent); /* Default header logo color */
+            font-family: var(--font-main);
         }
-        body.dark-mode .logo { color: var(--ink); }
+        body.dark-mode .logo-link .logo { color: var(--ink); } /* Dark mode specific for header logo */
+
         .header-actions { display: flex; align-items: center; gap: 16px; }
         .header-actions button {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
@@ -173,7 +189,7 @@
             line-height: 1.7; max-width: 500px;
         }
 
-        .content-layout {
+        .content-layout { /* This targets the profile view */
             display: grid; grid-template-columns: 0.8fr 1.2fr;
             gap: 100px; align-items: flex-start;
         }
@@ -185,35 +201,14 @@
         }
         .info-block p { color: var(--subtle); line-height: 1.6; }
 
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .form-group { margin-bottom: 24px; }
-        .form-group.full-width { grid-column: 1 / -1; }
-        .form-group label {
-            display: block; font-weight: 500;
-            margin-bottom: 8px; font-size: 0.9rem;
-        }
-        .form-group input, .form-group select {
-            width: 100%; padding: 12px 16px; font-size: 1rem;
-            font-family: var(--font-ui); border: 1px solid var(--border-color);
-            border-radius: 8px; background-color: var(--bg); color: var(--ink);
-            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none; border-color: var(--accent);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-        }
-
-        .btn {
-            width: 100%; padding: 14px; border: none; border-radius: 8px;
-            font-size: 1rem; font-weight: 600; cursor: pointer;
-            transition: all 0.2s;
-            display: flex; justify-content: center; align-items: center; gap: 10px;
-        }
-        .btn-primary { background-color: var(--accent); color: white; }
-        .btn-primary:hover { background-color: color-mix(in srgb, var(--accent) 85%, black); transform: translateY(-2px); }
-        .btn-primary:disabled { background-color: var(--subtle); cursor: not-allowed; transform: none; }
-        .btn-secondary { background-color: transparent; color: var(--subtle); border: 1px solid var(--border-color); margin-top: 16px; }
-        .btn-secondary:hover { background-color: var(--border-color); color: var(--ink); }
+        /* The .form-grid styles within .form-panel are for signup. This targets the profile view */
+        .profile-details-area { max-width: 450px; }
+        .profile-info-grid { display: grid; grid-template-columns: 100px 1fr; gap: 20px; align-items: center; }
+        .profile-info-grid dt { font-weight: 500; color: var(--subtle); text-align: right; }
+        .profile-info-grid dd { margin: 0; font-weight: 500; font-size: 1.1rem; }
+        .status-verified { color: var(--success); }
+        .status-unverified { color: var(--warning); }
+        .status-unverified button { font-size: 0.85rem; margin-left: 8px; background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 2px; }
 
         .message-box {
             padding: 12px 16px; border-radius: 8px; margin-top: 24px;
@@ -231,39 +226,53 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .profile-details-area { max-width: 450px; }
-        .profile-info-grid { display: grid; grid-template-columns: 100px 1fr; gap: 20px; align-items: center; }
-        .profile-info-grid dt { font-weight: 500; color: var(--subtle); text-align: right; }
-        .profile-info-grid dd { margin: 0; font-weight: 500; font-size: 1.1rem; }
-        .status-verified { color: var(--success); }
-        .status-unverified { color: var(--warning); }
-        .status-unverified button { font-size: 0.85rem; margin-left: 8px; background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 2px; }
-
         .hidden { display: none; }
         
+        /* Media queries for responsiveness */
         @media (max-width: 900px) {
-            /* Make the signup page a single column on tablets/mobile */
             .signup-container { grid-template-columns: 1fr; }
-            .atmospheric-panel { display: none; } /* Hide image panel to save space */
-            .form-panel { padding: 40px 24px; }
+            .atmospheric-panel {
+                display: flex; /* Keep atmospheric panel for mobile, but make it smaller */
+                height: 30vh;
+                padding: 30px;
+                text-align: center;
+                background-position: top center; /* Adjust background for smaller height */
+            }
+            .atmospheric-panel .panel-content { max-width: 100%; }
+            .atmospheric-panel .logo { font-size: 2.2rem; margin-bottom: 10px; }
+            .atmospheric-panel h2 { font-size: 2.5rem; margin-bottom: 20px; }
+            .atmospheric-panel ul { display: none; } /* Hide bullet points on smaller screens */
+
+            .form-panel {
+                padding: 30px 24px;
+                height: 70vh; /* Form panel takes remaining height */
+                align-items: flex-start; /* Align content to top for scrolling */
+            }
+            .form-panel .form-container { max-width: 100%; }
         }
         
+        @media (max-width: 600px) {
+            /* Further adjustments for very small screens */
+            .atmospheric-panel h2 { font-size: 1.8rem; }
+            .form-panel h3 { font-size: 1.6rem; }
+        }
+
+        /* Original responsive styles for profile page (ensure these still apply when not signup-active) */
         @media (max-width: 820px) {
-            /* Original responsive styles for profile page */
-            main { padding: 40px 24px; }
-            .page-header { margin-bottom: 50px; }
-            .page-header h1 { font-size: 2.8rem; }
-            .content-layout { grid-template-columns: 1fr; gap: 50px; }
-            .info-block { text-align: center; }
-            .info-block .icon { margin-left: auto; margin-right: auto; }
-            .profile-info-grid dt { text-align: left; }
+            body:not(.signup-active) main { padding: 40px 24px; }
+            body:not(.signup-active) .page-header { margin-bottom: 50px; }
+            body:not(.signup-active) .page-header h1 { font-size: 2.8rem; }
+            body:not(.signup-active) .content-layout { grid-template-columns: 1fr; gap: 50px; }
+            body:not(.signup-active) .info-block { text-align: center; }
+            body:not(.signup-active) .info-block .icon { margin-left: auto; margin-right: auto; }
+            body:not(.signup-active) .profile-info-grid dt { text-align: left; }
         }
     </style>
 </head>
 <body>
     <header class="app-header">
         <div class="header-content">
-            <a href="/" class="logo-link"><h1 class="logo">The Athenaeum</h1></a>
+            <a href="/" class="logo-link"><h1 class="logo">Kaffetish</h1></a>
             <div class="header-actions">
                 <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
@@ -275,19 +284,19 @@
             <div class="signup-container">
                 <div class="atmospheric-panel">
                     <div class="panel-content">
-                        <h1 class="logo">The Athenaeum</h1>
-                        <h2>Unlock a World of Knowledge.</h2>
+                        <h1 class="logo">Kaffetish</h1>
+                        <h2>Sign-up to Save Your Progress</h2>
                         <ul>
-                            <li><i class="fa-solid fa-book-bookmark"></i> Curated Digital Collections</li>
-                            <li><i class="fa-solid fa-feather-pen"></i> Exclusive Author Events</li>
-                            <li><i class="fa-solid fa-users"></i> A Community of Passionate Readers</li>
+                            <li><i class="fa-solid fa-book-open-reader"></i> Access a Free Curated Library</li>
+                            <li><i class="fa-solid fa-brain"></i> Unearth Wisdom with AI Explanations</li>
+                            <li><i class="fa-solid fa-bookmark"></i> Keep Your Learning Journey Secure</li>
                         </ul>
                     </div>
                 </div>
                 <div class="form-panel">
                     <div class="form-container">
-                        <h3>Create Your Membership</h3>
-                        <p>Join our curated collection of literary works and minds.</p>
+                        <h3>Begin Your Kaffetish Journey</h3>
+                        <p>Unlock a world of classic literature and intellectual growth.</p>
                         <form id="signup-form">
                             <div class="form-grid">
                                 <div class="form-group"><label for="firstName">First Name</label><input type="text" id="firstName" required autocomplete="given-name"></div>
@@ -297,13 +306,13 @@
                             <div class="form-group full-width"><label for="email">Email Address</label><input type="email" id="email" required autocomplete="email"></div>
                             <div class="form-group full-width"><label for="password">Password (min. 6 characters)</label><input type="password" id="password" required minlength="6" autocomplete="new-password"></div>
                             <button type="submit" id="submit-button" class="btn btn-primary">
-                                <span id="button-text">Begin My Journey</span>
+                                <span id="button-text">Create My Free Account</span>
                                 <div id="button-spinner" class="spinner" style="display: none;"></div>
                             </button>
                         </form>
                         <div id="signup-message-box" class="message-box"></div>
                         <div class="login-prompt">
-                            Already have a membership? <a href="#">Log In</a>
+                            Already part of Kaffetish? <a href="#">Log In</a>
                         </div>
                     </div>
                 </div>
@@ -372,6 +381,18 @@
             logoutButton: document.getElementById('logout-button'),
             countrySelect: document.getElementById('country'),
         };
+
+        // Get RGB components from --accent for use in rgba()
+        const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+        document.documentElement.style.setProperty('--accent-rgb', hexToRgb(accentColor));
+
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `${r}, ${g}, ${b}`;
+        }
 
         function setMode(mode) {
             DOM.body.classList.toggle("dark-mode", mode === 'dark');
