@@ -6,7 +6,7 @@
     <title>Kaffetish - Reader Sessions Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto+Mono&display=swap" rel="stylesheet" />
     <style>
         :root {
             --bg: #FDFBF7;
@@ -15,6 +15,7 @@
             --subtle: #8A8886;
             --accent: #FF3A44;
             --font-ui: 'Poppins', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
         }
         body {
             font-family: var(--font-ui);
@@ -25,7 +26,7 @@
             line-height: 1.6;
         }
         main {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background-color: #fff;
             padding: 2rem;
@@ -48,6 +49,7 @@
             padding: 12px 16px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
         }
         thead th {
             font-weight: 600;
@@ -59,8 +61,8 @@
         tbody tr:hover {
             background-color: #f9f9f9;
         }
-        td:first-child {
-            font-family: monospace;
+        td:nth-child(1), td:nth-child(2) {
+            font-family: var(--font-mono);
             font-size: 0.9rem;
             color: var(--subtle);
         }
@@ -83,6 +85,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Session ID</th>
                         <th>Anonymous User ID</th>
                         <th>Book Title</th>
                         <th>Session Date</th>
@@ -91,7 +94,7 @@
                 </thead>
                 <tbody id="sessions-table-body">
                     <tr>
-                        <td colspan="4" class="status-message">Loading session data...</td>
+                        <td colspan="5" class="status-message">Loading session data...</td>
                     </tr>
                 </tbody>
             </table>
@@ -156,7 +159,7 @@
                 const querySnapshot = await getDocs(sessionsCollectionRef);
 
                 if (querySnapshot.empty) {
-                    tableBody.innerHTML = `<tr><td colspan="4" class="status-message">No reading sessions found.</td></tr>`;
+                    tableBody.innerHTML = `<tr><td colspan="5" class="status-message">No reading sessions found.</td></tr>`;
                     return;
                 }
 
@@ -170,6 +173,7 @@
                         const durationSeconds = (endTime.getTime() - startTime.getTime()) / 1000;
                         
                         sessions.push({
+                            docId: doc.id, // <-- Capture the document ID here
                             userId: data.userId,
                             bookTitle: data.bookTitle || "Unknown Title",
                             date: startTime.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
@@ -189,6 +193,7 @@
                 sessions.forEach(session => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
+                        <td>${session.docId}</td>
                         <td>${session.userId}</td>
                         <td>${session.bookTitle}</td>
                         <td>${session.date}</td>
