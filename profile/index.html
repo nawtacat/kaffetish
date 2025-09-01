@@ -68,44 +68,74 @@
         }
         .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
 
-        main { padding: 48px 24px; width: 100%; box-sizing: border-box; }
-
-        .profile-container {
-            max-width: 860px;
+        main { 
+            padding: 60px 48px; /* More vertical padding */
+            max-width: 1200px;
             margin: 0 auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 40px; /* Space between main sections */
         }
 
-        .panel {
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
-            overflow: hidden; /* To contain the child elements */
+        /* --- Page Titles & Descriptions --- */
+        .page-header {
+            max-width: 600px;
         }
-        
-        .panel-grid {
+        .page-header h1 {
+            font-family: var(--font-main);
+            font-size: 3.5rem; /* Large and bold */
+            font-weight: 500;
+            margin: 0 0 16px 0;
+            line-height: 1.1;
+            letter-spacing: -1px;
+        }
+        .page-header p {
+            font-size: 1.1rem;
+            color: var(--subtle);
+            line-height: 1.6;
+            max-width: 500px;
+        }
+
+        /* --- Main Content Layout --- */
+        .content-section {
             display: grid;
-            grid-template-columns: 300px 1fr; /* Two-column layout */
-            align-items: center;
+            grid-template-columns: 1fr 1.5fr; /* Info on left, form/details on right */
+            gap: 60px; /* Space between the two columns */
+            align-items: flex-start; /* Align content to the top */
         }
 
-        .panel-info {
-            padding: 40px;
-            text-align: left;
-            border-right: 1px solid var(--border-color);
+        /* For signup form */
+        #signup-view .content-section {
+            grid-template-columns: 0.8fr 1.5fr; /* Slightly narrower left column */
+            max-width: 900px; /* Constrain signup section width */
         }
 
-        .panel-info .icon {
-            font-size: 3rem; color: var(--accent);
-            margin-bottom: 24px;
-            display: block;
+        .info-block {
+            padding-top: 20px; /* Align with form inputs */
         }
-        .panel-info h2 {
-            font-family: var(--font-main); font-size: 2.2rem;
-            font-weight: 500; margin: 0 0 16px 0; line-height: 1.2;
+        .info-block .icon {
+            font-size: 2.8rem;
+            color: var(--accent);
+            margin-bottom: 20px;
         }
-        .panel-info p { color: var(--subtle); margin: 0; line-height: 1.7; }
-        
-        .panel-main {
+        .info-block h3 {
+            font-family: var(--font-main);
+            font-size: 1.8rem;
+            font-weight: 500;
+            margin: 0 0 12px 0;
+            line-height: 1.2;
+        }
+        .info-block p {
+            color: var(--subtle);
+            line-height: 1.6;
+        }
+
+        /* --- Forms and Profile Details --- */
+        .form-area {
+            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             padding: 40px;
         }
         
@@ -167,16 +197,20 @@
         
         /* Responsive Layout: Stack columns on smaller screens */
         @media (max-width: 768px) {
-            .panel-grid {
+            main { padding: 40px 24px; }
+            .page-header h1 { font-size: 2.5rem; }
+            .page-header p { font-size: 1rem; }
+
+            .content-section, #signup-view .content-section {
                 grid-template-columns: 1fr; /* Single column */
+                gap: 40px;
             }
-            .panel-info {
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
+            .info-block {
                 text-align: center;
+                padding-top: 0;
             }
-            .panel-info .icon { margin-left: auto; margin-right: auto; }
-            .panel-main, .panel-info { padding: 32px 24px; }
+            .info-block .icon { margin-left: auto; margin-right: auto; }
+            .form-area { padding: 30px 20px; }
             .profile-info-grid dt { text-align: left; }
         }
     </style>
@@ -192,57 +226,63 @@
     </header>
 
     <main>
-        <div class="profile-container">
-            <div id="signup-view" class="panel hidden">
-                <div class="panel-grid">
-                    <div class="panel-info">
-                        <i class="icon fa-solid fa-user-shield"></i>
-                        <h2>Create Your Account</h2>
-                        <p>Become a member to save your highlights and sync your reading history across all your devices.</p>
-                    </div>
-                    <div class="panel-main">
-                        <form id="signup-form">
-                            <div class="form-grid">
-                                <div class="form-group"><label for="firstName">First Name</label><input type="text" id="firstName" required autocomplete="given-name"></div>
-                                <div class="form-group"><label for="lastName">Last Name</label><input type="text" id="lastName" required autocomplete="family-name"></div>
-                            </div>
-                            <div class="form-group full-width"><label for="country">Country</label><select id="country" required autocomplete="country-name"></select></div>
-                            <hr style="border:0; height:1px; background-color: var(--border-color); margin: 10px 0 20px;">
-                            <div class="form-group full-width"><label for="email">Email Address</label><input type="email" id="email" required autocomplete="email"></div>
-                            <div class="form-group full-width"><label for="password">Password (min. 6 characters)</label><input type="password" id="password" required minlength="6" autocomplete="new-password"></div>
-                            <button type="submit" id="submit-button" class="btn btn-primary">
-                                <span id="button-text">Create My Account</span>
-                                <div id="button-spinner" class="spinner" style="display: none;"></div>
-                            </button>
-                        </form>
-                        <div id="signup-message-box" class="message-box"></div>
-                    </div>
+        <div id="signup-view" class="hidden">
+            <div class="page-header">
+                <h1>Save Your Progress</h1>
+                <p>Unlock personalized features by creating an account. Keep your reading history, highlights, and notes safe and accessible across all your devices.</p>
+            </div>
+            <div class="content-section">
+                <div class="info-block">
+                    <i class="icon fa-solid fa-cloud-arrow-up"></i>
+                    <h3>Securely Sync Your Data</h3>
+                    <p>Your reading journey is important. Create an account to ensure all your progress is backed up and available wherever you read next.</p>
+                </div>
+                <div class="form-area">
+                    <form id="signup-form">
+                        <div class="form-grid">
+                            <div class="form-group"><label for="firstName">First Name</label><input type="text" id="firstName" required autocomplete="given-name"></div>
+                            <div class="form-group"><label for="lastName">Last Name</label><input type="text" id="lastName" required autocomplete="family-name"></div>
+                        </div>
+                        <div class="form-group full-width"><label for="country">Country</label><select id="country" required autocomplete="country-name"></select></div>
+                        <hr style="border:0; height:1px; background-color: var(--border-color); margin: 10px 0 20px;">
+                        <div class="form-group full-width"><label for="email">Email Address</label><input type="email" id="email" required autocomplete="email"></div>
+                        <div class="form-group full-width"><label for="password">Password (min. 6 characters)</label><input type="password" id="password" required minlength="6" autocomplete="new-password"></div>
+                        <button type="submit" id="submit-button" class="btn btn-primary">
+                            <span id="button-text">Create My Account</span>
+                            <div id="button-spinner" class="spinner" style="display: none;"></div>
+                        </button>
+                    </form>
+                    <div id="signup-message-box" class="message-box"></div>
                 </div>
             </div>
+        </div>
 
-            <div id="profile-view" class="panel hidden">
-                 <div class="panel-grid">
-                    <div class="panel-info">
-                        <i class="icon fa-solid fa-user-check"></i>
-                        <h2>Welcome Back</h2>
-                        <p>This is your personal profile. All your progress is securely saved to this account.</p>
-                    </div>
-                    <div class="panel-main">
-                        <dl class="profile-info-grid">
-                            <dt>Name</dt><dd id="profile-name">...</dd>
-                            <dt>Country</dt><dd id="profile-country">...</dd>
-                            <dt>Email</dt><dd id="profile-email">...</dd>
-                            <dt>Status</dt><dd id="profile-status">...</dd>
-                        </dl>
-                        <div id="profile-message-box" class="message-box"></div>
-                        <button id="logout-button" class="btn btn-secondary">Log Out</button>
-                    </div>
+        <div id="profile-view" class="hidden">
+            <div class="page-header">
+                <h1>Your Profile</h1>
+                <p>Manage your account details and review your verification status. You can log out at any time.</p>
+            </div>
+            <div class="content-section">
+                <div class="info-block">
+                    <i class="icon fa-solid fa-user-check"></i>
+                    <h3>Account Overview</h3>
+                    <p>All your reading progress, notes, and highlights are safely connected to this account.</p>
+                </div>
+                <div class="form-area">
+                    <dl class="profile-info-grid">
+                        <dt>Name</dt><dd id="profile-name">...</dd>
+                        <dt>Country</dt><dd id="profile-country">...</dd>
+                        <dt>Email</dt><dd id="profile-email">...</dd>
+                        <dt>Status</dt><dd id="profile-status">...</dd>
+                    </dl>
+                    <div id="profile-message-box" class="message-box"></div>
+                    <button id="logout-button" class="btn btn-secondary">Log Out</button>
                 </div>
             </div>
+        </div>
 
-            <div id="loading-view" class="panel" style="padding: 40px; text-align: center;">
-                <p>Loading Profile...</p>
-            </div>
+        <div id="loading-view" style="text-align: center; padding: 60px;">
+            <p style="font-size: 1.1rem; color: var(--subtle);">Loading Profile...</p>
         </div>
     </main>
 
