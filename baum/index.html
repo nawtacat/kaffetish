@@ -437,17 +437,20 @@
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
+    // ✅ SUGGESTION: Use environment variables for security and flexibility.
+    // Do not commit your keys directly to version control.
+    // Replace these placeholder values with your actual environment variables.
     const firebaseConfig = {
-        apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-        authDomain: "physmathacademy-722b3.firebaseapp.com",
-        projectId: "physmathacademy-722b3",
-        storageBucket: "physmathacademy-722b3.appspot.com",
-        messagingSenderId: "1093640992262",
-        appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+        apiKey:            import.meta.env ? import.meta.env.VITE_API_KEY : "YOUR_API_KEY",
+        authDomain:        import.meta.env ? import.meta.env.VITE_AUTH_DOMAIN : "YOUR_AUTH_DOMAIN",
+        projectId:         import.meta.env ? import.meta.env.VITE_PROJECT_ID : "YOUR_PROJECT_ID",
+        storageBucket:     import.meta.env ? import.meta.env.VITE_STORAGE_BUCKET : "YOUR_STORAGE_BUCKET",
+        messagingSenderId: import.meta.env ? import.meta.env.VITE_MESSAGING_SENDER_ID : "YOUR_SENDER_ID",
+        appId:             import.meta.env ? import.meta.env.VITE_APP_ID : "YOUR_APP_ID",
     };
 
     let app, auth, functions, explainBookTextFn, db;
-    if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
+    if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YOUR_")) {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         functions = getFunctions(app, "us-central1");
@@ -505,7 +508,6 @@
         lastSelectionRange: null,
         currentSessionId: null,
         bookTitle: null,
-        sessionUpdateInterval: null,
     };
     const baseFontRem = 1.15;
 
@@ -521,40 +523,31 @@
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
 
+    async function startReadingSession(bookTitle) {
+        await auth.authStateReady();
+        if (!auth.currentUser || !db || state.currentSessionId) return;
+        state.bookTitle = bookTitle;
+        const sessionsColRef = collection(db, "reading_sessions");
+        try {
+            const sessionDocRef = await addDoc(sessionsColRef, {
+                userId: auth.currentUser.uid,
+                bookTitle: bookTitle,
+                startTime: serverTimestamp(),
+                endTime: null
+            });
+            state.currentSessionId = sessionDocRef.id;
+        } catch (e) { console.error("Error starting session:", e); }
+    }
+
+    async function endReadingSession() {
+        if (!state.currentSessionId || !db) return;
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+        try {
+            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+            state.currentSessionId = null;
+        } catch (e) { console.error("Error ending session:", e); }
+    }
     
-
-    // In the state object, you can also remove this line:
-// sessionUpdateInterval: null,
-
-async function startReadingSession(bookTitle) {
-    await auth.authStateReady();
-    if (!auth.currentUser || !db || state.currentSessionId) return;
-
-    state.bookTitle = bookTitle;
-    const sessionsColRef = collection(db, "reading_sessions");
-    try {
-        const sessionDocRef = await addDoc(sessionsColRef, {
-            userId: auth.currentUser.uid,
-            bookTitle: bookTitle,
-            startTime: serverTimestamp(),
-            endTime: null // Session starts with no end time
-        });
-        state.currentSessionId = sessionDocRef.id;
-        // The setInterval line is now gone
-    } catch (e) { console.error("Error starting session:", e); }
-}
-
-async function endReadingSession() {
-    // The clearInterval block is now gone
-    if (!state.currentSessionId || !db) return;
-    
-    const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
-    try {
-        // This is the only time endTime is set
-        await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-        state.currentSessionId = null; // Mark session as ended
-    } catch (e) { console.error("Error ending session:", e); }
-}
     async function trackExplanationRequest(text) {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
@@ -588,8 +581,12 @@ async function endReadingSession() {
         state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
         DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
         localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
-        const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
-        DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
+        
+        // ✅ ROBUSTNESS: Guard against the element not existing.
+        if (DOM.mobileFontSizeDisplay) {
+            const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
+            DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
+        }
     }
 
     function showView(view) {
@@ -608,13 +605,12 @@ async function endReadingSession() {
             const response = await fetch(sourceUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const pdfData = await response.arrayBuffer();
-
             const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
             state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
             state.pagesHTML = new Array(state.totalPages).fill(null);
             
             await startReadingSession(title);
-
+            
             DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
             await renderPage(1);
             showView(DOM.readerView);
@@ -624,65 +620,94 @@ async function endReadingSession() {
             showView(DOM.fallbackView);
         }
     }
+    
+    // ✅ FIX: This new function is more robust and prevents crashes.
+    function paragraphize(textContent, pageWidth = 600) {
+        const items = (textContent.items || []).map(it => {
+            const t = it.transform || [1, 0, 0, 1, 0, 0];
+            const fontSize = Math.abs(t[0]) || Math.abs(t[3]) || 12; // safe fallback
+            const x = t[4] || 0;
+            const y = t[5] || 0;
+            return { str: it.str || "", x, y, fontSize, hasEOL: !!it.hasEOL };
+        });
 
-    function paragraphize(textContent) {
-        const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
-        const items = textContent.items.map(it => ({
-            str: it.str, x: it.transform[4], y: it.transform[5],
-            fontSize: it.transform[0], height: it.height, hasEOL: it.hasEOL || false
-        }));
         if (items.length === 0) return "";
-        let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
+
+        let paragraphs = [];
+        let currentLine = "";
+        let currentStyle = "p";
+        let lastY = items.length > 0 ? items[0].y : 0;
+        let lastLineHeight = 14; // default line height
+
         const getStyle = (item) => {
-            const trimmedStr = item.str.trim();
-            const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15;
+            const trimmed = (item.str || "").trim();
+            const isCentered = Math.abs(item.x + (trimmed.length * item.fontSize / 2) - pageWidth / 2) < pageWidth * 0.15;
             if (item.fontSize > 20) return "h1";
             if (item.fontSize > 13) return "h2";
-            if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) return "h2";
-            if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) return "h2";
+            if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmed)) return "h2";
+            if (/^[A-Z\s\d.\-]+$/.test(trimmed) && trimmed.length > 1 && trimmed.length < 50 && isCentered) return "h2";
             if (isCentered) return "center";
             return "p";
         };
+
         for (const item of items) {
-            if (!item.str.trim()) continue;
+            const text = (item.str || "").trim();
+            if (!text) continue;
+
             const newStyle = getStyle(item);
             const yGap = Math.abs(lastY - item.y);
-            const isStyleBreak = currentStyle && newStyle !== currentStyle && (currentStyle.startsWith('h') || newStyle.startsWith('h'));
-            const isParagraphBreak = yGap > lastHeight * 1.6 || isStyleBreak;
+            const isStyleBreak = currentStyle && newStyle !== currentStyle && (currentStyle.startsWith("h") || newStyle.startsWith("h"));
+            const isParagraphBreak = yGap > lastLineHeight * 1.6 || isStyleBreak;
+
             if (isParagraphBreak) {
                 if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
-                currentLine = item.str;
+                currentLine = text;
                 currentStyle = newStyle;
             } else {
-                if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) currentLine = currentLine.slice(0, -1);
+                if (/-$/.test(currentLine) && /^[a-z]/.test(text)) currentLine = currentLine.slice(0, -1);
                 else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) currentLine += " ";
-                currentLine += item.str;
-                currentStyle = newStyle;
+                currentLine += text;
             }
+
             lastY = item.y;
-            lastHeight = item.height || lastHeight;
+            lastLineHeight = Math.max(lastLineHeight, item.fontSize || 12);
         }
+
         if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+
         return paragraphs.map(p => {
-            const text = escapeHTML(p.text);
-            switch(p.style) {
-                case "h1": return `<h1 style="text-align:center">${text}</h1>`;
-                case "h2": return `<h2 style="text-align:center">${text}</h2>`;
-                case "center": return `<p style="text-align:center">${text}</p>`;
-                default: return `<p>${text}</p>`;
-            }
+            const t = escapeHTML(p.text);
+            if (p.style === "h1") return `<h1 style="text-align:center">${t}</h1>`;
+            if (p.style === "h2") return `<h2 style="text-align:center">${t}</h2>`;
+            if (p.style === "center") return `<p style="text-align:center">${t}</p>`;
+            return `<p>${t}</p>`;
         }).join("\n");
+    }
+
+    async function cachePage(pageNum) {
+        if (pageNum < 1 || pageNum > state.totalPages || state.pagesHTML[pageNum - 1]) return;
+        try {
+            const page = await state.pdfDoc.getPage(pageNum);
+            const textContent = await page.getTextContent({ normalizeWhitespace: true });
+            const viewport = page.getViewport({ scale: 1 });
+            state.pagesHTML[pageNum - 1] = paragraphize(textContent, viewport.width);
+        } catch (e) {
+            console.error(`Failed to pre-cache page ${pageNum}:`, e);
+        }
     }
 
     async function renderPage(pageNum) {
         if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
         clearSelection();
         state.isRendering = true; state.currentPage = pageNum;
+
         if (!state.pagesHTML[pageNum - 1]) {
             try {
+                // ✅ FIX: Get viewport and pass its width to the robust paragraphize function.
                 const page = await state.pdfDoc.getPage(pageNum);
+                const viewport = page.getViewport({ scale: 1 });
                 const textContent = await page.getTextContent({ normalizeWhitespace: true });
-                state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+                state.pagesHTML[pageNum - 1] = paragraphize(textContent, viewport.width);
             } catch (e) {
                 console.error(`Failed to render page ${pageNum}:`, e);
                 state.pagesHTML[pageNum - 1] = "<p>Error loading this page.</p>";
@@ -702,25 +727,22 @@ async function endReadingSession() {
         setFontRem(state.currentFontRem);
         DOM.mainContent.scrollTop = 0;
         state.isRendering = false;
-    }
 
+        // PERFORMANCE: Pre-cache adjacent pages for a smoother experience.
+        cachePage(pageNum + 1);
+        cachePage(pageNum - 1);
+    }
+    
     function showTooltipAt(rect) {
-    DOM.tooltip.style.display = "flex";
-    // The header is 60px high, so the tooltip shouldn't go above that.
-    const topBoundary = 68; // 60px for header + 8px margin
-    
-    // Calculate top position based on the selection's viewport position (rect.top).
-    // No scrollOffset is needed because the tooltip is not inside the scrolling container.
-    const top = rect.top - DOM.tooltip.offsetHeight - 8;
-    
-    let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
-    
-    // Apply the calculated position, ensuring it doesn't go above the top boundary.
-    DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
-    DOM.tooltip.style.left = `${left}px`;
-    requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
-}
+        DOM.tooltip.style.display = "flex";
+        const topBoundary = 68;
+        const top = rect.top - DOM.tooltip.offsetHeight - 8;
+        let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
+        DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
+        DOM.tooltip.style.left = `${left}px`;
+        requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
+    }
 
     function hideTooltip() {
         DOM.tooltip.classList.remove('visible');
@@ -732,33 +754,44 @@ async function endReadingSession() {
         DOM.mobileExplainBtn.classList.remove('visible');
         DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
         if (window.getSelection) {
-            window.getSelection().removeAllRanges();
+            // ✅ ROBUSTNESS: Wrap in a try/catch to handle unusual selection states.
+            try {
+                window.getSelection().removeAllRanges();
+            } catch (e) {
+                console.warn("Could not clear window selection:", e);
+            }
         }
     }
 
+    // ✅ FIX: This new function validates selection length properly before calling the backend.
     async function handleExplain() {
         if (!explainBookTextFn) {
             flashAI("Explanation feature is not available.");
             return;
         }
-        if (!state.lastSelectionText || state.lastSelectionText.length < 5) {
-            flashAI("Please select a longer phrase to explain.");
-            clearSelection(); return;
+
+        const txt = (state.lastSelectionText || "").trim();
+        if (txt.length < 10) {
+            flashAI("Please select at least 10 characters (a full phrase or sentence) to explain.");
+            clearSelection();
+            return;
         }
-        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
+
+        DOM.aiQuote.textContent = `"${txt}"`;
         DOM.aiQuote.classList.remove('hidden');
         DOM.aiPanel.style.display = "flex";
         DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
-        const textToExplain = state.lastSelectionText;
-        trackExplanationRequest(textToExplain);
+        
+        trackExplanationRequest(txt);
         clearSelection();
+
         try {
-            const { data } = await explainBookTextFn({ text: textToExplain });
+            const { data } = await explainBookTextFn({ text: txt });
             const explanationText = data?.explanation || "No explanation was returned.";
             DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
         } catch (err) {
             console.error("AI Explain Error:", err);
-            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+            DOM.aiContent.textContent = "Sorry, the explanation failed. Please try a longer selection or check your connection.";
         }
     }
 
@@ -803,7 +836,8 @@ async function endReadingSession() {
             });
         }
         else {
-            document.addEventListener('mouseup', () => {
+            document.addEventListener('mouseup', (e) => {
+                if(e.target.closest('#selection-tooltip')) return; // Don't hide tooltip if clicking on it
                 setTimeout(() => {
                     const sel = window.getSelection();
                     const text = sel.toString().trim();
@@ -827,18 +861,17 @@ async function endReadingSession() {
             state.touch.startTime = Date.now();
         }, { passive: true });
         DOM.mainContent.addEventListener('touchend', (e) => {
-            if (e.touches.length > 0) return;
+            if (e.touches.length > 0 || e.changedTouches.length === 0) return;
             const touch = e.changedTouches[0];
             const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
             const elapsedTime = Date.now() - state.touch.startTime;
-            if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
                 if (deltaX > 0) DOM.prevBtn.click();
                 else DOM.nextBtn.click();
             }
         }, { passive: true });
     }
-
-    // --- MODIFIED: This is the core of the new, correct logic ---
+    
     function setupEventListeners() {
         DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
         DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
@@ -850,7 +883,7 @@ async function endReadingSession() {
         DOM.tooltipHighlight.addEventListener("click", handleHighlight);
         DOM.tooltipCopy.addEventListener("click", handleCopy);
         DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-        DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
+        DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent).then(() => flashAI("Copied!")).catch(console.error); });
         DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
         DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
         DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
@@ -869,21 +902,17 @@ async function endReadingSession() {
             else if (e.key === 'ArrowRight') DOM.nextBtn.click();
         });
 
-        // Use 'visibilitychange' to intelligently end and start sessions
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                // User has tabbed away or minimized. End the current session.
                 endReadingSession();
             } else if (document.visibilityState === 'visible') {
-                // User has returned. Start a fresh session if a book is loaded.
                 if (state.pdfDoc && state.bookTitle) {
                     startReadingSession(state.bookTitle);
                 }
             }
         });
 
-        // Use 'pagehide' as a final backup to end the session when closing the tab.
-        document.addEventListener('pagehide', endReadingSession);
+        window.addEventListener('pagehide', endReadingSession);
 
         setupSelectionHandler();
         if (isTouchDevice) {
@@ -903,7 +932,10 @@ async function endReadingSession() {
         } else {
             showView(DOM.fallbackView);
         }
-        if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
+        if (!explainBookTextFn) {
+            if (DOM.tooltipExplain) DOM.tooltipExplain.style.display = "none";
+            if (DOM.mobileExplainBtn) DOM.mobileExplainBtn.style.display = "none";
+        }
     }
 
     init();
