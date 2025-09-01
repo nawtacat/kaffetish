@@ -736,31 +736,31 @@ async function endReadingSession() {
         }
     }
 
-    async function handleExplain() {
-        if (!explainBookTextFn) {
-            flashAI("Explanation feature is not available.");
-            return;
-        }
-        if (!state.lastSelectionText || state.lastSelectionText.length < 5) {
-            flashAI("Please select a longer phrase to explain.");
-            clearSelection(); return;
-        }
-        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-        DOM.aiQuote.classList.remove('hidden');
-        DOM.aiPanel.style.display = "flex";
-        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
-        const textToExplain = state.lastSelectionText;
-        trackExplanationRequest(textToExplain);
-        clearSelection();
-        try {
-            const { data } = await explainBookTextFn({ text: textToExplain });
-            const explanationText = data?.explanation || "No explanation was returned.";
-            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
-        } catch (err) {
-            console.error("AI Explain Error:", err);
-            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
-        }
-    }
+   async function handleExplain() {
+        if (!explainBookTextFn) {
+            flashAI("Explanation feature is not available.");
+            return;
+        }
+        if (!state.lastSelectionText || state.lastSelectionText.length < 4) { // <-- MODIFIED
+            flashAI("Please select at least 4 characters to explain."); // <-- MODIFIED
+            clearSelection(); return;
+        }
+        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
+        DOM.aiQuote.classList.remove('hidden');
+        DOM.aiPanel.style.display = "flex";
+        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+        const textToExplain = state.lastSelectionText;
+        trackExplanationRequest(textToExplain);
+        clearSelection();
+        try {
+            const { data } = await explainBookTextFn({ text: textToExplain });
+            const explanationText = data?.explanation || "No explanation was returned.";
+            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
+        } catch (err) {
+            console.error("AI Explain Error:", err);
+            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+        }
+    }
 
     function handleHighlight() {
         if (state.lastSelectionRange) {
@@ -787,38 +787,37 @@ async function endReadingSession() {
     }
 
     function setupSelectionHandler() {
-        if (isTouchDevice) {
-            document.addEventListener('selectionchange', () => {
-                const sel = window.getSelection();
-                const text = sel ? sel.toString().trim() : '';
-                if (text && !sel.isCollapsed) {
-                    state.lastSelectionText = text;
-                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
-                    DOM.mobileExplainBtn.classList.add('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
-                } else {
-                    DOM.mobileExplainBtn.classList.remove('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-                }
-            });
-        }
-        else {
-            document.addEventListener('mouseup', () => {
-                setTimeout(() => {
-                    const sel = window.getSelection();
-                    const text = sel.toString().trim();
-                    if (text && !sel.isCollapsed) {
-                        state.lastSelectionText = text;
-                        state.lastSelectionRange = sel.getRangeAt(0);
-                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                    } else {
-                        hideTooltip();
-                    }
-                }, 50);
-            });
-        }
-    }
-
+        if (isTouchDevice) {
+            document.addEventListener('selectionchange', () => {
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
+                if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
+                    state.lastSelectionText = text;
+                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
+                    DOM.mobileExplainBtn.classList.add('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
+                } else {
+                    DOM.mobileExplainBtn.classList.remove('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+                }
+            });
+        }
+        else {
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => {
+                    const sel = window.getSelection();
+                    const text = sel.toString().trim();
+                    if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
+                        state.lastSelectionText = text;
+                        state.lastSelectionRange = sel.getRangeAt(0);
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+                    } else {
+                        hideTooltip();
+                    }
+                }, 50);
+            });
+        }
+    }
     function setupSwipeNavigation() {
         DOM.mainContent.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) return;
