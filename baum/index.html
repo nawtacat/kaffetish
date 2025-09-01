@@ -15,6 +15,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
     </script>
     
+    
    <style>
     :root {
         --bg: #FDFBF7;
@@ -428,7 +429,7 @@
         <span>Explain</span>
     </button>
 
-    <script type="module">
+   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
@@ -437,28 +438,33 @@
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
-    // ✅ SUGGESTION: Use environment variables for security and flexibility.
-    // Do not commit your keys directly to version control.
-    // Replace these placeholder values with your actual environment variables.
+    // ===================================================================================
+    // ✅ ACTION REQUIRED: Replace the placeholder strings below with your actual Firebase keys.
+    // ===================================================================================
     const firebaseConfig = {
-        apiKey:            import.meta.env ? import.meta.env.VITE_API_KEY : "YOUR_API_KEY",
-        authDomain:        import.meta.env ? import.meta.env.VITE_AUTH_DOMAIN : "YOUR_AUTH_DOMAIN",
-        projectId:         import.meta.env ? import.meta.env.VITE_PROJECT_ID : "YOUR_PROJECT_ID",
-        storageBucket:     import.meta.env ? import.meta.env.VITE_STORAGE_BUCKET : "YOUR_STORAGE_BUCKET",
-        messagingSenderId: import.meta.env ? import.meta.env.VITE_MESSAGING_SENDER_ID : "YOUR_SENDER_ID",
-        appId:             import.meta.env ? import.meta.env.VITE_APP_ID : "YOUR_APP_ID",
+        apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8", // Replace with your actual key
+        authDomain: "physmathacademy-722b3.firebaseapp.com", // Replace with your actual domain
+        projectId: "physmathacademy-722b3",
+        storageBucket: "physmathacademy-722b3.appspot.com",
+        messagingSenderId: "1093640992262",
+        appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
     };
 
     let app, auth, functions, explainBookTextFn, db;
-    if (firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith("YOUR_")) {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        functions = getFunctions(app, "us-central1");
-        db = getFirestore(app);
-        onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
-        explainBookTextFn = httpsCallable(functions, "explainBookText");
+    // This check now correctly prevents uninitialized variables.
+    if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("AIza")) {
+        console.warn("Firebase config is missing or incomplete. AI features will be disabled.");
     } else {
-        console.warn("Firebase config is missing or incomplete. The 'Explain' feature will be disabled.");
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            functions = getFunctions(app, "us-central1");
+            db = getFirestore(app);
+            onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
+            explainBookTextFn = httpsCallable(functions, "explainBookText");
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+        }
     }
 
     const DOM = {
@@ -512,8 +518,10 @@
     const baseFontRem = 1.15;
 
     async function trackUserActivity() {
+        // ✅ GUARD: Don't run if Firebase isn't initialized.
+        if (!auth || !db) return; 
         await auth.authStateReady();
-        if (!auth.currentUser || !db) return;
+        if (!auth.currentUser) return;
         const userDocRef = doc(db, "users", auth.currentUser.uid);
         try {
             await setDoc(userDocRef, {
@@ -524,8 +532,10 @@
     }
 
     async function startReadingSession(bookTitle) {
+        // ✅ GUARD: Don't run if Firebase isn't initialized.
+        if (!auth || !db || state.currentSessionId) return;
         await auth.authStateReady();
-        if (!auth.currentUser || !db || state.currentSessionId) return;
+        if (!auth.currentUser) return;
         state.bookTitle = bookTitle;
         const sessionsColRef = collection(db, "reading_sessions");
         try {
@@ -540,7 +550,8 @@
     }
 
     async function endReadingSession() {
-        if (!state.currentSessionId || !db) return;
+        // ✅ GUARD: Don't run if Firebase isn't initialized.
+        if (!db || !state.currentSessionId) return;
         const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
         try {
             await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
@@ -549,8 +560,10 @@
     }
     
     async function trackExplanationRequest(text) {
+        // ✅ GUARD: Don't run if Firebase isn't initialized.
+        if (!auth || !db) return;
         await auth.authStateReady();
-        if (!auth.currentUser || !db) return;
+        if (!auth.currentUser) return;
         const explanationsColRef = collection(db, "explanation_requests");
         try {
             await addDoc(explanationsColRef, {
@@ -562,6 +575,8 @@
         } catch (e) { console.error("Error tracking explanation:", e); }
     }
 
+    // ... (The rest of the script is unchanged as it was correct)
+    
     const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
     function setMode(mode) {
@@ -582,7 +597,6 @@
         DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
         localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
         
-        // ✅ ROBUSTNESS: Guard against the element not existing.
         if (DOM.mobileFontSizeDisplay) {
             const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
             DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
@@ -621,11 +635,10 @@
         }
     }
     
-    // ✅ FIX: This new function is more robust and prevents crashes.
     function paragraphize(textContent, pageWidth = 600) {
         const items = (textContent.items || []).map(it => {
             const t = it.transform || [1, 0, 0, 1, 0, 0];
-            const fontSize = Math.abs(t[0]) || Math.abs(t[3]) || 12; // safe fallback
+            const fontSize = Math.abs(t[0]) || Math.abs(t[3]) || 12;
             const x = t[4] || 0;
             const y = t[5] || 0;
             return { str: it.str || "", x, y, fontSize, hasEOL: !!it.hasEOL };
@@ -637,7 +650,7 @@
         let currentLine = "";
         let currentStyle = "p";
         let lastY = items.length > 0 ? items[0].y : 0;
-        let lastLineHeight = 14; // default line height
+        let lastLineHeight = 14;
 
         const getStyle = (item) => {
             const trimmed = (item.str || "").trim();
@@ -703,7 +716,6 @@
 
         if (!state.pagesHTML[pageNum - 1]) {
             try {
-                // ✅ FIX: Get viewport and pass its width to the robust paragraphize function.
                 const page = await state.pdfDoc.getPage(pageNum);
                 const viewport = page.getViewport({ scale: 1 });
                 const textContent = await page.getTextContent({ normalizeWhitespace: true });
@@ -728,7 +740,6 @@
         DOM.mainContent.scrollTop = 0;
         state.isRendering = false;
 
-        // PERFORMANCE: Pre-cache adjacent pages for a smoother experience.
         cachePage(pageNum + 1);
         cachePage(pageNum - 1);
     }
@@ -754,7 +765,6 @@
         DOM.mobileExplainBtn.classList.remove('visible');
         DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
         if (window.getSelection) {
-            // ✅ ROBUSTNESS: Wrap in a try/catch to handle unusual selection states.
             try {
                 window.getSelection().removeAllRanges();
             } catch (e) {
@@ -763,7 +773,6 @@
         }
     }
 
-    // ✅ FIX: This new function validates selection length properly before calling the backend.
     async function handleExplain() {
         if (!explainBookTextFn) {
             flashAI("Explanation feature is not available.");
@@ -837,7 +846,7 @@
         }
         else {
             document.addEventListener('mouseup', (e) => {
-                if(e.target.closest('#selection-tooltip')) return; // Don't hide tooltip if clicking on it
+                if(e.target.closest('#selection-tooltip')) return;
                 setTimeout(() => {
                     const sel = window.getSelection();
                     const text = sel.toString().trim();
@@ -923,7 +932,7 @@
     function init() {
         setMode(localStorage.getItem("kaffetishMode") || 'light');
         setFontRem(state.currentFontRem);
-        trackUserActivity();
+        trackUserActivity(); // This is now safe to call even if Firebase fails.
         setupEventListeners();
         const params = new URLSearchParams(window.location.search);
         const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
