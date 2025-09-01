@@ -1,421 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!--
-    KAFFETISH – Bold Profile/Signup (Desktop + Mobile)
-    - Keeps your original Firebase logic & element IDs intact
-    - Dramatic, creative UI with animated gradients, glass panels, and micro-interactions
-    - Fully responsive, accessible, and dark-mode aware
-  -->
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Profile | Kaffetish</title>
-
-  <!-- Fonts / Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <style>
     :root{
-      --bg:#0f0e0f;
-      --ink:#191817;
-      --ink-contrast:#0e0d0d;
-      --paper:#ffffff;
-      --muted:#8b8a88;
-      --brand:#ff3a44;
-      --brand-2:#6b6bff;
-      --brand-3:#00d1b2;
-      --glass: rgba(255,255,255,.06);
-      --stroke: rgba(255,255,255,.14);
-      --shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
-      --radius-xl: 22px;
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-sm: 10px;
-      --font-ui:'Poppins', system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
-      --font-display:'Lora', serif;
-      --focus-ring: 0 0 0 3px rgba(255,58,68,.25), 0 0 0 1px rgba(255,58,68,.6);
-      --ok:#35d399;
-      --warn:#ffd166;
+      --bg:#FDFBF7;
+      --ink:#2C2B2A;
+      --accent:#FF3A44;
+      --subtle:#8A8886;
+      --border-color:#EAE8E4;
+      --shadow-color:rgba(44,43,42,.10);
+      --font-main:'Lora', serif;
+      --font-ui:'Poppins', sans-serif;
+      --success:#28a745;
+      --warning:#ffc107;
     }
     body.dark-mode{
-      --bg:#0a0a0b;
-      --ink:#f1f0ee;
-      --ink-contrast:#faf9f7;
-      --paper:#121214;
-      --muted:#a7a5a2;
-      --glass: rgba(255,255,255,.07);
-      --stroke: rgba(255,255,255,.16);
-      --shadow: 0 14px 40px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+      --bg:#21201F;
+      --ink:#EAE8E4;
+      --subtle:#999591;
+      --border-color:#3A3837;
+      --shadow-color:rgba(0,0,0,.25);
+      --success:#3ddc63;
+      --warning:#f3ca5c;
     }
+
+    ::selection{ background-color:var(--accent); color:#fff; opacity:.9 }
 
     /* Base */
-    *,*::before,*::after{ box-sizing:border-box }
+    *{ box-sizing:border-box; margin:0; padding:0 }
     html,body{ height:100% }
     body{
-      margin:0;
-      color:var(--ink);
       font-family:var(--font-ui);
-      background: radial-gradient(1200px 1200px at 10% -10%, #351218 0%, transparent 55%),
-                  radial-gradient(900px 900px at 120% 20%, #14163f 0%, transparent 45%),
-                  radial-gradient(1200px 900px at 40% 120%, #003a33 0%, transparent 45%),
-                  var(--bg);
-      background-attachment: fixed;
-      line-height:1.5;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
+      background:var(--bg);
+      color:var(--ink);
+      transition: background-color .3s ease, color .3s ease;
+      padding-top:60px;
     }
 
-    /* Subtle animated gradient veil */
-    .veil{
-      position:fixed; inset:0;
-      pointer-events:none;
-      background:
-        conic-gradient(from 0deg at 50% 50%,
-          rgba(255,58,68,.12), rgba(0,0,0,0) 18%,
-          rgba(0,209,178,.11) 40%,
-          rgba(0,0,0,0) 60%,
-          rgba(107,107,255,.12) 82%,
-          rgba(0,0,0,0) 100%);
-      filter: blur(60px) saturate(1.2);
-      opacity:.7;
-      animation: swirl 18s linear infinite;
-      z-index:0;
-    }
-    @keyframes swirl{
-      to{ transform: rotate(360deg) }
-    }
-    @media (prefers-reduced-motion: reduce){
-      .veil{ animation: none }
-    }
-
-    /* Header */
+    /* Header (copied style language) */
     .app-header{
-      position:sticky; top:0; z-index:20;
-      backdrop-filter: blur(10px);
-      background: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,0));
-      border-bottom:1px solid var(--stroke);
+      position:fixed; inset:0 0 auto 0; height:60px; z-index:1000;
+      background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom:1px solid var(--border-color);
+      transition: background-color .3s ease, border-color .3s ease;
     }
     .header-content{
-      max-width:1200px; margin:0 auto; height:68px;
+      max-width:1200px; height:100%; margin:0 auto; padding:0 24px;
       display:flex; align-items:center; justify-content:space-between;
-      padding:0 18px;
     }
     .logo{
-      display:flex; align-items:center; gap:10px;
-      font-family:var(--font-display);
-      color:#fff; letter-spacing:.5px;
-      font-size:1.35rem; text-decoration:none;
-      text-shadow:0 1px 0 rgba(0,0,0,.3);
+      display:flex; align-items:baseline;
+      font-size:1.6rem; font-weight:500; letter-spacing:-.5px;
+      color:var(--accent); font-family:var(--font-main);
+      text-decoration:none;
     }
-    .logo .pill{
-      display:inline-flex; align-items:center; justify-content:center;
-      width:28px; height:28px; border-radius:8px;
-      background: linear-gradient(135deg,var(--brand), #ff6f75 30%, #ffa6ab 100%);
-      box-shadow: 0 6px 18px rgba(255,58,68,.35);
-      color:white;
+    .logo .tagline{
+      font-size:.6em; font-style:italic; font-weight:400; color:var(--subtle);
+      letter-spacing:normal; margin-left:8px;
     }
-    .header-actions{
-      display:flex; gap:8px; align-items:center;
-    }
-    .icon-btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      width:40px; height:40px; border-radius:10px;
-      background:var(--glass);
-      border:1px solid var(--stroke);
-      color:#fff; cursor:pointer;
-      transition: transform .15s ease, background .2s ease, border-color .2s ease;
-      box-shadow: var(--shadow);
-    }
-    .icon-btn:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,.35) }
+    body.dark-mode .logo{ color:var(--ink) }
 
-    /* Layout */
-    main{
-      max-width:1200px; margin: clamp(12px,3vh,36px) auto;
-      padding: 0 18px 60px;
-      position:relative; z-index:1;
+    .header-actions{ display:flex; align-items:center; gap:16px }
+    .header-actions button{
+      background:transparent; border:none; color:var(--subtle); border-radius:6px;
+      padding:8px 10px; cursor:pointer; font-size:1rem;
+      transition: color .2s ease, background-color .2s ease;
+    }
+    .header-actions button:hover{
+      color:var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
     }
 
-    .stage{
-      display:grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap:22px;
+    /* Main container */
+    main{ padding:48px 24px; max-width:1200px; margin:0 auto }
+
+    /* Two-column card layout (desktop), stacked on mobile */
+    .grid{
+      display:grid; grid-template-columns: 1.1fr .9fr; gap:24px;
     }
-    @media (max-width: 980px){
-      .stage{ grid-template-columns: 1fr; gap:18px }
+    @media (max-width: 992px){
+      main{ padding:24px 16px }
+      .grid{ grid-template-columns: 1fr; gap:16px }
+      .logo .tagline{ display:none }
     }
 
-    /* Left: Statement / Hero */
-    .panel-hero{
-      position:relative;
-      border-radius: var(--radius-xl);
-      border:1px solid var(--stroke);
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      box-shadow: var(--shadow);
-      padding: clamp(18px, 4.2vw, 36px);
-      overflow:hidden;
-      min-height: 420px;
-      display:flex; flex-direction:column; justify-content:space-between;
+    /* Left panel: copy/benefits */
+    .panel{
+      border:1px solid var(--border-color);
+      border-radius:16px;
+      background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+      box-shadow: 0 8px 20px var(--shadow-color);
     }
-    .k-badge{
-      display:inline-flex; gap:8px; align-items:center;
-      background: rgba(255,255,255,.08);
-      color:#fff; border:1px solid var(--stroke);
-      border-radius:999px; padding:8px 12px; font-size:.86rem; font-weight:600;
-      backdrop-filter: blur(8px);
-      width:max-content;
+    .panel-body{ padding:28px }
+    .panel h2{
+      font-family:var(--font-main);
+      font-size:2.2rem; font-weight:500;
+      margin:0 0 8px 0;
+      letter-spacing:-.3px;
     }
-    .headline{
-      margin: clamp(6px,2vh,12px) 0 clamp(10px,2.2vh,16px);
-      font-family:var(--font-display);
-      color:#fff; letter-spacing:-.5px;
-      font-size: clamp(30px, 5vw, 58px);
-      line-height:1.03;
-      text-wrap:balance;
+    .panel p.lede{
+      color:var(--subtle); line-height:1.7; margin-top:8px; max-width:60ch;
     }
-    .headline .accent{
-      background: linear-gradient(90deg, #ffb3b6 0%, #ffffff 60%, #9fded3 100%);
-      -webkit-background-clip:text; background-clip:text;
-      color:transparent;
-      text-shadow:none;
+    .benefits{
+      display:grid; grid-template-columns: 1fr 1fr; gap:14px 18px; margin-top:22px;
     }
-    .lede{
-      color:#e7e6e3; max-width:56ch;
-      opacity:.9;
+    .benefit{
+      display:flex; gap:10px; align-items:flex-start; color:var(--ink);
+      font-size:.95rem;
+    }
+    .benefit i{ color:var(--accent); margin-top:2px }
+
+    @media (max-width: 992px){
+      .benefits{ grid-template-columns: 1fr }
     }
 
-    /* Floating cards (visual candy) */
-    .float-deck{
-      position:absolute; right:-40px; bottom:-40px;
-      width: min(520px, 55%);
-      aspect-ratio: 4/3;
-      pointer-events:none;
-      filter: drop-shadow(0 24px 40px rgba(0,0,0,.45));
+    /* Right panel: forms/profile */
+    .card{
+      border:1px solid var(--border-color);
+      border-radius:16px;
+      background:var(--bg);
+      box-shadow: 0 8px 20px var(--shadow-color);
     }
-    .float-card{
-      position:absolute; inset:auto;
-      width:68%; height:56%;
-      background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
-      border:1px solid var(--stroke);
-      border-radius:18px;
-      transform: rotate(-8deg) translate(12px, -10px);
-      animation: bob 10s ease-in-out infinite;
-      backdrop-filter: blur(6px);
+    .card-header{
+      padding:20px 24px; border-bottom:1px solid var(--border-color);
+      display:flex; align-items:center; gap:10px; font-weight:600;
     }
-    .float-card:nth-child(2){
-      width:72%; height:58%;
-      left:12%; top:-6%;
-      transform: rotate(7deg);
-      animation-delay: -2s;
-    }
-    .float-card:nth-child(3){
-      width:58%; height:48%;
-      right:10%; bottom:2%;
-      transform: rotate(2deg);
-      animation-delay: -5s;
-    }
-    @keyframes bob{
-      0%,100%{ transform: translateY(0) rotate(var(--r,0deg)) }
-      50%{ transform: translateY(-8px) rotate(calc(var(--r,0deg) + .6deg)) }
-    }
-    @media (max-width:980px){ .float-deck{ display:none } }
+    .card-body{ padding:24px }
 
-    /* Right: Interactive area (Signup/Profile) */
-    .panel-glass{
-      border-radius: var(--radius-xl);
-      border:1px solid var(--stroke);
-      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.035));
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .panel-body{
-      padding: clamp(16px, 4.2vw, 36px);
-    }
-
-    /* Tabs illusion: we keep your views and just switch visibility */
-    .tab-title{
-      display:flex; align-items:center; gap:10px;
-      color:#fff; font-weight:700; letter-spacing:.3px; font-size:1.05rem;
-      margin-bottom: 4px;
-    }
-    .tab-sub{
-      color:#e8e6e3; opacity:.86; margin-bottom: 22px;
-      font-size:.98rem;
-    }
-
-    /* Forms */
-    .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px }
+    /* Form fields (consistent with search-input in library) */
+    .form-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:18px }
     .form-group{ display:flex; flex-direction:column; gap:8px }
-    .form-group.full-width{ grid-column: 1 / -1 }
-    label{ color:#e9e7e4; font-weight:600; font-size:.92rem }
+    .form-group.full{ grid-column: 1 / -1 }
+    label{ font-weight:500; font-size:.92rem }
     .field{
-      display:flex; align-items:center; gap:10px;
-      background: rgba(255,255,255,.06);
-      border:1px solid var(--stroke);
-      padding:12px 14px; border-radius: var(--radius-md);
-      color:#fff;
-      transition: border-color .2s ease, box-shadow .2s ease, transform .05s ease;
-    }
-    .field:focus-within{
-      border-color: rgba(255,58,68,.55);
-      box-shadow: var(--focus-ring);
+      position:relative;
     }
     .field input, .field select{
-      all:unset; color:#fff; flex:1; min-width:0; font-size:1rem;
+      width:100%; padding:12px 14px 12px 44px; font-size:1rem;
+      font-family:var(--font-ui); border:1px solid var(--border-color);
+      border-radius:12px; background-color:var(--bg); color:var(--ink);
+      transition: border-color .2s, box-shadow .2s;
     }
-    .hint{ color:#cfcfcb; font-size:.82rem }
+    .field input:focus, .field select:focus{
+      outline:none; border-color:var(--accent);
+      box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+    .field .fa{
+      position:absolute; left:14px; top:50%; transform:translateY(-50%);
+      color:var(--subtle);
+    }
+    .hint{ color:var(--subtle); font-size:.85rem }
 
+    /* Buttons */
     .btn{
-      --btn-bg: linear-gradient(135deg, var(--brand), #ff7a82);
-      --btn-bd: rgba(255,255,255,.22);
-      display:inline-flex; align-items:center; justify-content:center; gap:10px;
-      padding:14px 16px; width:100%;
-      border-radius: 14px; border:1px solid var(--btn-bd);
-      color:#fff; font-weight:800; letter-spacing:.3px; text-transform:uppercase; font-size:.92rem;
-      background: var(--btn-bg);
-      box-shadow: 0 10px 22px rgba(255,58,68,.35), inset 0 1px 0 rgba(255,255,255,.25);
-      cursor:pointer; transition: transform .15s ease, filter .2s ease;
+      width:100%; padding:14px 16px; border:none; border-radius:12px;
+      font-size:1rem; font-weight:600; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      transition: transform .15s ease, background-color .2s ease;
     }
-    .btn:hover{ transform: translateY(-2px) }
-    .btn:disabled{ filter:grayscale(.5) brightness(.8); cursor:not-allowed }
-    .btn.secondary{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border:1px solid var(--stroke); text-transform:none; font-weight:700;
-      box-shadow: var(--shadow);
+    .btn-primary{
+      background:var(--accent); color:#fff;
+      box-shadow: 0 8px 18px rgba(255,58,68,.25);
     }
+    .btn-primary:hover:not(:disabled){
+      transform: translateY(-2px);
+      background-color: color-mix(in srgb, var(--accent) 85%, black);
+    }
+    .btn-primary:disabled{ filter: grayscale(.2) opacity(.8); cursor:not-allowed }
+    .btn-secondary{
+      background:transparent; color:var(--subtle);
+      border:1px solid var(--border-color);
+    }
+    .btn-secondary:hover{ background-color: color-mix(in srgb, var(--border-color) 60%, transparent); color:var(--ink) }
 
-    .spinner{ width:1.15em; height:1.15em; border-radius:50%;
+    .spinner{
+      width:1.15em; height:1.15em; border-radius:50%;
       border:2px solid rgba(255,255,255,.35); border-top-color:#fff;
-      animation: spin .7s linear infinite; }
+      animation: spin .8s linear infinite;
+    }
     @keyframes spin{ to{ transform: rotate(360deg) } }
 
+    /* Messages */
     .message-box{
-      display:none; margin-top:14px; padding:12px 14px;
-      border-radius:12px; font-size:.92rem; font-weight:600;
-      border:1px solid var(--stroke); color:#111;
+      display:none; margin-top:14px; padding:12px 14px; border-radius:12px; font-size:.92rem;
+      border:1px solid color-mix(in srgb, var(--border-color) 70%, var(--accent));
     }
     .message-box.success{
-      background: rgba(53,211,153,.15); border-color: rgba(53,211,153,.45); color:#dff7ee;
+      background-color: color-mix(in srgb, var(--success) 15%, transparent);
+      color: color-mix(in srgb, var(--success) 90%, black);
+      border-color: color-mix(in srgb, var(--success) 45%, transparent);
     }
     .message-box.error{
-      background: rgba(255,58,68,.18); border-color: rgba(255,58,68,.5); color:#ffeef0;
+      background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+      color: color-mix(in srgb, var(--accent) 90%, black);
+      border-color: color-mix(in srgb, var(--accent) 45%, transparent);
     }
     .message-box.warning{
-      background: rgba(255,209,102,.16); border-color: rgba(255,209,102,.5); color:#fff6e1;
+      background-color: color-mix(in srgb, var(--warning) 25%, transparent);
+      color: color-mix(in srgb, var(--warning) 95%, black);
+      border-color: color-mix(in srgb, var(--warning) 45%, transparent);
     }
 
-    /* Profile grid */
+    /* Profile list */
     .profile-info-grid{
-      display:grid; grid-template-columns: 120px 1fr; gap: 10px 18px; align-items:center;
-      background: rgba(255,255,255,.04);
-      border:1px solid var(--stroke);
-      border-radius: 16px;
-      padding:16px;
+      display:grid; grid-template-columns: 120px 1fr; gap:8px 18px; align-items:center;
     }
-    .profile-info-grid dt{
-      color:#cfcfcb; font-weight:700; text-align:right;
-    }
-    .profile-info-grid dd{
-      color:#fff; margin:0; font-weight:600; word-break:break-word;
-    }
-    .status-verified{ color: var(--ok) }
-    .status-unverified{ color: var(--warn) }
+    .profile-info-grid dt{ font-weight:500; color:var(--subtle); text-align:right }
+    .profile-info-grid dd{ margin:0; font-weight:600; word-break:break-word }
+    .status-verified{ color:var(--success) }
+    .status-unverified{ color:var(--warning) }
     .status-unverified .resend-btn{
-      background:none; border:none; color:#fff; text-decoration:underline; cursor:pointer; margin-left:8px;
-      font-weight:700;
+      background:none; border:none; color:var(--accent); text-decoration:underline; cursor:pointer; margin-left:8px;
+      font-weight:600;
     }
 
-    /* Views (ids kept) */
+    /* Views */
     .view{ display:block }
     .view.hidden{ display:none }
 
-    /* Loading view */
+    /* Loading */
     #loading-view{
       display:flex; align-items:center; justify-content:center;
-      min-height: 220px;
+      min-height:220px;
     }
-    .loading-card{
-      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      border:1px solid var(--stroke); border-radius: 16px; padding:18px 20px;
-      color:#eae9e6; box-shadow: var(--shadow);
-      display:flex; align-items:center; gap:12px;
+    .loading-inline{
+      display:flex; gap:10px; align-items:center; color:var(--subtle);
+      border:1px solid var(--border-color); border-radius:12px; padding:12px 14px;
+      background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
     }
 
-    /* Mobile tweaks */
-    @media (max-width: 980px){
-      .panel-hero{ min-height: 260px }
-      .headline{ font-size: clamp(28px, 9vw, 44px) }
-      .form-grid{ grid-template-columns: 1fr }
-      .profile-info-grid{ grid-template-columns: 1fr; }
+    @media (max-width: 992px){
+      .profile-info-grid{ grid-template-columns: 1fr }
       .profile-info-grid dt{ text-align:left }
-    }
-
-    /* Selection */
-    ::selection{ background: #ff5164; color:#fff }
-
-    /* Accessibility focus */
-    :focus-visible{
-      outline: none; box-shadow: var(--focus-ring);
     }
   </style>
 </head>
 <body>
-  <div class="veil" aria-hidden="true"></div>
-
-  <!-- Header -->
   <header class="app-header">
     <div class="header-content">
       <a class="logo" href="/" aria-label="Kaffetish Home">
-        <span class="pill"><i class="fa-solid fa-mug-hot"></i></span>
-        <span>Kaffetish</span>
+        Kaffetish <span class="tagline">explained by the librarian</span>
       </a>
       <div class="header-actions">
-        <button id="mode-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
-          <i class="fa-solid fa-moon"></i>
-        </button>
+        <button id="mode-toggle" title="Toggle Theme" aria-label="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
       </div>
     </div>
   </header>
 
-  <!-- Main -->
   <main>
-    <div class="stage">
-      <!-- Statement / Hero -->
-      <section class="panel-hero" aria-label="Why to create an account">
-        <span class="k-badge"><i class="fa-regular fa-bookmark"></i> Keep Your Mind Palace</span>
-        <h1 class="headline">
-          Save highlights. <span class="accent">Own your reading.</span> Sync everywhere.
-        </h1>
-        <p class="lede">
-          Build a personal library of quotes, notes, and moments of clarity. Your reading trail stays with you across devices—private, portable, and beautifully organized.
-        </p>
+    <div class="grid">
+      <!-- LEFT: Copy / Benefits -->
+      <section class="panel" aria-label="Why create an account">
+        <div class="panel-body">
+          <h2>Save your progress</h2>
+          <p class="lede">Create a permanent account to sync highlights, notes, and reading history across all your devices.</p>
 
-        <!-- floating cards -->
-        <div class="float-deck" aria-hidden="true">
-          <div class="float-card" style="--r:-8deg"></div>
-          <div class="float-card" style="--r:7deg"></div>
-          <div class="float-card" style="--r:2deg"></div>
+          <div class="benefits">
+            <div class="benefit"><i class="fa-solid fa-bookmark"></i> Keep quotes and notes organized.</div>
+            <div class="benefit"><i class="fa-solid fa-cloud-arrow-up"></i> Cloud sync between mobile and desktop.</div>
+            <div class="benefit"><i class="fa-solid fa-lock"></i> Private by default — you control sharing.</div>
+            <div class="benefit"><i class="fa-solid fa-clock-rotate-left"></i> Pick up exactly where you left off.</div>
+          </div>
         </div>
       </section>
 
-      <!-- Interactive Panel -->
-      <section class="panel-glass">
+      <!-- RIGHT: Interactive Card -->
+      <section class="card">
         <!-- SIGNUP VIEW -->
-        <div id="signup-view" class="view hidden">
-          <div class="panel-body" role="region" aria-labelledby="signup-title">
-            <div class="tab-title" id="signup-title">
-              <i class="fa-solid fa-user-plus"></i> Create your account
-            </div>
-            <div class="tab-sub">Takes less than a minute. Anonymous session will be linked securely.</div>
-
+        <div id="signup-view" class="view hidden" role="region" aria-labelledby="signup-title">
+          <div class="card-header" id="signup-title">
+            <i class="fa-solid fa-user-plus"></i> Create your account
+          </div>
+          <div class="card-body">
             <form id="signup-form" novalidate>
               <div class="form-grid">
                 <div class="form-group">
                   <label for="firstName">First name</label>
                   <div class="field">
-                    <i class="fa-regular fa-user"></i>
+                    <i class="fa-regular fa-user fa"></i>
                     <input id="firstName" name="firstName" type="text" autocomplete="given-name" required placeholder="Ada" />
                   </div>
                 </div>
@@ -423,38 +294,38 @@
                 <div class="form-group">
                   <label for="lastName">Last name</label>
                   <div class="field">
-                    <i class="fa-regular fa-id-card"></i>
+                    <i class="fa-regular fa-id-card fa"></i>
                     <input id="lastName" name="lastName" type="text" autocomplete="family-name" required placeholder="Lovelace" />
                   </div>
                 </div>
 
-                <div class="form-group full-width">
+                <div class="form-group full">
                   <label for="country">Country</label>
                   <div class="field">
-                    <i class="fa-solid fa-earth-europe"></i>
+                    <i class="fa-solid fa-earth-europe fa"></i>
                     <select id="country" name="country" required aria-describedby="country-hint"></select>
                   </div>
-                  <div id="country-hint" class="hint">Used to personalize content—never shared.</div>
+                  <div id="country-hint" class="hint">Used to personalize content — never shared.</div>
                 </div>
 
-                <div class="form-group full-width">
+                <div class="form-group full">
                   <label for="email">Email address</label>
                   <div class="field">
-                    <i class="fa-regular fa-envelope"></i>
+                    <i class="fa-regular fa-envelope fa"></i>
                     <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@domain.com" />
                   </div>
                 </div>
 
-                <div class="form-group full-width">
+                <div class="form-group full">
                   <label for="password">Password</label>
                   <div class="field">
-                    <i class="fa-solid fa-key"></i>
+                    <i class="fa-solid fa-key fa"></i>
                     <input id="password" name="password" type="password" minlength="6" required autocomplete="new-password" placeholder="Min. 6 characters" />
                   </div>
                 </div>
               </div>
 
-              <button id="submit-button" type="submit" class="btn" style="margin-top: 10px">
+              <button id="submit-button" type="submit" class="btn btn-primary" style="margin-top:12px">
                 <span id="button-text">Create My Account</span>
                 <div id="button-spinner" class="spinner" style="display:none"></div>
               </button>
@@ -465,13 +336,11 @@
         </div>
 
         <!-- PROFILE VIEW -->
-        <div id="profile-view" class="view hidden">
-          <div class="panel-body" role="region" aria-labelledby="profile-title">
-            <div class="tab-title" id="profile-title">
-              <i class="fa-solid fa-circle-user"></i> Your profile
-            </div>
-            <div class="tab-sub">Manage account details or log out anytime.</div>
-
+        <div id="profile-view" class="view hidden" role="region" aria-labelledby="profile-title">
+          <div class="card-header" id="profile-title">
+            <i class="fa-solid fa-circle-user"></i> Your profile
+          </div>
+          <div class="card-body">
             <dl class="profile-info-grid" style="margin-bottom:16px">
               <dt>Name</dt><dd id="profile-name">…</dd>
               <dt>Country</dt><dd id="profile-country">…</dd>
@@ -481,7 +350,7 @@
 
             <div id="profile-message-box" class="message-box" aria-live="polite"></div>
 
-            <button id="logout-button" class="btn secondary" style="margin-top:14px">
+            <button id="logout-button" class="btn btn-secondary" style="margin-top:14px">
               <i class="fa-solid fa-right-from-bracket"></i> Log Out
             </button>
           </div>
@@ -489,9 +358,9 @@
 
         <!-- LOADING VIEW -->
         <div id="loading-view" class="view hidden">
-          <div class="panel-body">
-            <div class="loading-card">
-              <div class="spinner" aria-hidden="true"></div>
+          <div class="card-body">
+            <div class="loading-inline">
+              <div class="spinner" aria-hidden="true" style="border-color:rgba(0,0,0,.15); border-top-color:var(--accent)"></div>
               <div>Loading profile…</div>
             </div>
           </div>
@@ -500,28 +369,20 @@
     </div>
   </main>
 
-  <!-- Firebase + App -->
+  <!-- App (keeps your original logic/IDs) -->
   <script type="module">
     // Firebase imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
-      getAuth,
-      onAuthStateChanged,
-      signInAnonymously,
-      linkWithCredential,
-      EmailAuthProvider,
-      updateProfile,
-      sendEmailVerification,
-      signOut
+      getAuth, onAuthStateChanged, signInAnonymously,
+      linkWithCredential, EmailAuthProvider, updateProfile,
+      sendEmailVerification, signOut
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import {
-      getFirestore,
-      doc,
-      setDoc,
-      getDoc
+      getFirestore, doc, setDoc, getDoc
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // Paste your actual configuration from the Firebase console here
+    // Your config (as provided)
     const firebaseConfig = {
       apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
       authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -531,33 +392,29 @@
       appId: "1:1093640992262:web:35b1bf4d2364bcf745f587"
     };
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
+    // Init
+    const app  = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
-    // --- DOM Cache ---
+    // DOM
     const DOM = {
       body: document.body,
-      modeToggle: document.getElementById("mode-toggle"),
-
-      signupView: document.getElementById("signup-view"),
-      profileView: document.getElementById("profile-view"),
-      loadingView: document.getElementById("loading-view"),
-
-      signupForm: document.getElementById("signup-form"),
-      submitButton: document.getElementById("submit-button"),
-      buttonText: document.getElementById("button-text"),
-      buttonSpinner: document.getElementById("button-spinner"),
-
-      signupMessageBox: document.getElementById("signup-message-box"),
-      profileMessageBox: document.getElementById("profile-message-box"),
-
-      logoutButton: document.getElementById("logout-button"),
-      countrySelect: document.getElementById("country"),
+      modeToggle: document.getElementById('mode-toggle'),
+      signupView: document.getElementById('signup-view'),
+      profileView: document.getElementById('profile-view'),
+      loadingView: document.getElementById('loading-view'),
+      signupForm: document.getElementById('signup-form'),
+      submitButton: document.getElementById('submit-button'),
+      buttonText: document.getElementById('button-text'),
+      buttonSpinner: document.getElementById('button-spinner'),
+      signupMessageBox: document.getElementById('signup-message-box'),
+      profileMessageBox: document.getElementById('profile-message-box'),
+      logoutButton: document.getElementById('logout-button'),
+      countrySelect: document.getElementById('country'),
     };
 
-    // --- Helpers ---
+    // Helpers
     function showView(viewId){
       [DOM.signupView, DOM.profileView, DOM.loadingView].forEach(v=>{
         v.classList.toggle('hidden', v.id !== viewId);
@@ -566,7 +423,7 @@
 
     function setMode(mode){
       DOM.body.classList.toggle('dark-mode', mode === 'dark');
-      DOM.modeToggle.querySelector('i').className = `fa-solid fa-${mode === 'light' ? 'moon' : 'sun'}`;
+      DOM.modeToggle.querySelector('i').className = `fa-solid ${mode === 'light' ? 'fa-moon' : 'fa-sun'}`;
       localStorage.setItem('kaffetishMode', mode);
     }
 
@@ -584,19 +441,15 @@
 
     async function populateCountries(){
       try{
-        const response = await fetch('https://restcountries.com/v3.1/all?fields=name');
-        if(!response.ok) throw new Error('Failed to fetch countries');
-        const countries = await response.json();
+        const res = await fetch('https://restcountries.com/v3.1/all?fields=name');
+        if(!res.ok) throw new Error('Failed to fetch countries');
+        const countries = await res.json();
         const sorted = countries.map(c=>c.name.common).sort((a,b)=>a.localeCompare(b));
-
         const frag = document.createDocumentFragment();
         const placeholder = document.createElement('option');
-        placeholder.value = "";
-        placeholder.textContent = "Select your country";
-        placeholder.disabled = true;
-        placeholder.selected = true;
+        placeholder.value=""; placeholder.textContent="Select your country";
+        placeholder.disabled = true; placeholder.selected = true;
         frag.appendChild(placeholder);
-
         for(const name of sorted){
           const opt = document.createElement('option');
           opt.value = name; opt.textContent = name;
@@ -604,13 +457,13 @@
         }
         DOM.countrySelect.innerHTML = "";
         DOM.countrySelect.appendChild(frag);
-      }catch(err){
-        console.error(err);
+      }catch(e){
+        console.error(e);
         DOM.countrySelect.innerHTML = '<option value="">Could not load countries</option>';
       }
     }
 
-    // --- Handlers ---
+    // Handlers
     async function handleSignup(e){
       e.preventDefault();
       setLoadingState(true);
@@ -620,15 +473,15 @@
       const displayName = `${firstName.value.trim()} ${lastName.value.trim()}`.trim();
 
       try{
-        const credential = EmailAuthProvider.credential(email.value, password.value);
-        await linkWithCredential(auth.currentUser, credential);
+        const cred = EmailAuthProvider.credential(email.value, password.value);
+        await linkWithCredential(auth.currentUser, cred);
         await updateProfile(auth.currentUser, { displayName });
 
         const ref = doc(db, "users", auth.currentUser.uid);
         await setDoc(ref, { displayName, email: email.value, country: country.value }, { merge:true });
 
         await sendEmailVerification(auth.currentUser);
-        showMessage(DOM.signupMessageBox, 'success', 'Success! Check your inbox to verify your email.');
+        showMessage(DOM.signupMessageBox, 'success', 'Success! Please check your email to verify your account.');
         e.target.reset();
       }catch(error){
         const messages = {
@@ -646,7 +499,7 @@
       try{
         await sendEmailVerification(auth.currentUser);
         showMessage(DOM.profileMessageBox, 'success', 'Verification email sent!');
-      }catch(err){
+      }catch{
         showMessage(DOM.profileMessageBox, 'error', 'Failed to send email. Please try again.');
       }
     }
@@ -658,19 +511,14 @@
       try{
         const ref = doc(db, "users", user.uid);
         const snap = await getDoc(ref);
-        if(snap.exists()){
-          document.getElementById('profile-country').textContent = snap.data().country || 'Not set';
-        }else{
-          document.getElementById('profile-country').textContent = 'Not set';
-        }
-      }catch(err){
-        console.error(err);
+        document.getElementById('profile-country').textContent =
+          snap.exists() ? (snap.data().country || 'Not set') : 'Not set';
+      }catch{
         document.getElementById('profile-country').textContent = 'Could not load';
       }
 
       const statusEl = document.getElementById('profile-status');
       DOM.profileMessageBox.style.display='none';
-
       if(user.emailVerified){
         statusEl.innerHTML = `<span class="status-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>`;
       }else{
@@ -679,12 +527,12 @@
       }
     }
 
-    // --- Init ---
+    // Init
     function init(){
       // Theme
-      setMode(localStorage.getItem('kaffetishMode') || 'dark');
+      setMode(localStorage.getItem('kaffetishMode') || 'light');
 
-      // Populate country list
+      // Countries
       populateCountries();
 
       // Events
@@ -710,7 +558,12 @@
           showView('loading-view');
           signInAnonymously(auth).catch(err=>{
             console.error('Anonymous sign-in failed:', err);
-            showMessage(DOM.loadingView, 'error', 'Could not initialize session.');
+            // fallback inline message (keeps layout consistent)
+            const p = document.createElement('div');
+            p.className = 'message-box error';
+            p.style.display='block';
+            p.textContent = 'Could not initialize session.';
+            DOM.loadingView.querySelector('.card-body')?.appendChild(p);
           });
         }
       });
