@@ -606,7 +606,7 @@
         showView(DOM.loadingView);
         DOM.loadingText.textContent = `Loading ${title}...`;
         // Create a unique ID for the book from its URL (btoa is a simple way to do this)
-        state.bookId = btoa(sourceUrl); 
+        state.bookId = btoa(sourceUrl).replace(/\//g, '_');
 
         try {
             const response = await fetch(sourceUrl);
