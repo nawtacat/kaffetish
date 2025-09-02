@@ -477,7 +477,7 @@
                 // Optional: Send verification email
                 await sendEmailVerification(user);
                 showMessage(messages.register, "Account created! Please check your email to verify your account.");
-                // onAuthStateChanged will automatically switch to the profile view on successful creation
+                // onAuthStateChanged will automatically switch to the profile view
 
             } catch (error) {
                 showMessage(messages.register, error.message, true);
@@ -560,7 +560,7 @@
         };
 
         // --- MAIN AUTH LOGIC ---
-        (async () => {
+        const initAuth = async () => {
             try {
                 // This is key to keeping the user logged in across sessions
                 await setPersistence(auth, browserLocalPersistence);
@@ -568,31 +568,33 @@
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         // User is signed in
-                        switchView('profile');
                         loadUserProfile(user);
+                        switchView('profile');
                     } else {
                         // User is signed out
                         switchView('register'); // Default to register view
                     }
-                    // Hide loading overlay once auth state is determined
+                    // Hide loading overlay ONLY after auth state is determined
                     loadingOverlay.style.opacity = '0';
                     setTimeout(() => loadingOverlay.style.display = 'none', 300);
                 });
 
             } catch (error) {
                 console.error("Persistence Error:", error);
-                loadingOverlay.style.display = 'none';
+                // Still hide overlay on error so the page isn't stuck
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => loadingOverlay.style.display = 'none', 300);
             }
-        })();
+        };
 
         // --- Initial Calls ---
         populateContinents();
         initializeAppTheme();
+        initAuth(); // Start the authentication check
     });
 </script>
 
 
 </body>
 </html>
-
 
