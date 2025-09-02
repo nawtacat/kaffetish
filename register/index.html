@@ -345,56 +345,74 @@
       }
     });
 
-    // Registration Handler
-    registerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = registerForm['reg-name'].value;
-      const surname = registerForm['reg-surname'].value;
-      const email = registerForm['reg-email'].value;
-      const continent = registerForm['reg-continent'].value;
-      const password = registerForm['reg-password'].value;
-      const passwordConfirm = registerForm['reg-password-confirm'].value;
+    // REPLACE your existing registerForm event listener with this one.
+registerForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  console.log("--- REGISTRATION PROCESS STARTED ---");
 
-      if (password !== passwordConfirm) {
-        showMessage(registerMessage, 'Passwords do not match.');
-        return;
-      }
-      if (!name || !surname || !email || !continent || !password) {
-        showMessage(registerMessage, 'Please fill out all fields.');
-        return;
-      }
-      
-      const submitButton = registerForm.querySelector('button[type="submit"]');
-      submitButton.disabled = true;
-      submitButton.textContent = 'Creating...';
+  const name = registerForm['reg-name'].value;
+  const surname = registerForm['reg-surname'].value;
+  const email = registerForm['reg-email'].value;
+  const continent = registerForm['reg-continent'].value;
+  const password = registerForm['reg-password'].value;
+  const passwordConfirm = registerForm['reg-password-confirm'].value;
 
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        
-        // --- FIX STARTS HERE ---
-        // Step 1: Wait for the database write to complete
-        await setDoc(doc(db, "kaffetish-users", user.uid), {
-          name: name,
-          surname: surname,
-          email: email,
-          continent: continent,
-          createdAt: new Date()
-        });
-        
-        // Step 2: NOW we can safely redirect
-        showMessage(registerMessage, 'Account created successfully! Redirecting...', false);
-        window.location.href = '../account/';
-        // --- FIX ENDS HERE ---
+  if (password !== passwordConfirm) {
+    showMessage(registerMessage, 'Passwords do not match.');
+    return;
+  }
+  if (!name || !surname || !email || !continent || !password) {
+    showMessage(registerMessage, 'Please fill out all fields.');
+    return;
+  }
+  
+  const submitButton = registerForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  submitButton.textContent = 'Creating...';
 
-      } catch (error) {
-        console.error("Registration Error:", error);
-        showMessage(registerMessage, error.message);
-        submitButton.disabled = false;
-        submitButton.textContent = 'Create Account';
-      }
-    });
+  try {
+    console.log("Step 1: Attempting to create user with email:", email);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    console.log("Step 2: SUCCESS - User created in Authentication. UID:", user.uid);
 
+    const userProfileData = {
+      name: name,
+      surname: surname,
+      email: email,
+      continent: continent,
+      createdAt: new Date()
+    };
+    console.log("Step 3: Preparing to write document to Firestore for UID:", user.uid);
+    console.log("Data to be written:", userProfileData);
+
+    // The critical database write operation
+    await setDoc(doc(db, "kaffetish-users", user.uid), userProfileData);
+    
+    console.log("Step 4: SUCCESS - Document written to Firestore!");
+    
+    showMessage(registerMessage, 'Account created successfully! Redirecting...', false);
+    window.location.href = '../account/';
+
+  } catch (error) {
+    console.error("--- REGISTRATION FAILED ---");
+    console.error("Error Code:", error.code);
+    console.error("Error Message:", error.message);
+    console.error("Full Error Object:", error); // Log the full error object for more details
+    
+    // Provide a more specific error message to the user
+    let userMessage = "An unexpected error occurred. Please check the console for details.";
+    if (error.code === 'permission-denied') {
+        userMessage = "Database permission denied. Please check Firestore rules.";
+    } else if (error.code === 'auth/email-already-in-use') {
+        userMessage = "This email address is already registered.";
+    }
+    
+    showMessage(registerMessage, userMessage);
+    submitButton.disabled = false;
+    submitButton.textContent = 'Create Account';
+  }
+});
     // Login Handler
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
