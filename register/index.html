@@ -1,243 +1,329 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kaffetish – Register / Sign In</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    :root { --bg:#fff; --ink:#222; --sub:#666; --primary:#FF3A44; --border:#e8e8e8; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family:Poppins, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--ink); background:var(--bg); }
-    .wrap { max-width: 680px; margin: 48px auto; padding: 24px; }
-    h1 { margin: 0 0 12px; font-size: 28px; }
-    p.muted { color:var(--sub); margin-top: 0; }
-    .card { border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow: 0 10px 30px rgba(0,0,0,.04); }
-    .tabs { display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:16px; }
-    .tabs button { flex:1; padding:10px 12px; border:0; background:#fafafa; cursor:pointer; }
-    .tabs button.active { background:#fff; color:#000; font-weight:600; }
-    .grid { display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
-    .grid.full { grid-template-columns: 1fr; }
-    label { display:block; font-size: 12px; color:var(--sub); margin-bottom:6px; }
-    input, select { width:100%; padding:12px; border:1px solid var(--border); border-radius:8px; font-size: 14px; }
-    .actions { display:flex; gap:12px; margin-top: 8px; }
-    .btn { padding:12px 16px; border-radius:10px; border:0; cursor:pointer; font-weight:600; }
-    .btn-primary { background:var(--primary); color:#fff; }
-    .msg { margin-top:12px; font-size: 13px; padding:10px; border-radius:8px; display:none; }
-    .msg.error { background: #ffe8ea; color:#b40016; border:1px solid #ffcdd2; }
-    .msg.success { background: #e8f7ee; color:#186a3b; border:1px solid #c7e8d3; }
-    .footer { text-align:center; margin-top:18px; color:var(--sub); font-size: 13px; }
-    @media (max-width:700px) { .grid { grid-template-columns: 1fr; } }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kaffetish - Register/Login</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg: #FDFBF7;
+      --ink: #2C2B2A;
+      --accent: #FF3A44;
+      --subtle: #8A8886;
+      --border-color: #EAE8E4;
+      --shadow-color: rgba(44, 43, 42, 0.1);
+      --success: #28a745;
+      --font-main: 'Lora', serif;
+      --font-ui: 'Poppins', sans-serif;
+    }
+    body.dark-mode {
+      --bg: #1e1d1c;
+      --ink: #EAE8E4;
+      --subtle: #999591;
+      --border-color: #3A3837;
+      --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+    ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+    body {
+      font-family: var(--font-ui); background-color: var(--bg); color: var(--ink);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      margin: 0; padding: 100px 24px; display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; box-sizing: border-box; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; top: -20%; left: -10%; width: 50vw; height: 50vw;
+      background: radial-gradient(circle, color-mix(in srgb, var(--accent) 5%, transparent) 0%, transparent 70%);
+      z-index: -1; opacity: 0.5; transform: rotate(15deg);
+    }
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center;
+      transition: opacity 0.3s ease;
+    }
+    .spinner {
+      border: 4px solid var(--border-color); border-top: 4px solid var(--accent);
+      border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .app-header {
+      position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+      background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color); z-index: 1000;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .header-content {
+      max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .logo {
+      display: flex; align-items: baseline; font-size: 1.6rem;
+      font-weight: 500; letter-spacing: -0.5px; color: var(--accent);
+      font-family: var(--font-main); text-decoration: none;
+    }
+    body.dark-mode .logo { color: var(--ink); }
+    .header-actions { display: flex; align-items: center; gap: 16px; }
+    .header-actions button {
+      background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+      padding: 8px 10px; cursor: pointer; font-size: 1rem;
+      transition: color 0.2s ease, background-color 0.2s ease;
+    }
+    .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+
+    main { width: 100%; max-width: 950px; animation: fadeIn 0.8s ease-out both; }
+
+    .profile-container {
+      display: grid; grid-template-columns: 3fr 4fr;
+      width: 100%; background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+      border: 1px solid var(--border-color); border-radius: 24px; overflow: hidden;
+      box-shadow: 0 20px 50px -10px var(--shadow-color);
+    }
+    .benefits-panel {
+      padding: 64px 48px; display: flex; flex-direction: column; justify-content: center;
+      background: linear-gradient(165deg, color-mix(in srgb, var(--border-color) 45%, transparent), color-mix(in srgb, var(--border-color) 15%, transparent));
+      border-right: 1px solid var(--border-color);
+    }
+    .benefits-panel h2 {
+      font-family: var(--font-main); font-size: 2.8rem; font-weight: 500; margin: 0 0 16px 0;
+      line-height: 1.2; letter-spacing: -1px;
+    }
+    .benefits-panel p { color: var(--subtle); font-size: 1rem; line-height: 1.7; margin: 0 0 40px 0; }
+    .benefit-item { display: flex; align-items: center; gap: 20px; margin-bottom: 24px; font-size: 1rem; }
+    .benefit-item i { color: var(--accent); font-size: 1.2rem; width: 24px; text-align: center; transition: transform 0.3s ease; }
+    .benefit-item:hover i { transform: scale(1.2); }
+
+    .form-panel { padding: 64px; }
+    .form-panel h3 {
+      font-family: var(--font-main); font-size: 1.8rem; font-weight: 500;
+      margin: 0 0 40px 0; text-align: left; position: relative;
+    }
+    .form-panel h3::after {
+      content: ''; position: absolute; left: 0; bottom: -12px; width: 50px; height: 3px;
+      background-color: var(--accent); border-radius: 3px;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .form-field.full-width { grid-column: 1 / -1; }
+    .form-field label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 8px; color: var(--subtle); }
+    .form-field input, .form-field select {
+      width: 100%; padding: 12px 14px; font-size: 1rem; font-family: var(--font-ui);
+      border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg);
+      color: var(--ink); box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    }
+    .select-wrapper { position: relative; }
+    .select-wrapper::after {
+      content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: 50%; right: 16px;
+      transform: translateY(-50%); color: var(--subtle); pointer-events: none; transition: transform 0.2s ease;
+    }
+    .select-wrapper:focus-within::after { transform: translateY(-50%) rotate(180deg); }
+    .form-field input:focus, .form-field select:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .form-actions { margin-top: 32px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .btn {
+      font-family: var(--font-ui); font-size: 1rem; font-weight: 500;
+      padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background-color: var(--accent); color: white; }
+    .btn-primary:not(:disabled):hover {
+      background-color: color-mix(in srgb, var(--accent) 90%, black);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+    .btn-secondary { background-color: transparent; color: var(--subtle); }
+    .btn-secondary:not(:disabled):hover { color: var(--accent); }
+    .form-message { margin-top: 20px; padding: 12px; border-radius: 8px; font-size: 0.9rem; text-align: center; display: none; }
+    .form-message.success { background-color: color-mix(in srgb, var(--success) 15%, transparent); color: color-mix(in srgb, var(--success) 90%, black); border: 1px solid color-mix(in srgb, var(--success) 30%, transparent); }
+    .form-message.error { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+    .auth-toggle { text-align: center; margin-top: 24px; font-size: 0.9rem; color: var(--subtle); }
+    .auth-toggle a { color: var(--accent); font-weight: 500; cursor: pointer; text-decoration: none; }
+    .auth-toggle a:hover { text-decoration: underline; }
+
+    #login-view { display: none; }
+
+    @media (max-width: 900px) {
+      body { padding: 80px 16px; }
+      body::before { display: none; }
+      main { padding: 0; }
+      .profile-container { grid-template-columns: 1fr; box-shadow: 0 10px 30px var(--shadow-color); }
+      .benefits-panel { display: none; }
+      .form-panel { padding: 32px 24px; }
+      .form-panel h3, .benefits-panel h2 { font-size: 1.6rem; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-actions { flex-direction: column-reverse; }
+      .btn { width: 100%; }
+    }
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Welcome to Kaffetish</h1>
-    <p class="muted">Create an account or sign in to access your library.</p>
+  <div class="loading-overlay" id="loading-overlay"><div class="spinner"></div></div>
 
-    <div class="card">
-      <div class="tabs">
-        <button id="tab-register" class="active" type="button">Register</button>
-        <button id="tab-login" type="button">Sign In</button>
-      </div>
+  <header class="app-header">
+    <div class="header-content">
+      <a href="https://kaffetish.club/" class="logo">Kaffetish</a>
+      <div class="header-actions">
+        <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+      </div>
+    </div>
+  </header>
 
-      <!-- Register -->
-      <form id="register-form">
-        <div class="grid">
-          <div>
-            <label for="reg-name">Name</label>
-            <input id="reg-name" type="text" autocomplete="given-name" required />
-          </div>
-          <div>
-            <label for="reg-surname">Surname</label>
-            <input id="reg-surname" type="text" autocomplete="family-name" required />
-          </div>
-          <div class="full">
-            <label for="reg-email">Email</label>
-            <input id="reg-email" type="email" autocomplete="email" required />
-          </div>
-          <div class="full">
-            <label for="reg-continent">Continent</label>
-            <select id="reg-continent" required></select>
-          </div>
-          <div>
-            <label for="reg-password">Password (min 8)</label>
-            <input id="reg-password" type="password" minlength="8" autocomplete="new-password" required />
-          </div>
-          <div>
-            <label for="reg-password-confirm">Confirm Password</label>
-            <input id="reg-password-confirm" type="password" minlength="8" autocomplete="new-password" required />
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" type="submit">Create Account</button>
-        </div>
-        <div id="register-message" class="msg"></div>
-      </form>
+  <main>
+        <div class="profile-container" id="register-view">
+      <div class="benefits-panel">
+        <h2>Create Your Account</h2>
+        <p>Join our community to save your reading progress and curate a personal collection.</p>
+        <div class="benefit-item"><i class="fa-solid fa-bookmark"></i><span>Save your reading progress</span></div>
+        <div class="benefit-item"><i class="fa-solid fa-book-open"></i><span>Access your library anywhere</span></div>
+        <div class="benefit-item"><i class="fa-solid fa-star"></i><span>Curate personal collections</span></div>
+      </div>
+      <div class="form-panel">
+        <h3>Register</h3>
+        <form id="register-form" novalidate>
+          <div class="form-grid">
+            <div class="form-field"><label for="reg-name">Name</label><input type="text" id="reg-name" required></div>
+            <div class="form-field"><label for="reg-surname">Surname</label><input type="text" id="reg-surname" required></div>
+            <div class="form-field full-width"><label for="reg-email">Email</label><input type="email" id="reg-email" required></div>
+            <div class="form-field full-width"><label for="reg-continent">Continent</label><div class="select-wrapper"><select id="reg-continent" required></select></div></div>
+            <div class="form-field"><label for="reg-password">Password</label><input type="password" id="reg-password" required minlength="8"></div>
+            <div class="form-field"><label for="reg-password-confirm">Confirm Password</label><input type="password" id="reg-password-confirm" required minlength="8"></div>
+          </div>
+          <div class="form-message" id="register-message"></div>
+          <div class="form-actions"><button type="submit" class="btn btn-primary">Create Account</button></div>
+          <p class="auth-toggle">Already have an account? <a id="show-login">Sign In</a></p>
+        </form>
+      </div>
+    </div>
 
-      <!-- Sign In -->
-      <form id="login-form" style="display:none;">
-        <div class="grid full">
-          <div>
-            <label for="login-email">Email</label>
-            <input id="login-email" type="email" autocomplete="email" required />
-          </div>
-          <div>
-            <label for="login-password">Password</label>
-            <input id="login-password" type="password" autocomplete="current-password" required />
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" type="submit">Sign In</button>
-        </div>
-        <div id="login-message" class="msg"></div>
-      </form>
-    </div>
+        <div class="profile-container" id="login-view">
+      <div class="benefits-panel">
+        <h2>Welcome Back</h2>
+        <p>Sign in to access your personal library and continue where you left off.</p>
+        <div class="benefit-item"><i class="fa-solid fa-arrow-right-to-bracket"></i><span>Quick & Secure Login</span></div>
+        <div class="benefit-item"><i class="fa-solid fa-cloud"></i><span>Your progress is synced</span></div>
+      </div>
+      <div class="form-panel">
+        <h3>Sign In</h3>
+        <form id="login-form" novalidate>
+          <div class="form-grid">
+            <div class="form-field full-width"><label for="login-email">Email</label><input type="email" id="login-email" required></div>
+            <div class="form-field full-width"><label for="login-password">Password</label><input type="password" id="login-password" required></div>
+          </div>
+          <div class="form-message" id="login-message"></div>
+          <div class="form-actions"><button type="submit" class="btn btn-primary">Sign In</button></div>
+          <p class="auth-toggle">Don't have an account? <a id="show-register">Register</a></p>
+        </form>
+      </div>
+    </div>
+  </main>
 
-    <div class="footer">By continuing, you agree to our terms & privacy.</div>
-  </div>
+ <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import {
+    getAuth,
+    setPersistence,
+    browserLocalPersistence,
+    onAuthStateChanged,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    serverTimestamp,
+  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  <script type="module">
-    // ----- Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import {
-      getAuth, setPersistence, browserLocalPersistence,
-      onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import {
-      getFirestore, doc, getDoc, setDoc, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  // ---------- CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+    authDomain: "physmathacademy-722b3.firebaseapp.com",
+    projectId: "physmathacademy-722b3",
+    storageBucket: "physmathacademy-722b3.appspot.com",
+    messagingSenderId: "1093640992262",
+    appId: "1:1093640992262:web:3552a4205dc5df869a84da",
+  };
 
-    // Adjust if you deploy to different paths/domains
-    const ACCOUNT_URL  = "/account.html";
-    const REGISTER_URL = "/register.html"; // this file
+  // ---------- INIT ----------
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-      authDomain: "physmathacademy-722b3.firebaseapp.com",
-      projectId: "physmathacademy-722b3",
-      storageBucket: "physmathacademy-722b3.appspot.com",
-      messagingSenderId: "1093640992262",
-      appId: "1:1093640992262:web:3552a4205dc5df869a84da",
-    };
+  await setPersistence(auth, browserLocalPersistence);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    await setPersistence(auth, browserLocalPersistence);
+  // ---------- DOM ----------
+  const $ = (s) => document.querySelector(s);
+  const loadingOverlay = $("#loading-overlay");
+  const views = { register: $("#register-view"), login: $("#login-view") };
+  const showView = (name) => { Object.values(views).forEach(el => el.style.display = "none"); views[name].style.display = "grid"; };
+  const setMessage = (el, text, type = "error") => { if (!el) return; el.textContent = text; el.classList.remove("success","error"); el.classList.add(type); el.style.display = text ? "block":"none"; };
 
-    // ----- DOM utils
-    const $  = (s) => document.querySelector(s);
-    const show = (el, yes=true) => el.style.display = yes ? "" : "none";
-    const msg = (el, text, type="error") => { el.textContent = text; el.className = `msg ${type}`; el.style.display = text ? "block":"none"; };
+  Object.values(views).forEach(el => el.style.display = "none");
 
-    // tabs
-    const tabRegister = $("#tab-register");
-    const tabLogin    = $("#tab-login");
-    const regForm     = $("#register-form");
-    const loginForm   = $("#login-form");
-    tabRegister.addEventListener("click", () => { tabRegister.classList.add("active"); tabLogin.classList.remove("active"); show(regForm,true); show(loginForm,false); });
-    tabLogin.addEventListener("click", () =>    { tabLogin.classList.add("active"); tabRegister.classList.remove("active"); show(regForm,false); show(loginForm,true); });
+  // Theme
+  const modeToggle = $("#mode-toggle");
+  const applyTheme = () => document.body.classList.toggle("dark-mode", (localStorage.getItem("kt_theme")||"light")==="dark");
+  modeToggle?.addEventListener("click", () => { const c=localStorage.getItem("kt_theme")||"light"; localStorage.setItem("kt_theme", c==="light"?"dark":"light"); applyTheme(); });
+  applyTheme();
 
-    // Continents
-    const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
-    const regContinent = $("#reg-continent");
-    regContinent.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
+  // Continents
+  const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
+  const regContinent = $("#reg-continent");
+  const fillSelect = (sel) => {
+    if (!sel || sel.options.length) return;
+    sel.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
+  };
+  fillSelect(regContinent);
 
-    // Redirect signed-in users away from this page
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // already signed in → go to account settings
-        location.replace(ACCOUNT_URL);
-      }
-    });
+  // Elements
+  const registerForm = $("#register-form");
+  const regName = $("#reg-name");
+  const regSurname = $("#reg-surname");
+  const regEmail = $("#reg-email");
+  const regPassword = $("#reg-password");
+  const regPasswordConfirm = $("#reg-password-confirm");
+  const registerMsg = $("#register-message");
+  const showLoginLink = $("#show-login");
 
-    // Helpers
-    const userDocRef = (uid) => doc(db, "kaffetish-users", uid);
-    async function ensureUserDoc(user, extra={}) {
-      const ref = userDocRef(user.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
-        await setDoc(ref, {
-          uid: user.uid,
-          email: user.email || "",
-          name: extra.name || "",
-          surname: extra.surname || "",
-          continent: extra.continent || "",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
-    }
-    const registerMsg = $("#register-message");
-    const loginMsg    = $("#login-message");
+  const loginForm = $("#login-form");
+  const loginEmail = $("#login-email");
+  const loginPassword = $("#login-password");
+  const loginMsg = $("#login-message");
+  const showRegisterLink = $("#show-register");
 
-    // Register
-    regForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      msg(registerMsg, "");
-      const name = $("#reg-name").value.trim();
-      const surname = $("#reg-surname").value.trim();
-      const email = $("#reg-email").value.trim().toLowerCase();
-      const continent = $("#reg-continent").value;
-      const pw = $("#reg-password").value;
-      const pw2 = $("#reg-password-confirm").value;
+  // ---------- Helpers ----------
+  const userDocRef = (uid) => doc(db, "kaffetish-users", uid);
 
-      if (!name || !surname || !email || !continent || !pw || !pw2) return msg(registerMsg, "Please fill in all fields.");
-      if (pw !== pw2) return msg(registerMsg, "Passwords do not match.");
-      if (pw.length < 8) return msg(registerMsg, "Password must be at least 8 characters.");
-
-      const btn = regForm.querySelector("button[type='submit']");
-      btn.disabled = true;
-      try {
-        const { user } = await createUserWithEmailAndPassword(auth, email, pw);
-        await ensureUserDoc(user, { name, surname, continent });
-        msg(registerMsg, "Account created. Redirecting…", "success");
-        location.replace(ACCOUNT_URL);
-      } catch (err) {
-        console.error("[Register]", err);
-        msg(registerMsg, human(err));
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    // Sign In
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      msg(loginMsg, "");
-      const email = $("#login-email").value.trim().toLowerCase();
-      const pw    = $("#login-password").value;
-      if (!email || !pw) return msg(loginMsg, "Enter email and password.");
-
-      const btn = loginForm.querySelector("button[type='submit']");
-      btn.disabled = true;
-      try {
-        await signInWithEmailAndPassword(auth, email, pw);
-        msg(loginMsg, "Signed in. Redirecting…", "success");
-        location.replace(ACCOUNT_URL);
-      } catch (err) {
-        console.error("[Login]", err);
-        msg(loginMsg, human(err));
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
-    function human(err) {
-      const code = (err?.code || "").toLowerCase();
-      if (code.includes("email-already-in-use")) return "This email is already registered. Try signing in.";
-      if (code.includes("invalid-email")) return "Invalid email address.";
-      if (code.includes("weak-password")) return "Password is too weak.";
-      if (code.includes("wrong-password")) return "Incorrect password.";
-      if (code.includes("user-not-found")) return "No account with that email.";
-      if (code.includes("permission-denied")) return "Insufficient permissions for database access. Check Firestore rules.";
-      if (code.includes("operation-not-allowed")) return "Email/Password provider is disabled in Firebase.";
-      if (code.includes("network-request-failed")) return "Network error. Check your connection.";
-      return err?.message || "Something went wrong.";
-    }
-  </script>
-</body>
-</html>
+  async function createUserDocIfMissing(user, extra = {}) {
+    const ref = userDocRef(user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      console.log("[FS] setDoc ->", `kaffetish-users/${user.uid}`);
+      await setDoc(ref, {
+        uid: user.uid,
+        email: user.email || "",
+        name: extra.name || "",
+        surname: extra.surname || "",
+        continent: extra.continent || "",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    }
+  }
+  
+  function humanError(err) {
+    const code = (err?.code || "").toLowerCase();
+    if (code.includes("permission-denied")) return "Permissions blocked by Firestore rules for this path.";
+    if (code.includes("operation-not
