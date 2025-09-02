@@ -338,7 +338,8 @@
 <script type="module">
     // --- START: FIREBASE INTEGRATION ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    // MODIFIED: Added setPersistence and browserLocalPersistence for session durability
+    import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -355,7 +356,9 @@
     const db = getFirestore(app);
     // --- END: FIREBASE INTEGRATION ---
 
-    document.addEventListener('DOMContentLoaded', () => {
+
+    // This function contains the main application logic
+    function initializeAppLogic() {
         const DOM = {
             body: document.body, loadingOverlay: document.getElementById('loading-overlay'),
             modeToggle: document.getElementById('mode-toggle'), registerView: document.getElementById('register-view'),
@@ -448,7 +451,6 @@
                     await signOut(auth); 
                     throw new Error('auth/email-not-verified'); 
                 }
-                // Set a flag to reload on the next state change
                 sessionStorage.setItem('justLoggedIn', 'true');
             } catch (error) {
                 let msg = 'An unexpected error occurred. Please try again.';
@@ -476,11 +478,10 @@
         }
 
         onAuthStateChanged(auth, async (user) => {
-            // Check if we just logged in and need to reload
             if (user && sessionStorage.getItem('justLoggedIn')) {
-                sessionStorage.removeItem('justLoggedIn'); // Clear the flag
-                location.reload(); // Reload the page safely
-                return; // Stop further execution until the page reloads
+                sessionStorage.removeItem('justLoggedIn');
+                location.reload();
+                return;
             }
 
             if (user && user.emailVerified) {
@@ -514,7 +515,24 @@
             DOM.profileForm.addEventListener('submit', handleProfileUpdate);
             DOM.logoutButton.addEventListener('click', () => signOut(auth));
         }
-        init();
+        
+        init(); // Start the application
+    }
+
+
+    // Wait for the DOM to be ready before trying to set up the app
+    document.addEventListener('DOMContentLoaded', () => {
+        // NEW: Set session persistence to be long-term (like "Keep me logged in")
+        setPersistence(auth, browserLocalPersistence)
+            .then(() => {
+                // Once persistence is set, initialize the rest of the application.
+                initializeAppLogic();
+            })
+            .catch((error) => {
+                console.error("Error setting session persistence:", error);
+                // Even if it fails, try to load the app
+                initializeAppLogic();
+            });
     });
 </script>
 </body>
