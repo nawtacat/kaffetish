@@ -338,7 +338,6 @@
 <script type="module">
     // --- START: FIREBASE INTEGRATION ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    // MODIFIED: Added setPersistence and browserLocalPersistence for session durability
     import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -353,8 +352,9 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    window.auth = auth; 
     const db = getFirestore(app);
+    // Add this line to make `auth` accessible in the console for debugging
+    window.auth = auth;
     // --- END: FIREBASE INTEGRATION ---
 
 
@@ -452,7 +452,7 @@
                     await signOut(auth); 
                     throw new Error('auth/email-not-verified'); 
                 }
-                sessionStorage.setItem('justLoggedIn', 'true');
+                // No refresh or session storage needed. onAuthStateChanged will handle the UI update.
             } catch (error) {
                 let msg = 'An unexpected error occurred. Please try again.';
                 if (error.message === 'auth/email-not-verified') msg = 'Your email is not verified. Please check your inbox.';
@@ -479,12 +479,6 @@
         }
 
         onAuthStateChanged(auth, async (user) => {
-            if (user && sessionStorage.getItem('justLoggedIn')) {
-                sessionStorage.removeItem('justLoggedIn');
-                location.reload();
-                return;
-            }
-
             if (user && user.emailVerified) {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
@@ -523,7 +517,7 @@
 
     // Wait for the DOM to be ready before trying to set up the app
     document.addEventListener('DOMContentLoaded', () => {
-        // NEW: Set session persistence to be long-term (like "Keep me logged in")
+        // Set session persistence to be long-term (like "Keep me logged in")
         setPersistence(auth, browserLocalPersistence)
             .then(() => {
                 // Once persistence is set, initialize the rest of the application.
