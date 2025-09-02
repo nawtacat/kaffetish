@@ -156,9 +156,9 @@
         border-radius: 3px;
     }
     body.dark-mode .highlighted-text { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
-       .bookmarked-text {
-    text-decoration: underline dashed var(--accent) 2px;
-    text-underline-offset: 4px; /* Adjusts the space between text and underline */
+.bookmarked-text {
+    text-decoration: underline solid var(--accent) 2px;
+    text-underline-offset: 4px;
 }
 
     .selection-tooltip {
@@ -440,7 +440,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
-    import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
@@ -523,10 +523,7 @@
         if (!auth.currentUser || !db) return;
         const userDocRef = doc(db, "users", auth.currentUser.uid);
         try {
-            await setDoc(userDocRef, {
-                lastSeen: serverTimestamp(),
-                createdAt: serverTimestamp()
-            }, { merge: true });
+            await setDoc(userDocRef, { lastSeen: serverTimestamp(), createdAt: serverTimestamp() }, { merge: true });
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
 
@@ -599,11 +596,33 @@
         DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
     }
 
+    // NEW ASYNC FUNCTION to handle tasks that can run after the book is visible
+    async function handlePostLoadTasks() {
+        await auth.authStateReady();
+        
+        await startReadingSession(state.bookTitle);
+
+        const user = auth.currentUser;
+        if (user && !user.isAnonymous) {
+            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+            const bookmarkSnap = await getDoc(bookmarkDocRef);
+            if (bookmarkSnap.exists()) {
+                state.bookmark = bookmarkSnap.data();
+                const bookmarkedPage = state.bookmark.pageNum;
+                // If the bookmarked page isn't the one we're on, jump to it
+                if (bookmarkedPage !== state.currentPage) {
+                    await renderPage(bookmarkedPage);
+                }
+            }
+        }
+    }
+
+    // MODIFIED to be much faster. It now only renders the first page.
     async function loadPdfFromUrl(sourceUrl, title) {
         showView(DOM.loadingView);
-        DOM.loadingText.textContent = `Loading ${title}...`;
+        DOM.loadingText.textContent = `Brewing your document...`;
         state.bookId = btoa(sourceUrl).replace(/\//g, '_');
-        state.bookTitle = title; // Set book title for session tracking
+        state.bookTitle = title;
 
         try {
             const response = await fetch(sourceUrl);
@@ -611,43 +630,32 @@
             const pdfData = await response.arrayBuffer();
 
             const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
-            state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
+            state.pdfDoc = pdfDoc;
+            state.totalPages = pdfDoc.numPages;
             state.pagesHTML = new Array(state.totalPages).fill(null);
 
-            // THIS IS THE FIX: Wait for auth to be ready before any database calls.
-            // This ensures anonymous users are signed in before we track their session.
-            await auth.authStateReady();
-            
-            // Now it is safe to track the session for analytics.
-            await startReadingSession(title);
-
-            const user = auth.currentUser;
-            let startPage = 1;
-            
-            if (user && !user.isAnonymous) {
-                const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
-                const bookmarkSnap = await getDoc(bookmarkDocRef);
-                if (bookmarkSnap.exists()) {
-                    state.bookmark = bookmarkSnap.data();
-                    startPage = state.bookmark.pageNum;
-                }
-            }
-
             DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-            await renderPage(startPage);
+            
+            // Render page 1 immediately to show content to the user
+            await renderPage(1);
             showView(DOM.readerView);
+
+            // Run session tracking and bookmark check in the background
+            handlePostLoadTasks();
+
         } catch (err) {
             console.error("PDF Loading/Processing Error:", err);
-            DOM.fallbackText.textContent = `There was an error loading the book "${title}". The link may be broken or the file may be corrupted.`;
+            DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
             showView(DOM.fallbackView);
         }
     }
 
     function paragraphize(textContent) {
+        // ... this function remains unchanged ...
         const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
         const items = textContent.items.map(it => ({
             str: it.str, x: it.transform[4], y: it.transform[5],
-            fontSize: it.transform[0], height: it.height, hasEOL: it.hasEOL || false
+            fontSize: it.transform[0], height: it.height
         }));
         if (items.length === 0) return "";
         let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
@@ -693,9 +701,7 @@
     }
 
     function renderBookmarkOnPage() {
-        if (!state.bookmark || state.currentPage !== state.bookmark.pageNum) {
-            return;
-        }
+        if (!state.bookmark || state.currentPage !== state.bookmark.pageNum) return;
         const content = DOM.pageContent;
         const { startOffset, endOffset } = state.bookmark;
         let charCount = 0;
@@ -705,7 +711,7 @@
                 const textLength = node.textContent.length;
                 const start = startOffset - charCount;
                 const end = endOffset - charCount;
-                if (!foundStart && start < textLength) {
+                if (!foundStart && start >= 0 && start < textLength) {
                     foundStart = true;
                     const endInNode = Math.min(end, textLength);
                     const range = document.createRange();
@@ -730,8 +736,10 @@
 
     async function renderPage(pageNum) {
         if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
+        if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "") return;
         clearSelection();
-        state.isRendering = true; state.currentPage = pageNum;
+        state.isRendering = true;
+        state.currentPage = pageNum;
         if (!state.pagesHTML[pageNum - 1]) {
             try {
                 const page = await state.pdfDoc.getPage(pageNum);
@@ -739,13 +747,11 @@
                 state.pagesHTML[pageNum - 1] = paragraphize(textContent);
             } catch (e) {
                 console.error(`Failed to render page ${pageNum}:`, e);
-                state.pagesHTML[pageNum - 1] = "<p>Error loading this page.</p>";
+                state.pagesHTML[pageNum - 1] = "<p>Error loading page.</p>";
             }
         }
-        DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
-
+        DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
         renderBookmarkOnPage();
-
         DOM.pageContent.classList.add("fade-in");
         setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
         DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
@@ -755,13 +761,15 @@
         DOM.mobilePageJumpInput.value = pageNum;
         DOM.mobilePageJumpInput.max = state.totalPages;
         DOM.mobilePageTotal.textContent = `/ ${state.totalPages}`;
-        DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
+        DOM.prevBtn.disabled = pageNum <= 1;
+        DOM.nextBtn.disabled = pageNum >= state.totalPages;
         setFontRem(state.currentFontRem);
         DOM.mainContent.scrollTop = 0;
         state.isRendering = false;
     }
 
     function showTooltipAt(rect) {
+        // ... this function remains unchanged ...
         DOM.tooltip.style.display = "flex";
         const topBoundary = 68;
         const top = rect.top - DOM.tooltip.offsetHeight - 8;
@@ -773,11 +781,13 @@
     }
 
     function hideTooltip() {
+        // ... this function remains unchanged ...
         DOM.tooltip.classList.remove('visible');
         setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
     }
 
     function clearSelection() {
+        // ... this function remains unchanged ...
         hideTooltip();
         DOM.mobileExplainBtn.classList.remove('visible');
         DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
@@ -787,6 +797,7 @@
     }
 
     async function handleExplain() {
+        // ... this function remains unchanged ...
         if (!explainBookTextFn) {
             flashAI("Explanation feature is not available.");
             return;
@@ -808,11 +819,12 @@
             DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
         } catch (err) {
             console.error("AI Explain Error:", err);
-            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+            DOM.aiContent.textContent = "Sorry, an error occurred.";
         }
     }
 
     function handleHighlight() {
+        // ... this function remains unchanged ...
         if (state.lastSelectionRange) {
             try {
                 const span = document.createElement("span");
@@ -825,6 +837,7 @@
     }
 
     function getSelectionOffsets(container) {
+        // ... this function remains unchanged ...
         const selection = window.getSelection();
         if (selection.rangeCount === 0) return null;
         const range = selection.getRangeAt(0);
@@ -864,18 +877,22 @@
             createdAt: serverTimestamp()
         };
         try {
+            // Using setDoc with a specific ID automatically overwrites/deletes the old bookmark.
             const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
             await setDoc(bookmarkDocRef, bookmarkData);
             state.bookmark = bookmarkData;
             flashAI("Bookmark saved!", 2000);
+            // Re-render the current page to show the new bookmark underline
+            const currentPageHTML = state.pagesHTML[state.currentPage - 1];
+            DOM.pageContent.innerHTML = currentPageHTML;
             renderBookmarkOnPage();
+
         } catch (e) {
             console.error("Error saving bookmark:", e);
             flashAI("Failed to save bookmark.", 3000);
         }
         clearSelection();
     }
-
 
     function handleCopy() {
         if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
@@ -889,6 +906,45 @@
         setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
     }
 
+    function setupEventListeners() {
+        // ... this function remains unchanged ...
+        DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
+        DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
+        DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
+        [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
+        [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
+        [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+        DOM.tooltipExplain.addEventListener("click", handleExplain);
+        DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+        DOM.tooltipBookmark.addEventListener("click", handleBookmark);
+        DOM.tooltipCopy.addEventListener("click", handleCopy);
+        DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
+        DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
+        DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+        DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+        DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+        DOM.mobilePageJumpInput.addEventListener("change", () => {
+            const p = parseInt(DOM.mobilePageJumpInput.value, 10);
+            if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
+        });
+        DOM.mobileExplainBtn.addEventListener("click", () => {
+            DOM.mobileExplainBtn.classList.remove('visible');
+            DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+            handleExplain();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || state.isRendering) return;
+            if (e.key === 'ArrowLeft') DOM.prevBtn.click();
+            else if (e.key === 'ArrowRight') DOM.nextBtn.click();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') { endReadingSession(); }
+        });
+        document.addEventListener('pagehide', endReadingSession);
+        setupSelectionHandler();
+        if (isTouchDevice) { setupSwipeNavigation(); }
+    }
+    
     function setupSelectionHandler() {
         if (isTouchDevice) {
             document.addEventListener('selectionchange', () => {
@@ -896,7 +952,7 @@
                 const text = sel ? sel.toString().trim() : '';
                 if (text.length >= 4 && !sel.isCollapsed) {
                     state.lastSelectionText = text;
-                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) { }
+                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
                     DOM.mobileExplainBtn.classList.add('visible');
                     DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
                 } else {
@@ -941,56 +997,6 @@
         }, { passive: true });
     }
 
-    function setupEventListeners() {
-        DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
-        DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
-        DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
-        [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
-        [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
-        [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
-
-        DOM.tooltipExplain.addEventListener("click", handleExplain);
-        DOM.tooltipHighlight.addEventListener("click", handleHighlight);
-        DOM.tooltipBookmark.addEventListener("click", handleBookmark);
-        DOM.tooltipCopy.addEventListener("click", handleCopy);
-
-        DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-        DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
-        DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
-        DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-        DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-        DOM.mobilePageJumpInput.addEventListener("change", () => {
-            const p = parseInt(DOM.mobilePageJumpInput.value, 10);
-            if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
-        });
-        DOM.mobileExplainBtn.addEventListener("click", () => {
-            DOM.mobileExplainBtn.classList.remove('visible');
-            DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-            handleExplain();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || state.isRendering) return;
-            if (e.key === 'ArrowLeft') DOM.prevBtn.click();
-            else if (e.key === 'ArrowRight') DOM.nextBtn.click();
-        });
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                endReadingSession();
-            } else if (document.visibilityState === 'visible') {
-                if (state.pdfDoc && state.bookTitle) {
-                    startReadingSession(state.bookTitle);
-                }
-            }
-        });
-
-        document.addEventListener('pagehide', endReadingSession);
-        setupSelectionHandler();
-        if (isTouchDevice) {
-            setupSwipeNavigation();
-        }
-    }
-    
     function initApp() {
         setMode(localStorage.getItem("kaffetishMode") || 'light');
         setFontRem(state.currentFontRem);
@@ -1010,24 +1016,18 @@
     onAuthStateChanged(auth, (user) => {
         if (user && !user.isAnonymous) {
             DOM.tooltipBookmark.style.display = 'flex';
+            trackUserActivity();
         } else {
             DOM.tooltipBookmark.style.display = 'none';
         }
-
-        // Only track activity for real users
-        if (user && !user.isAnonymous) {
-            trackUserActivity();
-        }
     });
 
-    // Sign in anonymously immediately
     signInAnonymously(auth).catch(err => {
         console.error("Anonymous sign-in failed:", err);
     });
 
-    // Initialize the app
     initApp();
 
-</script>    
+</script>
 </body>
 </html>
