@@ -1012,35 +1012,34 @@
         if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
     }
 
+    // This is the MAIN listener. It runs whenever the user's login state changes.
+    // It is responsible for creating an anonymous user IF ONE DOESN'T EXIST.
     onAuthStateChanged(auth, (user) => {
-    if (user) {
-        // User is signed in.
-        if (!user.isAnonymous) {
-            DOM.tooltipBookmark.style.display = 'flex';
+        if (user) {
+            // User is signed in.
+            if (!user.isAnonymous) {
+                DOM.tooltipBookmark.style.display = 'flex';
+            } else {
+                DOM.tooltipBookmark.style.display = 'none';
+            }
+            trackUserActivity();
         } else {
-            DOM.tooltipBookmark.style.display = 'none';
+            // No user is signed in, so create one.
+            signInAnonymously(auth).catch(err => {
+                console.error("Anonymous sign-in failed:", err);
+            });
         }
-        trackUserActivity();
-    } else {
-        // No user is signed in, so create one.
-        signInAnonymously(auth).catch(err => {
-            console.error("Anonymous sign-in failed:", err);
-        });
-    }
-});
-
-// Move initApp() to be called after the first auth check.
-auth.onAuthStateChanged(user => {
-    // This structure ensures initApp runs only once
-    // after the initial auth state is determined.
-    initApp();
-}, { onlyOnce: true });
-
-    signInAnonymously(auth).catch(err => {
-        console.error("Anonymous sign-in failed:", err);
     });
 
-    initApp();
+    // This is the INITIALIZATION listener. It runs ONLY ONCE when the page first loads.
+    // Its only job is to kick off your app's setup logic (initApp).
+    auth.onAuthStateChanged(user => {
+        initApp();
+    }, { onlyOnce: true });
+
+    // DELETE THE TWO LINES BELOW FROM YOUR CODE
+    // signInAnonymously(auth).catch(...); <-- This is now handled inside the listener above.
+    // initApp(); <-- This is now handled by the special "onlyOnce" listener to avoid errors.
 
 </script>
 </body>
