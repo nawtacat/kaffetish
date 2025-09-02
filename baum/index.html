@@ -1013,13 +1013,28 @@
     }
 
     onAuthStateChanged(auth, (user) => {
-        if (user && !user.isAnonymous) {
+    if (user) {
+        // User is signed in.
+        if (!user.isAnonymous) {
             DOM.tooltipBookmark.style.display = 'flex';
-            trackUserActivity();
         } else {
             DOM.tooltipBookmark.style.display = 'none';
         }
-    });
+        trackUserActivity();
+    } else {
+        // No user is signed in, so create one.
+        signInAnonymously(auth).catch(err => {
+            console.error("Anonymous sign-in failed:", err);
+        });
+    }
+});
+
+// Move initApp() to be called after the first auth check.
+auth.onAuthStateChanged(user => {
+    // This structure ensures initApp runs only once
+    // after the initial auth state is determined.
+    initApp();
+}, { onlyOnce: true });
 
     signInAnonymously(auth).catch(err => {
         console.error("Anonymous sign-in failed:", err);
