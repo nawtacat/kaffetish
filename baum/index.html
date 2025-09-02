@@ -322,6 +322,9 @@
         border: 3px solid var(--bg);
     }
     html:not(.touch-device) main::-webkit-scrollbar-thumb:hover { background-color: var(--subtle); }
+#btn-bookmark {
+    display: none;
+}
 </style>
 </head>
 <body>
@@ -433,7 +436,7 @@
         <span>Explain</span>
     </button>
 
-    <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
@@ -617,7 +620,7 @@
 
             const user = auth.currentUser;
             let startPage = 1;
-
+            
             if (user && !user.isAnonymous) {
                 const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
                 const bookmarkSnap = await getDoc(bookmarkDocRef);
@@ -985,11 +988,18 @@
             setupSwipeNavigation();
         }
     }
-    
-    // MODIFIED: Replaced init() with a robust onAuthStateChanged listener
-    // This eliminates race conditions on page load.
+
     let isAppInitialized = false;
     onAuthStateChanged(auth, (user) => {
+        
+        // Control bookmark button visibility based on auth state.
+        if (user && !user.isAnonymous) {
+            DOM.tooltipBookmark.style.display = 'flex';
+        } else {
+            DOM.tooltipBookmark.style.display = 'none';
+        }
+
+        // Run the main app logic only once after auth is ready.
         if (user && !isAppInitialized) {
             isAppInitialized = true;
 
@@ -1013,6 +1023,6 @@
         }
     });
 
-</script>
+</script>    
 </body>
 </html>
