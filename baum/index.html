@@ -596,63 +596,61 @@
         DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
     }
 
-    async function handlePostLoadTasks() {
-        await auth.authStateReady();
-        
-        await startReadingSession(state.bookTitle);
+    // --- LOGIC CORRECTION ---
+    // This function now correctly handles displaying the bookmark even if it's on page 1.
 
-        const user = auth.currentUser;
-        if (user && !user.isAnonymous) {
-            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
-            const bookmarkSnap = await getDoc(bookmarkDocRef);
-            if (bookmarkSnap.exists()) {
-                state.bookmark = bookmarkSnap.data();
-                const bookmarkedPage = state.bookmark.pageNum;
-                
-                // ** LOGIC TO JUMP TO BOOKMARK **
-                // If the bookmarked page isn't the one currently shown (Page 1),
-                // this will render the correct page automatically.
-                if (bookmarkedPage !== state.currentPage) {
-                    await renderPage(bookmarkedPage);
-                }
-            }
-        }
-    }
 
     async function loadPdfFromUrl(sourceUrl, title) {
-        showView(DOM.loadingView);
-        DOM.loadingText.textContent = `Brewing your document...`;
-        state.bookId = btoa(sourceUrl).replace(/\//g, '_');
-        state.bookTitle = title;
+    showView(DOM.loadingView);
+    DOM.loadingText.textContent = `Brewing your document...`;
+    state.bookId = btoa(sourceUrl).replace(/\//g, '_');
+    state.bookTitle = title;
 
-        try {
-            const response = await fetch(sourceUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const pdfData = await response.arrayBuffer();
+    try {
+        const response = await fetch(sourceUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const pdfData = await response.arrayBuffer();
 
-            const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
-            state.pdfDoc = pdfDoc;
-            state.totalPages = pdfDoc.numPages;
-            state.pagesHTML = new Array(state.totalPages).fill(null);
+        const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+        state.pdfDoc = pdfDoc;
+        state.totalPages = pdfDoc.numPages;
+        state.pagesHTML = new Array(state.totalPages).fill(null);
 
-            DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-            
-            // ** PERFORMANCE FIX **
-            // Render page 1 immediately so the user sees content instantly.
-            await renderPage(1);
-            showView(DOM.readerView);
+        DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+        
+        // --- BOOKMARK CHECK MOVED HERE FOR SAFETY ---
+        let startingPage = 1; // Default to page 1
 
-            // ** BACKGROUND TASKS **
-            // Run session tracking and bookmark check without making the user wait.
-            handlePostLoadTasks();
+        // Wait for Firebase to know who the user is
+        await auth.authStateReady();
+        const user = auth.currentUser;
 
-        } catch (err) {
-            console.error("PDF Loading/Processing Error:", err);
-            DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
-            showView(DOM.fallbackView);
+        // Check for a bookmark only if the user is fully signed in
+        if (user && !user.isAnonymous && state.bookId) {
+            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+            const bookmarkSnap = await getDoc(bookmarkDocRef);
+
+            if (bookmarkSnap.exists()) {
+                state.bookmark = bookmarkSnap.data();
+                startingPage = state.bookmark.pageNum; // Set the correct starting page
+            }
         }
-    }
+        
+        // Now, render the correct page *before* showing the reader
+        await renderPage(startingPage);
+        
+        // Finally, reveal the reader with the correct page already loaded
+        showView(DOM.readerView);
 
+        // Start tracking the session in the background
+        startReadingSession(state.bookTitle);
+
+    } catch (err) {
+        console.error("PDF Loading/Processing Error:", err);
+        DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
+        showView(DOM.fallbackView);
+    }
+}
     function paragraphize(textContent) {
         const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
         const items = textContent.items.map(it => ({
@@ -701,28 +699,35 @@
             }
         }).join("\n");
     }
-
+    
     function renderBookmarkOnPage() {
         if (!state.bookmark || state.currentPage !== state.bookmark.pageNum) return;
+
         const content = DOM.pageContent;
         const { startOffset, endOffset } = state.bookmark;
+
         let charCount = 0;
         let foundStart = false;
+
         function wrapTextNodes(node) {
             if (node.nodeType === Node.TEXT_NODE) {
                 const textLength = node.textContent.length;
                 const start = startOffset - charCount;
                 const end = endOffset - charCount;
+                
                 if (!foundStart && start >= 0 && start < textLength) {
                     foundStart = true;
                     const endInNode = Math.min(end, textLength);
+                    
                     const range = document.createRange();
                     range.setStart(node, start);
                     range.setEnd(node, endInNode);
+                    
                     const span = document.createElement("span");
                     span.className = "bookmarked-text";
                     range.surroundContents(span);
-                    if (end <= textLength) return true;
+
+                    if (end <= textLength) return true; 
                 }
                 charCount += textLength;
             } else {
@@ -732,6 +737,7 @@
             }
             return false;
         }
+        
         wrapTextNodes(content);
         state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
     }
@@ -739,9 +745,11 @@
     async function renderPage(pageNum) {
         if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
         if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "") return;
+        
         clearSelection();
         state.isRendering = true;
         state.currentPage = pageNum;
+
         if (!state.pagesHTML[pageNum - 1]) {
             try {
                 const page = await state.pdfDoc.getPage(pageNum);
@@ -752,10 +760,14 @@
                 state.pagesHTML[pageNum - 1] = "<p>Error loading page.</p>";
             }
         }
+        
         DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
+        
         renderBookmarkOnPage();
+        
         DOM.pageContent.classList.add("fade-in");
         setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
+        
         DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
         DOM.pageTotal.textContent = `/ ${state.totalPages}`;
         DOM.pageJumpInput.value = pageNum;
@@ -846,23 +858,26 @@
             end: start + range.toString().length
         };
     }
-
+    
     async function handleBookmark() {
         const user = auth.currentUser;
         if (!user || user.isAnonymous) {
-            flashAI("Please sign in to use bookmarks.", 3000);
+            flashAI("Please sign in with your email to use bookmarks.", 3000);
             clearSelection();
             return;
         }
+
         if (!state.lastSelectionRange || !state.bookId) {
             clearSelection();
             return;
         }
+
         const offsets = getSelectionOffsets(DOM.pageContent);
         if (!offsets) {
             clearSelection();
             return;
         }
+
         const bookmarkData = {
             userId: user.uid,
             bookId: state.bookId,
@@ -872,17 +887,14 @@
             textSnippet: state.lastSelectionText.substring(0, 100),
             createdAt: serverTimestamp()
         };
+
         try {
-            // ** LOGIC TO DELETE OLD BOOKMARK **
-            // Using setDoc with a predictable ID automatically overwrites/deletes
-            // the old bookmark document in Firestore.
             const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
             await setDoc(bookmarkDocRef, bookmarkData);
 
             state.bookmark = bookmarkData;
             flashAI("Bookmark saved!", 2000);
             
-            // Re-render the page content to apply the new underline
             const currentPageHTML = state.pagesHTML[state.currentPage - 1];
             DOM.pageContent.innerHTML = currentPageHTML;
             renderBookmarkOnPage();
@@ -891,6 +903,7 @@
             console.error("Error saving bookmark:", e);
             flashAI("Failed to save bookmark.", 3000);
         }
+        
         clearSelection();
     }
 
@@ -1012,34 +1025,27 @@
         if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
     }
 
-    // This is the MAIN listener. It runs whenever the user's login state changes.
-    // It is responsible for creating an anonymous user IF ONE DOESN'T EXIST.
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // User is signed in.
-            if (!user.isAnonymous) {
-                DOM.tooltipBookmark.style.display = 'flex';
-            } else {
+            if (user.isAnonymous) {
+                // Hide bookmark button for anonymous users
                 DOM.tooltipBookmark.style.display = 'none';
+            } else {
+                // Show bookmark button for signed-in (email) users
+                DOM.tooltipBookmark.style.display = 'flex';
             }
             trackUserActivity();
         } else {
-            // No user is signed in, so create one.
+            // If no user is found at all, sign one in anonymously.
             signInAnonymously(auth).catch(err => {
                 console.error("Anonymous sign-in failed:", err);
             });
         }
     });
 
-    // This is the INITIALIZATION listener. It runs ONLY ONCE when the page first loads.
-    // Its only job is to kick off your app's setup logic (initApp).
     auth.onAuthStateChanged(user => {
         initApp();
     }, { onlyOnce: true });
-
-    // DELETE THE TWO LINES BELOW FROM YOUR CODE
-    // signInAnonymously(auth).catch(...); <-- This is now handled inside the listener above.
-    // initApp(); <-- This is now handled by the special "onlyOnce" listener to avoid errors.
 
 </script>
 </body>
