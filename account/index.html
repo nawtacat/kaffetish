@@ -1,190 +1,372 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kaffetish – Account Settings</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    :root { --bg:#fff; --ink:#222; --sub:#666; --primary:#FF3A44; --border:#e8e8e8; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family:Poppins, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--ink); background:var(--bg); }
-    .wrap { max-width: 760px; margin: 48px auto; padding: 24px; }
-    h1 { margin: 0 0 12px; font-size: 28px; }
-    p.muted { color:var(--sub); margin-top: 0; }
-    .card { border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow: 0 10px 30px rgba(0,0,0,.04); }
-    .grid { display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
-    .grid.full { grid-template-columns: 1fr; }
-    label { display:block; font-size: 12px; color:var(--sub); margin-bottom:6px; }
-    input, select { width:100%; padding:12px; border:1px solid var(--border); border-radius:8px; font-size: 14px; }
-    .actions { display:flex; gap:12px; margin-top: 8px; }
-    .btn { padding:12px 16px; border-radius:10px; border:0; cursor:pointer; font-weight:600; }
-    .btn-primary { background:var(--primary); color:#fff; }
-    .btn-ghost { background:#f7f7f7; color:#000; }
-    .msg { margin-top:12px; font-size: 13px; padding:10px; border-radius:8px; display:none; }
-    .msg.error { background: #ffe8ea; color:#b40016; border:1px solid #ffcdd2; }
-    .msg.success { background: #e8f7ee; color:#186a3b; border:1px solid #c7e8d3; }
-    .row { display:flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .email-display { color:var(--sub); font-size: 14px; }
-    @media (max-width:780px) { .grid { grid-template-columns: 1fr; } }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kaffetish - User Profile</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg: #FDFBF7;
+      --ink: #2C2B2A;
+      --accent: #FF3A44;
+      --subtle: #8A8886;
+      --border-color: #EAE8E4;
+      --shadow-color: rgba(44, 43, 42, 0.1);
+      --success: #28a745;
+      --font-main: 'Lora', serif;
+      --font-ui: 'Poppins', sans-serif;
+    }
+    body.dark-mode {
+      --bg: #1e1d1c;
+      --ink: #EAE8E4;
+      --subtle: #999591;
+      --border-color: #3A3837;
+      --shadow-color: rgba(0, 0, 0, 0.3);
+    }
+    ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+    body {
+      font-family: var(--font-ui); background-color: var(--bg); color: var(--ink);
+      transition: background-color 0.3s ease, color 0.3s ease;
+      margin: 0; padding: 100px 24px; display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; box-sizing: border-box; overflow-x: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; top: -20%; left: -10%; width: 50vw; height: 50vw;
+      background: radial-gradient(circle, color-mix(in srgb, var(--accent) 5%, transparent) 0%, transparent 70%);
+      z-index: -1; opacity: 0.5; transform: rotate(15deg);
+    }
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: var(--bg); z-index: 9999; display: flex; justify-content: center; align-items: center;
+      transition: opacity 0.3s ease;
+    }
+    .spinner {
+      border: 4px solid var(--border-color); border-top: 4px solid var(--accent);
+      border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .app-header {
+      position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+      background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color); z-index: 1000;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .header-content {
+      max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .logo {
+      display: flex; align-items: baseline; font-size: 1.6rem;
+      font-weight: 500; letter-spacing: -0.5px; color: var(--accent);
+      font-family: var(--font-main); text-decoration: none;
+    }
+    body.dark-mode .logo { color: var(--ink); }
+    .header-actions { display: flex; align-items: center; gap: 16px; }
+    .header-actions button {
+      background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+      padding: 8px 10px; cursor: pointer; font-size: 1rem;
+      transition: color 0.2s ease, background-color 0.2s ease;
+    }
+    .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+
+    main { width: 100%; max-width: 950px; animation: fadeIn 0.8s ease-out both; }
+
+    .profile-container {
+      display: grid; grid-template-columns: 3fr 4fr;
+      width: 100%; background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+      border: 1px solid var(--border-color); border-radius: 24px; overflow: hidden;
+      box-shadow: 0 20px 50px -10px var(--shadow-color);
+    }
+    .benefits-panel {
+      padding: 64px 48px; display: flex; flex-direction: column; justify-content: center;
+      background: linear-gradient(165deg, color-mix(in srgb, var(--border-color) 45%, transparent), color-mix(in srgb, var(--border-color) 15%, transparent));
+      border-right: 1px solid var(--border-color);
+    }
+    .benefits-panel h2 {
+      font-family: var(--font-main); font-size: 2.8rem; font-weight: 500; margin: 0 0 16px 0;
+      line-height: 1.2; letter-spacing: -1px;
+    }
+    .benefits-panel p { color: var(--subtle); font-size: 1rem; line-height: 1.7; margin: 0 0 40px 0; }
+    .benefit-item { display: flex; align-items: center; gap: 20px; margin-bottom: 24px; font-size: 1rem; }
+    .benefit-item i { color: var(--accent); font-size: 1.2rem; width: 24px; text-align: center; transition: transform 0.3s ease; }
+    .benefit-item:hover i { transform: scale(1.2); }
+
+    .form-panel { padding: 64px; }
+    .form-panel h3 {
+      font-family: var(--font-main); font-size: 1.8rem; font-weight: 500;
+      margin: 0 0 40px 0; text-align: left; position: relative;
+    }
+    .form-panel h3::after {
+      content: ''; position: absolute; left: 0; bottom: -12px; width: 50px; height: 3px;
+      background-color: var(--accent); border-radius: 3px;
+    }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .form-field.full-width { grid-column: 1 / -1; }
+    .form-field label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 8px; color: var(--subtle); }
+    .form-field input, .form-field select {
+      width: 100%; padding: 12px 14px; font-size: 1rem; font-family: var(--font-ui);
+      border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg);
+      color: var(--ink); box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    }
+    .select-wrapper { position: relative; }
+    .select-wrapper::after {
+      content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: 50%; right: 16px;
+      transform: translateY(-50%); color: var(--subtle); pointer-events: none; transition: transform 0.2s ease;
+    }
+    .select-wrapper:focus-within::after { transform: translateY(-50%) rotate(180deg); }
+    .form-field input:focus, .form-field select:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .form-actions { margin-top: 32px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    .btn {
+      font-family: var(--font-ui); font-size: 1rem; font-weight: 500;
+      padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background-color: var(--accent); color: white; }
+    .btn-primary:not(:disabled):hover {
+      background-color: color-mix(in srgb, var(--accent) 90%, black);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) 40%, transparent);
+    }
+    .btn-secondary { background-color: transparent; color: var(--subtle); }
+    .btn-secondary:not(:disabled):hover { color: var(--accent); }
+    .form-message { margin-top: 20px; padding: 12px; border-radius: 8px; font-size: 0.9rem; text-align: center; display: none; }
+    .form-message.success { background-color: color-mix(in srgb, var(--success) 15%, transparent); color: color-mix(in srgb, var(--success) 90%, black); border: 1px solid color-mix(in srgb, var(--success) 30%, transparent); }
+    .form-message.error { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+
+    @media (max-width: 900px) {
+      body { padding: 80px 16px; }
+      body::before { display: none; }
+      main { padding: 0; }
+      .profile-container { grid-template-columns: 1fr; box-shadow: 0 10px 30px var(--shadow-color); }
+      .benefits-panel { display: none; }
+      .form-panel { padding: 32px 24px; }
+      .form-panel h3, .benefits-panel h2 { font-size: 1.6rem; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-actions { flex-direction: column-reverse; }
+      .btn { width: 100%; }
+    }
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="row">
-      <h1>Account Settings</h1>
-      <button id="logout" class="btn btn-ghost" type="button">Log Out</button>
-    </div>
-    <p id="emailLabel" class="email-display"></p>
+  <div class="loading-overlay" id="loading-overlay"><div class="spinner"></div></div>
 
-    <div class="card">
-      <form id="profile-form">
-        <div class="grid">
-          <div>
-            <label for="profile-name">Name</label>
-            <input id="profile-name" type="text" required />
-          </div>
-          <div>
-            <label for="profile-surname">Surname</label>
-            <input id="profile-surname" type="text" required />
-          </div>
-          <div class="full">
-            <label for="profile-continent">Continent</label>
-            <select id="profile-continent" required></select>
-          </div>
-          <div class="full">
-            <label for="profile-email">Email (read-only)</label>
-            <input id="profile-email" type="email" disabled />
-          </div>
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" type="submit">Save Changes</button>
-        </div>
-        <div id="profile-message" class="msg"></div>
-      </form>
-    </div>
-  </div>
+  <header class="app-header">
+    <div class="header-content">
+      <a href="https://kaffetish.club/" class="logo">Kaffetish</a>
+      <div class="header-actions">
+        <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+      </div>
+    </div>
+  </header>
 
-  <script type="module">
-    // ----- Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import {
-      getAuth, setPersistence, browserLocalPersistence,
-      onAuthStateChanged, signOut
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import {
-      getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  <main>
+        <div class="profile-container" id="profile-view">
+      <div class="benefits-panel">
+        <h2>Your Profile</h2>
+        <p>Manage your account details and preferences. Your progress is always saved.</p>
+        <div class="benefit-item"><i class="fa-solid fa-user-check"></i><span id="welcome-message">Welcome!</span></div>
+        <div class="benefit-item"><i class="fa-solid fa-envelope"></i><span id="profile-email-display">your.email@example.com</span></div>
+      </div>
+      <div class="form-panel">
+        <h3>Account Settings</h3>
+        <form id="profile-form" novalidate>
+          <div class="form-grid">
+            <div class="form-field"><label for="profile-name">Name</label><input type="text" id="profile-name" required></div>
+            <div class="form-field"><label for="profile-surname">Surname</label><input type="text" id="profile-surname" required></div>
+            <div class="form-field full-width"><label for="profile-continent">Continent</label><div class="select-wrapper"><select id="profile-continent" required></select></div></div>
+            <div class="form-field full-width"><label for="profile-email">Email (cannot be changed)</label><input type="email" id="profile-email" disabled></div>
+          </div>
+          <div class="form-message" id="profile-message"></div>
+          <div class="form-actions">
+            <button type="button" id="logout-button" class="btn btn-secondary">Log Out</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
 
-    // Adjust if you deploy to different paths/domains
-    const REGISTER_URL = "/register.html"; // redirect here if not logged in
+ <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import {
+    getAuth,
+    setPersistence,
+    browserLocalPersistence,
+    onAuthStateChanged,
+    signOut,
+  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    updateDoc,
+    serverTimestamp,
+  } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-      authDomain: "physmathacademy-722b3.firebaseapp.com",
-      projectId: "physmathacademy-722b3",
-      storageBucket: "physmathacademy-722b3.appspot.com",
-      messagingSenderId: "1093640992262",
-      appId: "1:1093640992262:web:3552a4205dc5df869a84da",
-    };
+  // ---------- CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+    authDomain: "physmathacademy-722b3.firebaseapp.com",
+    projectId: "physmathacademy-722b3",
+    storageBucket: "physmathacademy-722b3.appspot.com",
+    messagingSenderId: "1093640992262",
+    appId: "1:1093640992262:web:3552a4205dc5df869a84da",
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    await setPersistence(auth, browserLocalPersistence);
+  // ---------- INIT ----------
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    // DOM helpers
-    const $ = (s) => document.querySelector(s);
-    const msg = (el, text, type="error") => { el.textContent = text; el.className = `msg ${type}`; el.style.display = text ? "block":"none"; };
+  await setPersistence(auth, browserLocalPersistence);
 
-    const emailLabel = $("#emailLabel");
-    const profileForm = $("#profile-form");
-    const profileMsg  = $("#profile-message");
-    const profileName = $("#profile-name");
-    const profileSurname = $("#profile-surname");
-    const profileEmail = $("#profile-email");
-    const profileContinent = $("#profile-continent");
-    const logoutBtn   = $("#logout");
+  // ---------- DOM ----------
+  const $ = (s) => document.querySelector(s);
+  const loadingOverlay = $("#loading-overlay");
+  const profileView = $("#profile-view");
+  const setMessage = (el, text, type = "error") => { if (!el) return; el.textContent = text; el.classList.remove("success","error"); el.classList.add(type); el.style.display = text ? "block":"none"; };
 
-    // Continents
-    const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
-    profileContinent.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
+  profileView.style.display = "none";
 
-    // Guard: only signed-in users may view this page
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        // not signed in → go to register/login
-        location.replace(REGISTER_URL);
-        return;
-      }
-      // Load or create user doc
-      const uid = user.uid;
-      const ref = doc(db, "kaffetish-users", uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
-        await setDoc(ref, {
-          uid,
-          email: user.email || "",
-          name: "",
-          surname: "",
-          continent: "",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
-      const data = (await getDoc(ref)).data();
-      // Populate UI
-      emailLabel.textContent = data.email || user.email || "";
-      profileEmail.value = data.email || user.email || "";
-      profileName.value = data.name || "";
-      profileSurname.value = data.surname || "";
-      if (data.continent) {
-        if (![...profileContinent.options].some(o => o.value === data.continent)) {
-          const opt = document.createElement("option");
-          opt.value = data.continent; opt.textContent = data.continent;
-          profileContinent.appendChild(opt);
-        }
-        profileContinent.value = data.continent;
-      }
-    });
+  // Theme
+  const modeToggle = $("#mode-toggle");
+  const applyTheme = () => document.body.classList.toggle("dark-mode", (localStorage.getItem("kt_theme")||"light")==="dark");
+  modeToggle?.addEventListener("click", () => { const c=localStorage.getItem("kt_theme")||"light"; localStorage.setItem("kt_theme", c==="light"?"dark":"light"); applyTheme(); });
+  applyTheme();
 
-    // Save
-    profileForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      msg(profileMsg, "");
-      const user = auth.currentUser;
-      if (!user) { location.replace(REGISTER_URL); return; }
+  // Continents
+  const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
+  const profileContinent = $("#profile-continent");
+  const fillSelect = (sel) => {
+    if (!sel || sel.options.length) return;
+    sel.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
+  };
+  fillSelect(profileContinent);
 
-      const payload = {
-        name: (profileName.value || "").trim(),
-        surname: (profileSurname.value || "").trim(),
-        continent: profileContinent.value || "",
-        updatedAt: serverTimestamp(),
-      };
+  // Elements
+  const profileForm = $("#profile-form");
+  const profileName = $("#profile-name");
+  const profileSurname = $("#profile-surname");
+  const profileEmail = $("#profile-email");
+  const profileMsg = $("#profile-message");
+  const profileEmailDisplay = $("#profile-email-display");
+  const welcomeMessage = $("#welcome-message");
+  const logoutBtn = $("#logout-button");
 
-      try {
-        await updateDoc(doc(db, "kaffetish-users", user.uid), payload);
-        msg(profileMsg, "Saved.", "success");
-      } catch (err) {
-        console.error("[SaveProfile]", err);
-        msg(profileMsg, human(err));
-      }
-    });
+  // ---------- Helpers ----------
+  const userDocRef = (uid) => doc(db, "kaffetish-users", uid);
 
-    // Logout
-    logoutBtn.addEventListener("click", async () => {
-      try { await signOut(auth); } finally { location.replace(REGISTER_URL + "?logged_out=1"); }
-    });
+  // For robustness, we can ensure a doc exists if one was somehow missed on creation.
+  async function createUserDocIfMissing(user) {
+    const ref = userDocRef(user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      console.warn("[FS] User doc missing, creating a basic one for:", user.uid);
+      await setDoc(ref, {
+        uid: user.uid, email: user.email || "", createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+      }, { merge: true });
+    }
+  }
 
-    function human(err) {
-      const code = (err?.code || "").toLowerCase();
-      if (code.includes("permission-denied")) return "Insufficient permissions for your user doc.";
-      if (code.includes("not-found")) return "Profile doc missing.";
-      if (code.includes("network-request-failed")) return "Network error. Check your connection.";
-      return err?.message || "Something went wrong.";
-    }
-  </script>
+  async function loadProfileIntoForm(uid) {
+    const ref = userDocRef(uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    profileName.value = data.name || "";
+    profileSurname.value = data.surname || "";
+    profileEmail.value = data.email || "";
+    profileEmailDisplay.textContent = data.email || "";
+    welcomeMessage.textContent = data.name ? `Welcome, ${data.name}!` : "Welcome!";
+    if (data.continent) {
+      if (![...profileContinent.options].some(o => o.value === data.continent)) {
+        const opt = document.createElement("option"); opt.value = data.continent; opt.textContent = data.continent; profileContinent.appendChild(opt);
+      }
+      profileContinent.value = data.continent;
+    }
+  }
+
+  function humanError(err) {
+    const code = (err?.code || "").toLowerCase();
+    if (code.includes("permission-denied")) return "Permissions blocked by Firestore rules for this path.";
+    if (code.includes("network-request-failed")) return "Network error. Check your connection.";
+    return err?.message || "Something went wrong.";
+  }
+
+  // ---------- Save profile ----------
+  profileForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setMessage(profileMsg, "");
+    const user = auth.currentUser;
+    if (!user) return; // Should be handled by auth observer anyway
+
+    const payload = {
+      name: (profileName.value || "").trim(),
+      surname: (profileSurname.value || "").trim(),
+      continent: profileContinent.value || "",
+      updatedAt: serverTimestamp(),
+    };
+
+    const btns = profileForm.querySelectorAll("button");
+    btns.forEach(b => b.disabled = true);
+
+    try {
+      console.log("[FS] updateDoc ->", `kaffetish-users/${user.uid}`, payload);
+      await updateDoc(userDocRef(user.uid), payload);
+      setMessage(profileMsg, "Saved.", "success");
+      welcomeMessage.textContent = payload.name ? `Welcome, ${payload.name}!` : "Welcome!";
+    } catch (err) {
+      console.error("[FS/SaveProfile]", err?.code, err?.message, err);
+      setMessage(profileMsg, humanError(err), "error");
+    } finally {
+      btns.forEach(b => b.disabled = false);
+    }
+  });
+
+  // ---------- Logout ----------
+  logoutBtn?.addEventListener("click", async () => {
+    try { await signOut(auth); } catch (e) { console.warn("Signout error:", e); }
+    finally { window.location.href = 'register.html'; }
+  });
+
+  // ---------- Auth observer (single source of truth) ----------
+  onAuthStateChanged(auth, async (user) => {
+    try {
+      if (user) {
+        // ✅ User is logged in, show the profile.
+        await createUserDocIfMissing(user); // For robustness
+        await loadProfileIntoForm(user.uid);
+        profileView.style.display = "grid";
+      } else {
+        // ❌ No user logged in, redirect to the registration page.
+        window.location.href = 'register.html';
+      }
+    } catch (err) {
+      console.error("[Auth Observer]", err?.code, err?.message, err);
+      window.location.href = 'register.html'; // On error, redirect away
+    } finally {
+      // Only hide overlay if we are staying on this page
+      if (auth.currentUser) {
+        loadingOverlay.style.display = "none";
+      }
+    }
+  });
+ </script>
 </body>
 </html>
