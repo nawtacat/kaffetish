@@ -3,517 +3,512 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Profile | Kaffetish</title>
+    <title>Kaffetish - User Profile</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-
+    
     <style>
         :root {
             --bg: #FDFBF7;
-            --bg-panel: #F6F3EE;
             --ink: #2C2B2A;
             --accent: #FF3A44;
             --subtle: #8A8886;
             --border-color: #EAE8E4;
+            --shadow-color: rgba(44, 43, 42, 0.1);
+            --success: #28a745;
             --font-main: 'Lora', serif;
             --font-ui: 'Poppins', sans-serif;
-            --success: #28a745;
-            --warning: #ffc107;
-            --shadow-color: rgba(0, 0, 0, 0.1);
         }
 
         body.dark-mode {
-            --bg: #1A1918;
-            --bg-panel: #21201F;
+            --bg: #21201F;
             --ink: #EAE8E4;
             --subtle: #999591;
             --border-color: #3A3837;
-            --success: #3ddc63;
-            --warning: #f3ca5c;
-            --shadow-color: rgba(0, 0, 0, 0.4);
+            --shadow-color: rgba(0, 0, 0, 0.25);
         }
 
-        ::selection { background-color: var(--accent); color: white; }
+        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
 
-        /* --- Global Styles & Resets --- */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        html { height: 100%; }
         body {
             font-family: var(--font-ui);
             background-color: var(--bg);
             color: var(--ink);
             transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            padding-top: 60px; /* For fixed header */
             display: flex;
-            flex-direction: column;
-            min-height: 100%;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
 
         /* --- Header --- */
         .app-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            border-bottom: 1px solid var(--border-color);
-            z-index: 1000;
-            flex-shrink: 0;
-            /* On mobile, add a blurred background for a modern feel */
-            background-color: color-mix(in srgb, var(--bg) 80%, transparent);
-            backdrop-filter: blur(8px);
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
         .header-content {
-            max-width: 1400px;
-            height: 100%;
-            margin: 0 auto;
-            padding: 0 24px; /* Unified padding */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .logo-link { text-decoration: none; }
-        .logo { font-size: 1.6rem; font-weight: 500; color: var(--accent); font-family: var(--font-main); }
+        .logo {
+            display: flex; align-items: baseline; font-size: 1.6rem;
+            font-weight: 500; letter-spacing: -0.5px;
+            color: var(--accent); font-family: var(--font-main);
+            text-decoration: none;
+        }
+        body.dark-mode .logo { color: var(--ink); }
+        .header-actions { display: flex; align-items: center; gap: 16px; }
         .header-actions button {
-            background: transparent;
-            border: none;
-            color: var(--subtle);
-            border-radius: 6px;
-            padding: 8px 10px;
-            cursor: pointer;
-            font-size: 1rem;
+            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+            padding: 8px 10px; cursor: pointer; font-size: 1rem;
             transition: color 0.2s ease, background-color 0.2s ease;
         }
-        .header-actions button:hover {
-            color: var(--ink);
-            background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
-        }
+        .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
 
-        /* --- Main Layout --- */
+        /* --- Main Content --- */
         main {
-            flex-grow: 1;
-            padding-top: 60px; /* Offset for fixed header */
-            display: grid; /* Default to grid for desktop */
+            padding: 48px 24px;
             width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* Views are direct children that can be toggled */
-        .view {
+        .profile-container {
             display: grid;
-            grid-template-columns: 40% 60%;
-            height: calc(100vh - 60px);
-            grid-column: 1 / -1; /* Ensure view spans the main grid */
-            opacity: 1;
-            transition: opacity 0.4s ease-in-out;
-        }
-        .view.hidden {
-            display: none;
-            opacity: 0;
+            grid-template-columns: 1fr 1.2fr;
+            width: 100%;
+            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px var(--shadow-color);
         }
 
-        .split-panel-info {
-            background-color: var(--bg-panel);
-            padding: 60px;
+        /* --- Left Panel (Benefits/Welcome) --- */
+        .benefits-panel {
+            padding: 48px;
+            background-color: color-mix(in srgb, var(--border-color) 40%, transparent);
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
-        .split-panel-info h1 {
+        .benefits-panel h2 {
             font-family: var(--font-main);
-            font-size: clamp(3rem, 7vw, 5rem);
+            font-size: 2rem;
             font-weight: 500;
-            margin: 0;
-            line-height: 1.1;
-            letter-spacing: -1.5px;
+            margin: 0 0 16px 0;
+            line-height: 1.3;
         }
-        .split-panel-info p {
-            font-size: 1.1rem;
+        .benefits-panel p {
             color: var(--subtle);
-            line-height: 1.7;
-            max-width: 400px;
-            margin-top: 24px;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin: 0 0 24px 0;
         }
-
-        .split-panel-form {
-            padding: 60px;
+        .benefit-item {
             display: flex;
-            justify-content: center;
             align-items: center;
-            overflow-y: auto; /* Allow form to scroll on smaller desktop heights */
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
         }
-
-        .interactive-area {
-            max-width: 450px;
-            width: 100%;
+        .benefit-item i {
+            color: var(--accent);
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
         }
         
-        #loading-view {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: calc(100vh - 60px);
-            grid-column: 1 / -1;
+        /* --- Right Panel (Form) --- */
+        .form-panel {
+            padding: 48px;
+        }
+        .form-panel h3 {
+            font-family: var(--font-main);
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin: 0 0 32px 0;
+            text-align: left;
+            position: relative;
+        }
+        .form-panel h3::after {
+            content: ''; position: absolute; left: 0; bottom: -8px;
+            width: 40px; height: 2px; background-color: var(--accent);
         }
 
-        /* --- Form Elements & Components --- */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .form-group { margin-bottom: 24px; }
-        .form-group.full-width { grid-column: 1 / -1; }
-
-        .form-group label { display: block; font-weight: 500; margin-bottom: 8px; font-size: 0.9rem; }
-        .form-group input, .form-group select {
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .form-field.full-width {
+            grid-column: 1 / -1;
+        }
+        .form-field label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--subtle);
+        }
+        .form-field input {
             width: 100%;
-            padding: 12px 16px;
+            padding: 12px 14px;
             font-size: 1rem;
             font-family: var(--font-ui);
             border: 1px solid var(--border-color);
             border-radius: 8px;
             background-color: var(--bg);
             color: var(--ink);
+            box-sizing: border-box;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-group input:focus, .form-group select:focus {
+        .form-field input:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
         }
-
+        
+        /* --- Buttons & Messages --- */
+        .form-actions {
+            margin-top: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
         .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
+            font-family: var(--font-ui);
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 500;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
             cursor: pointer;
             transition: all 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
         }
-        .btn-primary { background-color: var(--accent); color: white; }
-        .btn-primary:hover:not(:disabled) {
-            background-color: color-mix(in srgb, var(--accent) 85%, black);
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: color-mix(in srgb, var(--accent) 90%, black);
             transform: translateY(-2px);
-            box-shadow: 0 4px 10px var(--shadow-color);
+            box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 40%, transparent);
         }
-        .btn-primary:disabled { background-color: var(--subtle); cursor: not-allowed; }
-        .btn-secondary { background-color: transparent; color: var(--subtle); border: 1px solid var(--border-color); margin-top: 16px; }
-        .btn-secondary:hover { background-color: var(--border-color); color: var(--ink); }
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--subtle);
+        }
+        .btn-secondary:hover {
+            color: var(--accent);
+        }
+        .form-message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        .form-message.success {
+            background-color: color-mix(in srgb, var(--success) 15%, transparent);
+            color: color-mix(in srgb, var(--success) 90%, black);
+            border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+        }
+        .form-message.error {
+            background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+            color: var(--accent);
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+        }
 
-        .message-box { padding: 12px 16px; border-radius: 8px; margin-top: 24px; font-size: 0.9rem; text-align: center; display: none; }
-        .message-box.error { background-color: color-mix(in srgb, var(--accent) 15%, transparent); color: color-mix(in srgb, var(--accent) 90%, black); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
-        .message-box.success { background-color: color-mix(in srgb, var(--success) 15%, transparent); color: color-mix(in srgb, var(--success) 90%, black); border: 1px solid color-mix(in srgb, var(--success) 30%, transparent); }
-        .message-box.warning { background-color: color-mix(in srgb, var(--warning) 25%, transparent); color: color-mix(in srgb, var(--warning) 95%, black); border: 1px solid color-mix(in srgb, var(--warning) 40%, transparent); }
-        body.dark-mode .message-box.warning { color: var(--ink); }
-
-        .spinner { width: 1.2em; height: 1.2em; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .profile-info-grid { display: grid; grid-template-columns: 100px 1fr; gap: 16px 20px; align-items: center; margin-bottom: 32px; }
-        .profile-info-grid dt { font-weight: 500; color: var(--subtle); text-align: right; }
-        .profile-info-grid dd { margin: 0; font-weight: 500; font-size: 1.1rem; word-break: break-all; }
-        .status-verified { color: var(--success); }
-        .status-unverified { color: var(--warning); }
-        .status-unverified .resend-btn { font-size: 0.85rem; margin-left: 8px; background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 2px; }
+        /* --- Hide/Show Views --- */
+        #profile-view {
+            display: none;
+        }
         
-        /* --- Mobile & Tablet Experience --- */
-        @media (max-width: 992px) {
-            body { overflow-y: auto; }
-            main { display: block; padding: 24px; } /* Switch to block layout */
-            .view { display: block; height: auto; } /* Override desktop grid */
-            .split-panel-info, .split-panel-form { padding: 0; background: transparent; }
-            .split-panel-info { text-align: center; margin-bottom: 40px; }
-            .split-panel-info h1 { font-size: 2.5rem; }
-            .split-panel-info p { display: none; } /* Hide descriptive text on mobile for focus */
-            .split-panel-form { align-items: stretch; }
-            
-            .form-grid { grid-template-columns: 1fr; } /* Stack form fields */
-            .profile-info-grid { grid-template-columns: 1fr; gap: 4px; }
-            .profile-info-grid dt { text-align: left; font-size: 0.9rem; }
-            .profile-info-grid dd { margin-bottom: 16px; }
+        /* --- Responsive Design --- */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 80px; /* More space for header + content */
+                align-items: flex-start;
+            }
+            main {
+                padding: 24px 16px;
+            }
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+            .benefits-panel {
+                display: none; /* Hide on mobile for a form-focused view */
+            }
+            .form-panel {
+                padding: 32px 24px;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+             .form-actions {
+                flex-direction: column-reverse;
+             }
+             .btn {
+                width: 100%;
+             }
         }
     </style>
 </head>
 <body>
     <header class="app-header">
         <div class="header-content">
-            <a href="/" class="logo-link"><div class="logo">Kaffetish</div></a>
+            <a href="#" class="logo">Kaffetish</a>
             <div class="header-actions">
-                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+                 <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </header>
 
     <main>
-        <div id="signup-view" class="view hidden">
-            <div class="split-panel-info">
-                <h1>Save Your Progress</h1>
-                <p>Create a permanent account to save your highlights, notes, and reading history across all your devices.</p>
+        <!-- REGISTRATION VIEW (Default) -->
+        <div class="profile-container" id="register-view">
+            <div class="benefits-panel">
+                <h2>Create Your Account</h2>
+                <p>Join our community to save your reading progress and keep a personal collection of your favorite books.</p>
+                <div class="benefit-item">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span>Save your reading progress</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span>Access your library anywhere</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fa-solid fa-star"></i>
+                    <span>Curate personal collections</span>
+                </div>
             </div>
-            <div class="split-panel-form">
-                <div class="interactive-area">
-                    <form id="signup-form" novalidate>
-                        <div class="form-grid">
-                            <div class="form-group"><label for="firstName">First Name</label><input type="text" id="firstName" required autocomplete="given-name"></div>
-                            <div class="form-group"><label for="lastName">Last Name</label><input type="text" id="lastName" required autocomplete="family-name"></div>
+            <div class="form-panel">
+                <h3>Register</h3>
+                <form id="register-form" novalidate>
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="reg-name">Name</label>
+                            <input type="text" id="reg-name" required>
                         </div>
-                        <div class="form-group full-width"><label for="country">Country</label><select id="country" required autocomplete="country-name"></select></div>
-                        <hr style="border:0; height:1px; background-color: var(--border-color); margin: 10px 0 24px;">
-                        <div class="form-group full-width"><label for="email">Email Address</label><input type="email" id="email" required autocomplete="email"></div>
-                        <div class="form-group full-width"><label for="password">Password (min. 6 characters)</label><input type="password" id="password" required minlength="6" autocomplete="new-password"></div>
-                        <button type="submit" id="submit-button" class="btn btn-primary">
-                            <span id="button-text">Create My Account</span>
-                            <div id="button-spinner" class="spinner" style="display: none;"></div>
-                        </button>
-                    </form>
-                    <div id="signup-message-box" class="message-box" aria-live="polite"></div>
-                </div>
+                        <div class="form-field">
+                            <label for="reg-surname">Surname</label>
+                            <input type="text" id="reg-surname" required>
+                        </div>
+                        <div class="form-field full-width">
+                            <label for="reg-email">Email</label>
+                            <input type="email" id="reg-email" required>
+                        </div>
+                        <div class="form-field full-width">
+                            <label for="reg-password">Password</label>
+                            <input type="password" id="reg-password" required minlength="8">
+                        </div>
+                    </div>
+                    <div class="form-message" id="register-message"></div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <div id="profile-view" class="view hidden">
-             <div class="split-panel-info">
-                <h1>Welcome Back</h1>
-                <p>All your progress is securely saved. Manage your account details or log out at any time.</p>
-            </div>
-            <div class="split-panel-form">
-                 <div class="interactive-area">
-                    <dl class="profile-info-grid">
-                        <dt>Name</dt><dd id="profile-name">...</dd>
-                        <dt>Country</dt><dd id="profile-country">...</dd>
-                        <dt>Email</dt><dd id="profile-email">...</dd>
-                        <dt>Status</dt><dd id="profile-status">...</dd>
-                    </dl>
-                    <div id="profile-message-box" class="message-box" aria-live="polite"></div>
-                    <button id="logout-button" class="btn btn-secondary">Log Out</button>
+        <!-- PROFILE SETTINGS VIEW (Shown when logged in) -->
+        <div class="profile-container" id="profile-view">
+            <div class="benefits-panel">
+                <h2>Your Profile</h2>
+                <p>Here you can manage your account details and preferences. Your progress is always saved automatically.</p>
+                <div class="benefit-item">
+                    <i class="fa-solid fa-user-check"></i>
+                    <span id="welcome-message">Welcome!</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span id="profile-email-display">your.email@example.com</span>
                 </div>
             </div>
-        </div>
-
-        <div id="loading-view" class="hidden">
-            <p style="font-size: 1.1rem; color: var(--subtle);">Loading Profile...</p>
+            <div class="form-panel">
+                <h3>Account Settings</h3>
+                <form id="profile-form" novalidate>
+                     <div class="form-grid">
+                        <div class="form-field">
+                            <label for="profile-name">Name</label>
+                            <input type="text" id="profile-name" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="profile-surname">Surname</label>
+                            <input type="text" id="profile-surname" required>
+                        </div>
+                        <div class="form-field full-width">
+                            <label for="profile-email">Email (cannot be changed)</label>
+                            <input type="email" id="profile-email" disabled>
+                        </div>
+                    </div>
+                    <div class="form-message" id="profile-message"></div>
+                    <div class="form-actions">
+                        <button type="button" id="logout-button" class="btn btn-secondary">Log Out</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </main>
 
-    <script type="module">
-        // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, linkWithCredential, EmailAuthProvider, updateProfile, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-  // Paste your actual configuration from the Firebase console here
-const firebaseConfig = {
-  apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-  authDomain: "physmathacademy-722b3.firebaseapp.com",
-  projectId: "physmathacademy-722b3",
-  storageBucket: "physmathacademy-722b3.appspot.com",
-  messagingSenderId: "1093640992262",
-  appId: "1:1093640992262:web:35b1bf4d2364bcf745f587"
-};
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // --- DOM Elements (cached for performance) ---
-        const DOM = {
-            body: document.body,
-            modeToggle: document.getElementById('mode-toggle'),
-            signupView: document.getElementById('signup-view'),
-            profileView: document.getElementById('profile-view'),
-            loadingView: document.getElementById('loading-view'),
-            signupForm: document.getElementById('signup-form'),
-            submitButton: document.getElementById('submit-button'),
-            buttonText: document.getElementById('button-text'),
-            buttonSpinner: document.getElementById('button-spinner'),
-            signupMessageBox: document.getElementById('signup-message-box'),
-            profileMessageBox: document.getElementById('profile-message-box'),
-            logoutButton: document.getElementById('logout-button'),
-            countrySelect: document.getElementById('country'),
-        };
-
-        // --- Core Functions ---
-
-        /**
-         * BUG FIX: Toggles visibility of views using a class instead of re-rendering.
-         * This preserves DOM elements and their event listeners, fixing the core bug.
-         * @param {string} viewId - The ID of the view to show ('signup-view', 'profile-view', 'loading-view').
-         */
-        function showView(viewId) {
-            [DOM.signupView, DOM.profileView, DOM.loadingView].forEach(view => {
-                view.classList.toggle('hidden', view.id !== viewId);
-            });
-        }
-
-        function setMode(mode) {
-            DOM.body.classList.toggle("dark-mode", mode === 'dark');
-            DOM.modeToggle.querySelector('i').className = `fa-solid fa-${mode === 'light' ? 'moon' : 'sun'}`;
-            localStorage.setItem("kaffetishMode", mode);
-        }
-
-        function showMessage(box, type, text) {
-            box.textContent = text;
-            box.className = `message-box ${type}`;
-            box.style.display = 'block';
-        }
-
-        function setLoadingState(isLoading) {
-            DOM.submitButton.disabled = isLoading;
-            DOM.buttonText.style.display = isLoading ? 'none' : 'block';
-            DOM.buttonSpinner.style.display = isLoading ? 'block' : 'none';
-        }
-
-        async function populateCountries() {
-            try {
-                const response = await fetch('https://restcountries.com/v3.1/all?fields=name');
-                if (!response.ok) throw new Error('Failed to fetch countries');
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const DOM = {
+                body: document.body,
+                modeToggle: document.getElementById('mode-toggle'),
+                registerView: document.getElementById('register-view'),
+                profileView: document.getElementById('profile-view'),
                 
-                const countries = await response.json();
-                const sorted = countries.map(c => c.name.common).sort();
+                // Registration Form
+                registerForm: document.getElementById('register-form'),
+                regName: document.getElementById('reg-name'),
+                regSurname: document.getElementById('reg-surname'),
+                regEmail: document.getElementById('reg-email'),
+                regPassword: document.getElementById('reg-password'),
+                registerMessage: document.getElementById('register-message'),
 
-                const fragment = document.createDocumentFragment();
-                const placeholder = document.createElement('option');
-                placeholder.value = "";
-                placeholder.textContent = "Select your country";
-                placeholder.disabled = true;
-                placeholder.selected = true;
-                fragment.appendChild(placeholder);
+                // Profile Form
+                profileForm: document.getElementById('profile-form'),
+                profileName: document.getElementById('profile-name'),
+                profileSurname: document.getElementById('profile-surname'),
+                profileEmail: document.getElementById('profile-email'),
+                profileMessage: document.getElementById('profile-message'),
+                welcomeMessage: document.getElementById('welcome-message'),
+                profileEmailDisplay: document.getElementById('profile-email-display'),
+                logoutButton: document.getElementById('logout-button'),
+            };
 
-                sorted.forEach(name => {
-                    const option = document.createElement('option');
-                    option.value = name;
-                    option.textContent = name;
-                    fragment.appendChild(option);
-                });
-                DOM.countrySelect.innerHTML = ''; // Clear previous options
-                DOM.countrySelect.appendChild(fragment);
+            const state = {
+                mode: localStorage.getItem("kaffetishMode") || "light",
+                user: JSON.parse(localStorage.getItem("kaffetishUser")) || null,
+            };
 
-            } catch (error) {
-                console.error("Country fetch error:", error);
-                DOM.countrySelect.innerHTML = '<option value="">Could not load countries</option>';
+            // --- THEME/MODE ---
+            function setMode(mode) {
+                state.mode = mode;
+                DOM.body.classList.toggle("dark-mode", mode === 'dark');
+                const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
+                DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
+                localStorage.setItem("kaffetishMode", mode);
             }
-        }
 
-        // --- Event Handlers ---
-
-        async function handleSignup(e) {
-            e.preventDefault();
-            setLoadingState(true);
-            DOM.signupMessageBox.style.display = 'none';
-
-            const { firstName, lastName, country, email, password } = e.target.elements;
-            const displayName = `${firstName.value.trim()} ${lastName.value.trim()}`;
-
-            try {
-                const credential = EmailAuthProvider.credential(email.value, password.value);
-                await linkWithCredential(auth.currentUser, credential);
-                await updateProfile(auth.currentUser, { displayName });
-                
-                const userDocRef = doc(db, "users", auth.currentUser.uid);
-                await setDoc(userDocRef, { displayName, email: email.value, country: country.value }, { merge: true });
-                
-                await sendEmailVerification(auth.currentUser);
-                showMessage(DOM.signupMessageBox, 'success', 'Success! Please check your email to verify your account.');
-                e.target.reset();
-
-            } catch (error) {
-                const messages = {
-                    'auth/email-already-in-use': 'This email is already taken.',
-                    'auth/weak-password': 'Password must be at least 6 characters.',
-                    'auth/invalid-email': 'Please enter a valid email address.'
-                };
-                const msg = messages[error.code] || 'An unexpected error occurred.';
-                showMessage(DOM.signupMessageBox, 'error', msg);
-            } finally {
-                setLoadingState(false);
-            }
-        }
-        
-        async function handleResendVerification() {
-            try {
-                await sendEmailVerification(auth.currentUser);
-                showMessage(DOM.profileMessageBox, 'success', 'Verification email sent!');
-            } catch (err) {
-                showMessage(DOM.profileMessageBox, 'error', 'Failed to send email. Please try again.');
-            }
-        }
-
-        async function renderProfile(user) {
-            document.getElementById('profile-name').textContent = user.displayName || 'Not set';
-            document.getElementById('profile-email').textContent = user.email;
-
-            try {
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
-                if (userDoc.exists()) {
-                    document.getElementById('profile-country').textContent = userDoc.data().country || 'Not set';
+            // --- UI & AUTHENTICATION LOGIC ---
+            function showView(view) {
+                DOM.registerView.style.display = 'none';
+                DOM.profileView.style.display = 'none';
+                if (view === 'register') {
+                    DOM.registerView.style.display = 'grid';
+                } else if (view === 'profile') {
+                    DOM.profileView.style.display = 'grid';
                 }
-            } catch (error) {
-                console.error("Error fetching user document:", error);
-                document.getElementById('profile-country').textContent = 'Could not load';
             }
-
-            const statusEl = document.getElementById('profile-status');
-            DOM.profileMessageBox.style.display = 'none';
-
-            if (user.emailVerified) {
-                statusEl.innerHTML = `<span class="status-verified"><i class="fa-solid fa-circle-check"></i> Verified</span>`;
-            } else {
-                statusEl.innerHTML = `<span class="status-unverified"><i class="fa-solid fa-circle-exclamation"></i> Unverified <button class="resend-btn" id="resend-verification">Resend Email</button></span>`;
-                showMessage(DOM.profileMessageBox, 'warning', 'Please check your inbox (and spam folder) to verify your email.');
-            }
-        }
-
-        // --- Initialization ---
-
-        function init() {
-            // Set initial theme
-            setMode(localStorage.getItem("kaffetishMode") || 'light');
-            populateCountries();
-
-            // --- Attach Event Listeners (ONCE) ---
-            DOM.modeToggle.addEventListener("click", () => setMode(DOM.body.classList.contains('dark-mode') ? 'light' : 'dark'));
-            DOM.signupForm.addEventListener('submit', handleSignup);
-            DOM.logoutButton.addEventListener('click', () => signOut(auth));
             
-            // Use event delegation for dynamically created "Resend" button
-            DOM.profileView.addEventListener('click', (e) => {
-                if(e.target && e.target.id === 'resend-verification') {
-                    handleResendVerification();
-                }
-            });
-
-            // Handle Authentication State
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    if (user.isAnonymous) {
-                        showView('signup-view');
-                    } else {
-                        renderProfile(user);
-                        showView('profile-view');
-                    }
+            function updateUI() {
+                if (state.user) {
+                    // Logged in
+                    DOM.welcomeMessage.textContent = `Welcome, ${state.user.name}!`;
+                    DOM.profileEmailDisplay.textContent = state.user.email;
+                    DOM.profileName.value = state.user.name;
+                    DOM.profileSurname.value = state.user.surname;
+                    DOM.profileEmail.value = state.user.email;
+                    showView('profile');
                 } else {
-                    // This happens on initial load or after logout
-                    showView('loading-view');
-                    signInAnonymously(auth).catch(err => {
-                        console.error("Anonymous sign-in failed:", err);
-                        showMessage(DOM.loadingView, 'error', 'Could not initialize session.');
-                    });
+                    // Logged out
+                    showView('register');
                 }
-            });
-        }
+            }
+            
+            function showMessage(element, text, type) {
+                element.textContent = text;
+                element.className = `form-message ${type}`;
+                element.style.display = 'block';
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, 4000);
+            }
 
-        // Run the app
-        init();
+            // --- EVENT HANDLERS ---
+            function handleRegister(e) {
+                e.preventDefault();
+                const name = DOM.regName.value.trim();
+                const surname = DOM.regSurname.value.trim();
+                const email = DOM.regEmail.value.trim();
+                const password = DOM.regPassword.value.trim();
+
+                if (!name || !surname || !email || !password) {
+                    showMessage(DOM.registerMessage, 'Please fill in all fields.', 'error');
+                    return;
+                }
+                if (password.length < 8) {
+                    showMessage(DOM.registerMessage, 'Password must be at least 8 characters long.', 'error');
+                    return;
+                }
+
+                // Simulate registration
+                state.user = { name, surname, email };
+                localStorage.setItem("kaffetishUser", JSON.stringify(state.user));
+                
+                showMessage(DOM.registerMessage, 'Success! A verification email has been sent. Please check your inbox.', 'success');
+                
+                setTimeout(() => {
+                    updateUI();
+                }, 1500);
+            }
+
+            function handleProfileUpdate(e) {
+                e.preventDefault();
+                const newName = DOM.profileName.value.trim();
+                const newSurname = DOM.profileSurname.value.trim();
+
+                if (!newName || !newSurname) {
+                     showMessage(DOM.profileMessage, 'Name and Surname cannot be empty.', 'error');
+                    return;
+                }
+
+                // Update user data
+                state.user.name = newName;
+                state.user.surname = newSurname;
+                localStorage.setItem("kaffetishUser", JSON.stringify(state.user));
+
+                showMessage(DOM.profileMessage, 'Your profile has been updated successfully!', 'success');
+                DOM.welcomeMessage.textContent = `Welcome, ${state.user.name}!`;
+            }
+
+            function handleLogout() {
+                state.user = null;
+                localStorage.removeItem("kaffetishUser");
+                updateUI();
+            }
+
+            // --- INITIALIZATION ---
+            function init() {
+                setMode(state.mode);
+                updateUI();
+
+                // Event Listeners
+                DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
+                DOM.registerForm.addEventListener('submit', handleRegister);
+                DOM.profileForm.addEventListener('submit', handleProfileUpdate);
+                DOM.logoutButton.addEventListener('click', handleLogout);
+            }
+
+            init();
+        });
     </script>
 </body>
 </html>
