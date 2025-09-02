@@ -467,7 +467,7 @@
                 const user = userCredential.user;
 
                 // Store additional user data in Firestore
-                await setDoc(doc(db, "users", user.uid), {
+                await setDoc(doc(db, "kaffetish_profiles", user.uid), {
                     name,
                     surname,
                     continent,
@@ -509,7 +509,7 @@
             const continent = profileDisplays.continentInput.value;
 
             try {
-                const userDocRef = doc(db, "users", user.uid);
+                const userDocRef = doc(db, "kaffetish_profiles", user.uid);
                 await updateDoc(userDocRef, { name, surname, continent });
                 showMessage(messages.profile, "Profile updated successfully!");
             } catch (error) {
@@ -525,22 +525,36 @@
 
         const loadUserProfile = async (user) => {
             try {
-                const docRef = doc(db, "users", user.uid);
+                const docRef = doc(db, "kaffetish_profiles", user.uid);
                 const docSnap = await getDoc(docRef);
+                let userData;
 
                 if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    profileDisplays.nameInput.value = data.name || '';
-                    profileDisplays.surnameInput.value = data.surname || '';
-                    profileDisplays.continentInput.value = data.continent || '';
-                    profileDisplays.emailInput.value = user.email;
-                    profileDisplays.email.textContent = user.email;
-                    profileDisplays.welcome.textContent = `Welcome, ${data.name}!`;
+                    // If the document exists, use its data
+                    userData = docSnap.data();
                 } else {
-                    console.log("No such document for user!");
+                    // If the document does not exist, create it with default values
+                    console.log("No profile found for user, creating one.");
+                    const newUserData = {
+                        name: "",
+                        surname: "",
+                        continent: continents[3], // Default to Europe or another value
+                        email: user.email,
+                    };
+                    await setDoc(docRef, newUserData);
+                    userData = newUserData;
                 }
+
+                // Populate the form with the user data (either existing or newly created)
+                profileDisplays.nameInput.value = userData.name || '';
+                profileDisplays.surnameInput.value = userData.surname || '';
+                profileDisplays.continentInput.value = userData.continent || '';
+                profileDisplays.emailInput.value = user.email;
+                profileDisplays.email.textContent = user.email;
+                profileDisplays.welcome.textContent = `Welcome, ${userData.name || 'User'}!`;
+
             } catch (error) {
-                console.error("Error loading user profile:", error);
+                console.error("Error loading or creating user profile:", error);
                 showMessage(messages.profile, "Could not load your profile data.", true);
             }
         };
@@ -580,3 +594,5 @@
 
 </body>
 </html>
+
+
