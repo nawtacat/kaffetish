@@ -256,7 +256,7 @@
     </div>
   </main>
 
-  <script type="module">
+ <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import {
     getAuth,
@@ -276,7 +276,7 @@
     serverTimestamp,
   } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  // --- Firebase config ---
+  // ---------- CONFIG ----------
   const firebaseConfig = {
     apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
     authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -286,7 +286,7 @@
     appId: "1:1093640992262:web:3552a4205dc5df869a84da",
   };
 
-  // --- Init ---
+  // ---------- INIT ----------
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -294,54 +294,33 @@
   // Persist session across reloads/tabs
   await setPersistence(auth, browserLocalPersistence);
 
-  // --- DOM helpers & elements ---
+  // ---------- DOM ----------
   const $ = (s) => document.querySelector(s);
-
   const loadingOverlay = $("#loading-overlay");
-  const views = {
-    register: $("#register-view"),
-    login: $("#login-view"),
-    profile: $("#profile-view"),
-  };
-  const showView = (name) => {
-    Object.values(views).forEach((el) => (el.style.display = "none"));
-    views[name].style.display = "grid";
-  };
-  const setMessage = (el, text, type = "error") => {
-    if (!el) return;
-    el.textContent = text;
-    el.classList.remove("success", "error");
-    el.classList.add(type);
-    el.style.display = text ? "block" : "none";
-  };
+  const views = { register: $("#register-view"), login: $("#login-view"), profile: $("#profile-view") };
+  const showView = (name) => { Object.values(views).forEach(el => el.style.display = "none"); views[name].style.display = "grid"; };
+  const setMessage = (el, text, type = "error") => { if (!el) return; el.textContent = text; el.classList.remove("success","error"); el.classList.add(type); el.style.display = text ? "block":"none"; };
 
-  // Theme toggle
+  // Hide everything until auth resolves
+  Object.values(views).forEach(el => el.style.display = "none");
+
+  // Theme
   const modeToggle = $("#mode-toggle");
-  const applyTheme = () => {
-    const mode = localStorage.getItem("kt_theme") || "light";
-    document.body.classList.toggle("dark-mode", mode === "dark");
-  };
-  modeToggle?.addEventListener("click", () => {
-    const current = localStorage.getItem("kt_theme") || "light";
-    localStorage.setItem("kt_theme", current === "light" ? "dark" : "light");
-    applyTheme();
-  });
+  const applyTheme = () => document.body.classList.toggle("dark-mode", (localStorage.getItem("kt_theme")||"light")==="dark");
+  modeToggle?.addEventListener("click", () => { const c=localStorage.getItem("kt_theme")||"light"; localStorage.setItem("kt_theme", c==="light"?"dark":"light"); applyTheme(); });
   applyTheme();
 
-  // Populate continent selects
+  // Continents
   const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
   const regContinent = $("#reg-continent");
   const profileContinent = $("#profile-continent");
   const fillSelect = (sel) => {
     if (!sel || sel.options.length) return;
-    sel.innerHTML =
-      `<option value="" disabled selected>Select your continent</option>` +
-      continents.map(c => `<option value="${c}">${c}</option>`).join("");
+    sel.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
   };
-  fillSelect(regContinent);
-  fillSelect(profileContinent);
+  fillSelect(regContinent); fillSelect(profileContinent);
 
-  // Elements: Register
+  // Elements
   const registerForm = $("#register-form");
   const regName = $("#reg-name");
   const regSurname = $("#reg-surname");
@@ -351,14 +330,12 @@
   const registerMsg = $("#register-message");
   const showLoginLink = $("#show-login");
 
-  // Elements: Login
   const loginForm = $("#login-form");
   const loginEmail = $("#login-email");
   const loginPassword = $("#login-password");
   const loginMsg = $("#login-message");
   const showRegisterLink = $("#show-register");
 
-  // Elements: Profile
   const profileForm = $("#profile-form");
   const profileName = $("#profile-name");
   const profileSurname = $("#profile-surname");
@@ -368,13 +345,15 @@
   const welcomeMessage = $("#welcome-message");
   const logoutBtn = $("#logout-button");
 
-  // --- Firestore helpers ---
+  // ---------- Helpers ----------
   const userDocRef = (uid) => doc(db, "kaffetish-users", uid);
 
-  const ensureUserDoc = async (user, extra = {}) => {
+  // NOTE: We do NOT touch Firestore until onAuthStateChanged confirms a user.
+  async function createUserDocIfMissing(user, extra = {}) {
     const ref = userDocRef(user.uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) {
+      console.log("[FS] setDoc ->", `kaffetish-users/${user.uid}`);
       await setDoc(ref, {
         uid: user.uid,
         email: user.email || "",
@@ -383,13 +362,15 @@
         continent: extra.continent || "",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      }, { merge: true }); // merge just in case
     }
-  };
+  }
 
-  const loadUserDocIntoProfile = async (uid) => {
-    const snap = await getDoc(userDocRef(uid));
-    if (!snap.exists()) return null;
+  async function loadProfileIntoForm(uid) {
+    const ref = userDocRef(uid);
+    console.log("[FS] getDoc ->", `kaffetish-users/${uid}`);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
     const data = snap.data();
     profileName.value = data.name || "";
     profileSurname.value = data.surname || "";
@@ -398,20 +379,31 @@
     welcomeMessage.textContent = data.name ? `Welcome, ${data.name}!` : "Welcome!";
     if (data.continent) {
       if (![...profileContinent.options].some(o => o.value === data.continent)) {
-        const opt = document.createElement("option");
-        opt.value = data.continent; opt.textContent = data.continent;
-        profileContinent.appendChild(opt);
+        const opt = document.createElement("option"); opt.value = data.continent; opt.textContent = data.continent; profileContinent.appendChild(opt);
       }
       profileContinent.value = data.continent;
     }
-    return data;
-  };
+  }
 
-  // --- UI switches (Register <-> Login) ---
+  function humanError(err) {
+    const code = (err?.code || "").toLowerCase();
+    if (code.includes("permission-denied")) return "Permissions blocked by Firestore rules for this path.";
+    if (code.includes("operation-not-allowed")) return "Email/Password sign-in is disabled in Firebase.";
+    if (code.includes("email-already-in-use")) return "This email is already registered. Try signing in.";
+    if (code.includes("invalid-email")) return "Invalid email address.";
+    if (code.includes("weak-password")) return "Password is too weak.";
+    if (code.includes("network-request-failed")) return "Network error. Check your connection.";
+    return err?.message || "Something went wrong.";
+  }
+
+  // ---------- View switching ----------
   showLoginLink?.addEventListener("click", () => { setMessage(registerMsg, ""); showView("login"); });
   showRegisterLink?.addEventListener("click", () => { setMessage(loginMsg, ""); showView("register"); });
 
-  // --- Register flow (sets an explicit "we signed in" flag) ---
+  // We’ll stash registration extras here and let the auth observer do the Firestore write.
+  let pendingRegistrationExtras = null;
+
+  // ---------- Register ----------
   registerForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMessage(registerMsg, "");
@@ -422,57 +414,51 @@
     const pw = regPassword.value;
     const pw2 = regPasswordConfirm.value;
 
-    if (!name || !surname || !email || !continent || !pw || !pw2) {
-      setMessage(registerMsg, "Please fill in all fields.", "error"); return;
-    }
-    if (pw !== pw2) {
-      setMessage(registerMsg, "Passwords do not match.", "error"); return;
-    }
-    if (pw.length < 8) {
-      setMessage(registerMsg, "Password must be at least 8 characters.", "error"); return;
-    }
+    if (!name || !surname || !email || !continent || !pw || !pw2) return setMessage(registerMsg, "Please fill in all fields.", "error");
+    if (pw !== pw2) return setMessage(registerMsg, "Passwords do not match.", "error");
+    if (pw.length < 8) return setMessage(registerMsg, "Password must be at least 8 characters.", "error");
 
     const btn = registerForm.querySelector("button[type='submit']");
     btn.disabled = true;
 
     try {
+      console.log("[Auth] createUserWithEmailAndPassword");
       const { user } = await createUserWithEmailAndPassword(auth, email, pw);
-      localStorage.setItem("kt_signed_in", "1");
-      sessionStorage.setItem("kt_signed_in", "1");
-      await ensureUserDoc(user, { name, surname, continent });
-      setMessage(registerMsg, "Account created successfully.", "success");
-      // onAuthStateChanged handles UI
+      // Save extras; the auth observer will create the Firestore doc AFTER auth is fully ready.
+      pendingRegistrationExtras = { name, surname, continent };
+      setMessage(registerMsg, "Account created. Loading your profile…", "success");
     } catch (err) {
-      setMessage(registerMsg, humanAuthError(err), "error");
+      console.error("[Auth/Register]", err?.code, err?.message, err);
+      setMessage(registerMsg, humanError(err), "error");
     } finally {
       btn.disabled = false;
     }
   });
 
-  // --- Login flow (sets the "we signed in" flag) ---
+  // ---------- Login ----------
   loginForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMessage(loginMsg, "");
     const email = loginEmail.value.trim().toLowerCase();
     const pw = loginPassword.value;
-    if (!email || !pw) { setMessage(loginMsg, "Enter your email and password.", "error"); return; }
+    if (!email || !pw) return setMessage(loginMsg, "Enter your email and password.", "error");
 
     const btn = loginForm.querySelector("button[type='submit']");
     btn.disabled = true;
 
     try {
+      console.log("[Auth] signInWithEmailAndPassword");
       await signInWithEmailAndPassword(auth, email, pw);
-      localStorage.setItem("kt_signed_in", "1");
-      sessionStorage.setItem("kt_signed_in", "1");
       setMessage(loginMsg, "Signed in.", "success");
     } catch (err) {
-      setMessage(loginMsg, humanAuthError(err), "error");
+      console.error("[Auth/Login]", err?.code, err?.message, err);
+      setMessage(loginMsg, humanError(err), "error");
     } finally {
       btn.disabled = false;
     }
   });
 
-  // --- Save profile ---
+  // ---------- Save profile ----------
   profileForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     setMessage(profileMsg, "");
@@ -487,81 +473,70 @@
     };
 
     const btns = profileForm.querySelectorAll("button");
-    btns.forEach((b) => (b.disabled = true));
+    btns.forEach(b => b.disabled = true);
 
     try {
+      console.log("[FS] updateDoc ->", `kaffetish-users/${user.uid}`, payload);
       await updateDoc(userDocRef(user.uid), payload);
       setMessage(profileMsg, "Saved.", "success");
       welcomeMessage.textContent = payload.name ? `Welcome, ${payload.name}!` : "Welcome!";
     } catch (err) {
-      setMessage(profileMsg, "Failed to save changes. " + humanAuthError(err), "error");
+      console.error("[FS/SaveProfile]", err?.code, err?.message, err);
+      setMessage(profileMsg, humanError(err), "error");
     } finally {
-      btns.forEach((b) => (b.disabled = false));
+      btns.forEach(b => b.disabled = false);
     }
   });
 
-  // --- Logout: forcefully clear and reload with ?logout=1 ---
+  // ---------- Logout ----------
   logoutBtn?.addEventListener("click", async () => {
-    try { await signOut(auth); } catch {}
-    finally {
-      sessionStorage.removeItem("kt_signed_in");
-      localStorage.removeItem("kt_signed_in");
-      location.replace(location.pathname + "?logout=1");
-    }
+    try { await signOut(auth); } catch (e) { console.warn("Signout error:", e); }
+    finally { location.replace(location.pathname + "?logout=1"); }
   });
 
-  // --- Guard: hide all views until auth resolves ---
-  Object.values(views).forEach(el => el.style.display = "none");
-
-  // If we arrive with ?logout=1, try a fresh signOut again (covers edge cases)
+  // If we arrived with ?logout=1, attempt signout again (covers odd cases)
   const url = new URL(location.href);
   if (url.searchParams.get("logout") === "1") {
     try { await signOut(auth); } catch {}
   }
 
-  // --- Strong auth observer ---
+  // ---------- Auth observer (single source of truth) ----------
   onAuthStateChanged(auth, async (user) => {
     try {
       if (user) {
-        // Only trust sessions that our app explicitly created
-        const ok = sessionStorage.getItem("kt_signed_in") || localStorage.getItem("kt_signed_in");
-        if (!ok) {
-          try { await signOut(auth); } catch {}
-          showView("register");
-          return;
+        // Delay any Firestore until here to guarantee request.auth is populated
+        if (pendingRegistrationExtras) {
+          try {
+            await createUserDocIfMissing(user, pendingRegistrationExtras);
+          } catch (err) {
+            console.error("[FS/ensureUserDoc on first sign-in]", err?.code, err?.message, err);
+            // If this throws "permission-denied", your rules aren’t published or the path is wrong.
+          } finally {
+            pendingRegistrationExtras = null;
+          }
+        } else {
+          // normal sign-in path
+          await createUserDocIfMissing(user);
         }
-        await ensureUserDoc(user);
-        await loadUserDocIntoProfile(user.uid);
+
+        await loadProfileIntoForm(user.uid);
         showView("profile");
       } else {
-        // Signed-out: clear flags and show register
-        sessionStorage.removeItem("kt_signed_in");
-        localStorage.removeItem("kt_signed_in");
         showView("register");
       }
+    } catch (err) {
+      console.error("[Auth Observer]", err?.code, err?.message, err);
+      showView("register");
     } finally {
       if (loadingOverlay) loadingOverlay.style.display = "none";
     }
   });
 
-  // Default fallback while waiting for observer
-  // (kept as no-op due to the guard that hides all views)
-
-  // Error mapper
-  function humanAuthError(err) {
-    const code = (err?.code || "").toLowerCase();
-    if (code.includes("invalid-email")) return "Invalid email address.";
-    if (code.includes("email-already-in-use")) return "Email already in use.";
-    if (code.includes("weak-password")) return "Password is too weak.";
-    if (code.includes("wrong-password")) return "Incorrect password.";
-    if (code.includes("user-not-found")) return "No account with that email.";
-    if (code.includes("network-request-failed")) return "Network error. Check your connection.";
-    return err?.message || "Something went wrong.";
-  }
-
   // Expose for quick console checks
   window.kt = { auth, db };
+  console.log("[Kaffetish] Loaded. Project:", firebaseConfig.projectId);
 </script>
+
 
 </body>
 </html>
