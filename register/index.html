@@ -326,4 +326,100 @@
   function humanError(err) {
     const code = (err?.code || "").toLowerCase();
     if (code.includes("permission-denied")) return "Permissions blocked by Firestore rules for this path.";
-    if (code.includes("operation-not
+    if (code.includes("operation-not-allowed")) return "Email/Password sign-in is disabled in Firebase.";
+    if (code.includes("email-already-in-use")) return "This email is already registered. Try signing in.";
+    if (code.includes("invalid-email")) return "Invalid email address.";
+    if (code.includes("weak-password")) return "Password is too weak.";
+    if (code.includes("network-request-failed")) return "Network error. Check your connection.";
+    return err?.message || "Something went wrong.";
+  }
+
+  // ---------- View switching ----------
+  showLoginLink?.addEventListener("click", () => { setMessage(registerMsg, ""); showView("login"); });
+  showRegisterLink?.addEventListener("click", () => { setMessage(loginMsg, ""); showView("register"); });
+
+  // Stash registration extras here; the auth observer will do the Firestore write before redirecting.
+  let pendingRegistrationExtras = null;
+
+  // ---------- Register ----------
+  registerForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setMessage(registerMsg, "");
+    const name = regName.value.trim();
+    const surname = regSurname.value.trim();
+    const email = regEmail.value.trim().toLowerCase();
+    const continent = regContinent.value;
+    const pw = regPassword.value;
+    const pw2 = regPasswordConfirm.value;
+
+    if (!name || !surname || !email || !continent || !pw || !pw2) return setMessage(registerMsg, "Please fill in all fields.", "error");
+    if (pw !== pw2) return setMessage(registerMsg, "Passwords do not match.", "error");
+  	if (pw.length < 8) return setMessage(registerMsg, "Password must be at least 8 characters.", "error");
+
+    const btn = registerForm.querySelector("button[type='submit']");
+    btn.disabled = true;
+
+    try {
+      console.log("[Auth] createUserWithEmailAndPassword");
+      // Save extras; the auth observer will create the Firestore doc AFTER auth is fully ready.
+      pendingRegistrationExtras = { name, surname, continent };
+      await createUserWithEmailAndPassword(auth, email, pw);
+      setMessage(registerMsg, "Account created. Redirecting...", "success");
+    } catch (err) {
+      pendingRegistrationExtras = null; // Clear on failure
+      console.error("[Auth/Register]", err?.code, err?.message, err);
+      setMessage(registerMsg, humanError(err), "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Login ----------
+  loginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    setMessage(loginMsg, "");
+    const email = loginEmail.value.trim().toLowerCase();
+    const pw = loginPassword.value;
+    if (!email || !pw) return setMessage(loginMsg, "Enter your email and password.", "error");
+
+    const btn = loginForm.querySelector("button[type='submit']");
+    btn.disabled = true;
+
+    try {
+      console.log("[Auth] signInWithEmailAndPassword");
+      await signInWithEmailAndPassword(auth, email, pw);
+      setMessage(loginMsg, "Signed in. Redirecting...", "success");
+    } catch (err) {
+      console.error("[Auth/Login]", err?.code, err?.message, err);
+      setMessage(loginMsg, humanError(err), "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ---------- Auth observer (single source of truth) ----------
+  onAuthStateChanged(auth, async (user) => {
+    try {
+      if (user) {
+        // A user is now signed in. This could be from login or registration.
+        // If it's a new registration, the extra data will be in our temp variable.
+        if (pendingRegistrationExtras) {
+          await createUserDocIfMissing(user, pendingRegistrationExtras);
+          pendingRegistrationExtras = null; // Clear after use
+        }
+        // Redirect to the account page.
+        window.location.href = 'account.html';
+      } else {
+        // No user is signed in, show the default registration view.
+        showView("register");
+        if (loadingOverlay) loadingOverlay.style.display = "none";
+      }
+    } catch (err) {
+      console.error("[Auth Observer]", err?.code, err?.message, err);
+      showView("register"); // Default to register on error
+      if (loadingOverlay) loadingOverlay.style.display = "none";
+    }
+  });
+ </script>
+</body>
+</html>
