@@ -595,7 +595,9 @@
         DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
         DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
     }
-
+    
+    // --- BOOKMARK FEATURE ---
+    // STEP 2: Load the bookmark when the book opens.
     async function handlePostLoadTasks() {
         await auth.authStateReady();
         
@@ -695,7 +697,9 @@
             }
         }).join("\n");
     }
-
+    
+    // --- BOOKMARK FEATURE ---
+    // STEP 3: Visually display the bookmark on the page.
     function renderBookmarkOnPage() {
         if (!state.bookmark || state.currentPage !== state.bookmark.pageNum) return;
 
@@ -854,7 +858,9 @@
             end: start + range.toString().length
         };
     }
-
+    
+    // --- BOOKMARK FEATURE ---
+    // STEP 1: Save the bookmark to Firestore.
     async function handleBookmark() {
         const user = auth.currentUser;
         if (!user || user.isAnonymous) {
@@ -885,12 +891,14 @@
         };
 
         try {
+            // This predictable ID creates or overwrites the bookmark automatically
             const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
             await setDoc(bookmarkDocRef, bookmarkData);
 
             state.bookmark = bookmarkData;
             flashAI("Bookmark saved!", 2000);
             
+            // Re-render the page to show the new underline immediately
             const currentPageHTML = state.pagesHTML[state.currentPage - 1];
             DOM.pageContent.innerHTML = currentPageHTML;
             renderBookmarkOnPage();
@@ -1021,6 +1029,9 @@
         if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
     }
 
+    // --- AUTHENTICATION & INITIALIZATION ---
+    // This listener handles all auth state changes, like showing the bookmark button
+    // for signed-in users or creating an anonymous user if no one is logged in.
     onAuthStateChanged(auth, (user) => {
         if (user) {
             if (!user.isAnonymous) {
@@ -1030,12 +1041,15 @@
             }
             trackUserActivity();
         } else {
+            // This ensures a session exists even for non-logged-in users.
             signInAnonymously(auth).catch(err => {
                 console.error("Anonymous sign-in failed:", err);
             });
         }
     });
 
+    // This special listener runs only once to kick off the application,
+    // ensuring Firebase is ready before the app starts.
     auth.onAuthStateChanged(user => {
         initApp();
     }, { onlyOnce: true });
