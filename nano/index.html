@@ -598,62 +598,59 @@
 
     // --- LOGIC CORRECTION ---
     // This function now correctly handles displaying the bookmark even if it's on page 1.
-    async function handlePostLoadTasks() {
-        await auth.authStateReady();
-        await startReadingSession(state.bookTitle);
 
+
+    async function loadPdfFromUrl(sourceUrl, title) {
+    showView(DOM.loadingView);
+    DOM.loadingText.textContent = `Brewing your document...`;
+    state.bookId = btoa(sourceUrl).replace(/\//g, '_');
+    state.bookTitle = title;
+
+    try {
+        const response = await fetch(sourceUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const pdfData = await response.arrayBuffer();
+
+        const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+        state.pdfDoc = pdfDoc;
+        state.totalPages = pdfDoc.numPages;
+        state.pagesHTML = new Array(state.totalPages).fill(null);
+
+        DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+        
+        // --- BOOKMARK CHECK MOVED HERE FOR SAFETY ---
+        let startingPage = 1; // Default to page 1
+
+        // Wait for Firebase to know who the user is
+        await auth.authStateReady();
         const user = auth.currentUser;
+
+        // Check for a bookmark only if the user is fully signed in
         if (user && !user.isAnonymous && state.bookId) {
             const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
             const bookmarkSnap = await getDoc(bookmarkDocRef);
 
             if (bookmarkSnap.exists()) {
                 state.bookmark = bookmarkSnap.data();
-                const bookmarkedPage = state.bookmark.pageNum;
-
-                if (bookmarkedPage !== state.currentPage) {
-                    // Jump to the bookmarked page if it's not the first one.
-                    await renderPage(bookmarkedPage);
-                } else {
-                    // *** THIS IS THE FIX ***
-                    // If the bookmark is on the currently loaded page (i.e., page 1),
-                    // we still need to explicitly draw the underline.
-                    renderBookmarkOnPage();
-                }
+                startingPage = state.bookmark.pageNum; // Set the correct starting page
             }
         }
+        
+        // Now, render the correct page *before* showing the reader
+        await renderPage(startingPage);
+        
+        // Finally, reveal the reader with the correct page already loaded
+        showView(DOM.readerView);
+
+        // Start tracking the session in the background
+        startReadingSession(state.bookTitle);
+
+    } catch (err) {
+        console.error("PDF Loading/Processing Error:", err);
+        DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
+        showView(DOM.fallbackView);
     }
-
-    async function loadPdfFromUrl(sourceUrl, title) {
-        showView(DOM.loadingView);
-        DOM.loadingText.textContent = `Brewing your document...`;
-        state.bookId = btoa(sourceUrl).replace(/\//g, '_');
-        state.bookTitle = title;
-
-        try {
-            const response = await fetch(sourceUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const pdfData = await response.arrayBuffer();
-
-            const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
-            state.pdfDoc = pdfDoc;
-            state.totalPages = pdfDoc.numPages;
-            state.pagesHTML = new Array(state.totalPages).fill(null);
-
-            DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-            
-            await renderPage(1);
-            showView(DOM.readerView);
-
-            handlePostLoadTasks();
-
-        } catch (err) {
-            console.error("PDF Loading/Processing Error:", err);
-            DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
-            showView(DOM.fallbackView);
-        }
-    }
-
+}
     function paragraphize(textContent) {
         const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
         const items = textContent.items.map(it => ({
