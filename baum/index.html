@@ -520,7 +520,6 @@
     const baseFontRem = 1.15;
 
     async function trackUserActivity() {
-        await auth.authStateReady();
         if (!auth.currentUser || !db) return;
         const userDocRef = doc(db, "users", auth.currentUser.uid);
         try {
@@ -532,7 +531,6 @@
     }
 
     async function startReadingSession(bookTitle) {
-        await auth.authStateReady();
         if (!auth.currentUser || !db || state.currentSessionId) return;
         state.bookTitle = bookTitle;
         const sessionsColRef = collection(db, "reading_sessions");
@@ -557,7 +555,6 @@
     }
 
     async function trackExplanationRequest(text) {
-        await auth.authStateReady();
         if (!auth.currentUser || !db) return;
         const explanationsColRef = collection(db, "explanation_requests");
         try {
@@ -606,6 +603,7 @@
         showView(DOM.loadingView);
         DOM.loadingText.textContent = `Loading ${title}...`;
         state.bookId = btoa(sourceUrl).replace(/\//g, '_');
+        state.bookTitle = title; // Set book title for session tracking
 
         try {
             const response = await fetch(sourceUrl);
@@ -616,6 +614,11 @@
             state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
             state.pagesHTML = new Array(state.totalPages).fill(null);
 
+            // THIS IS THE FIX: Wait for auth to be ready before any database calls.
+            // This ensures anonymous users are signed in before we track their session.
+            await auth.authStateReady();
+            
+            // Now it is safe to track the session for analytics.
             await startReadingSession(title);
 
             const user = auth.currentUser;
@@ -797,7 +800,7 @@
         DOM.aiPanel.style.display = "flex";
         DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
         const textToExplain = state.lastSelectionText;
-        trackExplanationRequest(textToExplain);
+        await trackExplanationRequest(textToExplain);
         clearSelection();
         try {
             const { data } = await explainBookTextFn({ text: textToExplain });
@@ -836,7 +839,6 @@
     }
 
     async function handleBookmark() {
-        await auth.authStateReady();
         const user = auth.currentUser;
         if (!user || user.isAnonymous) {
             flashAI("Please sign in to use bookmarks.", 3000);
@@ -988,40 +990,43 @@
             setupSwipeNavigation();
         }
     }
+    
+    function initApp() {
+        setMode(localStorage.getItem("kaffetishMode") || 'light');
+        setFontRem(state.currentFontRem);
+        setupEventListeners();
 
-    let isAppInitialized = false;
+        const params = new URLSearchParams(window.location.search);
+        const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
+
+        if (bookUrl) {
+            loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
+        } else {
+            showView(DOM.fallbackView);
+        }
+        if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
+    }
+
     onAuthStateChanged(auth, (user) => {
-        
-        // Control bookmark button visibility based on auth state.
         if (user && !user.isAnonymous) {
             DOM.tooltipBookmark.style.display = 'flex';
         } else {
             DOM.tooltipBookmark.style.display = 'none';
         }
 
-        // Run the main app logic only once after auth is ready.
-        if (user && !isAppInitialized) {
-            isAppInitialized = true;
-
-            setMode(localStorage.getItem("kaffetishMode") || 'light');
-            setFontRem(state.currentFontRem);
+        // Only track activity for real users
+        if (user && !user.isAnonymous) {
             trackUserActivity();
-            setupEventListeners();
-
-            const params = new URLSearchParams(window.location.search);
-            const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
-
-            if (bookUrl) {
-                loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
-            } else {
-                showView(DOM.fallbackView);
-            }
-            if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
-        }
-        else if (!user) {
-            signInAnonymously(auth).catch(console.error);
         }
     });
+
+    // Sign in anonymously immediately
+    signInAnonymously(auth).catch(err => {
+        console.error("Anonymous sign-in failed:", err);
+    });
+
+    // Initialize the app
+    initApp();
 
 </script>    
 </body>
