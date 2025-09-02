@@ -45,6 +45,20 @@
             min-height: 100vh;
             box-sizing: border-box;
         }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.3s ease;
+        }
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* --- Header --- */
         .app-header {
@@ -161,7 +175,7 @@
             margin-bottom: 8px;
             color: var(--subtle);
         }
-        .form-field input {
+        .form-field input, .form-field select {
             width: 100%;
             padding: 12px 14px;
             font-size: 1rem;
@@ -172,8 +186,25 @@
             color: var(--ink);
             box-sizing: border-box;
             transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
-        .form-field input:focus {
+        .select-wrapper {
+            position: relative;
+        }
+        .select-wrapper::after {
+            content: '\f078'; /* Font Awesome down arrow */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            transform: translateY(-50%);
+            color: var(--subtle);
+            pointer-events: none;
+        }
+        .form-field input:focus, .form-field select:focus {
             outline: none;
             border-color: var(--accent);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
@@ -197,11 +228,15 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .btn-primary {
             background-color: var(--accent);
             color: white;
         }
-        .btn-primary:hover {
+        .btn-primary:not(:disabled):hover {
             background-color: color-mix(in srgb, var(--accent) 90%, black);
             transform: translateY(-2px);
             box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 40%, transparent);
@@ -210,7 +245,7 @@
             background-color: transparent;
             color: var(--subtle);
         }
-        .btn-secondary:hover {
+        .btn-secondary:not(:disabled):hover {
             color: var(--accent);
         }
         .form-message {
@@ -231,16 +266,32 @@
             color: var(--accent);
             border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
         }
+        .auth-toggle {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.9rem;
+            color: var(--subtle);
+        }
+        .auth-toggle a {
+            color: var(--accent);
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .auth-toggle a:hover {
+            text-decoration: underline;
+        }
+
 
         /* --- Hide/Show Views --- */
-        #profile-view {
+        #profile-view, #login-view {
             display: none;
         }
         
         /* --- Responsive Design --- */
         @media (max-width: 768px) {
             body {
-                padding-top: 80px; /* More space for header + content */
+                padding-top: 80px;
                 align-items: flex-start;
             }
             main {
@@ -250,7 +301,7 @@
                 grid-template-columns: 1fr;
             }
             .benefits-panel {
-                display: none; /* Hide on mobile for a form-focused view */
+                display: none; 
             }
             .form-panel {
                 padding: 32px 24px;
@@ -268,6 +319,9 @@
     </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
     <header class="app-header">
         <div class="header-content">
             <a href="#" class="logo">Kaffetish</a>
@@ -283,45 +337,51 @@
             <div class="benefits-panel">
                 <h2>Create Your Account</h2>
                 <p>Join our community to save your reading progress and keep a personal collection of your favorite books.</p>
-                <div class="benefit-item">
-                    <i class="fa-solid fa-bookmark"></i>
-                    <span>Save your reading progress</span>
-                </div>
-                <div class="benefit-item">
-                    <i class="fa-solid fa-book-open"></i>
-                    <span>Access your library anywhere</span>
-                </div>
-                <div class="benefit-item">
-                    <i class="fa-solid fa-star"></i>
-                    <span>Curate personal collections</span>
-                </div>
+                <div class="benefit-item"><i class="fa-solid fa-bookmark"></i><span>Save your reading progress</span></div>
+                <div class="benefit-item"><i class="fa-solid fa-book-open"></i><span>Access your library anywhere</span></div>
+                <div class="benefit-item"><i class="fa-solid fa-star"></i><span>Curate personal collections</span></div>
             </div>
             <div class="form-panel">
                 <h3>Register</h3>
                 <form id="register-form" novalidate>
                     <div class="form-grid">
-                        <div class="form-field">
-                            <label for="reg-name">Name</label>
-                            <input type="text" id="reg-name" required>
-                        </div>
-                        <div class="form-field">
-                            <label for="reg-surname">Surname</label>
-                            <input type="text" id="reg-surname" required>
-                        </div>
-                        <div class="form-field full-width">
-                            <label for="reg-email">Email</label>
-                            <input type="email" id="reg-email" required>
-                        </div>
-                        <div class="form-field full-width">
-                            <label for="reg-password">Password</label>
-                            <input type="password" id="reg-password" required minlength="8">
-                        </div>
+                        <div class="form-field"><label for="reg-name">Name</label><input type="text" id="reg-name" required></div>
+                        <div class="form-field"><label for="reg-surname">Surname</label><input type="text" id="reg-surname" required></div>
+                        <div class="form-field full-width"><label for="reg-email">Email</label><input type="email" id="reg-email" required></div>
+                        <div class="form-field full-width"><label for="reg-country">Country</label><div class="select-wrapper"><select id="reg-country" required></select></div></div>
+                        <div class="form-field"><label for="reg-password">Password</label><input type="password" id="reg-password" required minlength="8"></div>
+                        <div class="form-field"><label for="reg-password-confirm">Confirm Password</label><input type="password" id="reg-password-confirm" required minlength="8"></div>
                     </div>
                     <div class="form-message" id="register-message"></div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Create Account</button>
                     </div>
+                    <p class="auth-toggle">Already have an account? <a id="show-login">Sign In</a></p>
                 </form>
+            </div>
+        </div>
+
+        <!-- LOGIN VIEW -->
+        <div class="profile-container" id="login-view">
+            <div class="benefits-panel">
+                 <h2>Welcome Back</h2>
+                 <p>Sign in to access your personal library and continue where you left off.</p>
+                 <div class="benefit-item"><i class="fa-solid fa-arrow-right-to-bracket"></i><span>Quick & Secure Login</span></div>
+                 <div class="benefit-item"><i class="fa-solid fa-cloud"></i><span>Your progress is synced</span></div>
+            </div>
+            <div class="form-panel">
+                 <h3>Sign In</h3>
+                 <form id="login-form" novalidate>
+                     <div class="form-grid">
+                         <div class="form-field full-width"><label for="login-email">Email</label><input type="email" id="login-email" required></div>
+                         <div class="form-field full-width"><label for="login-password">Password</label><input type="password" id="login-password" required></div>
+                     </div>
+                     <div class="form-message" id="login-message"></div>
+                     <div class="form-actions">
+                         <button type="submit" class="btn btn-primary">Sign In</button>
+                     </div>
+                     <p class="auth-toggle">Don't have an account? <a id="show-register">Register</a></p>
+                 </form>
             </div>
         </div>
 
@@ -330,31 +390,17 @@
             <div class="benefits-panel">
                 <h2>Your Profile</h2>
                 <p>Here you can manage your account details and preferences. Your progress is always saved automatically.</p>
-                <div class="benefit-item">
-                    <i class="fa-solid fa-user-check"></i>
-                    <span id="welcome-message">Welcome!</span>
-                </div>
-                <div class="benefit-item">
-                    <i class="fa-solid fa-envelope"></i>
-                    <span id="profile-email-display">your.email@example.com</span>
-                </div>
+                <div class="benefit-item"><i class="fa-solid fa-user-check"></i><span id="welcome-message">Welcome!</span></div>
+                <div class="benefit-item"><i class="fa-solid fa-envelope"></i><span id="profile-email-display">your.email@example.com</span></div>
             </div>
             <div class="form-panel">
                 <h3>Account Settings</h3>
                 <form id="profile-form" novalidate>
                      <div class="form-grid">
-                        <div class="form-field">
-                            <label for="profile-name">Name</label>
-                            <input type="text" id="profile-name" required>
-                        </div>
-                        <div class="form-field">
-                            <label for="profile-surname">Surname</label>
-                            <input type="text" id="profile-surname" required>
-                        </div>
-                        <div class="form-field full-width">
-                            <label for="profile-email">Email (cannot be changed)</label>
-                            <input type="email" id="profile-email" disabled>
-                        </div>
+                        <div class="form-field"><label for="profile-name">Name</label><input type="text" id="profile-name" required></div>
+                        <div class="form-field"><label for="profile-surname">Surname</label><input type="text" id="profile-surname" required></div>
+                        <div class="form-field full-width"><label for="profile-country">Country</label><div class="select-wrapper"><select id="profile-country" required></select></div></div>
+                        <div class="form-field full-width"><label for="profile-email">Email (cannot be changed)</label><input type="email" id="profile-email" disabled></div>
                     </div>
                     <div class="form-message" id="profile-message"></div>
                     <div class="form-actions">
@@ -366,27 +412,59 @@
         </div>
     </main>
 
-    <script>
+    <script type="module">
+        // --- START: FIREBASE INTEGRATION ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+            authDomain: "physmathacademy-722b3.firebaseapp.com",
+            projectId: "physmathacademy-722b3",
+            storageBucket: "physmathacademy-722b3.appspot.com",
+            messagingSenderId: "1093640992262",
+            appId: "1:1093640992262:web:3552a4205dc5df869a84da" // Specific App ID
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        // --- END: FIREBASE INTEGRATION ---
+
         document.addEventListener('DOMContentLoaded', () => {
             const DOM = {
                 body: document.body,
+                loadingOverlay: document.getElementById('loading-overlay'),
                 modeToggle: document.getElementById('mode-toggle'),
                 registerView: document.getElementById('register-view'),
+                loginView: document.getElementById('login-view'),
                 profileView: document.getElementById('profile-view'),
                 
-                // Registration Form
+                // Forms & Toggles
                 registerForm: document.getElementById('register-form'),
+                loginForm: document.getElementById('login-form'),
+                profileForm: document.getElementById('profile-form'),
+                showLoginLink: document.getElementById('show-login'),
+                showRegisterLink: document.getElementById('show-register'),
+
+                // Fields
                 regName: document.getElementById('reg-name'),
                 regSurname: document.getElementById('reg-surname'),
                 regEmail: document.getElementById('reg-email'),
+                regCountry: document.getElementById('reg-country'),
                 regPassword: document.getElementById('reg-password'),
-                registerMessage: document.getElementById('register-message'),
-
-                // Profile Form
-                profileForm: document.getElementById('profile-form'),
+                regPasswordConfirm: document.getElementById('reg-password-confirm'),
+                loginEmail: document.getElementById('login-email'),
+                loginPassword: document.getElementById('login-password'),
                 profileName: document.getElementById('profile-name'),
                 profileSurname: document.getElementById('profile-surname'),
+                profileCountry: document.getElementById('profile-country'),
                 profileEmail: document.getElementById('profile-email'),
+
+                // Messages & Displays
+                registerMessage: document.getElementById('register-message'),
+                loginMessage: document.getElementById('login-message'),
                 profileMessage: document.getElementById('profile-message'),
                 welcomeMessage: document.getElementById('welcome-message'),
                 profileEmailDisplay: document.getElementById('profile-email-display'),
@@ -395,116 +473,204 @@
 
             const state = {
                 mode: localStorage.getItem("kaffetishMode") || "light",
-                user: JSON.parse(localStorage.getItem("kaffetishUser")) || null,
             };
 
-            // --- THEME/MODE ---
-            function setMode(mode) {
-                state.mode = mode;
-                DOM.body.classList.toggle("dark-mode", mode === 'dark');
-                const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
-                DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
-                localStorage.setItem("kaffetishMode", mode);
+            const countries = ["United States", "Canada", "United Kingdom", "Australia", "Germany", "France", "Japan", "Brazil", "India", "Armenia", "Other"]; // Abridged list
+
+            function populateCountries() {
+                const options = countries.map(country => `<option value="${country}">${country}</option>`).join('');
+                DOM.regCountry.innerHTML = `<option value="" disabled selected>Select your country</option>` + options;
+                DOM.profileCountry.innerHTML = options;
             }
 
-            // --- UI & AUTHENTICATION LOGIC ---
+            // --- UI & VIEW MANAGEMENT ---
             function showView(view) {
                 DOM.registerView.style.display = 'none';
+                DOM.loginView.style.display = 'none';
                 DOM.profileView.style.display = 'none';
-                if (view === 'register') {
-                    DOM.registerView.style.display = 'grid';
-                } else if (view === 'profile') {
-                    DOM.profileView.style.display = 'grid';
-                }
+                if (view === 'register') DOM.registerView.style.display = 'grid';
+                else if (view === 'login') DOM.loginView.style.display = 'grid';
+                else if (view === 'profile') DOM.profileView.style.display = 'grid';
             }
-            
-            function updateUI() {
-                if (state.user) {
-                    // Logged in
-                    DOM.welcomeMessage.textContent = `Welcome, ${state.user.name}!`;
-                    DOM.profileEmailDisplay.textContent = state.user.email;
-                    DOM.profileName.value = state.user.name;
-                    DOM.profileSurname.value = state.user.surname;
-                    DOM.profileEmail.value = state.user.email;
-                    showView('profile');
-                } else {
-                    // Logged out
-                    showView('register');
-                }
-            }
-            
+
             function showMessage(element, text, type) {
                 element.textContent = text;
                 element.className = `form-message ${type}`;
                 element.style.display = 'block';
-                setTimeout(() => {
-                    element.style.display = 'none';
-                }, 4000);
             }
 
-            // --- EVENT HANDLERS ---
-            function handleRegister(e) {
+            function hideMessage(element) {
+                element.style.display = 'none';
+            }
+            
+            function setLoading(form, isLoading) {
+                const button = form.querySelector('button[type="submit"]');
+                if (button) {
+                    button.disabled = isLoading;
+                    button.textContent = isLoading ? 'Processing...' : (form.id === 'register-form' ? 'Create Account' : (form.id === 'login-form' ? 'Sign In' : 'Save Changes'));
+                }
+            }
+
+            function setMode(mode) {
+                state.mode = mode;
+                DOM.body.classList.toggle("dark-mode", mode === 'dark');
+                DOM.modeToggle.querySelector('i').className = `fa-solid ${mode === 'light' ? 'fa-moon' : 'fa-sun'}`;
+                localStorage.setItem("kaffetishMode", mode);
+            }
+
+            // --- FIREBASE EVENT HANDLERS ---
+            async function handleRegister(e) {
                 e.preventDefault();
+                hideMessage(DOM.registerMessage);
                 const name = DOM.regName.value.trim();
                 const surname = DOM.regSurname.value.trim();
                 const email = DOM.regEmail.value.trim();
-                const password = DOM.regPassword.value.trim();
+                const country = DOM.regCountry.value;
+                const password = DOM.regPassword.value;
+                const confirmPassword = DOM.regPasswordConfirm.value;
 
-                if (!name || !surname || !email || !password) {
-                    showMessage(DOM.registerMessage, 'Please fill in all fields.', 'error');
-                    return;
+                if (!name || !surname || !email || !country || !password) {
+                    return showMessage(DOM.registerMessage, 'Please fill in all fields.', 'error');
+                }
+                if (password !== confirmPassword) {
+                    return showMessage(DOM.registerMessage, 'Passwords do not match.', 'error');
                 }
                 if (password.length < 8) {
-                    showMessage(DOM.registerMessage, 'Password must be at least 8 characters long.', 'error');
-                    return;
+                    return showMessage(DOM.registerMessage, 'Password must be at least 8 characters.', 'error');
                 }
+                
+                setLoading(DOM.registerForm, true);
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    
+                    // Store additional user info in Firestore
+                    await setDoc(doc(db, "users", user.uid), {
+                        name,
+                        surname,
+                        country,
+                        email // Store for easy access, though auth is the source of truth
+                    });
 
-                // Simulate registration
-                state.user = { name, surname, email };
-                localStorage.setItem("kaffetishUser", JSON.stringify(state.user));
-                
-                showMessage(DOM.registerMessage, 'Success! A verification email has been sent. Please check your inbox.', 'success');
-                
-                setTimeout(() => {
-                    updateUI();
-                }, 1500);
+                    await sendEmailVerification(user);
+                    showMessage(DOM.registerMessage, 'Success! A verification link has been sent to your email. Please verify to log in.', 'success');
+                    DOM.registerForm.reset();
+
+                } catch (error) {
+                    const errorCode = error.code;
+                    let friendlyMessage = "An unexpected error occurred. Please try again.";
+                    if (errorCode === 'auth/email-already-in-use') {
+                        friendlyMessage = 'This email is already registered. Please Sign In.';
+                    } else if (errorCode === 'auth/weak-password') {
+                        friendlyMessage = 'The password is too weak. Please choose a stronger one.';
+                    }
+                    showMessage(DOM.registerMessage, friendlyMessage, 'error');
+                } finally {
+                    setLoading(DOM.registerForm, false);
+                }
             }
-
-            function handleProfileUpdate(e) {
+            
+            async function handleLogin(e) {
                 e.preventDefault();
-                const newName = DOM.profileName.value.trim();
-                const newSurname = DOM.profileSurname.value.trim();
-
-                if (!newName || !newSurname) {
-                     showMessage(DOM.profileMessage, 'Name and Surname cannot be empty.', 'error');
-                    return;
+                hideMessage(DOM.loginMessage);
+                const email = DOM.loginEmail.value.trim();
+                const password = DOM.loginPassword.value.trim();
+                
+                if (!email || !password) {
+                    return showMessage(DOM.loginMessage, 'Please enter both email and password.', 'error');
                 }
 
-                // Update user data
-                state.user.name = newName;
-                state.user.surname = newSurname;
-                localStorage.setItem("kaffetishUser", JSON.stringify(state.user));
-
-                showMessage(DOM.profileMessage, 'Your profile has been updated successfully!', 'success');
-                DOM.welcomeMessage.textContent = `Welcome, ${state.user.name}!`;
+                setLoading(DOM.loginForm, true);
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    if (!userCredential.user.emailVerified) {
+                        await signOut(auth); // Sign them out
+                        throw new Error('auth/email-not-verified');
+                    }
+                    // onAuthStateChanged will handle the UI update
+                } catch (error) {
+                    const errorCode = error.message; // Use message for custom error
+                    let friendlyMessage = "An unexpected error occurred. Please try again.";
+                    if (errorCode === 'auth/email-not-verified') {
+                         friendlyMessage = 'Your email is not verified. Please check your inbox for the verification link.';
+                    } else if (errorCode.includes('auth/invalid-credential')) {
+                         friendlyMessage = 'Invalid email or password. Please check your credentials.';
+                    }
+                    showMessage(DOM.loginMessage, friendlyMessage, 'error');
+                } finally {
+                    setLoading(DOM.loginForm, false);
+                }
             }
 
-            function handleLogout() {
-                state.user = null;
-                localStorage.removeItem("kaffetishUser");
-                updateUI();
+            async function handleProfileUpdate(e) {
+                e.preventDefault();
+                hideMessage(DOM.profileMessage);
+                const name = DOM.profileName.value.trim();
+                const surname = DOM.profileSurname.value.trim();
+                const country = DOM.profileCountry.value;
+
+                if (!name || !surname || !country) {
+                    return showMessage(DOM.profileMessage, 'Fields cannot be empty.', 'error');
+                }
+
+                const user = auth.currentUser;
+                if (!user) return;
+
+                setLoading(DOM.profileForm, true);
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    await updateDoc(userDocRef, { name, surname, country });
+                    showMessage(DOM.profileMessage, 'Profile updated successfully!', 'success');
+                    DOM.welcomeMessage.textContent = `Welcome, ${name}!`;
+                } catch (error) {
+                    showMessage(DOM.profileMessage, 'Failed to update profile. Please try again.', 'error');
+                } finally {
+                    setLoading(DOM.profileForm, false);
+                }
             }
+
+            // --- AUTH STATE OBSERVER ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user && user.emailVerified) {
+                    // User is signed in and verified
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
+
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        DOM.welcomeMessage.textContent = `Welcome, ${userData.name}!`;
+                        DOM.profileEmailDisplay.textContent = user.email;
+                        DOM.profileName.value = userData.name;
+                        DOM.profileSurname.value = userData.surname;
+                        DOM.profileCountry.value = userData.country;
+                        DOM.profileEmail.value = user.email;
+                    }
+                    showView('profile');
+                } else {
+                    // User is signed out or not verified
+                    showView('login');
+                    DOM.loginForm.reset();
+                    DOM.registerForm.reset();
+                }
+                DOM.loadingOverlay.style.opacity = '0';
+                setTimeout(() => DOM.loadingOverlay.style.display = 'none', 300);
+            });
+
 
             // --- INITIALIZATION ---
             function init() {
                 setMode(state.mode);
-                updateUI();
+                populateCountries();
 
                 // Event Listeners
                 DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
+                DOM.showLoginLink.addEventListener('click', () => showView('login'));
+                DOM.showRegisterLink.addEventListener('click', () => showView('register'));
+                
                 DOM.registerForm.addEventListener('submit', handleRegister);
+                DOM.loginForm.addEventListener('submit', handleLogin);
                 DOM.profileForm.addEventListener('submit', handleProfileUpdate);
-                DOM.logoutButton.addEventListener('click', handleLogout);
+                DOM.logoutButton.addEventListener('click', () => signOut(auth));
             }
 
             init();
