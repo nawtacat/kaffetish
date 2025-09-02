@@ -156,6 +156,10 @@
         border-radius: 3px;
     }
     body.dark-mode .highlighted-text { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+       .bookmarked-text {
+    text-decoration: underline dashed var(--accent) 2px;
+    text-underline-offset: 4px; /* Adjusts the space between text and underline */
+}
 
     .selection-tooltip {
         position: absolute; z-index: 2000; display: none; gap: 6px; padding: 6px;
@@ -409,6 +413,7 @@
     <div id="selection-tooltip" class="selection-tooltip">
         <button id="btn-explain"><i class="fa-solid fa-wand-magic-sparkles"></i> Explain</button>
         <button id="btn-highlight"><i class="fa-solid fa-marker"></i> Highlight</button>
+        <button id="btn-bookmark"><i class="fa-regular fa-bookmark"></i> Bookmark</button> 
         <button id="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
     </div>
     <div id="ai-panel" class="ai-panel">
@@ -432,7 +437,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
-    import { getFirestore, doc, setDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    // MODIFIED: Added new Firestore functions for bookmarks
+    import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
@@ -476,7 +482,9 @@
         fontDec: document.getElementById('font-decrease'),
         tooltip: document.getElementById('selection-tooltip'),
         tooltipExplain: document.getElementById('btn-explain'),
-        tooltipHighlight: document.getElementById('btn-highlight'), tooltipCopy: document.getElementById('btn-copy'),
+        tooltipHighlight: document.getElementById('btn-highlight'),
+        tooltipBookmark: document.getElementById('btn-bookmark'), // ADDED
+        tooltipCopy: document.getElementById('btn-copy'),
         aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
         aiQuote: document.getElementById('ai-quote'),
         aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
@@ -505,7 +513,8 @@
         lastSelectionRange: null,
         currentSessionId: null,
         bookTitle: null,
-        sessionUpdateInterval: null,
+        bookId: null,      // ADDED: Unique ID for the current book
+        bookmark: null,    // ADDED: To store loaded bookmark data
     };
     const baseFontRem = 1.15;
 
@@ -521,40 +530,31 @@
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
 
-    
+    async function startReadingSession(bookTitle) {
+        await auth.authStateReady();
+        if (!auth.currentUser || !db || state.currentSessionId) return;
+        state.bookTitle = bookTitle;
+        const sessionsColRef = collection(db, "reading_sessions");
+        try {
+            const sessionDocRef = await addDoc(sessionsColRef, {
+                userId: auth.currentUser.uid,
+                bookTitle: bookTitle,
+                startTime: serverTimestamp(),
+                endTime: null
+            });
+            state.currentSessionId = sessionDocRef.id;
+        } catch (e) { console.error("Error starting session:", e); }
+    }
 
-    // In the state object, you can also remove this line:
-// sessionUpdateInterval: null,
+    async function endReadingSession() {
+        if (!state.currentSessionId || !db) return;
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+        try {
+            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+            state.currentSessionId = null;
+        } catch (e) { console.error("Error ending session:", e); }
+    }
 
-async function startReadingSession(bookTitle) {
-    await auth.authStateReady();
-    if (!auth.currentUser || !db || state.currentSessionId) return;
-
-    state.bookTitle = bookTitle;
-    const sessionsColRef = collection(db, "reading_sessions");
-    try {
-        const sessionDocRef = await addDoc(sessionsColRef, {
-            userId: auth.currentUser.uid,
-            bookTitle: bookTitle,
-            startTime: serverTimestamp(),
-            endTime: null // Session starts with no end time
-        });
-        state.currentSessionId = sessionDocRef.id;
-        // The setInterval line is now gone
-    } catch (e) { console.error("Error starting session:", e); }
-}
-
-async function endReadingSession() {
-    // The clearInterval block is now gone
-    if (!state.currentSessionId || !db) return;
-    
-    const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
-    try {
-        // This is the only time endTime is set
-        await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-        state.currentSessionId = null; // Mark session as ended
-    } catch (e) { console.error("Error ending session:", e); }
-}
     async function trackExplanationRequest(text) {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
@@ -600,10 +600,14 @@ async function endReadingSession() {
         DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
         DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
     }
-
+    
+    // ## MODIFIED: Book loading now checks for bookmarks
     async function loadPdfFromUrl(sourceUrl, title) {
         showView(DOM.loadingView);
         DOM.loadingText.textContent = `Loading ${title}...`;
+        // Create a unique ID for the book from its URL (btoa is a simple way to do this)
+        state.bookId = btoa(sourceUrl); 
+
         try {
             const response = await fetch(sourceUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -614,9 +618,24 @@ async function endReadingSession() {
             state.pagesHTML = new Array(state.totalPages).fill(null);
             
             await startReadingSession(title);
+            
+            // NEW LOGIC: Check for bookmark
+            await auth.authStateReady();
+            const user = auth.currentUser;
+            let startPage = 1; // Default start page
+
+            if (user && !user.isAnonymous) {
+                const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+                const bookmarkSnap = await getDoc(bookmarkDocRef);
+                if (bookmarkSnap.exists()) {
+                    state.bookmark = bookmarkSnap.data();
+                    startPage = state.bookmark.pageNum; // Set start page to the bookmarked page
+                }
+            }
+            // END NEW LOGIC
 
             DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-            await renderPage(1);
+            await renderPage(startPage); // Render the bookmarked page (or first page)
             showView(DOM.readerView);
         } catch (err) {
             console.error("PDF Loading/Processing Error:", err);
@@ -626,6 +645,7 @@ async function endReadingSession() {
     }
 
     function paragraphize(textContent) {
+        // ... this function remains unchanged ...
         const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
         const items = textContent.items.map(it => ({
             str: it.str, x: it.transform[4], y: it.transform[5],
@@ -673,7 +693,45 @@ async function endReadingSession() {
             }
         }).join("\n");
     }
+    
+    // ## NEW: Helper function to apply bookmark style to the page
+    function renderBookmarkOnPage() {
+        if (!state.bookmark || state.currentPage !== state.bookmark.pageNum) {
+            return; // Not the bookmarked page, do nothing
+        }
+        const content = DOM.pageContent;
+        const { startOffset, endOffset } = state.bookmark;
+        let charCount = 0;
+        let foundStart = false;
+        function wrapTextNodes(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const textLength = node.textContent.length;
+                const start = startOffset - charCount;
+                const end = endOffset - charCount;
+                if (!foundStart && start < textLength) {
+                    foundStart = true;
+                    const endInNode = Math.min(end, textLength);
+                    const range = document.createRange();
+                    range.setStart(node, start);
+                    range.setEnd(node, endInNode);
+                    const span = document.createElement("span");
+                    span.className = "bookmarked-text";
+                    range.surroundContents(span);
+                    if (end <= textLength) return true;
+                }
+                charCount += textLength;
+            } else {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    if (wrapTextNodes(node.childNodes[i])) return true;
+                }
+            }
+            return false;
+        }
+        wrapTextNodes(content);
+        state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+    }
 
+    // ## MODIFIED: Render page now applies bookmark styling
     async function renderPage(pageNum) {
         if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
         clearSelection();
@@ -689,6 +747,10 @@ async function endReadingSession() {
             }
         }
         DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
+
+        // NEW: Apply bookmark style after content is rendered
+        renderBookmarkOnPage();
+
         DOM.pageContent.classList.add("fade-in");
         setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
         DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
@@ -705,22 +767,15 @@ async function endReadingSession() {
     }
 
     function showTooltipAt(rect) {
-    DOM.tooltip.style.display = "flex";
-    // The header is 60px high, so the tooltip shouldn't go above that.
-    const topBoundary = 68; // 60px for header + 8px margin
-    
-    // Calculate top position based on the selection's viewport position (rect.top).
-    // No scrollOffset is needed because the tooltip is not inside the scrolling container.
-    const top = rect.top - DOM.tooltip.offsetHeight - 8;
-    
-    let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
-    
-    // Apply the calculated position, ensuring it doesn't go above the top boundary.
-    DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
-    DOM.tooltip.style.left = `${left}px`;
-    requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
-}
+        DOM.tooltip.style.display = "flex";
+        const topBoundary = 68;
+        const top = rect.top - DOM.tooltip.offsetHeight - 8;
+        let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
+        DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
+        DOM.tooltip.style.left = `${left}px`;
+        requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
+    }
 
     function hideTooltip() {
         DOM.tooltip.classList.remove('visible');
@@ -736,31 +791,31 @@ async function endReadingSession() {
         }
     }
 
-   async function handleExplain() {
-        if (!explainBookTextFn) {
-            flashAI("Explanation feature is not available.");
-            return;
-        }
-        if (!state.lastSelectionText || state.lastSelectionText.length < 4) { // <-- MODIFIED
-            flashAI("Please select at least 4 characters to explain."); // <-- MODIFIED
-            clearSelection(); return;
-        }
-        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-        DOM.aiQuote.classList.remove('hidden');
-        DOM.aiPanel.style.display = "flex";
-        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
-        const textToExplain = state.lastSelectionText;
-        trackExplanationRequest(textToExplain);
-        clearSelection();
-        try {
-            const { data } = await explainBookTextFn({ text: textToExplain });
-            const explanationText = data?.explanation || "No explanation was returned.";
-            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
-        } catch (err) {
-            console.error("AI Explain Error:", err);
-            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
-        }
-    }
+    async function handleExplain() {
+        if (!explainBookTextFn) {
+            flashAI("Explanation feature is not available.");
+            return;
+        }
+        if (!state.lastSelectionText || state.lastSelectionText.length < 4) {
+            flashAI("Please select at least 4 characters to explain.");
+            clearSelection(); return;
+        }
+        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
+        DOM.aiQuote.classList.remove('hidden');
+        DOM.aiPanel.style.display = "flex";
+        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+        const textToExplain = state.lastSelectionText;
+        trackExplanationRequest(textToExplain);
+        clearSelection();
+        try {
+            const { data } = await explainBookTextFn({ text: textToExplain });
+            const explanationText = data?.explanation || "No explanation was returned.";
+            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
+        } catch (err) {
+            console.error("AI Explain Error:", err);
+            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+        }
+    }
 
     function handleHighlight() {
         if (state.lastSelectionRange) {
@@ -773,6 +828,61 @@ async function endReadingSession() {
         state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
         clearSelection();
     }
+    
+    // ## NEW: Function to handle bookmark saving
+    function getSelectionOffsets(container) {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return null;
+        const range = selection.getRangeAt(0);
+        const preSelectionRange = range.cloneRange();
+        preSelectionRange.selectNodeContents(container);
+        preSelectionRange.setEnd(range.startContainer, range.startOffset);
+        const start = preSelectionRange.toString().length;
+        return {
+            start: start,
+            end: start + range.toString().length
+        };
+    }
+
+    async function handleBookmark() {
+        await auth.authStateReady();
+        const user = auth.currentUser;
+        if (!user || user.isAnonymous) {
+            flashAI("Please sign in to use bookmarks.", 3000);
+            clearSelection();
+            return;
+        }
+        if (!state.lastSelectionRange || !state.bookId) {
+            clearSelection();
+            return;
+        }
+        const offsets = getSelectionOffsets(DOM.pageContent);
+        if (!offsets) {
+            clearSelection();
+            return;
+        }
+        const bookmarkData = {
+            userId: user.uid,
+            bookId: state.bookId,
+            pageNum: state.currentPage,
+            startOffset: offsets.start,
+            endOffset: offsets.end,
+            textSnippet: state.lastSelectionText.substring(0, 100),
+            createdAt: serverTimestamp()
+        };
+        try {
+            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+            await setDoc(bookmarkDocRef, bookmarkData);
+            state.bookmark = bookmarkData;
+            flashAI("Bookmark saved!", 2000);
+            renderBookmarkOnPage();
+        } catch (e) {
+            console.error("Error saving bookmark:", e);
+            flashAI("Failed to save bookmark.", 3000);
+        }
+        clearSelection();
+    }
+
 
     function handleCopy() {
         if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
@@ -787,37 +897,38 @@ async function endReadingSession() {
     }
 
     function setupSelectionHandler() {
-        if (isTouchDevice) {
-            document.addEventListener('selectionchange', () => {
-                const sel = window.getSelection();
-                const text = sel ? sel.toString().trim() : '';
-                if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
-                    state.lastSelectionText = text;
-                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
-                    DOM.mobileExplainBtn.classList.add('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
-                } else {
-                    DOM.mobileExplainBtn.classList.remove('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-                }
-            });
-        }
-        else {
-            document.addEventListener('mouseup', () => {
-                setTimeout(() => {
-                    const sel = window.getSelection();
-                    const text = sel.toString().trim();
-                    if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
-                        state.lastSelectionText = text;
-                        state.lastSelectionRange = sel.getRangeAt(0);
-                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                    } else {
-                        hideTooltip();
-                    }
-                }, 50);
-            });
-        }
-    }
+        if (isTouchDevice) {
+            document.addEventListener('selectionchange', () => {
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
+                if (text.length >= 4 && !sel.isCollapsed) {
+                    state.lastSelectionText = text;
+                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
+                    DOM.mobileExplainBtn.classList.add('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
+                } else {
+                    DOM.mobileExplainBtn.classList.remove('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+                }
+            });
+        }
+        else {
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => {
+                    const sel = window.getSelection();
+                    const text = sel.toString().trim();
+                    if (text.length >= 4 && !sel.isCollapsed) {
+                        state.lastSelectionText = text;
+                        state.lastSelectionRange = sel.getRangeAt(0);
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+                    } else {
+                        hideTooltip();
+                    }
+                }, 50);
+            });
+        }
+    }
+
     function setupSwipeNavigation() {
         DOM.mainContent.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) return;
@@ -837,7 +948,7 @@ async function endReadingSession() {
         }, { passive: true });
     }
 
-    // --- MODIFIED: This is the core of the new, correct logic ---
+    // ## MODIFIED: Added event listener for bookmark button
     function setupEventListeners() {
         DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
         DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
@@ -845,9 +956,12 @@ async function endReadingSession() {
         [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
         [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
         [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+        
         DOM.tooltipExplain.addEventListener("click", handleExplain);
         DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+        DOM.tooltipBookmark.addEventListener("click", handleBookmark); // ADDED
         DOM.tooltipCopy.addEventListener("click", handleCopy);
+        
         DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
         DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
         DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
@@ -868,22 +982,17 @@ async function endReadingSession() {
             else if (e.key === 'ArrowRight') DOM.nextBtn.click();
         });
 
-        // Use 'visibilitychange' to intelligently end and start sessions
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                // User has tabbed away or minimized. End the current session.
                 endReadingSession();
             } else if (document.visibilityState === 'visible') {
-                // User has returned. Start a fresh session if a book is loaded.
                 if (state.pdfDoc && state.bookTitle) {
                     startReadingSession(state.bookTitle);
                 }
             }
         });
 
-        // Use 'pagehide' as a final backup to end the session when closing the tab.
         document.addEventListener('pagehide', endReadingSession);
-
         setupSelectionHandler();
         if (isTouchDevice) {
             setupSwipeNavigation();
