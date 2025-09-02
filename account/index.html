@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kaffetish – Account Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#fff; --ink:#222; --sub:#666; --primary:#FF3A44; --border:#e8e8e8; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Poppins, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+    .wrap { max-width: 760px; margin: 48px auto; padding: 24px; }
+    h1 { margin: 0 0 12px; font-size: 28px; }
+    p.muted { color:var(--sub); margin-top: 0; }
+    .card { border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow: 0 10px 30px rgba(0,0,0,.04); }
+    .grid { display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
+    .grid.full { grid-template-columns: 1fr; }
+    label { display:block; font-size: 12px; color:var(--sub); margin-bottom:6px; }
+    input, select { width:100%; padding:12px; border:1px solid var(--border); border-radius:8px; font-size: 14px; }
+    .actions { display:flex; gap:12px; margin-top: 8px; }
+    .btn { padding:12px 16px; border-radius:10px; border:0; cursor:pointer; font-weight:600; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-ghost { background:#f7f7f7; color:#000; }
+    .msg { margin-top:12px; font-size: 13px; padding:10px; border-radius:8px; display:none; }
+    .msg.error { background: #ffe8ea; color:#b40016; border:1px solid #ffcdd2; }
+    .msg.success { background: #e8f7ee; color:#186a3b; border:1px solid #c7e8d3; }
+    .row { display:flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .email-display { color:var(--sub); font-size: 14px; }
+    @media (max-width:780px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row">
+      <h1>Account Settings</h1>
+      <button id="logout" class="btn btn-ghost" type="button">Log Out</button>
+    </div>
+    <p id="emailLabel" class="email-display"></p>
+
+    <div class="card">
+      <form id="profile-form">
+        <div class="grid">
+          <div>
+            <label for="profile-name">Name</label>
+            <input id="profile-name" type="text" required />
+          </div>
+          <div>
+            <label for="profile-surname">Surname</label>
+            <input id="profile-surname" type="text" required />
+          </div>
+          <div class="full">
+            <label for="profile-continent">Continent</label>
+            <select id="profile-continent" required></select>
+          </div>
+          <div class="full">
+            <label for="profile-email">Email (read-only)</label>
+            <input id="profile-email" type="email" disabled />
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Save Changes</button>
+        </div>
+        <div id="profile-message" class="msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    // ----- Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence,
+      onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Adjust if you deploy to different paths/domains
+    const REGISTER_URL = "/register.html"; // redirect here if not logged in
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+      authDomain: "physmathacademy-722b3.firebaseapp.com",
+      projectId: "physmathacademy-722b3",
+      storageBucket: "physmathacademy-722b3.appspot.com",
+      messagingSenderId: "1093640992262",
+      appId: "1:1093640992262:web:3552a4205dc5df869a84da",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    await setPersistence(auth, browserLocalPersistence);
+
+    // DOM helpers
+    const $ = (s) => document.querySelector(s);
+    const msg = (el, text, type="error") => { el.textContent = text; el.className = `msg ${type}`; el.style.display = text ? "block":"none"; };
+
+    const emailLabel = $("#emailLabel");
+    const profileForm = $("#profile-form");
+    const profileMsg  = $("#profile-message");
+    const profileName = $("#profile-name");
+    const profileSurname = $("#profile-surname");
+    const profileEmail = $("#profile-email");
+    const profileContinent = $("#profile-continent");
+    const logoutBtn   = $("#logout");
+
+    // Continents
+    const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
+    profileContinent.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+    // Guard: only signed-in users may view this page
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // not signed in → go to register/login
+        location.replace(REGISTER_URL);
+        return;
+      }
+      // Load or create user doc
+      const uid = user.uid;
+      const ref = doc(db, "kaffetish-users", uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          uid,
+          email: user.email || "",
+          name: "",
+          surname: "",
+          continent: "",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      const data = (await getDoc(ref)).data();
+      // Populate UI
+      emailLabel.textContent = data.email || user.email || "";
+      profileEmail.value = data.email || user.email || "";
+      profileName.value = data.name || "";
+      profileSurname.value = data.surname || "";
+      if (data.continent) {
+        if (![...profileContinent.options].some(o => o.value === data.continent)) {
+          const opt = document.createElement("option");
+          opt.value = data.continent; opt.textContent = data.continent;
+          profileContinent.appendChild(opt);
+        }
+        profileContinent.value = data.continent;
+      }
+    });
+
+    // Save
+    profileForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg(profileMsg, "");
+      const user = auth.currentUser;
+      if (!user) { location.replace(REGISTER_URL); return; }
+
+      const payload = {
+        name: (profileName.value || "").trim(),
+        surname: (profileSurname.value || "").trim(),
+        continent: profileContinent.value || "",
+        updatedAt: serverTimestamp(),
+      };
+
+      try {
+        await updateDoc(doc(db, "kaffetish-users", user.uid), payload);
+        msg(profileMsg, "Saved.", "success");
+      } catch (err) {
+        console.error("[SaveProfile]", err);
+        msg(profileMsg, human(err));
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", async () => {
+      try { await signOut(auth); } finally { location.replace(REGISTER_URL + "?logged_out=1"); }
+    });
+
+    function human(err) {
+      const code = (err?.code || "").toLowerCase();
+      if (code.includes("permission-denied")) return "Insufficient permissions for your user doc.";
+      if (code.includes("not-found")) return "Profile doc missing.";
+      if (code.includes("network-request-failed")) return "Network error. Check your connection.";
+      return err?.message || "Something went wrong.";
+    }
+  </script>
+</body>
+</html>
