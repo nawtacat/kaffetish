@@ -501,36 +501,26 @@
   }
 
   // ---------- Auth observer (single source of truth) ----------
-  onAuthStateChanged(auth, async (user) => {
-    try {
-      if (user) {
-        // Delay any Firestore until here to guarantee request.auth is populated
-        if (pendingRegistrationExtras) {
-          try {
-            await createUserDocIfMissing(user, pendingRegistrationExtras);
-          } catch (err) {
-            console.error("[FS/ensureUserDoc on first sign-in]", err?.code, err?.message, err);
-            // If this throws "permission-denied", your rules aren’t published or the path is wrong.
-          } finally {
-            pendingRegistrationExtras = null;
-          }
-        } else {
-          // normal sign-in path
-          await createUserDocIfMissing(user);
-        }
-
-        await loadProfileIntoForm(user.uid);
-        showView("profile");
-      } else {
-        showView("register");
-      }
-    } catch (err) {
-      console.error("[Auth Observer]", err?.code, err?.message, err);
+  // --- Auth observer ---
+// This is the single source of truth for which view to show
+onAuthStateChanged(auth, async (user) => {
+  try {
+    if (user) {
+      // ✅ Only now is the user logged in → show Profile
+      await createUserDocIfMissing(user);
+      await loadProfileIntoForm(user.uid);
+      showView("profile");
+    } else {
+      // ❌ No user logged in → always show Register as default
       showView("register");
-    } finally {
-      if (loadingOverlay) loadingOverlay.style.display = "none";
     }
-  });
+  } catch (err) {
+    console.error("[Auth Observer]", err?.code, err?.message, err);
+    showView("register");
+  } finally {
+    if (loadingOverlay) loadingOverlay.style.display = "none";
+  }
+});
 
   // Expose for quick console checks
   window.kt = { auth, db };
