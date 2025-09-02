@@ -275,13 +275,11 @@
 
     // --- UI & Helpers ---
     
-    // Function to show/hide loading overlay
     const showLoading = (isLoading) => {
       loadingOverlay.style.opacity = isLoading ? '1' : '0';
       loadingOverlay.style.pointerEvents = isLoading ? 'all' : 'none';
     };
 
-    // Function to display form messages
     const showMessage = (element, message, isError = true) => {
       element.textContent = message;
       element.className = 'form-message';
@@ -301,7 +299,6 @@
         applyTheme(currentTheme);
     });
 
-    // Populate Continents Dropdown
     const fetchContinents = async () => {
         try {
             const response = await fetch('https://restcountries.com/v3.1/all?fields=continents');
@@ -310,7 +307,7 @@
             const continents = new Set(data.flatMap(country => country.continents));
             const sortedContinents = Array.from(continents).sort();
             
-            continentSelect.innerHTML = '<option value="">Select a continent</option>'; // Placeholder
+            continentSelect.innerHTML = '<option value="">Select a continent</option>';
             sortedContinents.forEach(c => {
                 const option = document.createElement('option');
                 option.value = c;
@@ -322,7 +319,6 @@
             showMessage(registerMessage, 'Could not load continent data. Please try again later.');
         }
     };
-
 
     // --- View Switching ---
     showLoginBtn.addEventListener('click', () => {
@@ -338,16 +334,14 @@
 
     // --- Firebase Authentication ---
 
-    // Auth state observer
+    // Auth state observer: ONLY checks if user is ALREADY logged in on page load
     onAuthStateChanged(auth, user => {
       if (user) {
-        // User is signed in, redirect to account page.
-        console.log("User already signed in. Redirecting to account...");
+        console.log("User is already signed in. Redirecting to account...");
         window.location.href = '../account/';
       } else {
-        // User is signed out, hide loading screen.
-        console.log("No user signed in.");
-        showLoading(false);
+        console.log("No user signed in. Showing auth forms.");
+        showLoading(false); // Hide loading screen so the forms are visible
       }
     });
 
@@ -361,7 +355,6 @@
       const password = registerForm['reg-password'].value;
       const passwordConfirm = registerForm['reg-password-confirm'].value;
 
-      // Simple Validation
       if (password !== passwordConfirm) {
         showMessage(registerMessage, 'Passwords do not match.');
         return;
@@ -379,7 +372,8 @@
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        // Store additional user info in Firestore
+        // --- FIX STARTS HERE ---
+        // Step 1: Wait for the database write to complete
         await setDoc(doc(db, "kaffetish-users", user.uid), {
           name: name,
           surname: surname,
@@ -387,14 +381,15 @@
           continent: continent,
           createdAt: new Date()
         });
-
-        // Registration successful, redirect will be handled by onAuthStateChanged
+        
+        // Step 2: NOW we can safely redirect
         showMessage(registerMessage, 'Account created successfully! Redirecting...', false);
+        window.location.href = '../account/';
+        // --- FIX ENDS HERE ---
 
       } catch (error) {
         console.error("Registration Error:", error);
         showMessage(registerMessage, error.message);
-      } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Create Account';
       }
@@ -417,12 +412,11 @@
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        // Login successful, redirect will be handled by onAuthStateChanged
+        // On successful login, the onAuthStateChanged listener will handle the redirect automatically.
         showMessage(loginMessage, 'Login successful! Redirecting...', false);
       } catch (error) {
         console.error("Login Error:", error);
         showMessage(loginMessage, "Invalid email or password.");
-      } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Sign In';
       }
@@ -433,9 +427,10 @@
         const savedTheme = localStorage.getItem('kaffetish-theme') || 'light';
         applyTheme(savedTheme);
         fetchContinents();
-        // The loading screen will be hidden by the onAuthStateChanged listener
+        // Loading screen is handled by onAuthStateChanged
     });
 
   </script>
 </body>
 </html>
+
