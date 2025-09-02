@@ -230,7 +230,7 @@
         .auth-toggle a:hover { text-decoration: underline; }
 
         /* --- Hide/Show Views --- */
-        #profile-view, #login-view { display: none; }
+        #profile-view, #login-view, #register-view { display: none; }
         
         /* --- Responsive Design for Mobile --- */
         @media (max-width: 900px) {
@@ -254,12 +254,13 @@
         <div class="header-content">
             <a href="https://kaffetish.club/" class="logo">Kaffetish</a>
             <div class="header-actions">
-                    <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </header>
 
     <main>
+        <!-- REGISTRATION VIEW -->
         <div class="profile-container" id="register-view">
             <div class="benefits-panel">
                 <h2>Create Your Account</h2>
@@ -286,6 +287,7 @@
             </div>
         </div>
 
+        <!-- LOGIN VIEW -->
         <div class="profile-container" id="login-view">
             <div class="benefits-panel">
                 <h2>Welcome Back</h2>
@@ -307,6 +309,7 @@
             </div>
         </div>
 
+        <!-- PROFILE VIEW -->
         <div class="profile-container" id="profile-view">
             <div class="benefits-panel">
                 <h2>Your Profile</h2>
@@ -355,196 +358,225 @@
     window.auth = auth;
     // --- END: FIREBASE INTEGRATION ---
 
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ELEMENT SELECTORS ---
+        const views = {
+            login: document.getElementById('login-view'),
+            register: document.getElementById('register-view'),
+            profile: document.getElementById('profile-view')
+        };
+        const forms = {
+            login: document.getElementById('login-form'),
+            register: document.getElementById('register-form'),
+            profile: document.getElementById('profile-form')
+        };
+        const messages = {
+            login: document.getElementById('login-message'),
+            register: document.getElementById('register-message'),
+            profile: document.getElementById('profile-message')
+        };
+        const links = {
+            showLogin: document.getElementById('show-login'),
+            showRegister: document.getElementById('show-register')
+        };
+        const buttons = {
+            logout: document.getElementById('logout-button'),
+            modeToggle: document.getElementById('mode-toggle')
+        };
+        const profileDisplays = {
+            welcome: document.getElementById('welcome-message'),
+            email: document.getElementById('profile-email-display'),
+            nameInput: document.getElementById('profile-name'),
+            surnameInput: document.getElementById('profile-surname'),
+            continentInput: document.getElementById('profile-continent'),
+            emailInput: document.getElementById('profile-email')
+        };
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const regContinentSelect = document.getElementById('reg-continent');
 
-    // This function contains the entire application's logic
-    function initializeAppLogic() {
-        const DOM = {
-            body: document.body, loadingOverlay: document.getElementById('loading-overlay'),
-            modeToggle: document.getElementById('mode-toggle'), registerView: document.getElementById('register-view'),
-            loginView: document.getElementById('login-view'), profileView: document.getElementById('profile-view'),
-            registerForm: document.getElementById('register-form'), loginForm: document.getElementById('login-form'),
-            profileForm: document.getElementById('profile-form'), showLoginLink: document.getElementById('show-login'),
-            showRegisterLink: document.getElementById('show-register'), regName: document.getElementById('reg-name'),
-            regSurname: document.getElementById('reg-surname'), regEmail: document.getElementById('reg-email'),
-            regContinent: document.getElementById('reg-continent'), regPassword: document.getElementById('reg-password'),
-            regPasswordConfirm: document.getElementById('reg-password-confirm'), loginEmail: document.getElementById('login-email'),
-            loginPassword: document.getElementById('login-password'), profileName: document.getElementById('profile-name'),
-            profileSurname: document.getElementById('profile-surname'), profileContinent: document.getElementById('profile-continent'),
-            profileEmail: document.getElementById('profile-email'), registerMessage: document.getElementById('register-message'),
-            loginMessage: document.getElementById('login-message'), profileMessage: document.getElementById('profile-message'),
-            welcomeMessage: document.getElementById('welcome-message'), profileEmailDisplay: document.getElementById('profile-email-display'),
-            logoutButton: document.getElementById('logout-button'),
+        // --- DATA & CONSTANTS ---
+        const continents = ["Africa", "Antarctica", "Asia", "Europe", "North America", "Oceania", "South America"];
+        
+        // --- HELPER FUNCTIONS ---
+        const populateContinents = () => {
+            const createOption = (name) => `<option value="${name}">${name}</option>`;
+            const optionsHTML = continents.map(createOption).join('');
+            regContinentSelect.innerHTML = optionsHTML;
+            profileDisplays.continentInput.innerHTML = optionsHTML;
+        };
+        
+        const showMessage = (element, message, isError = false) => {
+            element.textContent = message;
+            element.className = 'form-message'; // Reset classes
+            element.classList.add(isError ? 'error' : 'success');
+            element.style.display = 'block';
         };
 
-        const state = { mode: localStorage.getItem("kaffetishMode") || "light" };
-        const continents = ["Africa", "Antarctica", "Asia", "Europe", "North America", "Australia/Oceania", "South America"];
-
-        function populateContinents() {
-            const options = continents.map(c => `<option value="${c}">${c}</option>`).join('');
-            DOM.regContinent.innerHTML = `<option value="" disabled selected>Select your continent</option>` + options;
-            DOM.profileContinent.innerHTML = options;
-        }
-
-        function showView(view) {
-            DOM.registerView.style.display = 'none';
-            DOM.loginView.style.display = 'none';
-            DOM.profileView.style.display = 'none';
-            const targetView = document.getElementById(`${view}-view`);
-            if (targetView) {
-                targetView.style.display = 'grid';
-            }
-        }
-
-        function showMessage(element, text, type) {
-            element.textContent = text;
-            element.className = `form-message ${type}`;
-            element.style.display = 'block';
-        }
-        function hideMessage(element) {
+        const hideMessage = (element) => {
             element.style.display = 'none';
-        }
-        
-        function setLoading(form, isLoading) {
-            const button = form.querySelector('button[type="submit"]');
-            if(button) {
-                button.disabled = isLoading;
-                let text = 'Submit';
-                if (form.id === 'register-form') text = 'Create Account';
-                else if (form.id === 'login-form') text = 'Sign In';
-                else if (form.id === 'profile-form') text = 'Save Changes';
-                button.textContent = isLoading ? 'Processing...' : text;
+        };
+
+        const switchView = (viewName) => {
+            Object.values(views).forEach(view => view.style.display = 'none');
+            if (views[viewName]) {
+                views[viewName].style.display = 'grid';
             }
-        }
+        };
 
-        function setMode(mode) {
-            state.mode = mode;
-            DOM.body.classList.toggle("dark-mode", mode === 'dark');
-            DOM.modeToggle.querySelector('i').className = `fa-solid ${mode === 'light' ? 'fa-moon' : 'fa-sun'}`;
-            localStorage.setItem("kaffetishMode", mode);
-        }
+        const updateTheme = (isDark) => {
+            document.body.classList.toggle('dark-mode', isDark);
+            buttons.modeToggle.innerHTML = isDark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        };
 
-        async function handleRegister(e) {
-            e.preventDefault();
-            hideMessage(DOM.registerMessage);
-            const name = DOM.regName.value.trim(), surname = DOM.regSurname.value.trim(), email = DOM.regEmail.value.trim(),
-                  continent = DOM.regContinent.value, password = DOM.regPassword.value, confirmPassword = DOM.regPasswordConfirm.value;
-
-            if (!name || !surname || !email || !continent || !password) return showMessage(DOM.registerMessage, 'Please fill in all fields.', 'error');
-            if (password !== confirmPassword) return showMessage(DOM.registerMessage, 'Passwords do not match.', 'error');
-            if (password.length < 8) return showMessage(DOM.registerMessage, 'Password must be at least 8 characters.', 'error');
-            
-            setLoading(DOM.registerForm, true);
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, "users", userCredential.user.uid), { name, surname, continent, email });
-                await sendEmailVerification(userCredential.user);
-                showMessage(DOM.registerMessage, 'Success! A verification link has been sent to your email.', 'success');
-                DOM.registerForm.reset();
-            } catch (error) {
-                let msg = 'An unexpected error occurred. Please try again.';
-                if (error.code === 'auth/email-already-in-use') msg = 'This email is already registered. Please Sign In.';
-                else if (error.code === 'auth/weak-password') msg = 'The password is too weak.';
-                showMessage(DOM.registerMessage, msg, 'error');
-            } finally { setLoading(DOM.registerForm, false); }
-        }
+        // --- EVENT LISTENERS ---
+        links.showLogin.addEventListener('click', (e) => { e.preventDefault(); switchView('login'); });
+        links.showRegister.addEventListener('click', (e) => { e.preventDefault(); switchView('register'); });
         
-        async function handleLogin(e) {
-            e.preventDefault();
-            hideMessage(DOM.loginMessage);
-            const email = DOM.loginEmail.value.trim(), password = DOM.loginPassword.value.trim();
-            
-            if (!email || !password) return showMessage(DOM.loginMessage, 'Please enter both email and password.', 'error');
-
-            setLoading(DOM.loginForm, true);
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                if (!userCredential.user.emailVerified) { 
-                    await signOut(auth);
-                    showMessage(DOM.loginMessage, 'Your email is not verified. Please check your inbox.', 'error');
-                    throw new Error('auth/email-not-verified'); 
-                }
-                // onAuthStateChanged will handle the UI update automatically.
-            } catch (error) {
-                if (error.message !== 'auth/email-not-verified') {
-                    let msg = 'An unexpected error occurred. Please try again.';
-                    if (error.code && error.code.includes('auth/invalid-credential')) msg = 'Invalid email or password.';
-                    showMessage(DOM.loginMessage, msg, 'error');
-                }
-            } finally { setLoading(DOM.loginForm, false); }
-        }
-
-        async function handleProfileUpdate(e) {
-            e.preventDefault();
-            hideMessage(DOM.profileMessage);
-            const name = DOM.profileName.value.trim(), surname = DOM.profileSurname.value.trim(), continent = DOM.profileContinent.value;
-
-            if (!name || !surname || !continent) return showMessage(DOM.profileMessage, 'Fields cannot be empty.', 'error');
-            const user = auth.currentUser; if (!user) return;
-
-            setLoading(DOM.profileForm, true);
-            try {
-                await updateDoc(doc(db, "users", user.uid), { name, surname, continent });
-                showMessage(DOM.profileMessage, 'Profile updated successfully!', 'success');
-                DOM.welcomeMessage.textContent = `Welcome, ${name}!`;
-            } catch (error) {
-                showMessage(DOM.profileMessage, 'Failed to update profile. Please try again.', 'error');
-            } finally { setLoading(DOM.profileForm, false); }
-        }
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user && user.emailVerified) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    DOM.welcomeMessage.textContent = `Welcome, ${userData.name}!`;
-                    DOM.profileEmailDisplay.textContent = user.email;
-                    DOM.profileName.value = userData.name;
-                    DOM.profileSurname.value = userData.surname;
-                    DOM.profileContinent.value = userData.continent;
-                    DOM.profileEmail.value = user.email;
-                }
-                showView('profile');
-
-            } else {
-                showView('login');
-            }
-            DOM.loadingOverlay.style.opacity = '0';
-            setTimeout(() => { DOM.loadingOverlay.style.display = 'none'; }, 300);
+        buttons.modeToggle.addEventListener('click', () => {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            updateTheme(!isDarkMode);
         });
 
-        function init() {
-            setMode(state.mode);
-            populateContinents();
-            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
-            DOM.showLoginLink.addEventListener('click', () => showView('login'));
-            DOM.showRegisterLink.addEventListener('click', () => showView('register'));
-            DOM.registerForm.addEventListener('submit', handleRegister);
-            DOM.loginForm.addEventListener('submit', handleLogin);
-            DOM.profileForm.addEventListener('submit', handleProfileUpdate);
-            DOM.logoutButton.addEventListener('click', () => signOut(auth));
-        }
+        buttons.logout.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                // onAuthStateChanged will handle the view switch
+            } catch (error) {
+                console.error("Logout Error:", error);
+            }
+        });
+
+        forms.register.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage(messages.register);
+            const name = e.target.elements['reg-name'].value;
+            const surname = e.target.elements['reg-surname'].value;
+            const email = e.target.elements['reg-email'].value;
+            const continent = e.target.elements['reg-continent'].value;
+            const password = e.target.elements['reg-password'].value;
+            const confirmPassword = e.target.elements['reg-password-confirm'].value;
+
+            if (password !== confirmPassword) {
+                showMessage(messages.register, "Passwords do not match.", true);
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Store additional user data in Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    name,
+                    surname,
+                    continent,
+                    email // Store email for easier access
+                });
+                
+                // Optional: Send verification email
+                await sendEmailVerification(user);
+                showMessage(messages.register, "Account created! Please check your email to verify your account.");
+                // onAuthStateChanged will automatically switch to the profile view on successful creation
+
+            } catch (error) {
+                showMessage(messages.register, error.message, true);
+            }
+        });
         
-        init();
-    }
+        forms.login.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage(messages.login);
+            const email = e.target.elements['login-email'].value;
+            const password = e.target.elements['login-password'].value;
 
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged will handle the view switch
+            } catch (error) {
+                showMessage(messages.login, error.message, true);
+            }
+        });
+        
+        forms.profile.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessage(messages.profile);
+            const user = auth.currentUser;
+            if (!user) return;
 
-    // This is the entry point for the application
-    document.addEventListener('DOMContentLoaded', () => {
-        // This command tells Firebase to save the session in the most durable way possible.
-        // It's the key to staying logged in across refreshes and tabs.
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => {
-                console.log("Firebase persistence set to 'local'. Session should be permanent.");
-                // Once persistence is set, initialize the application logic.
-                initializeAppLogic();
-            })
-            .catch((error) => {
-                console.error("Firebase Persistence Error:", error);
-                // Still try to load the app even if persistence fails.
-                initializeAppLogic();
-            });
+            const name = profileDisplays.nameInput.value;
+            const surname = profileDisplays.surnameInput.value;
+            const continent = profileDisplays.continentInput.value;
+
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                await updateDoc(userDocRef, { name, surname, continent });
+                showMessage(messages.profile, "Profile updated successfully!");
+            } catch (error) {
+                showMessage(messages.profile, "Failed to update profile. " + error.message, true);
+            }
+        });
+
+        // --- INITIALIZATION ---
+        const initializeAppTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            updateTheme(savedTheme === 'dark');
+        };
+
+        const loadUserProfile = async (user) => {
+            try {
+                const docRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    profileDisplays.nameInput.value = data.name || '';
+                    profileDisplays.surnameInput.value = data.surname || '';
+                    profileDisplays.continentInput.value = data.continent || '';
+                    profileDisplays.emailInput.value = user.email;
+                    profileDisplays.email.textContent = user.email;
+                    profileDisplays.welcome.textContent = `Welcome, ${data.name}!`;
+                } else {
+                    console.log("No such document for user!");
+                }
+            } catch (error) {
+                console.error("Error loading user profile:", error);
+                showMessage(messages.profile, "Could not load your profile data.", true);
+            }
+        };
+
+        // --- MAIN AUTH LOGIC ---
+        (async () => {
+            try {
+                // This is key to keeping the user logged in across sessions
+                await setPersistence(auth, browserLocalPersistence);
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        // User is signed in
+                        switchView('profile');
+                        loadUserProfile(user);
+                    } else {
+                        // User is signed out
+                        switchView('register'); // Default to register view
+                    }
+                    // Hide loading overlay once auth state is determined
+                    loadingOverlay.style.opacity = '0';
+                    setTimeout(() => loadingOverlay.style.display = 'none', 300);
+                });
+
+            } catch (error) {
+                console.error("Persistence Error:", error);
+                loadingOverlay.style.display = 'none';
+            }
+        })();
+
+        // --- Initial Calls ---
+        populateContinents();
+        initializeAppTheme();
     });
 </script>
+
 
 </body>
 </html>
