@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kaffetish – Register / Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#fff; --ink:#222; --sub:#666; --primary:#FF3A44; --border:#e8e8e8; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Poppins, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+    .wrap { max-width: 680px; margin: 48px auto; padding: 24px; }
+    h1 { margin: 0 0 12px; font-size: 28px; }
+    p.muted { color:var(--sub); margin-top: 0; }
+    .card { border:1px solid var(--border); border-radius:16px; padding:24px; box-shadow: 0 10px 30px rgba(0,0,0,.04); }
+    .tabs { display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:16px; }
+    .tabs button { flex:1; padding:10px 12px; border:0; background:#fafafa; cursor:pointer; }
+    .tabs button.active { background:#fff; color:#000; font-weight:600; }
+    .grid { display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
+    .grid.full { grid-template-columns: 1fr; }
+    label { display:block; font-size: 12px; color:var(--sub); margin-bottom:6px; }
+    input, select { width:100%; padding:12px; border:1px solid var(--border); border-radius:8px; font-size: 14px; }
+    .actions { display:flex; gap:12px; margin-top: 8px; }
+    .btn { padding:12px 16px; border-radius:10px; border:0; cursor:pointer; font-weight:600; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .msg { margin-top:12px; font-size: 13px; padding:10px; border-radius:8px; display:none; }
+    .msg.error { background: #ffe8ea; color:#b40016; border:1px solid #ffcdd2; }
+    .msg.success { background: #e8f7ee; color:#186a3b; border:1px solid #c7e8d3; }
+    .footer { text-align:center; margin-top:18px; color:var(--sub); font-size: 13px; }
+    @media (max-width:700px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Welcome to Kaffetish</h1>
+    <p class="muted">Create an account or sign in to access your library.</p>
+
+    <div class="card">
+      <div class="tabs">
+        <button id="tab-register" class="active" type="button">Register</button>
+        <button id="tab-login" type="button">Sign In</button>
+      </div>
+
+      <!-- Register -->
+      <form id="register-form">
+        <div class="grid">
+          <div>
+            <label for="reg-name">Name</label>
+            <input id="reg-name" type="text" autocomplete="given-name" required />
+          </div>
+          <div>
+            <label for="reg-surname">Surname</label>
+            <input id="reg-surname" type="text" autocomplete="family-name" required />
+          </div>
+          <div class="full">
+            <label for="reg-email">Email</label>
+            <input id="reg-email" type="email" autocomplete="email" required />
+          </div>
+          <div class="full">
+            <label for="reg-continent">Continent</label>
+            <select id="reg-continent" required></select>
+          </div>
+          <div>
+            <label for="reg-password">Password (min 8)</label>
+            <input id="reg-password" type="password" minlength="8" autocomplete="new-password" required />
+          </div>
+          <div>
+            <label for="reg-password-confirm">Confirm Password</label>
+            <input id="reg-password-confirm" type="password" minlength="8" autocomplete="new-password" required />
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Create Account</button>
+        </div>
+        <div id="register-message" class="msg"></div>
+      </form>
+
+      <!-- Sign In -->
+      <form id="login-form" style="display:none;">
+        <div class="grid full">
+          <div>
+            <label for="login-email">Email</label>
+            <input id="login-email" type="email" autocomplete="email" required />
+          </div>
+          <div>
+            <label for="login-password">Password</label>
+            <input id="login-password" type="password" autocomplete="current-password" required />
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Sign In</button>
+        </div>
+        <div id="login-message" class="msg"></div>
+      </form>
+    </div>
+
+    <div class="footer">By continuing, you agree to our terms & privacy.</div>
+  </div>
+
+  <script type="module">
+    // ----- Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence,
+      onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Adjust if you deploy to different paths/domains
+    const ACCOUNT_URL  = "/account.html";
+    const REGISTER_URL = "/register.html"; // this file
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+      authDomain: "physmathacademy-722b3.firebaseapp.com",
+      projectId: "physmathacademy-722b3",
+      storageBucket: "physmathacademy-722b3.appspot.com",
+      messagingSenderId: "1093640992262",
+      appId: "1:1093640992262:web:3552a4205dc5df869a84da",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    await setPersistence(auth, browserLocalPersistence);
+
+    // ----- DOM utils
+    const $  = (s) => document.querySelector(s);
+    const show = (el, yes=true) => el.style.display = yes ? "" : "none";
+    const msg = (el, text, type="error") => { el.textContent = text; el.className = `msg ${type}`; el.style.display = text ? "block":"none"; };
+
+    // tabs
+    const tabRegister = $("#tab-register");
+    const tabLogin    = $("#tab-login");
+    const regForm     = $("#register-form");
+    const loginForm   = $("#login-form");
+    tabRegister.addEventListener("click", () => { tabRegister.classList.add("active"); tabLogin.classList.remove("active"); show(regForm,true); show(loginForm,false); });
+    tabLogin.addEventListener("click", () =>    { tabLogin.classList.add("active"); tabRegister.classList.remove("active"); show(regForm,false); show(loginForm,true); });
+
+    // Continents
+    const continents = ["Africa","Asia","Europe","North America","South America","Oceania","Antarctica"];
+    const regContinent = $("#reg-continent");
+    regContinent.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+    // Redirect signed-in users away from this page
+    onAuth
