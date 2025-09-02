@@ -147,4 +147,97 @@
     regContinent.innerHTML = `<option value="" disabled selected>Select your continent</option>` + continents.map(c=>`<option value="${c}">${c}</option>`).join("");
 
     // Redirect signed-in users away from this page
-    onAuth
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // already signed in → go to account settings
+        location.replace(ACCOUNT_URL);
+      }
+    });
+
+    // Helpers
+    const userDocRef = (uid) => doc(db, "kaffetish-users", uid);
+    async function ensureUserDoc(user, extra={}) {
+      const ref = userDocRef(user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          uid: user.uid,
+          email: user.email || "",
+          name: extra.name || "",
+          surname: extra.surname || "",
+          continent: extra.continent || "",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+    }
+    const registerMsg = $("#register-message");
+    const loginMsg    = $("#login-message");
+
+    // Register
+    regForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg(registerMsg, "");
+      const name = $("#reg-name").value.trim();
+      const surname = $("#reg-surname").value.trim();
+      const email = $("#reg-email").value.trim().toLowerCase();
+      const continent = $("#reg-continent").value;
+      const pw = $("#reg-password").value;
+      const pw2 = $("#reg-password-confirm").value;
+
+      if (!name || !surname || !email || !continent || !pw || !pw2) return msg(registerMsg, "Please fill in all fields.");
+      if (pw !== pw2) return msg(registerMsg, "Passwords do not match.");
+      if (pw.length < 8) return msg(registerMsg, "Password must be at least 8 characters.");
+
+      const btn = regForm.querySelector("button[type='submit']");
+      btn.disabled = true;
+      try {
+        const { user } = await createUserWithEmailAndPassword(auth, email, pw);
+        await ensureUserDoc(user, { name, surname, continent });
+        msg(registerMsg, "Account created. Redirecting…", "success");
+        location.replace(ACCOUNT_URL);
+      } catch (err) {
+        console.error("[Register]", err);
+        msg(registerMsg, human(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Sign In
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg(loginMsg, "");
+      const email = $("#login-email").value.trim().toLowerCase();
+      const pw    = $("#login-password").value;
+      if (!email || !pw) return msg(loginMsg, "Enter email and password.");
+
+      const btn = loginForm.querySelector("button[type='submit']");
+      btn.disabled = true;
+      try {
+        await signInWithEmailAndPassword(auth, email, pw);
+        msg(loginMsg, "Signed in. Redirecting…", "success");
+        location.replace(ACCOUNT_URL);
+      } catch (err) {
+        console.error("[Login]", err);
+        msg(loginMsg, human(err));
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function human(err) {
+      const code = (err?.code || "").toLowerCase();
+      if (code.includes("email-already-in-use")) return "This email is already registered. Try signing in.";
+      if (code.includes("invalid-email")) return "Invalid email address.";
+      if (code.includes("weak-password")) return "Password is too weak.";
+      if (code.includes("wrong-password")) return "Incorrect password.";
+      if (code.includes("user-not-found")) return "No account with that email.";
+      if (code.includes("permission-denied")) return "Insufficient permissions for database access. Check Firestore rules.";
+      if (code.includes("operation-not-allowed")) return "Email/Password provider is disabled in Firebase.";
+      if (code.includes("network-request-failed")) return "Network error. Check your connection.";
+      return err?.message || "Something went wrong.";
+    }
+  </script>
+</body>
+</html>
