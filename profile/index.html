@@ -336,199 +336,378 @@
     </main>
 
 <script type="module">
-    // --- START: FIREBASE INTEGRATION ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+/* =========================
+   FIREBASE + AUTH PERSISTENCE
+   ========================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import {
+  getAuth,
+  setPersistence,
+  browserLocalPersistence,
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-        authDomain: "physmathacademy-722b3.firebaseapp.com",
-        projectId: "physmathacademy-722b3",
-        storageBucket: "physmathacademy-722b3.appspot.com",
-        messagingSenderId: "1093640992262",
-        appId: "1:1093640992262:web:3552a4205dc5df869a84da"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+  authDomain: "physmathacademy-722b3.firebaseapp.com",
+  projectId: "physmathacademy-722b3",
+  storageBucket: "physmathacademy-722b3.appspot.com",
+  messagingSenderId: "1093640992262",
+  appId: "1:1093640992262:web:3552a4205dc5df869a84da",
+};
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    // Add this line to make `auth` accessible in the console for debugging
-    window.auth = auth;
-    // --- END: FIREBASE INTEGRATION ---
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
+// Expose for debug
+window.auth = auth;
+window.db = db;
 
-    // This function contains the main application logic
-    function initializeAppLogic() {
-        const DOM = {
-            body: document.body, loadingOverlay: document.getElementById('loading-overlay'),
-            modeToggle: document.getElementById('mode-toggle'), registerView: document.getElementById('register-view'),
-            loginView: document.getElementById('login-view'), profileView: document.getElementById('profile-view'),
-            registerForm: document.getElementById('register-form'), loginForm: document.getElementById('login-form'),
-            profileForm: document.getElementById('profile-form'), showLoginLink: document.getElementById('show-login'),
-            showRegisterLink: document.getElementById('show-register'), regName: document.getElementById('reg-name'),
-            regSurname: document.getElementById('reg-surname'), regEmail: document.getElementById('reg-email'),
-            regContinent: document.getElementById('reg-continent'), regPassword: document.getElementById('reg-password'),
-            regPasswordConfirm: document.getElementById('reg-password-confirm'), loginEmail: document.getElementById('login-email'),
-            loginPassword: document.getElementById('login-password'), profileName: document.getElementById('profile-name'),
-            profileSurname: document.getElementById('profile-surname'), profileContinent: document.getElementById('profile-continent'),
-            profileEmail: document.getElementById('profile-email'), registerMessage: document.getElementById('register-message'),
-            loginMessage: document.getElementById('login-message'), profileMessage: document.getElementById('profile-message'),
-            welcomeMessage: document.getElementById('welcome-message'), profileEmailDisplay: document.getElementById('profile-email-display'),
-            logoutButton: document.getElementById('logout-button'),
+/* =========================
+   DOM CACHING & UTILITIES
+   ========================= */
+const DOM = {
+  body: document.body,
+  loadingOverlay: document.getElementById("loading-overlay"),
+
+  // Views
+  registerView: document.getElementById("register-view"),
+  loginView: document.getElementById("login-view"),
+  profileView: document.getElementById("profile-view"),
+
+  // Forms & fields
+  registerForm: document.getElementById("register-form"),
+  loginForm: document.getElementById("login-form"),
+  profileForm: document.getElementById("profile-form"),
+
+  regName: document.getElementById("reg-name"),
+  regSurname: document.getElementById("reg-surname"),
+  regEmail: document.getElementById("reg-email"),
+  regContinent: document.getElementById("reg-continent"),
+  regPassword: document.getElementById("reg-password"),
+  regPasswordConfirm: document.getElementById("reg-password-confirm"),
+
+  loginEmail: document.getElementById("login-email"),
+  loginPassword: document.getElementById("login-password"),
+
+  profileName: document.getElementById("profile-name"),
+  profileSurname: document.getElementById("profile-surname"),
+  profileContinent: document.getElementById("profile-continent"),
+  profileEmail: document.getElementById("profile-email"),
+
+  // Messages
+  registerMessage: document.getElementById("register-message"),
+  loginMessage: document.getElementById("login-message"),
+  profileMessage: document.getElementById("profile-message"),
+
+  // Other UI
+  showLoginLink: document.getElementById("show-login"),
+  showRegisterLink: document.getElementById("show-register"),
+  welcomeMessage: document.getElementById("welcome-message"),
+  profileEmailDisplay: document.getElementById("profile-email-display"),
+  logoutButton: document.getElementById("logout-button"),
+  modeToggle: document.getElementById("mode-toggle"),
+};
+
+const state = {
+  mode: localStorage.getItem("kaffetishMode") || "light",
+  // If we just attempted a login during this page session:
+  justTriedLogin: false,
+};
+
+const continents = [
+  "Africa",
+  "Antarctica",
+  "Asia",
+  "Europe",
+  "North America",
+  "Australia/Oceania",
+  "South America",
+];
+
+function populateContinents() {
+  const opts = continents.map((c) => `<option value="${c}">${c}</option>`).join("");
+  DOM.regContinent.innerHTML =
+    `<option value="" disabled selected>Select your continent</option>` + opts;
+  DOM.profileContinent.innerHTML = opts;
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  DOM.body.classList.toggle("dark-mode", mode === "dark");
+  const icon = DOM.modeToggle?.querySelector("i");
+  if (icon) icon.className = `fa-solid ${mode === "light" ? "fa-moon" : "fa-sun"}`;
+  localStorage.setItem("kaffetishMode", mode);
+}
+
+function showView(which /* 'login' | 'register' | 'profile' */) {
+  DOM.registerView.style.display = "none";
+  DOM.loginView.style.display = "none";
+  DOM.profileView.style.display = "none";
+  const el = {
+    login: DOM.loginView,
+    register: DOM.registerView,
+    profile: DOM.profileView,
+  }[which];
+  if (el) el.style.display = "grid";
+}
+
+function showMessage(el, text, type /* 'success'|'error' */) {
+  el.textContent = text;
+  el.className = `form-message ${type}`;
+  el.style.display = "block";
+}
+function hideMessage(el) {
+  el.style.display = "none";
+}
+
+function setLoading(form, isLoading) {
+  const btn = form?.querySelector('button[type="submit"]');
+  if (!btn) return;
+  const map = {
+    "register-form": "Create Account",
+    "login-form": "Sign In",
+    "profile-form": "Save Changes",
+  };
+  btn.disabled = isLoading;
+  btn.textContent = isLoading ? "Processing..." : map[form.id] || "Submit";
+}
+
+/* =========================
+   RENDER FOR AUTH STATE
+   ========================= */
+async function renderForUser(user) {
+  // Always hide overlay at the end
+  const done = () => {
+    DOM.loadingOverlay.style.opacity = "0";
+    setTimeout(() => (DOM.loadingOverlay.style.display = "none"), 300);
+  };
+
+  try {
+    if (user) {
+      // If we have a user, try to load profile fields.
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        const data = snap.data();
+        DOM.welcomeMessage.textContent = `Welcome, ${data.name}!`;
+        DOM.profileEmailDisplay.textContent = user.email || "";
+        DOM.profileName.value = data.name || "";
+        DOM.profileSurname.value = data.surname || "";
+        DOM.profileContinent.value = data.continent || "";
+        DOM.profileEmail.value = user.email || "";
+      } else {
+        // User doc missing: create a minimal one so profile loads reliably
+        const minimal = {
+          name: user.displayName || "Reader",
+          surname: "",
+          continent: "",
+          email: user.email || "",
+          createdAt: Date.now(),
         };
+        await setDoc(doc(db, "users", user.uid), minimal, { merge: true });
+        DOM.welcomeMessage.textContent = `Welcome, ${minimal.name}!`;
+        DOM.profileEmailDisplay.textContent = minimal.email;
+        DOM.profileName.value = minimal.name;
+        DOM.profileSurname.value = minimal.surname;
+        DOM.profileContinent.value = minimal.continent;
+        DOM.profileEmail.value = minimal.email;
+      }
+      showView("profile");
+    } else {
+      // No user: show login
+      showView("login");
+      DOM.loginForm?.reset();
+    }
+  } catch (e) {
+    console.error("renderForUser error:", e);
+    // Fallback to login view if something odd happens.
+    showView("login");
+  } finally {
+    done();
+  }
+}
 
-        const state = { mode: localStorage.getItem("kaffetishMode") || "light" };
-        const continents = ["Africa", "Antarctica", "Asia", "Europe", "North America", "Australia/Oceania", "South America"];
+/* =========================
+   FORM HANDLERS
+   ========================= */
+async function handleRegister(e) {
+  e.preventDefault();
+  hideMessage(DOM.registerMessage);
 
-        function populateContinents() {
-            const options = continents.map(c => `<option value="${c}">${c}</option>`).join('');
-            DOM.regContinent.innerHTML = `<option value="" disabled selected>Select your continent</option>` + options;
-            DOM.profileContinent.innerHTML = options;
-        }
+  const name = DOM.regName.value.trim();
+  const surname = DOM.regSurname.value.trim();
+  const email = DOM.regEmail.value.trim();
+  const continent = DOM.regContinent.value;
+  const password = DOM.regPassword.value;
+  const confirmPassword = DOM.regPasswordConfirm.value;
 
-        function showView(view) {
-            DOM.registerView.style.display = 'none'; DOM.loginView.style.display = 'none'; DOM.profileView.style.display = 'none';
-            const targetView = document.getElementById(`${view}-view`);
-            if(targetView) targetView.style.display = 'grid';
-        }
+  if (!name || !surname || !email || !continent || !password) {
+    return showMessage(DOM.registerMessage, "Please fill in all fields.", "error");
+  }
+  if (password !== confirmPassword) {
+    return showMessage(DOM.registerMessage, "Passwords do not match.", "error");
+  }
+  if (password.length < 8) {
+    return showMessage(DOM.registerMessage, "Password must be at least 8 characters.", "error");
+  }
 
-        function showMessage(element, text, type) { element.textContent = text; element.className = `form-message ${type}`; element.style.display = 'block'; }
-        function hideMessage(element) { element.style.display = 'none'; }
-        
-        function setLoading(form, isLoading) {
-            const button = form.querySelector('button[type="submit"]');
-            if(button) {
-                button.disabled = isLoading;
-                let text = 'Submit';
-                if (form.id === 'register-form') text = 'Create Account';
-                else if (form.id === 'login-form') text = 'Sign In';
-                else if (form.id === 'profile-form') text = 'Save Changes';
-                button.textContent = isLoading ? 'Processing...' : text;
-            }
-        }
+  setLoading(DOM.registerForm, true);
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, "users", cred.user.uid), { name, surname, continent, email }, { merge: true });
+    await sendEmailVerification(cred.user);
+    showMessage(
+      DOM.registerMessage,
+      "Success! A verification link has been sent to your email.",
+      "success"
+    );
+    DOM.registerForm.reset();
+    // After registration, keep them signed in. They'll still need to verify before login form allows new sign-ins.
+    showView("profile");
+  } catch (error) {
+    console.error("Register error:", error);
+    let msg = "An unexpected error occurred. Please try again.";
+    if (error.code === "auth/email-already-in-use") msg = "This email is already registered. Please Sign In.";
+    else if (error.code === "auth/weak-password") msg = "The password is too weak.";
+    showMessage(DOM.registerMessage, msg, "error");
+  } finally {
+    setLoading(DOM.registerForm, false);
+  }
+}
 
-        function setMode(mode) {
-            state.mode = mode;
-            DOM.body.classList.toggle("dark-mode", mode === 'dark');
-            DOM.modeToggle.querySelector('i').className = `fa-solid ${mode === 'light' ? 'fa-moon' : 'fa-sun'}`;
-            localStorage.setItem("kaffetishMode", mode);
-        }
+async function handleLogin(e) {
+  e.preventDefault();
+  hideMessage(DOM.loginMessage);
 
-        async function handleRegister(e) {
-            e.preventDefault(); hideMessage(DOM.registerMessage);
-            const name = DOM.regName.value.trim(), surname = DOM.regSurname.value.trim(), email = DOM.regEmail.value.trim(),
-                  continent = DOM.regContinent.value, password = DOM.regPassword.value, confirmPassword = DOM.regPasswordConfirm.value;
+  const email = DOM.loginEmail.value.trim();
+  const password = DOM.loginPassword.value.trim();
 
-            if (!name || !surname || !email || !continent || !password) return showMessage(DOM.registerMessage, 'Please fill in all fields.', 'error');
-            if (password !== confirmPassword) return showMessage(DOM.registerMessage, 'Passwords do not match.', 'error');
-            if (password.length < 8) return showMessage(DOM.registerMessage, 'Password must be at least 8 characters.', 'error');
-            
-            setLoading(DOM.registerForm, true);
-            try {
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, "users", userCredential.user.uid), { name, surname, continent, email });
-                await sendEmailVerification(userCredential.user);
-                showMessage(DOM.registerMessage, 'Success! A verification link has been sent to your email.', 'success');
-                DOM.registerForm.reset();
-            } catch (error) {
-                let msg = 'An unexpected error occurred. Please try again.';
-                if (error.code === 'auth/email-already-in-use') msg = 'This email is already registered. Please Sign In.';
-                else if (error.code === 'auth/weak-password') msg = 'The password is too weak.';
-                showMessage(DOM.registerMessage, msg, 'error');
-            } finally { setLoading(DOM.registerForm, false); }
-        }
-        
-        async function handleLogin(e) {
-            e.preventDefault(); hideMessage(DOM.loginMessage);
-            const email = DOM.loginEmail.value.trim(), password = DOM.loginPassword.value.trim();
-            
-            if (!email || !password) return showMessage(DOM.loginMessage, 'Please enter both email and password.', 'error');
+  if (!email || !password) {
+    return showMessage(DOM.loginMessage, "Please enter both email and password.", "error");
+  }
 
-            setLoading(DOM.loginForm, true);
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                if (!userCredential.user.emailVerified) { 
-                    await signOut(auth); 
-                    throw new Error('auth/email-not-verified'); 
-                }
-                // No refresh or session storage needed. onAuthStateChanged will handle the UI update.
-            } catch (error) {
-                let msg = 'An unexpected error occurred. Please try again.';
-                if (error.message === 'auth/email-not-verified') msg = 'Your email is not verified. Please check your inbox.';
-                else if (error.code && error.code.includes('auth/invalid-credential')) msg = 'Invalid email or password.';
-                showMessage(DOM.loginMessage, msg, 'error');
-            } finally { setLoading(DOM.loginForm, false); }
-        }
+  setLoading(DOM.loginForm, true);
+  try {
+    state.justTriedLogin = true; // mark that this transition is from an explicit login
+    const cred = await signInWithEmailAndPassword(auth, email, password);
 
-        async function handleProfileUpdate(e) {
-            e.preventDefault(); hideMessage(DOM.profileMessage);
-            const name = DOM.profileName.value.trim(), surname = DOM.profileSurname.value.trim(), continent = DOM.profileContinent.value;
-
-            if (!name || !surname || !continent) return showMessage(DOM.profileMessage, 'Fields cannot be empty.', 'error');
-            const user = auth.currentUser; if (!user) return;
-
-            setLoading(DOM.profileForm, true);
-            try {
-                await updateDoc(doc(db, "users", user.uid), { name, surname, continent });
-                showMessage(DOM.profileMessage, 'Profile updated successfully!', 'success');
-                DOM.welcomeMessage.textContent = `Welcome, ${name}!`;
-            } catch (error) {
-                showMessage(DOM.profileMessage, 'Failed to update profile. Please try again.', 'error');
-            } finally { setLoading(DOM.profileForm, false); }
-        }
-
-        onAuthStateChanged(auth, async (user) => {
-            if (user && user.emailVerified) {
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    DOM.welcomeMessage.textContent = `Welcome, ${userData.name}!`;
-                    DOM.profileEmailDisplay.textContent = user.email;
-                    DOM.profileName.value = userData.name;
-                    DOM.profileSurname.value = userData.surname;
-                    DOM.profileContinent.value = userData.continent;
-                    DOM.profileEmail.value = user.email;
-                }
-                showView('profile');
-            } else {
-                showView('login');
-                DOM.loginForm.reset(); 
-                DOM.registerForm.reset();
-            }
-            DOM.loadingOverlay.style.opacity = '0';
-            setTimeout(() => DOM.loadingOverlay.style.display = 'none', 300);
-        });
-
-        function init() {
-            setMode(state.mode); populateContinents();
-            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
-            DOM.showLoginLink.addEventListener('click', () => showView('login'));
-            DOM.showRegisterLink.addEventListener('click', () => showView('register'));
-            DOM.registerForm.addEventListener('submit', handleRegister);
-            DOM.loginForm.addEventListener('submit', handleLogin);
-            DOM.profileForm.addEventListener('submit', handleProfileUpdate);
-            DOM.logoutButton.addEventListener('click', () => signOut(auth));
-        }
-        
-        init(); // Start the application
+    // If email not verified, sign out and tell the user. We do this *only* on login attempts,
+    // not on page refresh (which could incorrectly boot a verified session).
+    if (!cred.user.emailVerified) {
+      await signOut(auth);
+      showMessage(
+        DOM.loginMessage,
+        "Your email is not verified. Please check your inbox for the verification link.",
+        "error"
+      );
+      state.justTriedLogin = false;
+      return;
     }
 
+    // Auth state listener will render profile
+  } catch (error) {
+    console.error("Login error:", error);
+    let msg = "An unexpected error occurred. Please try again.";
+    if (error.code && error.code.includes("auth/invalid-credential")) {
+      msg = "Invalid email or password.";
+    }
+    showMessage(DOM.loginMessage, msg, "error");
+  } finally {
+    setLoading(DOM.loginForm, false);
+  }
+}
 
-    // Wait for the DOM to be ready before trying to set up the app
-    document.addEventListener('DOMContentLoaded', () => {
-        // Set session persistence to be long-term (like "Keep me logged in")
-        setPersistence(auth, browserLocalPersistence)
-            .then(() => {
-                // Once persistence is set, initialize the rest of the application.
-                initializeAppLogic();
-            })
-            .catch((error) => {
-                console.error("Error setting session persistence:", error);
-                // Even if it fails, try to load the app
-                initializeAppLogic();
-            });
-    });
+async function handleProfileUpdate(e) {
+  e.preventDefault();
+  hideMessage(DOM.profileMessage);
+
+  const name = DOM.profileName.value.trim();
+  const surname = DOM.profileSurname.value.trim();
+  const continent = DOM.profileContinent.value;
+
+  if (!name || !surname || !continent) {
+    return showMessage(DOM.profileMessage, "Fields cannot be empty.", "error");
+  }
+
+  const user = auth.currentUser;
+  if (!user) return showMessage(DOM.profileMessage, "Not signed in.", "error");
+
+  setLoading(DOM.profileForm, true);
+  try {
+    await updateDoc(doc(db, "users", user.uid), { name, surname, continent });
+    showMessage(DOM.profileMessage, "Profile updated successfully!", "success");
+    DOM.welcomeMessage.textContent = `Welcome, ${name}!`;
+  } catch (e2) {
+    console.error("Profile update error:", e2);
+    showMessage(DOM.profileMessage, "Failed to update profile. Please try again.", "error");
+  } finally {
+    setLoading(DOM.profileForm, false);
+  }
+}
+
+/* =========================
+   INIT (ORDER MATTERS!)
+   ========================= */
+async function init() {
+  // Theme & selects first (safe)
+  setMode(state.mode);
+  populateContinents();
+
+  // Wire UI events
+  DOM.modeToggle?.addEventListener("click", () =>
+    setMode(state.mode === "light" ? "dark" : "light")
+  );
+  DOM.showLoginLink?.addEventListener("click", () => showView("login"));
+  DOM.showRegisterLink?.addEventListener("click", () => showView("register"));
+  DOM.registerForm?.addEventListener("submit", handleRegister);
+  DOM.loginForm?.addEventListener("submit", handleLogin);
+  DOM.profileForm?.addEventListener("submit", handleProfileUpdate);
+  DOM.logoutButton?.addEventListener("click", () => signOut(auth));
+
+  // 1) Ensure long-lived persistence BEFORE any sign-in attempts or listeners.
+  await setPersistence(auth, browserLocalPersistence);
+
+  // 2) Attach the listener BEFORE waiting for initial state so future changes render.
+  onAuthStateChanged(auth, async (user) => {
+    // If we just tried logging in with an unverified email, the handler above already showed a message.
+    // Otherwise render for whatever user we have (including restored sessions).
+    await renderForUser(user);
+  });
+
+  // 3) Wait until Firebase restores session from storage (prevents "always logged out on refresh" flicker).
+  if (typeof auth.authStateReady === "function") {
+    try {
+      await auth.authStateReady();
+    } catch (e) {
+      // Older SDKs may not have authStateReady; it's safe to ignore.
+      console.warn("authStateReady not available or failed; proceeding.", e);
+    }
+  }
+}
+
+// Delay UI until DOM is ready; overlay is visible until renderForUser runs.
+document.addEventListener("DOMContentLoaded", () => {
+  init().catch((e) => {
+    console.error("Init error:", e);
+    // Fail-safe: show login if init fails
+    showView("login");
+    DOM.loadingOverlay.style.opacity = "0";
+    setTimeout(() => (DOM.loadingOverlay.style.display = "none"), 300);
+  });
+});
 </script>
+
 </body>
 </html>
