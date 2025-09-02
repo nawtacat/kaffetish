@@ -445,6 +445,7 @@
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, email, password);
                     if (!userCredential.user.emailVerified) { await signOut(auth); throw new Error('auth/email-not-verified'); }
+                    location.reload();
                 } catch (error) {
                     let msg = 'An unexpected error occurred. Please try again.';
                     if (error.message === 'auth/email-not-verified') msg = 'Your email is not verified. Please check your inbox.';
