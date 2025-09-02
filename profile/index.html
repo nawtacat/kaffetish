@@ -533,19 +533,19 @@
                     // If the document exists, use its data
                     userData = docSnap.data();
                 } else {
-                    // If the document does not exist, create it with default values
-                    console.log("No profile found for user, creating one.");
-                    const newUserData = {
+                    // If the document does not exist, log it and use empty defaults.
+                    // IMPORTANT: We no longer create the doc here to prevent overwriting data.
+                    // The profile document should ONLY be created upon registration.
+                    console.warn("Profile document not found for user:", user.uid, "This should normally not happen after registration.");
+                    userData = {
                         name: "",
                         surname: "",
                         continent: continents[3], // Default to Europe or another value
                         email: user.email,
                     };
-                    await setDoc(docRef, newUserData);
-                    userData = newUserData;
                 }
 
-                // Populate the form with the user data (either existing or newly created)
+                // Populate the form with the user data
                 profileDisplays.nameInput.value = userData.name || '';
                 profileDisplays.surnameInput.value = userData.surname || '';
                 profileDisplays.continentInput.value = userData.continent || '';
@@ -554,7 +554,7 @@
                 profileDisplays.welcome.textContent = `Welcome, ${userData.name || 'User'}!`;
 
             } catch (error) {
-                console.error("Error loading or creating user profile:", error);
+                console.error("Error loading user profile:", error);
                 showMessage(messages.profile, "Could not load your profile data.", true);
             }
         };
