@@ -341,9 +341,9 @@
     // Auth state observer
     onAuthStateChanged(auth, user => {
       if (user) {
-        // User is signed in, redirect to profile page.
-        console.log("User already signed in. Redirecting to profile...");
-        window.location.href = 'https://kaffetish.club/account/';
+        // User is signed in, redirect to account page.
+        console.log("User already signed in. Redirecting to account...");
+        window.location.href = '../account/';
       } else {
         // User is signed out, hide loading screen.
         console.log("No user signed in.");
