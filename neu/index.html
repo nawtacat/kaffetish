@@ -521,55 +521,40 @@
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
 
-    async function updateSessionHeartbeat() {
-        if (!state.currentSessionId || !db) {
-            if (state.sessionUpdateInterval) clearInterval(state.sessionUpdateInterval);
-            return;
-        }
-        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
-        try {
-            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-        } catch (e) {
-            console.error("Error updating session heartbeat:", e);
-        }
-    }
+    
 
-    async function startReadingSession(bookTitle) {
-        await auth.authStateReady();
-        if (!auth.currentUser || !db || state.currentSessionId) return; // Prevent starting a session if one is active
+    // In the state object, you can also remove this line:
+// sessionUpdateInterval: null,
 
-        state.bookTitle = bookTitle;
-        const sessionsColRef = collection(db, "reading_sessions");
-        try {
-            const sessionDocRef = await addDoc(sessionsColRef, {
-                userId: auth.currentUser.uid,
-                bookTitle: bookTitle,
-                startTime: serverTimestamp(),
-                endTime: null
-            });
-            state.currentSessionId = sessionDocRef.id;
+async function startReadingSession(bookTitle) {
+    await auth.authStateReady();
+    if (!auth.currentUser || !db || state.currentSessionId) return;
 
-            if (state.sessionUpdateInterval) clearInterval(state.sessionUpdateInterval);
-            state.sessionUpdateInterval = setInterval(updateSessionHeartbeat, 60000);
+    state.bookTitle = bookTitle;
+    const sessionsColRef = collection(db, "reading_sessions");
+    try {
+        const sessionDocRef = await addDoc(sessionsColRef, {
+            userId: auth.currentUser.uid,
+            bookTitle: bookTitle,
+            startTime: serverTimestamp(),
+            endTime: null // Session starts with no end time
+        });
+        state.currentSessionId = sessionDocRef.id;
+        // The setInterval line is now gone
+    } catch (e) { console.error("Error starting session:", e); }
+}
 
-        } catch (e) { console.error("Error starting session:", e); }
-    }
-
-    async function endReadingSession() {
-        if (state.sessionUpdateInterval) {
-            clearInterval(state.sessionUpdateInterval);
-            state.sessionUpdateInterval = null;
-        }
-
-        if (!state.currentSessionId || !db) return;
-        
-        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
-        try {
-            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-            state.currentSessionId = null; // Mark session as ended
-        } catch (e) { console.error("Error ending session:", e); }
-    }
-
+async function endReadingSession() {
+    // The clearInterval block is now gone
+    if (!state.currentSessionId || !db) return;
+    
+    const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+    try {
+        // This is the only time endTime is set
+        await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+        state.currentSessionId = null; // Mark session as ended
+    } catch (e) { console.error("Error ending session:", e); }
+}
     async function trackExplanationRequest(text) {
         await auth.authStateReady();
         if (!auth.currentUser || !db) return;
@@ -751,31 +736,31 @@
         }
     }
 
-    async function handleExplain() {
-        if (!explainBookTextFn) {
-            flashAI("Explanation feature is not available.");
-            return;
-        }
-        if (!state.lastSelectionText || state.lastSelectionText.length < 5) {
-            flashAI("Please select a longer phrase to explain.");
-            clearSelection(); return;
-        }
-        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-        DOM.aiQuote.classList.remove('hidden');
-        DOM.aiPanel.style.display = "flex";
-        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
-        const textToExplain = state.lastSelectionText;
-        trackExplanationRequest(textToExplain);
-        clearSelection();
-        try {
-            const { data } = await explainBookTextFn({ text: textToExplain });
-            const explanationText = data?.explanation || "No explanation was returned.";
-            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
-        } catch (err) {
-            console.error("AI Explain Error:", err);
-            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
-        }
-    }
+   async function handleExplain() {
+        if (!explainBookTextFn) {
+            flashAI("Explanation feature is not available.");
+            return;
+        }
+        if (!state.lastSelectionText || state.lastSelectionText.length < 4) { // <-- MODIFIED
+            flashAI("Please select at least 4 characters to explain."); // <-- MODIFIED
+            clearSelection(); return;
+        }
+        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
+        DOM.aiQuote.classList.remove('hidden');
+        DOM.aiPanel.style.display = "flex";
+        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+        const textToExplain = state.lastSelectionText;
+        trackExplanationRequest(textToExplain);
+        clearSelection();
+        try {
+            const { data } = await explainBookTextFn({ text: textToExplain });
+            const explanationText = data?.explanation || "No explanation was returned.";
+            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
+        } catch (err) {
+            console.error("AI Explain Error:", err);
+            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
+        }
+    }
 
     function handleHighlight() {
         if (state.lastSelectionRange) {
@@ -802,38 +787,37 @@
     }
 
     function setupSelectionHandler() {
-        if (isTouchDevice) {
-            document.addEventListener('selectionchange', () => {
-                const sel = window.getSelection();
-                const text = sel ? sel.toString().trim() : '';
-                if (text && !sel.isCollapsed) {
-                    state.lastSelectionText = text;
-                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
-                    DOM.mobileExplainBtn.classList.add('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
-                } else {
-                    DOM.mobileExplainBtn.classList.remove('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-                }
-            });
-        }
-        else {
-            document.addEventListener('mouseup', () => {
-                setTimeout(() => {
-                    const sel = window.getSelection();
-                    const text = sel.toString().trim();
-                    if (text && !sel.isCollapsed) {
-                        state.lastSelectionText = text;
-                        state.lastSelectionRange = sel.getRangeAt(0);
-                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                    } else {
-                        hideTooltip();
-                    }
-                }, 50);
-            });
-        }
-    }
-
+        if (isTouchDevice) {
+            document.addEventListener('selectionchange', () => {
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
+                if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
+                    state.lastSelectionText = text;
+                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
+                    DOM.mobileExplainBtn.classList.add('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
+                } else {
+                    DOM.mobileExplainBtn.classList.remove('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+                }
+            });
+        }
+        else {
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => {
+                    const sel = window.getSelection();
+                    const text = sel.toString().trim();
+                    if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
+                        state.lastSelectionText = text;
+                        state.lastSelectionRange = sel.getRangeAt(0);
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+                    } else {
+                        hideTooltip();
+                    }
+                }, 50);
+            });
+        }
+    }
     function setupSwipeNavigation() {
         DOM.mainContent.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) return;
