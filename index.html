@@ -74,12 +74,13 @@
         body.dark-mode .logo { color: var(--ink); }
 
         .header-actions { display: flex; align-items: center; gap: 16px; }
-        .header-actions button {
-            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
-            padding: 8px 10px; cursor: pointer; font-size: 1rem;
-            transition: color 0.2s ease, background-color 0.2s ease;
-        }
-        .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        .header-actions button, .header-actions a {
+    background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+    padding: 8px 10px; cursor: pointer; font-size: 1rem;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    text-decoration: none; /* Add this to remove underline from the link */
+}
+.header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         
         /* --- Main Content --- */
         main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
@@ -230,6 +231,7 @@
         margin: 0 auto;
     }
 }
+        
     </style>
 </head>
 <body>
@@ -242,6 +244,10 @@
             <div class="header-actions">
                  <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
+            <div class="header-actions">
+    <a href="https://kaffetish.club/register" title="Profile" class="header-btn"><i class="fa-solid fa-user"></i></a>
+    <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+</div>
         </div>
     </header>
 
