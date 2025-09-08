@@ -75,12 +75,12 @@
 
         .header-actions { display: flex; align-items: center; gap: 16px; }
         .header-actions button, .header-actions a {
-    background: transparent; border: none; color: var(--subtle); border-radius: 6px;
-    padding: 8px 10px; cursor: pointer; font-size: 1rem;
-    transition: color 0.2s ease, background-color 0.2s ease;
-    text-decoration: none; /* Add this to remove underline from the link */
-}
-.header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+            padding: 8px 10px; cursor: pointer; font-size: 1rem;
+            transition: color 0.2s ease, background-color 0.2s ease;
+            text-decoration: none;
+        }
+        .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         
         /* --- Main Content --- */
         main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
@@ -231,7 +231,6 @@
         margin: 0 auto;
     }
 }
-        
     </style>
 </head>
 <body>
@@ -242,12 +241,9 @@
                 <span class="tagline">explained by the librarian</span>
             </h1>
             <div class="header-actions">
-                 <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+                <a href="https://kaffetish.club/register" title="Profile"><i class="fa-solid fa-user"></i></a>
+                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
-            <div class="header-actions">
-    <a href="https://kaffetish.club/register" title="Profile" class="header-btn"><i class="fa-solid fa-user"></i></a>
-    <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
-</div>
         </div>
     </header>
 
@@ -311,13 +307,13 @@
     title: "Capital, Volume I", 
     author: "Karl Marx", 
     cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg",
-                 url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af"  
+                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af"  
     },
              { 
     title: "The Communist Manifesto", 
     author: "Karl Marx", 
     cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg",
-                 url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2"  
+                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2"  
     },
             { title: "Frankenstein", author: "Mary Shelley", cover: "https://wordsworth-editions.com/wp-content/uploads/2022/07/9781840228342.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
            { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
