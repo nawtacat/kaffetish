@@ -199,7 +199,7 @@
         z-index: 1500; opacity: 0; transition: opacity 0.3s ease;
         pointer-events: none;
     }
-    .mobile-nav-menu {
+ .mobile-nav-menu {
     position: fixed; top: 0; right: 0; width: 300px; height: 100%;
     background-color: color-mix(in srgb, var(--bg) 90%, transparent);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -208,7 +208,8 @@
     padding: 16px; display: flex; flex-direction: column; gap: 24px;
     box-shadow: -10px 0 30px rgba(0,0,0,0.1);
     border-left: 1px solid var(--border-color);
-    overflow-y: auto; /* Add this line */
+    overflow-y: auto;
+    overflow-x: hidden; /* Add this line */
 }
     body.menu-open .mobile-menu-overlay { opacity: 1; pointer-events: auto; }
     body.menu-open .mobile-nav-menu { transform: translateX(0); }
