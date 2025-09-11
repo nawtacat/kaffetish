@@ -355,28 +355,27 @@
     </header>
 
     <main id="main-content">
-        <section id="fallback-view" class="fallback-view">
-             <div class="fallback-content">
-                <div class="fallback-icon"><i class="fa-solid fa-book-sparkles"></i></div>
-                <h2 class="fallback-title">No Book Loaded</h2>
-                <p class="fallback-text" id="fallback-text">It looks like there was an issue loading your book. Please return to the library to choose a title.</p>
-                <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
-            </div>
-        </section>
-        <section id="loading-view" class="loading-view hidden">
-            <div class="spinner"></div>
-            <p id="loading-text">Brewing your document...</p>
-        </section>
-        <section id="reader-view" class="reader-view hidden">
-            <div class="page-container" id="page-container">
-                <article class="page">
-                    <div id="page-content" class="content"></div>
-                    <div id="page-number" class="page-number"></div>
-                </article>
-            </div>
-        </section>
-    </main>
-
+    <section id="fallback-view" class="fallback-view hidden">
+         <div class="fallback-content">
+            <div class="fallback-icon"><i class="fa-solid fa-book-sparkles"></i></div>
+            <h2 class="fallback-title">No Book Loaded</h2>
+            <p class="fallback-text" id="fallback-text">It looks like there was an issue loading your book. Please return to the library to choose a title.</p>
+            <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
+        </div>
+    </section>
+    <section id="loading-view" class="loading-view">
+        <div class="spinner"></div>
+        <p id="loading-text">Brewing your document...</p>
+    </section>
+    <section id="reader-view" class="reader-view hidden">
+        <div class="page-container" id="page-container">
+            <article class="page">
+                <div id="page-content" class="content"></div>
+                <div id="page-number" class="page-number"></div>
+            </article>
+        </div>
+    </section>
+</main>
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
     <nav id="mobile-nav-menu" class="mobile-nav-menu">
         <div class="mobile-menu-header">
