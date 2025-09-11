@@ -33,7 +33,7 @@
     body {
       font-family: var(--font-ui); background-color: var(--bg); color: var(--ink);
       transition: background-color 0.3s ease, color 0.3s ease;
-      margin: 0; padding: 100px 24px; display: flex; justify-content: center; align-items: center;
+      margin: 0; padding: 40px 24px; display: flex; justify-content: center; align-items: center;
       min-height: 100vh; box-sizing: border-box; overflow-x: hidden;
     }
     body::before {
@@ -52,31 +52,6 @@
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-    .app-header {
-      position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-      background-color: color-mix(in srgb, var(--bg) 85%, transparent);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-color); z-index: 1000;
-      transition: background-color 0.3s ease, border-color 0.3s ease;
-    }
-    .header-content {
-      max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .logo {
-      display: flex; align-items: baseline; font-size: 1.6rem;
-      font-weight: 500; letter-spacing: -0.5px; color: var(--accent);
-      font-family: var(--font-main); text-decoration: none;
-    }
-    body.dark-mode .logo { color: var(--ink); }
-    .header-actions { display: flex; align-items: center; gap: 16px; }
-    .header-actions button {
-      background: transparent; border: none; color: var(--subtle); border-radius: 6px;
-      padding: 8px 10px; cursor: pointer; font-size: 1rem;
-      transition: color 0.2s ease, background-color 0.2s ease;
-    }
-    .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
 
     main { width: 100%; max-width: 950px; animation: fadeIn 0.8s ease-out both; }
 
@@ -154,7 +129,7 @@
     #login-view { display: none; }
 
     @media (max-width: 900px) {
-      body { padding: 80px 16px; }
+      body { padding: 24px 16px; }
       body::before { display: none; }
       main { padding: 0; }
       .profile-container { grid-template-columns: 1fr; box-shadow: 0 10px 30px var(--shadow-color); }
@@ -170,17 +145,7 @@
 <body>
   <div class="loading-overlay" id="loading-overlay"><div class="spinner"></div></div>
 
-  <header class="app-header">
-    <div class="header-content">
-      <a href="https://kaffetish.club/" class="logo">Kaffetish</a>
-      <div class="header-actions">
-        <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
-      </div>
-    </div>
-  </header>
-
   <main>
-    <!-- Register -->
     <div class="profile-container" id="register-view">
       <div class="benefits-panel">
         <h2>Create Your Account</h2>
@@ -188,6 +153,10 @@
         <div class="benefit-item"><i class="fa-solid fa-bookmark"></i><span>Save your reading progress</span></div>
         <div class="benefit-item"><i class="fa-solid fa-book-open"></i><span>Access your library anywhere</span></div>
         <div class="benefit-item"><i class="fa-solid fa-star"></i><span>Curate personal collections</span></div>
+        <a href="https://kaffetish.club" class="benefit-item" style="text-decoration: none; color: inherit; margin-top: 24px;">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Back to Kaffetish.club</span>
+        </a>
       </div>
       <div class="form-panel">
         <h3>Register</h3>
@@ -207,13 +176,16 @@
       </div>
     </div>
 
-    <!-- Login -->
     <div class="profile-container" id="login-view">
       <div class="benefits-panel">
         <h2>Welcome Back</h2>
         <p>Sign in to access your personal library and continue where you left off.</p>
         <div class="benefit-item"><i class="fa-solid fa-arrow-right-to-bracket"></i><span>Quick & Secure Login</span></div>
         <div class="benefit-item"><i class="fa-solid fa-cloud"></i><span>Your progress is synced</span></div>
+         <a href="https://kaffetish.club" class="benefit-item" style="text-decoration: none; color: inherit; margin-top: 24px;">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Back to Kaffetish.club</span>
+        </a>
       </div>
       <div class="form-panel">
         <h3>Sign In</h3>
@@ -257,7 +229,6 @@
     const loginForm = document.getElementById('login-form');
     const registerMessage = document.getElementById('register-message');
     const loginMessage = document.getElementById('login-message');
-    const modeToggle = document.getElementById('mode-toggle');
     const continentSelect = document.getElementById('reg-continent');
 
     const showLoading = (isLoading) => {
@@ -271,17 +242,6 @@
       element.classList.add(isError ? 'error' : 'success');
       element.style.display = 'block';
     };
-
-    const applyTheme = (theme) => {
-        document.body.classList.toggle('dark-mode', theme === 'dark');
-        modeToggle.innerHTML = theme === 'dark' ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
-        localStorage.setItem('kaffetish-theme', theme);
-    };
-    
-    modeToggle.addEventListener('click', () => {
-        const currentTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
-        applyTheme(currentTheme);
-    });
 
     const fetchContinents = async () => {
         try {
@@ -420,11 +380,8 @@
     });
     
     document.addEventListener('DOMContentLoaded', () => {
-      const savedTheme = localStorage.getItem('kaffetish-theme') || 'light';
-      applyTheme(savedTheme);
       fetchContinents();
     });
   </script>
 </body>
 </html>
-
