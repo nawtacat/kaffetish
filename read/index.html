@@ -156,6 +156,10 @@
         border-radius: 3px;
     }
     body.dark-mode .highlighted-text { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.bookmarked-text {
+    text-decoration: underline solid var(--accent) 2px;
+    text-underline-offset: 4px;
+}
 
     .selection-tooltip {
         position: absolute; z-index: 2000; display: none; gap: 6px; padding: 6px;
@@ -318,6 +322,9 @@
         border: 3px solid var(--bg);
     }
     html:not(.touch-device) main::-webkit-scrollbar-thumb:hover { background-color: var(--subtle); }
+#btn-bookmark {
+    display: none;
+}
 </style>
 </head>
 <body>
@@ -409,6 +416,7 @@
     <div id="selection-tooltip" class="selection-tooltip">
         <button id="btn-explain"><i class="fa-solid fa-wand-magic-sparkles"></i> Explain</button>
         <button id="btn-highlight"><i class="fa-solid fa-marker"></i> Highlight</button>
+        <button id="btn-bookmark"><i class="fa-regular fa-bookmark"></i> Bookmark</button> 
         <button id="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
     </div>
     <div id="ai-panel" class="ai-panel">
@@ -428,11 +436,11 @@
         <span>Explain</span>
     </button>
 
-    <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
-    import { getFirestore, doc, setDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
@@ -452,7 +460,6 @@
         auth = getAuth(app);
         functions = getFunctions(app, "us-central1");
         db = getFirestore(app);
-        onAuthStateChanged(auth, (user) => { if (!user) signInAnonymously(auth).catch(console.error); });
         explainBookTextFn = httpsCallable(functions, "explainBookText");
     } else {
         console.warn("Firebase config is missing or incomplete. The 'Explain' feature will be disabled.");
@@ -476,7 +483,9 @@
         fontDec: document.getElementById('font-decrease'),
         tooltip: document.getElementById('selection-tooltip'),
         tooltipExplain: document.getElementById('btn-explain'),
-        tooltipHighlight: document.getElementById('btn-highlight'), tooltipCopy: document.getElementById('btn-copy'),
+        tooltipHighlight: document.getElementById('btn-highlight'),
+        tooltipBookmark: document.getElementById('btn-bookmark'),
+        tooltipCopy: document.getElementById('btn-copy'),
         aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
         aiQuote: document.getElementById('ai-quote'),
         aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
@@ -505,58 +514,44 @@
         lastSelectionRange: null,
         currentSessionId: null,
         bookTitle: null,
-        sessionUpdateInterval: null,
+        bookId: null,
+        bookmark: null,
     };
     const baseFontRem = 1.15;
 
     async function trackUserActivity() {
-        await auth.authStateReady();
         if (!auth.currentUser || !db) return;
         const userDocRef = doc(db, "users", auth.currentUser.uid);
         try {
-            await setDoc(userDocRef, {
-                lastSeen: serverTimestamp(),
-                createdAt: serverTimestamp()
-            }, { merge: true });
+            await setDoc(userDocRef, { lastSeen: serverTimestamp(), createdAt: serverTimestamp() }, { merge: true });
         } catch (e) { console.error("Error tracking user activity:", e); }
     }
 
-    
+    async function startReadingSession(bookTitle) {
+        if (!auth.currentUser || !db || state.currentSessionId) return;
+        state.bookTitle = bookTitle;
+        const sessionsColRef = collection(db, "reading_sessions");
+        try {
+            const sessionDocRef = await addDoc(sessionsColRef, {
+                userId: auth.currentUser.uid,
+                bookTitle: bookTitle,
+                startTime: serverTimestamp(),
+                endTime: null
+            });
+            state.currentSessionId = sessionDocRef.id;
+        } catch (e) { console.error("Error starting session:", e); }
+    }
 
-    // In the state object, you can also remove this line:
-// sessionUpdateInterval: null,
+    async function endReadingSession() {
+        if (!state.currentSessionId || !db) return;
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+        try {
+            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+            state.currentSessionId = null;
+        } catch (e) { console.error("Error ending session:", e); }
+    }
 
-async function startReadingSession(bookTitle) {
-    await auth.authStateReady();
-    if (!auth.currentUser || !db || state.currentSessionId) return;
-
-    state.bookTitle = bookTitle;
-    const sessionsColRef = collection(db, "reading_sessions");
-    try {
-        const sessionDocRef = await addDoc(sessionsColRef, {
-            userId: auth.currentUser.uid,
-            bookTitle: bookTitle,
-            startTime: serverTimestamp(),
-            endTime: null // Session starts with no end time
-        });
-        state.currentSessionId = sessionDocRef.id;
-        // The setInterval line is now gone
-    } catch (e) { console.error("Error starting session:", e); }
-}
-
-async function endReadingSession() {
-    // The clearInterval block is now gone
-    if (!state.currentSessionId || !db) return;
-    
-    const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
-    try {
-        // This is the only time endTime is set
-        await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-        state.currentSessionId = null; // Mark session as ended
-    } catch (e) { console.error("Error ending session:", e); }
-}
     async function trackExplanationRequest(text) {
-        await auth.authStateReady();
         if (!auth.currentUser || !db) return;
         const explanationsColRef = collection(db, "explanation_requests");
         try {
@@ -576,7 +571,7 @@ async function endReadingSession() {
         DOM.body.classList.toggle("dark-mode", mode === 'dark');
         const isDark = mode === 'dark';
         [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
-            if(icon) {
+            if (icon) {
                 icon.classList.toggle('fa-moon', !isDark);
                 icon.classList.toggle('fa-sun', isDark);
             }
@@ -601,41 +596,72 @@ async function endReadingSession() {
         DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
     }
 
+    // --- LOGIC CORRECTION ---
+    // This function now correctly handles displaying the bookmark even if it's on page 1.
+
+
     async function loadPdfFromUrl(sourceUrl, title) {
-        showView(DOM.loadingView);
-        DOM.loadingText.textContent = `Loading ${title}...`;
-        try {
-            const response = await fetch(sourceUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const pdfData = await response.arrayBuffer();
+    showView(DOM.loadingView);
+    DOM.loadingText.textContent = `Brewing your document...`;
+    state.bookId = btoa(sourceUrl).replace(/\//g, '_');
+    state.bookTitle = title;
 
-            const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
-            state.pdfDoc = pdfDoc; state.totalPages = pdfDoc.numPages;
-            state.pagesHTML = new Array(state.totalPages).fill(null);
-            
-            await startReadingSession(title);
+    try {
+        const response = await fetch(sourceUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const pdfData = await response.arrayBuffer();
 
-            DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-            await renderPage(1);
-            showView(DOM.readerView);
-        } catch (err) {
-            console.error("PDF Loading/Processing Error:", err);
-            DOM.fallbackText.textContent = `There was an error loading the book "${title}". The link may be broken or the file may be corrupted.`;
-            showView(DOM.fallbackView);
+        const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+        state.pdfDoc = pdfDoc;
+        state.totalPages = pdfDoc.numPages;
+        state.pagesHTML = new Array(state.totalPages).fill(null);
+
+        DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+        
+        // --- BOOKMARK CHECK MOVED HERE FOR SAFETY ---
+        let startingPage = 1; // Default to page 1
+
+        // Wait for Firebase to know who the user is
+        await auth.authStateReady();
+        const user = auth.currentUser;
+
+        // Check for a bookmark only if the user is fully signed in
+        if (user && !user.isAnonymous && state.bookId) {
+            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+            const bookmarkSnap = await getDoc(bookmarkDocRef);
+
+            if (bookmarkSnap.exists()) {
+                state.bookmark = bookmarkSnap.data();
+                startingPage = state.bookmark.pageNum; // Set the correct starting page
+            }
         }
-    }
+        
+        // Now, render the correct page *before* showing the reader
+        await renderPage(startingPage);
+        
+        // Finally, reveal the reader with the correct page already loaded
+        showView(DOM.readerView);
 
+        // Start tracking the session in the background
+        startReadingSession(state.bookTitle);
+
+    } catch (err) {
+        console.error("PDF Loading/Processing Error:", err);
+        DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
+        showView(DOM.fallbackView);
+    }
+}
     function paragraphize(textContent) {
         const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
         const items = textContent.items.map(it => ({
             str: it.str, x: it.transform[4], y: it.transform[5],
-            fontSize: it.transform[0], height: it.height, hasEOL: it.hasEOL || false
+            fontSize: it.transform[0], height: it.height
         }));
         if (items.length === 0) return "";
         let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
         const getStyle = (item) => {
             const trimmedStr = item.str.trim();
-            const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth/2) < pageWidth * 0.15;
+            const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth / 2) < pageWidth * 0.15;
             if (item.fontSize > 20) return "h1";
             if (item.fontSize > 13) return "h2";
             if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) return "h2";
@@ -665,7 +691,7 @@ async function endReadingSession() {
         if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
         return paragraphs.map(p => {
             const text = escapeHTML(p.text);
-            switch(p.style) {
+            switch (p.style) {
                 case "h1": return `<h1 style="text-align:center">${text}</h1>`;
                 case "h2": return `<h2 style="text-align:center">${text}</h2>`;
                 case "center": return `<p style="text-align:center">${text}</p>`;
@@ -673,11 +699,57 @@ async function endReadingSession() {
             }
         }).join("\n");
     }
+    
+    function renderBookmarkOnPage() {
+        if (!state.bookmark || state.currentPage !== state.bookmark.pageNum) return;
+
+        const content = DOM.pageContent;
+        const { startOffset, endOffset } = state.bookmark;
+
+        let charCount = 0;
+        let foundStart = false;
+
+        function wrapTextNodes(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const textLength = node.textContent.length;
+                const start = startOffset - charCount;
+                const end = endOffset - charCount;
+                
+                if (!foundStart && start >= 0 && start < textLength) {
+                    foundStart = true;
+                    const endInNode = Math.min(end, textLength);
+                    
+                    const range = document.createRange();
+                    range.setStart(node, start);
+                    range.setEnd(node, endInNode);
+                    
+                    const span = document.createElement("span");
+                    span.className = "bookmarked-text";
+                    range.surroundContents(span);
+
+                    if (end <= textLength) return true; 
+                }
+                charCount += textLength;
+            } else {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    if (wrapTextNodes(node.childNodes[i])) return true;
+                }
+            }
+            return false;
+        }
+        
+        wrapTextNodes(content);
+        state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+    }
 
     async function renderPage(pageNum) {
         if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
+        if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "") return;
+        
         clearSelection();
-        state.isRendering = true; state.currentPage = pageNum;
+        state.isRendering = true;
+        state.currentPage = pageNum;
+
         if (!state.pagesHTML[pageNum - 1]) {
             try {
                 const page = await state.pdfDoc.getPage(pageNum);
@@ -685,12 +757,17 @@ async function endReadingSession() {
                 state.pagesHTML[pageNum - 1] = paragraphize(textContent);
             } catch (e) {
                 console.error(`Failed to render page ${pageNum}:`, e);
-                state.pagesHTML[pageNum - 1] = "<p>Error loading this page.</p>";
+                state.pagesHTML[pageNum - 1] = "<p>Error loading page.</p>";
             }
         }
-        DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>This page appears to be empty.</p>";
+        
+        DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
+        
+        renderBookmarkOnPage();
+        
         DOM.pageContent.classList.add("fade-in");
         setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
+        
         DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
         DOM.pageTotal.textContent = `/ ${state.totalPages}`;
         DOM.pageJumpInput.value = pageNum;
@@ -698,29 +775,23 @@ async function endReadingSession() {
         DOM.mobilePageJumpInput.value = pageNum;
         DOM.mobilePageJumpInput.max = state.totalPages;
         DOM.mobilePageTotal.textContent = `/ ${state.totalPages}`;
-        DOM.prevBtn.disabled = pageNum <= 1; DOM.nextBtn.disabled = pageNum >= state.totalPages;
+        DOM.prevBtn.disabled = pageNum <= 1;
+        DOM.nextBtn.disabled = pageNum >= state.totalPages;
         setFontRem(state.currentFontRem);
         DOM.mainContent.scrollTop = 0;
         state.isRendering = false;
     }
 
     function showTooltipAt(rect) {
-    DOM.tooltip.style.display = "flex";
-    // The header is 60px high, so the tooltip shouldn't go above that.
-    const topBoundary = 68; // 60px for header + 8px margin
-    
-    // Calculate top position based on the selection's viewport position (rect.top).
-    // No scrollOffset is needed because the tooltip is not inside the scrolling container.
-    const top = rect.top - DOM.tooltip.offsetHeight - 8;
-    
-    let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
-    
-    // Apply the calculated position, ensuring it doesn't go above the top boundary.
-    DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
-    DOM.tooltip.style.left = `${left}px`;
-    requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
-}
+        DOM.tooltip.style.display = "flex";
+        const topBoundary = 68;
+        const top = rect.top - DOM.tooltip.offsetHeight - 8;
+        let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
+        DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
+        DOM.tooltip.style.left = `${left}px`;
+        requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
+    }
 
     function hideTooltip() {
         DOM.tooltip.classList.remove('visible');
@@ -736,31 +807,31 @@ async function endReadingSession() {
         }
     }
 
-   async function handleExplain() {
-        if (!explainBookTextFn) {
-            flashAI("Explanation feature is not available.");
-            return;
-        }
-        if (!state.lastSelectionText || state.lastSelectionText.length < 4) { // <-- MODIFIED
-            flashAI("Please select at least 4 characters to explain."); // <-- MODIFIED
-            clearSelection(); return;
-        }
-        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-        DOM.aiQuote.classList.remove('hidden');
-        DOM.aiPanel.style.display = "flex";
-        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
-        const textToExplain = state.lastSelectionText;
-        trackExplanationRequest(textToExplain);
-        clearSelection();
-        try {
-            const { data } = await explainBookTextFn({ text: textToExplain });
-            const explanationText = data?.explanation || "No explanation was returned.";
-            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
-        } catch (err) {
-            console.error("AI Explain Error:", err);
-            DOM.aiContent.textContent = "Sorry, the explanation failed. Please check your connection and try again.";
-        }
-    }
+    async function handleExplain() {
+        if (!explainBookTextFn) {
+            flashAI("Explanation feature is not available.");
+            return;
+        }
+        if (!state.lastSelectionText || state.lastSelectionText.length < 4) {
+            flashAI("Please select at least 4 characters to explain.");
+            clearSelection(); return;
+        }
+        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
+        DOM.aiQuote.classList.remove('hidden');
+        DOM.aiPanel.style.display = "flex";
+        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+        const textToExplain = state.lastSelectionText;
+        await trackExplanationRequest(textToExplain);
+        clearSelection();
+        try {
+            const { data } = await explainBookTextFn({ text: textToExplain });
+            const explanationText = data?.explanation || "No explanation was returned.";
+            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
+        } catch (err) {
+            console.error("AI Explain Error:", err);
+            DOM.aiContent.textContent = "Sorry, an error occurred.";
+        }
+    }
 
     function handleHighlight() {
         if (state.lastSelectionRange) {
@@ -771,6 +842,68 @@ async function endReadingSession() {
             } catch (e) { console.error("Highlighting failed:", e); }
         }
         state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+        clearSelection();
+    }
+
+    function getSelectionOffsets(container) {
+        const selection = window.getSelection();
+        if (selection.rangeCount === 0) return null;
+        const range = selection.getRangeAt(0);
+        const preSelectionRange = range.cloneRange();
+        preSelectionRange.selectNodeContents(container);
+        preSelectionRange.setEnd(range.startContainer, range.startOffset);
+        const start = preSelectionRange.toString().length;
+        return {
+            start: start,
+            end: start + range.toString().length
+        };
+    }
+    
+    async function handleBookmark() {
+        const user = auth.currentUser;
+        if (!user || user.isAnonymous) {
+            flashAI("Please sign in with your email to use bookmarks.", 3000);
+            clearSelection();
+            return;
+        }
+
+        if (!state.lastSelectionRange || !state.bookId) {
+            clearSelection();
+            return;
+        }
+
+        const offsets = getSelectionOffsets(DOM.pageContent);
+        if (!offsets) {
+            clearSelection();
+            return;
+        }
+
+        const bookmarkData = {
+            userId: user.uid,
+            bookId: state.bookId,
+            pageNum: state.currentPage,
+            startOffset: offsets.start,
+            endOffset: offsets.end,
+            textSnippet: state.lastSelectionText.substring(0, 100),
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+            await setDoc(bookmarkDocRef, bookmarkData);
+
+            state.bookmark = bookmarkData;
+            flashAI("Bookmark saved!", 2000);
+            
+            const currentPageHTML = state.pagesHTML[state.currentPage - 1];
+            DOM.pageContent.innerHTML = currentPageHTML;
+            renderBookmarkOnPage();
+
+        } catch (e) {
+            console.error("Error saving bookmark:", e);
+            flashAI("Failed to save bookmark.", 3000);
+        }
+        
         clearSelection();
     }
 
@@ -786,58 +919,6 @@ async function endReadingSession() {
         setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
     }
 
-    function setupSelectionHandler() {
-        if (isTouchDevice) {
-            document.addEventListener('selectionchange', () => {
-                const sel = window.getSelection();
-                const text = sel ? sel.toString().trim() : '';
-                if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
-                    state.lastSelectionText = text;
-                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
-                    DOM.mobileExplainBtn.classList.add('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
-                } else {
-                    DOM.mobileExplainBtn.classList.remove('visible');
-                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-                }
-            });
-        }
-        else {
-            document.addEventListener('mouseup', () => {
-                setTimeout(() => {
-                    const sel = window.getSelection();
-                    const text = sel.toString().trim();
-                    if (text.length >= 4 && !sel.isCollapsed) { // <-- MODIFIED
-                        state.lastSelectionText = text;
-                        state.lastSelectionRange = sel.getRangeAt(0);
-                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                    } else {
-                        hideTooltip();
-                    }
-                }, 50);
-            });
-        }
-    }
-    function setupSwipeNavigation() {
-        DOM.mainContent.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return;
-            const touch = e.touches[0];
-            state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
-            state.touch.startTime = Date.now();
-        }, { passive: true });
-        DOM.mainContent.addEventListener('touchend', (e) => {
-            if (e.touches.length > 0) return;
-            const touch = e.changedTouches[0];
-            const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
-            const elapsedTime = Date.now() - state.touch.startTime;
-            if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                if (deltaX > 0) DOM.prevBtn.click();
-                else DOM.nextBtn.click();
-            }
-        }, { passive: true });
-    }
-
-    // --- MODIFIED: This is the core of the new, correct logic ---
     function setupEventListeners() {
         DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
         DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
@@ -847,6 +928,7 @@ async function endReadingSession() {
         [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
         DOM.tooltipExplain.addEventListener("click", handleExplain);
         DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+        DOM.tooltipBookmark.addEventListener("click", handleBookmark);
         DOM.tooltipCopy.addEventListener("click", handleCopy);
         DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
         DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
@@ -867,36 +949,74 @@ async function endReadingSession() {
             if (e.key === 'ArrowLeft') DOM.prevBtn.click();
             else if (e.key === 'ArrowRight') DOM.nextBtn.click();
         });
-
-        // Use 'visibilitychange' to intelligently end and start sessions
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                // User has tabbed away or minimized. End the current session.
-                endReadingSession();
-            } else if (document.visibilityState === 'visible') {
-                // User has returned. Start a fresh session if a book is loaded.
-                if (state.pdfDoc && state.bookTitle) {
-                    startReadingSession(state.bookTitle);
-                }
-            }
+            if (document.visibilityState === 'hidden') { endReadingSession(); }
         });
-
-        // Use 'pagehide' as a final backup to end the session when closing the tab.
         document.addEventListener('pagehide', endReadingSession);
-
         setupSelectionHandler();
+        if (isTouchDevice) { setupSwipeNavigation(); }
+    }
+    
+    function setupSelectionHandler() {
         if (isTouchDevice) {
-            setupSwipeNavigation();
+            document.addEventListener('selectionchange', () => {
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
+                if (text.length >= 4 && !sel.isCollapsed) {
+                    state.lastSelectionText = text;
+                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
+                    DOM.mobileExplainBtn.classList.add('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'false');
+                } else {
+                    DOM.mobileExplainBtn.classList.remove('visible');
+                    DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+                }
+            });
+        }
+        else {
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => {
+                    const sel = window.getSelection();
+                    const text = sel.toString().trim();
+                    if (text.length >= 4 && !sel.isCollapsed) {
+                        state.lastSelectionText = text;
+                        state.lastSelectionRange = sel.getRangeAt(0);
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+                    } else {
+                        hideTooltip();
+                    }
+                }, 50);
+            });
         }
     }
 
-    function init() {
+    function setupSwipeNavigation() {
+        DOM.mainContent.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) return;
+            const touch = e.touches[0];
+            state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
+            state.touch.startTime = Date.now();
+        }, { passive: true });
+        DOM.mainContent.addEventListener('touchend', (e) => {
+            if (e.touches.length > 0) return;
+            const touch = e.changedTouches[0];
+            const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
+            const elapsedTime = Date.now() - state.touch.startTime;
+            if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX > 0) DOM.prevBtn.click();
+                else DOM.nextBtn.click();
+            }
+        }, { passive: true });
+    }
+
+    function initApp() {
         setMode(localStorage.getItem("kaffetishMode") || 'light');
         setFontRem(state.currentFontRem);
-        trackUserActivity();
         setupEventListeners();
+
         const params = new URLSearchParams(window.location.search);
         const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
+
         if (bookUrl) {
             loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
         } else {
@@ -905,7 +1025,28 @@ async function endReadingSession() {
         if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
     }
 
-    init();
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            if (user.isAnonymous) {
+                // Hide bookmark button for anonymous users
+                DOM.tooltipBookmark.style.display = 'none';
+            } else {
+                // Show bookmark button for signed-in (email) users
+                DOM.tooltipBookmark.style.display = 'flex';
+            }
+            trackUserActivity();
+        } else {
+            // If no user is found at all, sign one in anonymously.
+            signInAnonymously(auth).catch(err => {
+                console.error("Anonymous sign-in failed:", err);
+            });
+        }
+    });
+
+    auth.onAuthStateChanged(user => {
+        initApp();
+    }, { onlyOnce: true });
+
 </script>
 </body>
 </html>
