@@ -154,10 +154,6 @@
         <p>Manage your account details and preferences. Your progress is always saved.</p>
         <div class="benefit-item"><i class="fa-solid fa-user-check"></i><span id="welcome-message">Welcome!</span></div>
         <div class="benefit-item"><i class="fa-solid fa-envelope"></i><span id="profile-email-display">your.email@example.com</span></div>
-        <a href="https://kaffetish.club" class="benefit-item" style="text-decoration: none; color: inherit; margin-top: 24px;">
-            <i class="fa-solid fa-arrow-left"></i>
-            <span>Back to Kaffetish.club</span>
-        </a>
       </div>
       <div class="form-panel">
         <h3>Account Settings</h3>
@@ -169,6 +165,11 @@
             <div class="form-field full-width"><label for="profile-email">Email (cannot be changed)</label><input type="email" id="profile-email" disabled></div>
           </div>
           <div class="form-message" id="profile-message"></div>
+          <p style="text-align: center; margin-top: 24px; margin-bottom: 0;">
+            <a href="https://kaffetish.club" style="color: var(--accent); text-decoration: none; font-weight: 500;">
+              Back to Kaffetish.club
+            </a>
+          </p>
           <div class="form-actions">
             <button type="button" id="logout-button" class="btn btn-secondary">Log Out</button>
             <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -313,9 +314,6 @@
             showMessage(profileMessage, "Failed to log out.");
         }
     });
-
-    // We no longer need the theme toggle logic since the header is gone.
-    // document.addEventListener('DOMContentLoaded', ...);
   </script>
 </body>
 </html>
