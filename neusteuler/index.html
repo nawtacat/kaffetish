@@ -55,21 +55,13 @@
             display: flex; justify-content: space-between; align-items: center;
         }
         .logo {
-            display: flex;
-            align-items: baseline;
-            font-size: 1.6rem;
-            font-weight: 500;
-            letter-spacing: -0.5px;
-            color: var(--accent);
+            display: flex; align-items: baseline; font-size: 1.6rem;
+            font-weight: 500; letter-spacing: -0.5px; color: var(--accent);
             font-family: var(--font-main);
         }
         .logo .tagline {
-            font-size: 0.6em;
-            font-style: italic;
-            font-weight: 400;
-            color: var(--subtle);
-            letter-spacing: normal;
-            margin-left: 8px;
+            font-size: 0.6em; font-style: italic; font-weight: 400;
+            color: var(--subtle); letter-spacing: normal; margin-left: 8px;
         }
         body.dark-mode .logo { color: var(--ink); }
 
@@ -77,83 +69,101 @@
         .header-actions button, .header-actions a {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
-            transition: color 0.2s ease, background-color 0.2s ease;
-            text-decoration: none;
+            transition: color 0.2s ease, background-color 0.2s ease; text-decoration: none;
         }
         .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         
         /* --- Main Content --- */
         main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
 
-        /* --- Generic Section Styling (used for multiple sections) --- */
-        .styled-section {
-            margin-bottom: 64px;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 32px;
+        /* --- Featured Author Section --- */
+        .featured-author-section {
+            margin-bottom: 64px; border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 32px;
             background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
         }
-        .section-header h3 {
-            font-family: var(--font-main);
-            font-size: 1.5rem;
-            font-weight: 500;
-            margin: 0 0 24px 0;
-            text-align: left;
-            position: relative;
+        .featured-author-header h3 {
+            font-family: var(--font-main); font-size: 1.5rem; font-weight: 500;
+            margin: 0 0 24px 0; text-align: left; position: relative;
         }
-        .section-header h3::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -8px;
-            width: 50px;
-            height: 2px;
-            background-color: var(--accent);
+        .featured-author-header h3::after {
+            content: ''; position: absolute; left: 0; bottom: -8px;
+            width: 50px; height: 2px; background-color: var(--accent);
         }
-
-        .featured-author-content {
-            display: flex;
-            gap: 32px;
-            align-items: flex-start;
-        }
-        .author-info {
-            flex: 0 0 220px;
-            text-align: center;
-        }
+        .featured-author-content { display: flex; gap: 32px; align-items: flex-start; }
+        .author-info { flex: 0 0 220px; text-align: center; }
         .author-info img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 16px;
-            border: 4px solid var(--bg);
+            width: 150px; height: 150px; border-radius: 50%;
+            object-fit: cover; margin-bottom: 16px; border: 4px solid var(--bg);
             box-shadow: 0 4px 15px var(--shadow-color);
         }
-        .author-info h4 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0 0 8px 0;
+        .author-info h4 { font-size: 1.2rem; font-weight: 600; margin: 0 0 8px 0; }
+        .author-info p { font-size: 0.9rem; color: var(--subtle); line-height: 1.6; margin: 0; }
+        .author-books { flex: 1; }
+        
+        /* --- NEW: Author Spotlight Section --- */
+        .author-spotlight {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            margin-bottom: 64px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
         }
-        .author-info p {
-            font-size: 0.9rem;
-            color: var(--subtle);
-            line-height: 1.6;
-            margin: 0;
+        .spotlight-cover {
+            flex: 0 0 200px;
         }
-        .author-books {
+        .spotlight-cover img {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 2 / 3;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px var(--shadow-color);
+        }
+        .spotlight-details {
             flex: 1;
         }
-        
+        .spotlight-details h3 {
+            font-family: var(--font-main);
+            font-size: 1.8rem;
+            margin: 0 0 4px 0;
+            font-weight: 700;
+        }
+        .spotlight-details h4 {
+            font-family: var(--font-ui);
+            font-size: 1.1rem;
+            color: var(--subtle);
+            margin: 0 0 16px 0;
+            font-weight: 400;
+        }
+        .spotlight-details p {
+            line-height: 1.7;
+            margin: 0 0 24px 0;
+        }
+        .spotlight-details .read-now-btn {
+            display: inline-block;
+            background-color: var(--accent);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-weight: 500;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .spotlight-details .read-now-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+
         /* --- Browse Section --- */
         .browse-section h2 {
             font-family: var(--font-main); font-size: 2.5rem; font-weight: 500;
             margin-bottom: 32px; text-align: center;
         }
         .search-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto 48px;
+            position: relative; width: 100%; max-width: 500px; margin: 0 auto 48px;
         }
         #search-input {
             width: 100%; padding: 12px 16px 12px 40px; font-size: 1rem;
@@ -178,7 +188,6 @@
         .author-books .book-grid {
              grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         }
-
         .book-card {
             text-decoration: none; cursor: pointer; text-align: center;
             transition: transform 0.2s ease-out; display: block;
@@ -198,36 +207,31 @@
             grid-column: 1 / -1;
         }
 
+        /* --- Responsive Design --- */
         @media (max-width: 992px) {
-            main { 
-                padding: 24px 16px; 
+            main { padding: 24px 16px; }
+            .logo .tagline { display: none; }
+            .featured-author-content { flex-direction: column; align-items: center; }
+            .author-info { flex: 0 0 auto; margin-bottom: 24px; }
+            .author-books .book-grid {
+                display: grid; grid-template-columns: 1fr;
+                gap: 32px; max-width: 280px; margin: 0 auto;
             }
-            .featured-author-content { 
-                flex-direction: column; 
-                align-items: center; 
+        }
+        @media (max-width: 768px) {
+            .author-spotlight {
+                flex-direction: column;
+                text-align: center;
             }
-            .author-info { 
-                flex: 0 0 auto; 
-                margin-bottom: 24px; 
+            .spotlight-cover {
+                flex-basis: auto;
+                width: 100%;
+                max-width: 200px;
+                margin: 0 auto;
             }
-
-            /* This hides the tagline on mobile */
-            .logo .tagline {
-                display: none;
-            }
-
-            /* --- LAYOUT FIX STARTS HERE --- */
             .browse-section .book-grid {
                 grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
                 gap: 24px;
-            }
-            
-            .author-books .book-grid {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 32px;
-                max-width: 280px;
-                margin: 0 auto;
             }
         }
     </style>
@@ -247,42 +251,53 @@
     </header>
 
     <main>
-        <section class="library-view">
+        <section class="featured-author-section">
+            <div class="featured-author-header">
+                <h3>Featured Author</h3>
+            </div>
+            <div class="featured-author-content">
+                <div class="author-info">
+                    <img id="author-portrait" src="" alt="Portrait of the featured author">
+                    <h4 id="author-name"></h4>
+                    <p id="author-bio"></p>
+                </div>
+                <div class="author-books">
+                    <div id="author-book-grid" class="book-grid"></div>
+                </div>
+            </div>
+        </section>
 
-            <section class="styled-section">
-                <div class="section-header">
-                    <h3>A Short Read for Beginners</h3>
-                </div>
-                <div id="short-reads-grid" class="book-grid">
-                    </div>
-            </section>
+        <section class="author-spotlight">
+            <div class="spotlight-cover">
+                <img src="https://cdn2.penguin.com.au/covers/original/9789888240579.jpg" alt="Cover of The Gift of The Magi">
+            </div>
+            <div class="spotlight-details">
+                <h3>The Gift of The Magi</h3>
+                <h4>by O. Henry</h4>
+                <p>A heartwarming and ironic short story about a young, poor couple who sacrifice their most prized possessions to buy each other Christmas gifts. It's a classic tale of love and selflessness.</p>
+                <a href="https://kaffetish.club/read/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fphysmathacademy-722b3.firebasestorage.app%2Fo%2Fthe-gift-of-the-magi.pdf%3Falt%3Dmedia%26token%3D7670ff06-e08c-49dc-b5c9-02523cc1310e&title=The%20Gift%20of%20The%20Magi" class="read-now-btn" target="_blank">Read Now</a>
+            </div>
+        </section>
 
-            <section class="browse-section">
-                <h2>Browse the Collection</h2>
-                <div class="search-container">
-                    <i class="fa-solid fa-search"></i>
-                    <input type="search" id="search-input" placeholder="Search all books by title or author...">
-                </div>
-                <div id="book-grid" class="book-grid">
-                    </div>
-            </section>
-            
-            <section class="styled-section">
-                <div class="section-header">
-                    <h3>Featured Author</h3>
-                </div>
-                <div class="featured-author-content">
-                    <div class="author-info">
-                        <img id="author-portrait" src="" alt="Portrait of the featured author">
-                        <h4 id="author-name"></h4>
-                        <p id="author-bio"></p>
-                    </div>
-                    <div class="author-books">
-                        <div id="author-book-grid" class="book-grid">
-                            </div>
-                    </div>
-                </div>
-            </section>
+        <section class="author-spotlight">
+            <div class="spotlight-cover">
+                <img src="https://m.media-amazon.com/images/I/81jd8E6yypL.jpg" alt="Cover of To Build a Fire">
+            </div>
+            <div class="spotlight-details">
+                <h3>To Build a Fire</h3>
+                <h4>by Jack London</h4>
+                <p>A gripping tale of survival against the brutal, unforgiving cold of the Yukon. The story follows a newcomer's fatal journey as he underestimates the power of nature and his own limitations.</p>
+                <a href="https://kaffetish.club/read/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fphysmathacademy-722b3.firebasestorage.app%2Fo%2Fto-build-a-fire.pdf%3Falt%3Dmedia%26token%3D730b2ce4-5aec-437e-82b2-2f5ace5b6e57&title=To%20Build%20a%20Fire" class="read-now-btn" target="_blank">Read Now</a>
+            </div>
+        </section>
+
+        <section class="browse-section">
+            <h2>Browse the Collection</h2>
+            <div class="search-container">
+                <i class="fa-solid fa-search"></i>
+                <input type="search" id="search-input" placeholder="Search all books by title or author...">
+            </div>
+            <div id="book-grid" class="book-grid"></div>
         </section>
     </main>
     
@@ -290,7 +305,6 @@
         const DOM = {
             body: document.body,
             bookGrid: document.getElementById('book-grid'),
-            shortReadsGrid: document.getElementById('short-reads-grid'), // New element
             authorBookGrid: document.getElementById('author-book-grid'),
             authorPortrait: document.getElementById('author-portrait'),
             authorName: document.getElementById('author-name'),
@@ -312,27 +326,16 @@
 
         const libraryBooks = [
             { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.harryhartog.com.au/cdn/shop/products/9781435159631.jpg?v=1662072834&width=480", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
-            { 
-                title: "Capital, Volume I", 
-                author: "Karl Marx", 
-                cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg",
-                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af"  
-            },
-             { 
-                title: "The Communist Manifesto", 
-                author: "Karl Marx", 
-                cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg",
-                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2"  
-            },
+            { title: "Capital, Volume I", author: "Karl Marx", cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af" },
+            { title: "The Communist Manifesto", author: "Karl Marx", cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2" },
             { title: "Frankenstein", author: "Mary Shelley", cover: "https://wordsworth-editions.com/wp-content/uploads/2022/07/9781840228342.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
             { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
             { title: "Beyond Good and Evil", author: "Friedrich Nietzsche", cover: "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781625586100/beyond-good-and-evil-9781625586100_hr.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
             { title: "The Antichrist", author: "Friedrich Nietzsche", cover: "https://cdn.kobo.com/book-images/4bc3d45d-3de4-482f-95a4-759fb593d11e/353/569/90/False/the-anti-christ.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/antichrist.pdf?alt=media&token=6ed7b8ac-4fc7-481c-94fc-3522bb3791a7" },
             { title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman", cover: "https://images.penguinrandomhouse.com/cover/9780593230343", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" },
-             { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" },
-             { title: "The Gift of The Magi", author: "O. Henry", cover: "https://cdn2.penguin.com.au/covers/original/9789888240579.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-gift-of-the-magi.pdf?alt=media&token=7670ff06-e08c-49dc-b5c9-02523cc1310e" },
+            { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" },
+            { title: "The Gift of The Magi", author: "O. Henry", cover: "https://cdn2.penguin.com.au/covers/original/9789888240579.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-gift-of-the-magi.pdf?alt=media&token=7670ff06-e08c-49dc-b5c9-02523cc1310e" },
             { title: "To Build a Fire", author: "Jack London", cover: "https://m.media-amazon.com/images/I/81jd8E6yypL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/to-build-a-fire.pdf?alt=media&token=730b2ce4-5aec-437e-82b2-2f5ace5b6e57" }
-        
         ];
 
         function setMode(mode) {
@@ -346,14 +349,11 @@
         function createBookCard(book) {
             const card = document.createElement('a');
             card.className = 'book-card';
-            
             const readerBaseUrl = 'https://kaffetish.club/read/';
             const readerUrl = `${readerBaseUrl}?url=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`;
-            
             card.href = readerUrl;
             card.target = "_blank";
             card.setAttribute('aria-label', `Read ${book.title} by ${book.author}`);
-            
             card.innerHTML = `
                 <div class="book-cover">
                     <img src="${book.cover}" alt="Cover of ${book.title}" loading="lazy" 
@@ -364,29 +364,15 @@
             `;
             return card;
         }
-        
-        // New Function to render beginner-friendly short reads
-        function renderShortReads() {
-            const beginnerAuthors = ["O. Henry", "Jack London"];
-            const beginnerBooks = libraryBooks.filter(book => beginnerAuthors.includes(book.author));
-
-            DOM.shortReadsGrid.innerHTML = '';
-            beginnerBooks.forEach(book => {
-                DOM.shortReadsGrid.appendChild(createBookCard(book));
-            });
-        }
 
         function renderFeaturedAuthor(authorName) {
             const authorData = authors[authorName];
             if (!authorData) return;
-
             const authorBooks = libraryBooks.filter(book => book.author === authorName);
-
             DOM.authorPortrait.src = authorData.portrait;
             DOM.authorPortrait.alt = `Portrait of ${authorName}`;
             DOM.authorName.textContent = authorName;
             DOM.authorBio.textContent = authorData.bio;
-
             DOM.authorBookGrid.innerHTML = '';
             authorBooks.forEach(book => {
                 DOM.authorBookGrid.appendChild(createBookCard(book));
@@ -396,17 +382,14 @@
         function renderMainLibrary() {
             const searchTerm = DOM.searchInput.value.toLowerCase();
             DOM.bookGrid.innerHTML = ''; 
-
             const filteredBooks = libraryBooks.filter(book => 
                 book.title.toLowerCase().includes(searchTerm) || 
                 book.author.toLowerCase().includes(searchTerm)
             );
-
             if (filteredBooks.length === 0) {
                 DOM.bookGrid.innerHTML = '<p class="no-results">No books found matching your search.</p>';
                 return;
             }
-
             filteredBooks.forEach(book => {
                 DOM.bookGrid.appendChild(createBookCard(book));
             });
@@ -428,8 +411,6 @@
         function init() {
             const savedMode = localStorage.getItem("kaffetishMode") || 'light';
             setMode(savedMode);
-            
-            renderShortReads(); // Call the new function
             renderFeaturedAuthor("Friedrich Nietzsche");
             renderMainLibrary();
             setupEventListeners();
