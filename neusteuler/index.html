@@ -74,25 +74,26 @@
         body.dark-mode .logo { color: var(--ink); }
 
         .header-actions { display: flex; align-items: center; gap: 16px; }
-        .header-actions button {
+        .header-actions button, .header-actions a {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
             transition: color 0.2s ease, background-color 0.2s ease;
+            text-decoration: none;
         }
-        .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         
         /* --- Main Content --- */
         main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
 
-        /* --- Featured Author Section --- */
-        .featured-author-section {
+        /* --- Generic Section Styling (used for multiple sections) --- */
+        .styled-section {
             margin-bottom: 64px;
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 32px;
             background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
         }
-        .featured-author-header h3 {
+        .section-header h3 {
             font-family: var(--font-main);
             font-size: 1.5rem;
             font-weight: 500;
@@ -100,7 +101,7 @@
             text-align: left;
             position: relative;
         }
-        .featured-author-header h3::after {
+        .section-header h3::after {
             content: '';
             position: absolute;
             left: 0;
@@ -198,82 +199,37 @@
         }
 
         @media (max-width: 992px) {
-    main { 
-        padding: 24px 16px; 
-    }
-    .featured-author-content { 
-        flex-direction: column; 
-        align-items: center; 
-    }
-    .author-info { 
-        flex: 0 0 auto; 
-        margin-bottom: 24px; 
-    }
+            main { 
+                padding: 24px 16px; 
+            }
+            .featured-author-content { 
+                flex-direction: column; 
+                align-items: center; 
+            }
+            .author-info { 
+                flex: 0 0 auto; 
+                margin-bottom: 24px; 
+            }
 
-    /* This hides the tagline on mobile */
-    .logo .tagline {
-        display: none;
-    }
+            /* This hides the tagline on mobile */
+            .logo .tagline {
+                display: none;
+            }
 
-    /* --- LAYOUT FIX STARTS HERE --- */
-
-    .browse-section .book-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 24px;
-    }
-    
-    .author-books .book-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 32px;
-        max-width: 280px;
-        margin: 0 auto;
-    }
-}
-        /* --- Featured Book Section --- */
-.featured-book-section {
-    margin-top: 64px;
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 32px;
-    background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
-}
-.featured-book-section h3 {
-    font-family: var(--font-main);
-    font-size: 1.5rem;
-    font-weight: 500;
-    margin: 0 0 24px 0;
-    position: relative;
-}
-.featured-book-section h3::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -8px;
-    width: 50px;
-    height: 2px;
-    background-color: var(--accent);
-}
-.featured-book-content p {
-    color: var(--subtle);
-    line-height: 1.7;
-    margin-bottom: 1em;
-}
-.featured-book-content p:last-child {
-    margin-bottom: 0;
-}
-.featured-book-content strong {
-    color: var(--ink);
-    font-weight: 600;
-}
-.warning-text {
-    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
-    border-left: 4px solid var(--accent);
-    padding: 12px 16px;
-    border-radius: 4px;
-    color: var(--ink) !important; /* Use important to override subtle color */
-    font-size: 0.9rem;
-}
+            /* --- LAYOUT FIX STARTS HERE --- */
+            .browse-section .book-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 24px;
+            }
+            
+            .author-books .book-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 32px;
+                max-width: 280px;
+                margin: 0 auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -284,15 +240,35 @@
                 <span class="tagline">explained by the librarian</span>
             </h1>
             <div class="header-actions">
-                 <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+                <a href="https://kaffetish.club/register" title="Profile"><i class="fa-solid fa-user"></i></a>
+                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </header>
 
     <main>
         <section class="library-view">
-            <section class="featured-author-section">
-                <div class="featured-author-header">
+
+            <section class="styled-section">
+                <div class="section-header">
+                    <h3>A Short Read for Beginners</h3>
+                </div>
+                <div id="short-reads-grid" class="book-grid">
+                    </div>
+            </section>
+
+            <section class="browse-section">
+                <h2>Browse the Collection</h2>
+                <div class="search-container">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="search" id="search-input" placeholder="Search all books by title or author...">
+                </div>
+                <div id="book-grid" class="book-grid">
+                    </div>
+            </section>
+            
+            <section class="styled-section">
+                <div class="section-header">
                     <h3>Featured Author</h3>
                 </div>
                 <div class="featured-author-content">
@@ -307,25 +283,6 @@
                     </div>
                 </div>
             </section>
-    
-            <section class="browse-section">
-                <h2>Browse the Collection</h2>
-                <div class="search-container">
-                    <i class="fa-solid fa-search"></i>
-                    <input type="search" id="search-input" placeholder="Search all books by title or author...">
-                </div>
-                <div id="book-grid" class="book-grid">
-                    </div>
-            </section>
-            <section class="featured-book-section">
-    <h3>The Blackest Page of Modern History</h3>
-    <div class="featured-book-content">
-        <p><strong>By Herbert Adams Gibbons (1916)</strong></p>
-        <p>A powerful eyewitness account of the Armenian Genocide, written during the First World War by a journalist stationed in the Ottoman Empire. This book documents the systematic extermination of the Armenian population in 1915, drawing from diplomatic reports, personal observation, and survivor testimony.</p>
-        <p>Gibbons’s work is one of the earliest and most direct accounts of a genocide still denied by the Turkish government today.</p>
-        <p class="warning-text">This text contains graphic descriptions of violence and atrocity. It is included here to preserve historical memory and confront suppressed truth.</p>
-    </div>
-</section>
         </section>
     </main>
     
@@ -333,6 +290,7 @@
         const DOM = {
             body: document.body,
             bookGrid: document.getElementById('book-grid'),
+            shortReadsGrid: document.getElementById('short-reads-grid'), // New element
             authorBookGrid: document.getElementById('author-book-grid'),
             authorPortrait: document.getElementById('author-portrait'),
             authorName: document.getElementById('author-name'),
@@ -353,25 +311,28 @@
         };
 
         const libraryBooks = [
-            { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.gutenberg.org/cache/epub/1342/pg1342.cover.medium.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
+            { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.harryhartog.com.au/cdn/shop/products/9781435159631.jpg?v=1662072834&width=480", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
             { 
-    title: "Capital, Volume I", 
-    author: "Karl Marx", 
-    cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg",
-                 url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af"  
-    },
+                title: "Capital, Volume I", 
+                author: "Karl Marx", 
+                cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg",
+                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af"  
+            },
              { 
-    title: "The Communist Manifesto", 
-    author: "Karl Marx", 
-    cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg",
-                 url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2"  
-    },
+                title: "The Communist Manifesto", 
+                author: "Karl Marx", 
+                cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg",
+                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2"  
+            },
             { title: "Frankenstein", author: "Mary Shelley", cover: "https://wordsworth-editions.com/wp-content/uploads/2022/07/9781840228342.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
-           { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
+            { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
             { title: "Beyond Good and Evil", author: "Friedrich Nietzsche", cover: "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781625586100/beyond-good-and-evil-9781625586100_hr.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
             { title: "The Antichrist", author: "Friedrich Nietzsche", cover: "https://cdn.kobo.com/book-images/4bc3d45d-3de4-482f-95a4-759fb593d11e/353/569/90/False/the-anti-christ.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/antichrist.pdf?alt=media&token=6ed7b8ac-4fc7-481c-94fc-3522bb3791a7" },
             { title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman", cover: "https://images.penguinrandomhouse.com/cover/9780593230343", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" },
-             { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" }
+             { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" },
+             { title: "The Gift of The Magi", author: "O. Henry", cover: "https://cdn2.penguin.com.au/covers/original/9789888240579.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-gift-of-the-magi.pdf?alt=media&token=7670ff06-e08c-49dc-b5c9-02523cc1310e" },
+            { title: "To Build a Fire", author: "Jack London", cover: "https://m.media-amazon.com/images/I/81jd8E6yypL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/to-build-a-fire.pdf?alt=media&token=730b2ce4-5aec-437e-82b2-2f5ace5b6e57" }
+        
         ];
 
         function setMode(mode) {
@@ -402,6 +363,17 @@
                 <div class="book-card-author">${book.author}</div>
             `;
             return card;
+        }
+        
+        // New Function to render beginner-friendly short reads
+        function renderShortReads() {
+            const beginnerAuthors = ["O. Henry", "Jack London"];
+            const beginnerBooks = libraryBooks.filter(book => beginnerAuthors.includes(book.author));
+
+            DOM.shortReadsGrid.innerHTML = '';
+            beginnerBooks.forEach(book => {
+                DOM.shortReadsGrid.appendChild(createBookCard(book));
+            });
         }
 
         function renderFeaturedAuthor(authorName) {
@@ -457,6 +429,7 @@
             const savedMode = localStorage.getItem("kaffetishMode") || 'light';
             setMode(savedMode);
             
+            renderShortReads(); // Call the new function
             renderFeaturedAuthor("Friedrich Nietzsche");
             renderMainLibrary();
             setupEventListeners();
