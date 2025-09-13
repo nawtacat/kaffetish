@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kaffetish</title>
-    <link rel="manifest" href="/manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAT Vocabulary Practice</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
             --bg: #FDFBF7;
@@ -21,6 +19,12 @@
             --shadow-color: rgba(44, 43, 42, 0.1);
             --font-main: 'Lora', serif;
             --font-ui: 'Poppins', sans-serif;
+            --correct-bg: #e6f4f1;
+            --correct-ink: #056e51;
+            --correct-border: #058f69;
+            --incorrect-bg: #fbe5e7;
+            --incorrect-ink: #a41024;
+            --incorrect-border: #da1a32;
         }
 
         body.dark-mode {
@@ -29,9 +33,11 @@
             --subtle: #999591;
             --border-color: #3A3837;
             --shadow-color: rgba(0, 0, 0, 0.25);
+            --correct-bg: #1a3c34;
+            --correct-ink: #7dccb5;
+            --incorrect-bg: #3b1e22;
+            --incorrect-ink: #f19dac;
         }
-
-        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
 
         body {
             font-family: var(--font-ui);
@@ -42,7 +48,6 @@
             padding-top: 60px;
         }
 
-        /* --- Header --- */
         .app-header {
             position: fixed; top: 0; left: 0; width: 100%; height: 60px;
             background-color: color-mix(in srgb, var(--bg) 85%, transparent);
@@ -51,372 +56,913 @@
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
         .header-content {
-            max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+            max-width: 900px; height: 100%; margin: 0 auto; padding: 0 24px;
             display: flex; justify-content: space-between; align-items: center;
         }
         .logo {
-            display: flex; align-items: baseline; font-size: 1.6rem;
-            font-weight: 500; letter-spacing: -0.5px; color: var(--accent);
-            font-family: var(--font-main);
-        }
-        .logo .tagline {
-            font-size: 0.6em; font-style: italic; font-weight: 400;
-            color: var(--subtle); letter-spacing: normal; margin-left: 8px;
+            font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
+            color: var(--accent); font-family: var(--font-main);
         }
         body.dark-mode .logo { color: var(--ink); }
 
-        .header-actions { display: flex; align-items: center; gap: 16px; }
-        .header-actions button, .header-actions a {
+        .header-actions button {
             background: transparent; border: none; color: var(--subtle); border-radius: 6px;
             padding: 8px 10px; cursor: pointer; font-size: 1rem;
-            transition: color 0.2s ease, background-color 0.2s ease; text-decoration: none;
+            transition: color 0.2s ease, background-color 0.2s ease;
         }
-        .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         
-        /* --- Main Content --- */
-        main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
+        main { padding: 48px 24px; max-width: 900px; margin: 0 auto; }
 
-        /* --- Featured Author Section --- */
-        .featured-author-section {
-            margin-bottom: 64px; border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 32px;
-            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+        #quiz-container {
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            background-color: var(--bg);
+            box-shadow: 0 8px 30px var(--shadow-color);
         }
-        .featured-author-header h3 {
-            font-family: var(--font-main); font-size: 1.5rem; font-weight: 500;
-            margin: 0 0 24px 0; text-align: left; position: relative;
+
+        .quiz-option {
+            border: 1px solid var(--border-color);
+            background-color: var(--bg);
+            color: var(--ink);
+            transition: all 0.2s ease-in-out;
+            font-family: var(--font-main);
         }
-        .featured-author-header h3::after {
-            content: ''; position: absolute; left: 0; bottom: -8px;
-            width: 50px; height: 2px; background-color: var(--accent);
-        }
-        .featured-author-content { display: flex; gap: 32px; align-items: flex-start; }
-        .author-info { flex: 0 0 220px; text-align: center; }
-        .author-info img {
-            width: 150px; height: 150px; border-radius: 50%;
-            object-fit: cover; margin-bottom: 16px; border: 4px solid var(--bg);
+        .quiz-option:not([disabled]):hover {
+            transform: translateY(-2px);
+            border-color: var(--subtle);
             box-shadow: 0 4px 15px var(--shadow-color);
         }
-        .author-info h4 { font-size: 1.2rem; font-weight: 600; margin: 0 0 8px 0; }
-        .author-info p { font-size: 0.9rem; color: var(--subtle); line-height: 1.6; margin: 0; }
-        .author-books { flex: 1; }
+
+        .quiz-option.correct {
+            border-color: var(--correct-border) !important;
+            background-color: var(--correct-bg) !important;
+            color: var(--correct-ink) !important;
+        }
+
+        .quiz-option.incorrect {
+            border-color: var(--incorrect-border) !important;
+            background-color: var(--incorrect-bg) !important;
+            color: var(--incorrect-ink) !important;
+            opacity: 1 !important;
+        }
+        .batch-btn {
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            color: var(--ink);
+            transition: all 0.2s ease-in-out;
+        }
+        .batch-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px var(--shadow-color);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
         
-        /* --- NEW: Author Spotlight Section --- */
- .author-spotlight {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    margin-bottom: 64px;
-    padding: 24px;
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-}
-        .spotlight-cover {
-            flex: 0 0 200px;
+        .action-btn {
+             background-color: var(--accent); color: white;
+             transition: transform 0.2s, box-shadow 0.2s;
         }
-        .spotlight-cover img {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 2 / 3;
-            object-fit: cover;
-            border-radius: 8px;
-            box-shadow: 0 8px 20px var(--shadow-color);
-        }
-        .spotlight-details {
-            flex: 1;
-        }
-        .spotlight-details h3 {
-            font-family: var(--font-main);
-            font-size: 1.8rem;
-            margin: 0 0 4px 0;
-            font-weight: 700;
-        }
-        .spotlight-details h4 {
-            font-family: var(--font-ui);
-            font-size: 1.1rem;
-            color: var(--subtle);
-            margin: 0 0 16px 0;
-            font-weight: 400;
-        }
-        .spotlight-details p {
-            line-height: 1.7;
-            margin: 0 0 24px 0;
-        }
-        .spotlight-details .read-now-btn {
-            display: inline-block;
-            background-color: var(--accent);
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 24px;
-            font-weight: 500;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .spotlight-details .read-now-btn:hover {
+        .action-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 40%, transparent);
         }
-
-        /* --- Browse Section --- */
-        .browse-section h2 {
-            font-family: var(--font-main); font-size: 2.5rem; font-weight: 500;
-            margin-bottom: 32px; text-align: center;
+        .secondary-btn {
+            background-color: var(--border-color);
+            color: var(--subtle);
         }
-        .search-container {
-            position: relative; width: 100%; max-width: 500px; margin: 0 auto 48px;
-        }
-        #search-input {
-            width: 100%; padding: 12px 16px 12px 40px; font-size: 1rem;
-            font-family: var(--font-ui); border: 1px solid var(--border-color);
-            border-radius: 24px; background-color: var(--bg); color: var(--ink);
-            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        #search-input:focus {
-            outline: none; border-color: var(--accent);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-        }
-        .search-container .fa-search {
-            position: absolute; left: 16px; top: 50%;
-            transform: translateY(-50%); color: var(--subtle);
+        .secondary-btn:hover {
+            background-color: color-mix(in srgb, var(--border-color) 70%, black);
+            color: var(--ink);
         }
 
-        .book-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 32px 24px;
-        }
-        .author-books .book-grid {
-             grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        }
-        .book-card {
-            text-decoration: none; cursor: pointer; text-align: center;
-            transition: transform 0.2s ease-out; display: block;
-        }
-        .book-card:hover { transform: translateY(-5px); }
-        .book-cover {
-            width: 100%; aspect-ratio: 2 / 3; border-radius: 8px;
-            overflow: hidden; box-shadow: 0 8px 20px var(--shadow-color);
-            margin-bottom: 12px; background-color: var(--border-color);
-        }
-        .book-cover img { width: 100%; height: 100%; object-fit: cover; }
-        .book-card-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); }
-        .book-card-author { font-size: 0.8rem; color: var(--subtle); }
-        
-        .no-results {
-            text-align: center; color: var(--subtle); padding: 40px;
-            grid-column: 1 / -1;
-        }
+        #progress-bar { background-color: var(--accent); }
 
-        /* --- Responsive Design --- */
-        @media (max-width: 992px) {
-            main { padding: 24px 16px; }
-            .logo .tagline { display: none; }
-            .featured-author-content { flex-direction: column; align-items: center; }
-            .author-info { flex: 0 0 auto; margin-bottom: 24px; }
-            .author-books .book-grid {
-                display: grid; grid-template-columns: 1fr;
-                gap: 32px; max-width: 280px; margin: 0 auto;
-            }
-        }
-        @media (max-width: 768px) {
-            .author-spotlight {
-                flex-direction: column;
-                text-align: center;
-            }
-            .spotlight-cover {
-                flex-basis: auto;
-                width: 100%;
-                max-width: 200px;
-                margin: 0 auto;
-            }
-            .browse-section .book-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-                gap: 24px;
-            }
-        }
     </style>
 </head>
 <body>
     <header class="app-header">
         <div class="header-content">
-            <h1 class="logo">
-                Kaffetish
-                <span class="tagline">explained by the librarian</span>
-            </h1>
+            <h1 class="logo">Vocab Practice</h1>
             <div class="header-actions">
-                <a href="https://kaffetish.club/register" title="Profile"><i class="fa-solid fa-user"></i></a>
                 <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
     </header>
 
     <main>
-        <section class="featured-author-section">
-            <div class="featured-author-header">
-                <h3>Featured Author</h3>
+        <div id="quiz-container">
+            <!-- Start Screen -->
+            <div id="start-screen" class="p-8 md:p-12 text-center">
+                <h1 style="font-family: var(--font-main);" class="text-3xl md:text-4xl font-bold mb-4">SAT Vocabulary</h1>
+                <p style="color: var(--subtle);" class="mb-8 max-w-xl mx-auto">Master hundreds of essential SAT vocabulary words with these targeted practice sets.</p>
+                <button id="start-btn" class="action-btn font-bold py-3 px-10 rounded-full text-lg">
+                    Get Started
+                </button>
             </div>
-            <div class="featured-author-content">
-                <div class="author-info">
-                    <img id="author-portrait" src="" alt="Portrait of the featured author">
-                    <h4 id="author-name"></h4>
-                    <p id="author-bio"></p>
+
+            <!-- Batch Select Screen -->
+            <div id="level-select-screen" class="hidden p-8">
+                <h2 style="font-family: var(--font-main);" class="text-2xl font-bold mb-6 text-center">Vocabulary Batches</h2>
+                <div id="level-buttons-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    <!-- Batch buttons will be injected here -->
                 </div>
-                <div class="author-books">
-                    <div id="author-book-grid" class="book-grid"></div>
+            </div>
+
+            <!-- Quiz Content -->
+            <div id="quiz-content" class="hidden">
+                 <div class="p-6 border-b" style="border-color: var(--border-color);">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-lg font-semibold" id="level-title" style="color: var(--subtle);">Batch 1</h2>
+                        <div class="text-md font-semibold" style="color: var(--subtle);">Score: <span id="score">0</span></div>
+                    </div>
+                    <div class="w-full rounded-full h-2" style="background-color: var(--border-color);">
+                        <div id="progress-bar" class="h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="p-6 md:p-8">
+                    <p class="text-sm font-semibold mb-2" style="color: var(--subtle);">What is the definition of...</p>
+                    <p style="font-family: var(--font-main);" class="text-2xl md:text-3xl font-bold mb-8" id="question-text"></p>
+                    <div id="options-container" class="grid grid-cols-1 gap-3"></div>
+                    <div id="feedback-container" class="mt-4 min-h-[80px]"></div>
+                    <button id="next-btn" class="hidden w-full sm:w-auto sm:float-right action-btn font-bold py-3 px-10 rounded-full text-lg">
+                        Next
+                    </button>
                 </div>
             </div>
-        </section>
 
-        <section class="author-spotlight">
-            <div class="spotlight-cover">
-                <img src="https://cdn2.penguin.com.au/covers/original/9789888240579.jpg" alt="Cover of The Gift of The Magi">
+             <!-- Results Screen -->
+            <div id="results-screen" class="hidden text-center p-8 md:p-12">
+                 <h1 style="font-family: var(--font-main);" class="text-2xl md:text-3xl font-bold mb-2">Batch Complete!</h1>
+                 <p style="color: var(--subtle);" class="mb-6">Here's how you did:</p>
+                 <div class="p-6 mb-8 max-w-sm mx-auto rounded-lg" style="background-color: color-mix(in srgb, var(--border-color) 20%, transparent);">
+                    <p id="final-score" class="text-5xl font-bold">0</p>
+                 </div>
+                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button id="restart-btn" class="w-full sm:w-auto secondary-btn font-bold py-3 px-8 rounded-full text-lg">
+                        Practice Again
+                    </button>
+                    <button id="levels-btn" class="w-full sm:w-auto action-btn font-bold py-3 px-8 rounded-full text-lg">
+                        Choose Another Batch
+                    </button>
+                 </div>
             </div>
-            <div class="spotlight-details">
-                <h3>The Gift of The Magi</h3>
-                <h4>by O. Henry</h4>
-                <p>A heartwarming and ironic short story about a young, poor couple who sacrifice their most prized possessions to buy each other Christmas gifts. It's a classic tale of love and selflessness.</p>
-                <a href="https://kaffetish.club/read/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fphysmathacademy-722b3.firebasestorage.app%2Fo%2Fthe-gift-of-the-magi.pdf%3Falt%3Dmedia%26token%3D7670ff06-e08c-49dc-b5c9-02523cc1310e&title=The%20Gift%20of%20The%20Magi" class="read-now-btn" target="_blank">Read Now</a>
-            </div>
-        </section>
-
-        <section class="author-spotlight">
-            <div class="spotlight-cover">
-                <img src="https://m.media-amazon.com/images/I/81jd8E6yypL.jpg" alt="Cover of To Build a Fire">
-            </div>
-            <div class="spotlight-details">
-                <h3>To Build a Fire</h3>
-                <h4>by Jack London</h4>
-                <p>A gripping tale of survival against the brutal, unforgiving cold of the Yukon. The story follows a newcomer's fatal journey as he underestimates the power of nature and his own limitations.</p>
-                <a href="https://kaffetish.club/read/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fphysmathacademy-722b3.firebasestorage.app%2Fo%2Fto-build-a-fire.pdf%3Falt%3Dmedia%26token%3D730b2ce4-5aec-437e-82b2-2f5ace5b6e57&title=To%20Build%20a%20Fire" class="read-now-btn" target="_blank">Read Now</a>
-            </div>
-        </section>
-
-        <section class="browse-section">
-            <h2>Browse the Collection</h2>
-            <div class="search-container">
-                <i class="fa-solid fa-search"></i>
-                <input type="search" id="search-input" placeholder="Search all books by title or author...">
-            </div>
-            <div id="book-grid" class="book-grid"></div>
-        </section>
+        </div>
     </main>
-    
+
     <script>
+        // =================================================================
+        // PASTE YOUR WORDS ARRAY HERE
+        // Replace the empty array below with your list of word objects.
+        // For example:
+        // const words = [
+        //   { word: "Abate", definition: "v. to become less active..." },
+        //   { word: "Abrupt", definition: "adj. Sudden and unexpected." },
+        //   ...
+        // ];
+        // =================================================================
+        const words = [
+             { word: "Abate", definition: "v. to become less active, less intense, or less in amount" },
+            { word: "Abrupt", definition: "adj. Sudden and unexpected." },
+            { word: "Abstract", definition: "adj. existing purely in the mind; not representing actual reality" },
+            { word: "Abysmal", definition: "adj. extremely bad" },
+            { word: "Acceptable", definition: "adj. Satisfactory or permissible." },
+            { word: "Accidental", definition: "adj. Happening by chance." },
+            { word: "Accommodate", definition: "v. To provide space or make adjustments." },
+            { word: "Accuracy", definition: "n. The quality of being correct or precise." },
+            { word: "Acknowledge", definition: "v. To recognize or admit the truth." },
+            { word: "Acquired", definition: "adj. Gained through effort or experience." },
+            { word: "Acquisition", definition: "n. the act of gaining a skill or possession of something" },
+            { word: "Adapt", definition: "v. to make suit a new purpose" },
+            { word: "Adept", definition: "adj. having knowledge or skill (usu. in a particular area)" },
+            { word: "Adequate", definition: "adj. having sufficient qualifications to meet a specific task or purpose" },
+            { word: "Adhere", definition: "v. To stick to or follow closely." },
+            { word: "Adjust", definition: "v. To modify or change slightly." },
+            { word: "Admire", definition: "v. To respect or look up to." },
+            { word: "Advantageous", definition: "adj. Beneficial or useful." },
+            { word: "Advent", definition: "n. the arrival or creation of something (usu. historic)" },
+            { word: "Adversarial", definition: "adj. relating to hostile opposition" },
+            { word: "Advise", definition: "v. To recommend or give guidance." },
+            { word: "Advocate", definition: "v. to defend or promote something (usu. a belief, theory, opinion, etc.)" },
+            { word: "Aesthetic", definition: "adj. relating to beauty or refined taste" },
+            { word: "Afford", definition: "v. to be able to buy" },
+            { word: "Agitate", definition: "v. to promote something (usu. a cause)" },
+            { word: "Aggravate", definition: "v. To worsen or intensify." },
+            { word: "Aggressive", definition: "adj. Forceful or overly assertive." },
+            { word: "Allow", definition: "v. to permit or consent to" },
+            { word: "Allude", definition: "v. to make a secretive mention of something" },
+            { word: "Altercation", definition: "n. a noisy argument or confrontation" },
+            { word: "Ambiguity", definition: "n. Uncertainty or multiple interpretations." },
+            { word: "Ambiguous", definition: "adj. unclear or vague in meaning" },
+            { word: "Ambitious", definition: "adj. having a powerful desire for success or achievement" },
+            { word: "Ambivalence", definition: "n. the state of being uncertain or stuck between two or more options" },
+            { word: "Ameliorate", definition: "v. To improve or make better." },
+            { word: "Amplify", definition: "v. To increase in size or effect." },
+            { word: "Amusing", definition: "adj. Entertaining or humorous." },
+            { word: "Analogous", definition: "adj. similar but not identical" },
+            { word: "Annihilate", definition: "v. to destroy or cause devastating destruction" },
+            { word: "Annotate", definition: "v. To add notes or comments." },
+            { word: "Announce", definition: "v. To make a public statement." },
+            { word: "Anomaly", definition: "n. something different from the norm" },
+            { word: "Antagonistic", definition: "adj. Showing hostility or opposition." },
+            { word: "Antecedent", definition: "n. A preceding event or condition." },
+            { word: "Anticipate", definition: "v. assume to be likely to happen" },
+            { word: "Antipathy", definition: "n. a strong feeling of dislike" },
+            { word: "Apex", definition: "n. the highest point of something" },
+            { word: "Apprehension", definition: "n. fearful expectation of something" },
+            { word: "Appropriate", definition: "adj. Suitable for a specific situation." },
+            { word: "Approximate", definition: "adj. Nearly accurate or close to." },
+            { word: "Arcane", definition: "adj. Mysterious or known by few." },
+            { word: "Arduous", definition: "adj. Difficult and requiring effort." },
+            { word: "Articulate", definition: "v. to clearly express in words" },
+            { word: "Artificial", definition: "adj. something made; not occurring naturally" },
+            { word: "Assemble", definition: "v. To gather or put together." },
+            { word: "Assertion", definition: "n. a strong declaration" },
+            { word: "Austere", definition: "adj. extremely plain" },
+            { word: "Authenticity", definition: "n. the quality of being real and true instead of fake and contrived" },
+            { word: "Avenue", definition: "n. an intangible path or approach to something" },
+            { word: "Avid", definition: "adj. actively interested in or enthusiastic about something" },
+            { word: "Avoid", definition: "v. To stay away from or prevent." },
+            { word: "Basic", definition: "adj. relating to the foundation or basis of something" },
+            { word: "Bear", definition: "v. to have as a characteristic" },
+            { word: "Beneficial", definition: "adj. Producing good results." },
+            { word: "Benevolent", definition: "adj. kind, generous" },
+            { word: "Bias", definition: "n. a preconception that prevents objectivity" },
+            { word: "Bittersweet", definition: "adj. tinged with a feeling of sadness" },
+            { word: "Bold", definition: "adj. Courageous or striking." },
+            { word: "Bolster", definition: "v. to support, strengthen, or fortify" },
+            { word: "Boost", definition: "v. to increase or make grow" },
+            { word: "Borrow", definition: "v. To take temporarily." },
+            { word: "Brawl", definition: "v. to fight loudly and disruptively" },
+            { word: "Brevity", definition: "n. the quality of being brief or terse" },
+            { word: "Buttress", definition: "v. To support or strengthen." },
+            { word: "Bypass", definition: "v. To go around or avoid." },
+            { word: "Calibrate", definition: "v. To adjust for precision." },
+            { word: "Candid", definition: "adj. direct, blunt" },
+            { word: "Candor", definition: "n. the trait of being honest and frank" },
+            { word: "Capitalize", definition: "v. to use to your advantage" },
+            { word: "Capture", definition: "v. to trap or take possession of" },
+            { word: "Carelessly", definition: "adv. Without caution." },
+            { word: "Catastrophic", definition: "adj. Disastrous or causing great damage." },
+            { word: "Cause", definition: "n. A reason for an action or event." },
+            { word: "Characterization", definition: "n. The way a character is described." },
+            { word: "Circumvent", definition: "v. To find a way around." },
+            { word: "Civic", definition: "adj. relating to the city or citizens" },
+            { word: "Clinical", definition: "adj. emotionally unattached (usu. used in medical or scientific setting)" },
+            { word: "Clout", definition: "n. special advantage or power" },
+            { word: "Coarse", definition: "adj. indicating a rough texture" },
+            { word: "Coincide", definition: "v. to happen at the same time" },
+            { word: "Coincidence", definition: "n. A surprising and unexpected event." },
+            { word: "Collaboration", definition: "n. Working together on a task." },
+            { word: "Commercialization", definition: "n. The process of making something a business." },
+            { word: "Commission", definition: "n. the use of payment to request something (e.g., a service or product)" },
+            { word: "Committed", definition: "adj. Dedicated to a cause or task." },
+            { word: "Common", definition: "adj. Occurring frequently or shared." },
+            { word: "Comparable", definition: "adj. able to be compared" },
+            { word: "Compelling", definition: "adj. Captivating or persuasive." },
+            { word: "Competent", definition: "adj. sufficiently qualified" },
+            { word: "Complacent", definition: "adj. satisfied, with no desire to change or improve" },
+            { word: "Complement", definition: "v. to make perfect or complete" },
+            { word: "Complementary", definition: "adj. Enhancing or completing another." },
+            { word: "Complexity", definition: "n. The state of being intricate or complicated." },
+            { word: "Compose", definition: "v. To create or write." },
+            { word: "Compound", definition: "v. To intensify or combine." },
+            { word: "Comprise", definition: "v. To consist of or include." },
+            { word: "Conceal", definition: "v. To hide or keep secret." },
+            { word: "Concede", definition: "v. to be forced to agree or surrender" },
+            { word: "Conceive", definition: "v. to imagine or come up with" },
+            { word: "Conceptualize", definition: "v. To form an idea or concept." },
+            { word: "Concerning", definition: "adj. Causing worry or distress." },
+            { word: "Condone", definition: "v. to overlook, approve, or allow" },
+            { word: "Conducive", definition: "adj. able to bring about or be suitable for" },
+            { word: "Conduct", definition: "v. to control or manage" },
+            { word: "Confide", definition: "v. to share something secretive with someone" },
+            { word: "Confine", definition: "v. to put limits on; to restrict" },
+            { word: "Conflated", definition: "adj. Combined in a misleading way." },
+            { word: "Conform", definition: "v. To comply with rules or expectations." },
+            { word: "Consensus", definition: "n. overall agreement" },
+            { word: "Consistent", definition: "adj. Acting in the same way over time." },
+            { word: "Conspicuous", definition: "adj. Easily noticed or standing out." },
+            { word: "Constant", definition: "adj. Occurring continuously." },
+            { word: "Constitute", definition: "v. to form or compose (part of) something" },
+            { word: "Contemplate", definition: "v. to think deeply about" },
+            { word: "Contend", definition: "v. to maintain or assert (an opinion)" },
+            { word: "Contentious", definition: "adj. Causing disagreement or debate." },
+            { word: "Contingent", definition: "adj. Dependent on something else." },
+            { word: "Contradict", definition: "v. to be in contrast with" },
+            { word: "Contrived", definition: "adj. Artificial or overly planned." },
+            { word: "Controversial", definition: "adj. highly debatable and causing contention" },
+            { word: "Conventional", definition: "adj. abiding by accepted standards" },
+            { word: "Convey", definition: "v. to pass on or transfer (information)" },
+            { word: "Conviction", definition: "n. a firm belief in something" },
+            { word: "Cordially", definition: "adv. In a warm or friendly manner." },
+            { word: "Corroborate", definition: "v. to provide evidence for; to back up (a claim)" },
+            { word: "Costly", definition: "adj. Expensive or requiring sacrifice." },
+            { word: "Counteract", definition: "v. to work in opposition to" },
+            { word: "Counterargument", definition: "n. an argument used to criticize or dismantle another argument" },
+            { word: "Counterproductive", definition: "adj. hindering the achievement of a goal" },
+            { word: "Critical", definition: "adj. Expressing analysis or judgment." },
+            { word: "Criticize", definition: "v. To express disapproval." },
+            { word: "Culmination", definition: "n. the final act or climax" },
+            { word: "Cultivate", definition: "v. to foster the growth of" },
+            { word: "Deceptive", definition: "adj. Misleading or dishonest." },
+            { word: "Deciding", definition: "adj. Determining or influencing an outcome." },
+            { word: "Decisive", definition: "adj. Conclusive or firm." },
+            { word: "Decree", definition: "v. to declare formally and with authority" },
+            { word: "Deference", definition: "n. respect; regard" },
+            { word: "Deficient", definition: "adj. not enough in degree or amount" },
+            { word: "Defunct", definition: "adj. No longer existing or functional." },
+            { word: "Delegate", definition: "v. To assign tasks or authority to others." },
+            { word: "Deliberation", definition: "n. Careful consideration or discussion." },
+            { word: "Delicate", definition: "adj. Fragile or requiring careful handling." },
+            { word: "Demarcate", definition: "v. To set boundaries or distinguish." },
+            { word: "Demonstrate", definition: "v. to do as an example" },
+            { word: "Demur", definition: "v. to object to" },
+            { word: "Deplete", definition: "v. to (over)use over time (usu. resources)" },
+            { word: "Derived", definition: "adj. Obtained or developed from a source." },
+            { word: "Desolate", definition: "adj. bare, barren, empty" },
+            { word: "Despise", definition: "v. To strongly dislike or look down upon." },
+            { word: "Desultory", definition: "adj. Lacking a clear plan or enthusiasm." },
+            { word: "Determine", definition: "v. To establish or decide." },
+            { word: "Deviate", definition: "v. To move away from a set path or norm." },
+            { word: "Devise", definition: "v. to come up with (a plan)" },
+            { word: "Dilemma", definition: "n. a problem, usually requiring a choice between two options" },
+            { word: "Diligence", definition: "n. conscientiousness; the quality of being committed to a task" },
+            { word: "Diminish", definition: "v. to become smaller in scope or degree" },
+            { word: "Dire", definition: "adj. hopeless and dangerous or fearful" },
+            { word: "Directed", definition: "adj. Managed or guided." },
+            { word: "Disagreement", definition: "n. A difference of opinion." },
+            { word: "Disastrous", definition: "adj. Causing great harm or failure." },
+            { word: "Disconcerting", definition: "adj. Causing discomfort or confusion." },
+            { word: "Discord", definition: "n. disagreement" },
+            { word: "Discount", definition: "v. To disregard or reduce in value." },
+            { word: "Discourage", definition: "v. To dissuade or deter." },
+            { word: "Discretion", definition: "n. The ability to make responsible choices." },
+            { word: "Disdain", definition: "n. a lack of respect and strong dislike (toward something or someone)" },
+            { word: "Disengage", definition: "v. To separate or withdraw." },
+            { word: "Dismay", definition: "v. to fill with woe or apprehension" },
+            { word: "Dismiss", definition: "v. To reject or send away." },
+            { word: "Disorienting", definition: "adj. Causing confusion or loss of direction." },
+            { word: "Disparage", definition: "v. to belittle or speak down to" },
+            { word: "Disparate", definition: "adj. Essentially different or unconnected." },
+            { word: "Dispatch", definition: "v. to send off a message or messenger" },
+            { word: "Dispute", definition: "n. A disagreement or argument." },
+            { word: "Distinct", definition: "adj. Clearly different or separate." },
+            { word: "Distract", definition: "v. To divert attention." },
+            { word: "Distressed", definition: "adj. Suffering from anxiety or pain." },
+            { word: "Diverge", definition: "v. To move apart or differ." },
+            { word: "Diverse", definition: "adj. Showing variety or differences." },
+            { word: "Diversification", definition: "n. the act of becoming diverse" },
+            { word: "Doctrine", definition: "n. a principle, theory, or position, usu. advocated by a religion or gov’t" },
+            { word: "Dominance", definition: "n. The state of being in control or superior." },
+            { word: "Dominion", definition: "n. power and authority (usu. over a territory)" },
+            { word: "Dormant", definition: "adj. Inactive but capable of becoming active." },
+            { word: "Dreary", definition: "adj. sad, gloomy, dull" },
+            { word: "Dubious", definition: "adj. doubtful, questionable" },
+            { word: "Dynamic", definition: "adj. Constantly changing or energetic." },
+            { word: "Earnest", definition: "adj. Serious and sincere." },
+            { word: "Eccentric", definition: "adj. peculiar or odd; deviating from the norm" },
+            { word: "Eclipse", definition: "v. To overshadow or surpass." },
+            { word: "Egregious", definition: "adj. extremely bad" },
+            { word: "Eloquent", definition: "adj. having refined or expressive communication skills (in speaking or writing)" },
+            { word: "Elusive", definition: "adj. Hard to find or understand." },
+            { word: "Eminent", definition: "adj. superior or distinguished; high in position or status" },
+            { word: "Emit", definition: "v. to discharge, give forth, or release" },
+            { word: "Emphatic", definition: "adj. very expressive; using emphasis" },
+            { word: "Empirical", definition: "adj. derived from experience, observation, or an experiment" },
+            { word: "Encompass", definition: "v. To include or surround." },
+            { word: "Encounter", definition: "v. To meet or face unexpectedly." },
+            { word: "Encourage", definition: "v. To support or inspire." },
+            { word: "Endow", definition: "v. to equip or bestow (usu. a quality or ability)" },
+            { word: "Endure", definition: "v. to withstand, sustain, or hold out against" },
+            { word: "Enduring", definition: "adj. Lasting over time." },
+            { word: "Entail", definition: "v. to involve or include" },
+            { word: "Entrenched", definition: "adj. firmly established" },
+            { word: "Enumerate", definition: "v. to specify or count" },
+            { word: "Envy", definition: "n. excessive jealousy" },
+            { word: "Erratic", definition: "adj. having no fixed course; deviating from the norm" },
+            { word: "Establish", definition: "v. to enact" },
+            { word: "Evidence", definition: "n. Information that supports a conclusion." },
+            { word: "Evoke", definition: "v. to draw forth or call up" },
+            { word: "Exacerbate", definition: "v. to make worse or increase the severity of" },
+            { word: "Exactitude", definition: "n. The quality of being precise or accurate." },
+            { word: "Exaggerate", definition: "v. To overstate or magnify beyond the truth." },
+            { word: "Excel", definition: "v. to do something extremely well or to be superior in" },
+            { word: "Exceed", definition: "v. To go beyond a limit." },
+            { word: "Exemplify", definition: "v. To serve as a typical example of something." },
+            { word: "Exert", definition: "v. to put into use (usu. as effort)" },
+            { word: "Exhaustive", definition: "adj. Thorough and complete." },
+            { word: "Exhilarating", definition: "adj. invigorating, stimulating, or exciting" },
+            { word: "Expansion", definition: "n. The act of increasing in size or scope." },
+            { word: "Expend", definition: "v. to use up (as in energy or money)" },
+            { word: "Expensive", definition: "adj. Costing a lot of money." },
+            { word: "Experiment", definition: "n. A test to discover something new." },
+            { word: "Explicable", definition: "adj. Able to be explained." },
+            { word: "Exploit", definition: "v. to use selfishly or for profit" },
+            { word: "Extensive", definition: "adj. Covering a large area or scope." },
+            { word: "Extraneous", definition: "adj. Unrelated or unnecessary." },
+            { word: "Fabricate", definition: "v. To invent or create, often dishonestly." },
+            { word: "Facilitate", definition: "v. to aid the progress of" },
+            { word: "Feasibility", definition: "n. the practicality or possibility of something" },
+            { word: "Ferocity", definition: "n. viciousness, violence" },
+            { word: "Fiscal", definition: "adj. related to (government) money" },
+            { word: "Flourish", definition: "v. to prosper, grow, or make fast progress" },
+            { word: "Fluctuate", definition: "v. to be unstable; to rise and fall" },
+            { word: "Foment", definition: "v. to stir up" },
+            { word: "Foretell", definition: "v. To predict or anticipate." },
+            { word: "Foreseeable", definition: "adj. capable of being predicted or anticipated" },
+            { word: "Foster", definition: "v. To encourage or promote development." },
+            { word: "Fragile", definition: "adj. Easily broken or delicate." },
+            { word: "Frankly", definition: "adv. directly, clearly" },
+            { word: "Freewheeling", definition: "adj. carefree" },
+            { word: "Fruitless", definition: "adj. Failing to achieve desired results." },
+            { word: "Fundamental", definition: "adj. the most essential or most basic part" },
+            { word: "Galvanizing", definition: "adj. thrilling, exciting, stimulating" },
+            { word: "Genuine", definition: "adj. Authentic or real." },
+            { word: "Geriatric", definition: "adj. relating to old age" },
+            { word: "Grapple", definition: "v. To struggle or wrestle with something." },
+            { word: "Habitual", definition: "adj. Done regularly or repeatedly." },
+            { word: "Haphazard", definition: "adj. Lacking organization or planning." },
+            { word: "Hibernation", definition: "n. A state of dormancy or deep sleep." },
+            { word: "Highlight", definition: "v. To emphasize or make noticeable." },
+            { word: "Hinder", definition: "v. To obstruct or slow progress." },
+            { word: "Hoard", definition: "v. To accumulate and store excessively." },
+            { word: "Homogeneous", definition: "adj. Uniform or similar throughout." },
+            { word: "Hostile", definition: "adj. harmful, dangerous" },
+            { word: "Hypothesize", definition: "v. To form a theory or assumption." },
+            { word: "Hypothetical", definition: "adj. supposed; related to a hypothesis" },
+            { word: "Ignominious", definition: "adj. publicly shameful or humiliating" },
+            { word: "Imaginative", definition: "adj. Creative and full of new ideas." },
+            { word: "Imitation", definition: "n. A copy or replica of something." },
+            { word: "Imminent", definition: "adj. About to happen soon." },
+            { word: "Immune", definition: "adj. Resistant to disease or harm." },
+            { word: "Impart", definition: "v. to transmit, bestow, or disclose" },
+            { word: "Impartial", definition: "adj. Fair and not biased." },
+            { word: "Impartiality", definition: "n. the equal and objective treatment of opposing views" },
+            { word: "Impending", definition: "adj. Approaching or about to happen." },
+            { word: "Impenetrable", definition: "adj. Impossible to pass through." },
+            { word: "Imperceptible", definition: "adj. Very slight or difficult to notice." },
+            { word: "Implement", definition: "v. To put into effect or execute." },
+            { word: "Implication", definition: "n. A possible consequence or meaning." },
+            { word: "Implicit", definition: "adj. Implied rather than stated directly." },
+            { word: "Imposing", definition: "adj. impressive (esp. in size or appearance)" },
+            { word: "Imposition", definition: "n. an unnecessary burden" },
+            { word: "Impractical", definition: "adj. Not sensible or realistic." },
+            { word: "Improvise", definition: "v. To create or perform spontaneously." },
+            { word: "Imprudent", definition: "adj. not cautious or prudent; rash" },
+            { word: "Inactive", definition: "adj. Not engaged in movement or activity." },
+            { word: "Inadequate", definition: "adj. Insufficient or lacking." },
+            { word: "Inadvertently", definition: "adv. Unintentionally or by accident." },
+            { word: "Incite", definition: "v. to encourage or stir up" },
+            { word: "Inconspicuous", definition: "adj. Not being easily seen or noticed." },
+            { word: "Indecipherable", definition: "adj. Impossible to understand or read." },
+            { word: "Indicate", definition: "v. To point out or show." },
+            { word: "Indifference", definition: "n. apathy, emotional detachment" },
+            { word: "Indiscriminately", definition: "adv. randomly; with little or no distinction" },
+            { word: "Indisputable", definition: "adj. Unable to be challenged or denied." },
+            { word: "Indistinct", definition: "adj. Not clear or sharply defined." },
+            { word: "Indulge", definition: "v. to give into; to satisfy or gratify" },
+            { word: "Ineffectual", definition: "adj. Not producing the desired effect." },
+            { word: "Inevitable", definition: "adj. Certain to happen; unavoidable." },
+            { word: "Inexpensive", definition: "adj. Not costly." },
+            { word: "Inexplicable", definition: "adj. Unable to be explained." },
+            { word: "Infer", definition: "v. to guess, conclude, or derive by reasoning" },
+            { word: "Influence", definition: "n. The power to affect others." },
+            { word: "Infrequent", definition: "adj. Not occurring often." },
+            { word: "Inhibit", definition: "v. To hinder or restrain." },
+            { word: "Innocuous", definition: "adj. Harmless or inoffensive." },
+            { word: "Innovative", definition: "adj. novel or new (esp. as an idea or invention)" },
+            { word: "Insatiable", definition: "adj. can’t be satisfied" },
+            { word: "Insensible", definition: "adj. Unaware or indifferent." },
+            { word: "Insignificant", definition: "adj. Too small or unimportant to matter." },
+            { word: "Inspect", definition: "v. To examine closely." },
+            { word: "Inspirational", definition: "adj. Providing motivation or encouragement." },
+            { word: "Intangible", definition: "adj. Not able to be touched or measured." },
+            { word: "Intentional", definition: "adj. Done on purpose." },
+            { word: "Interchangeable", definition: "adj. Able to be substituted for each other." },
+            { word: "Interject", definition: "v. To insert a comment abruptly." },
+            { word: "Interpret", definition: "v. To explain the meaning of something." },
+            { word: "Intersect", definition: "v. To cross or meet at a point." },
+            { word: "Intricate", definition: "adj. Very detailed or complicated." },
+            { word: "Intriguing", definition: "adj. Arousing curiosity or interest." },
+            { word: "Invalidate", definition: "v. To make something void or null." },
+            { word: "Invent", definition: "v. To create something new." },
+            { word: "Inversion", definition: "n. a reversal" },
+            { word: "Investigation", definition: "n. Systematic inquiries to uncover facts." },
+            { word: "Involuntarily", definition: "adv. Done without conscious control." },
+            { word: "Invoke", definition: "v. to call on; to appeal to (e.g., a higher power)" },
+            { word: "Irreconcilable", definition: "adj. incapable of being in harmony or agreed upon" },
+            { word: "Irrelevant", definition: "adj. Not related or applicable." },
+            { word: "Isolate", definition: "v. To separate from others." },
+            { word: "Lacking", definition: "adj. Not having enough of something." },
+            { word: "Lament", definition: "v. to feel sorrow for; to mourn" },
+            { word: "Latent", definition: "adj. Present but not active." },
+            { word: "Legitimate", definition: "adj. Lawful or valid." },
+            { word: "Localized", definition: "adj. Restricted to a particular area." },
+            { word: "Locomotion", definition: "n. movement" },
+            { word: "Lucrative", definition: "adj. capable of making a lot of money; profitable" },
+            { word: "Malicious", definition: "adj. harmful, spiteful" },
+            { word: "Malleable", definition: "adj. capable of being molded or changed" },
+            { word: "Manageable", definition: "adj. Able to be controlled or handled." },
+            { word: "Mandatory", definition: "adj. Required or obligatory." },
+            { word: "Materialistic", definition: "adj. superficial; focus on material possessions" },
+            { word: "Melodramatic", definition: "adj. extravagant or exaggerated (as of a melodrama)" },
+            { word: "Mimic", definition: "v. To imitate." },
+            { word: "Misanthropic", definition: "adj. Disliking people or society." },
+            { word: "Misrepresent", definition: "v. To give a false impression." },
+            { word: "Moderate", definition: "adj. Not extreme; average." },
+            { word: "Modest", definition: "adj. simple and humble" },
+            { word: "Modify", definition: "v. to change, alter, or tweak" },
+            { word: "Momentous", definition: "adj. historically significant" },
+            { word: "Multifaceted", definition: "adj. Having many aspects or features." },
+            { word: "Neglect", definition: "v. To fail to care for properly." },
+            { word: "Neutrality", definition: "n. The state of not taking sides." },
+            { word: "Newfound", definition: "adj. Recently discovered or developed." },
+            { word: "Notional", definition: "adj. Existing only in theory." },
+            { word: "Novel", definition: "adj. new, innovative" },
+            { word: "Nuance", definition: "n. a subtle difference in meaning" },
+            { word: "Nuanced", definition: "adj. Having subtle differences." },
+            { word: "Null", definition: "adj. legally void and ineffective" },
+            { word: "Objectivity", definition: "n. judgment based on observations instead of emotions or opinions" },
+            { word: "Obligate", definition: "v. To compel or require." },
+            { word: "Obscure", definition: "adj. Not easily understood or seen." },
+            { word: "Observable", definition: "adj. Able to be seen or noticed." },
+            { word: "Observant", definition: "adj. Quick to notice things." },
+            { word: "Obsolete", definition: "adj. no longer used; rare or uncommon" },
+            { word: "Obstructed", definition: "adj. Blocked or hindered." },
+            { word: "Occupy", definition: "v. To take up space or time." },
+            { word: "Oddity", definition: "n. Something unusual or strange." },
+            { word: "Offhand", definition: "adj. Done without preparation or thought." },
+            { word: "Omnipotent", definition: "adj. almighty and all powerful" },
+            { word: "Onset", definition: "n. the beginning or early stages" },
+            { word: "Operative", definition: "adj. Functioning or having effect." },
+            { word: "Opine", definition: "v. to openly express an opinion" },
+            { word: "Ornamental", definition: "adj. Decorative rather than functional." },
+            { word: "Ornate", definition: "adj. highly detailed and decorated" },
+            { word: "Oust", definition: "v. to remove or force out of (usu. a position or office)" },
+            { word: "Outstrip", definition: "v. To surpass or exceed." },
+            { word: "Overcome", definition: "v. To succeed in dealing with a problem." },
+            { word: "Overlook", definition: "v. To fail to notice or consider." },
+            { word: "Overreact", definition: "v. To respond too strongly." },
+            { word: "Overshadow", definition: "v. To be more important than something else." },
+            { word: "Overtly", definition: "adv. Openly and clearly." },
+            { word: "Overwhelmed", definition: "adj. Feeling excessive stress or emotion." },
+            { word: "Paramount", definition: "adj. predominant, superior, most important" },
+            { word: "Paucity", definition: "n. A scarcity or lack." },
+            { word: "Peculiar", definition: "adj. strange, bizarre" },
+            { word: "Perceive", definition: "v. To become aware of something." },
+            { word: "Peripheral", definition: "adj. On the edge or outer part of something." },
+            { word: "Perish", definition: "v. to die; to pass away" },
+            { word: "Permanent", definition: "adj. Lasting indefinitely." },
+            { word: "Perpetual", definition: "adj. Continuing forever or indefinitely." },
+            { word: "Persecute", definition: "v. to cause suffering to" },
+            { word: "Persistent", definition: "adj. Continuing despite difficulty." },
+            { word: "Petulant", definition: "adj. cranky, pouty, irritable" },
+            { word: "Pinnacle", definition: "n. highest level or degree" },
+            { word: "Pitiable", definition: "adj. deserving pity" },
+            { word: "Plausible", definition: "adj. reasonable and possibly true" },
+            { word: "Popularize", definition: "v. To make widely known." },
+            { word: "Postulate", definition: "v. to assert" },
+            { word: "Potent", definition: "adj. having great influence" },
+            { word: "Pragmatic", definition: "adj. practical, useful" },
+            { word: "Praise", definition: "v. To express approval or admiration." },
+            { word: "Precarious", definition: "adj. Uncertain or unstable." },
+            { word: "Precedent", definition: "n. an example or subject from earlier in time" },
+            { word: "Preclude", definition: "v. To prevent from happening." },
+            { word: "Predecessor", definition: "n. someone who comes before you (usu. in position or office)" },
+            { word: "Predatory", definition: "adj. Exploiting others for personal gain." },
+            { word: "Predetermined", definition: "adj. Decided in advance." },
+            { word: "Predict", definition: "v. To say what will happen in the future." },
+            { word: "Premeditated", definition: "adj. Planned beforehand." },
+            { word: "Prescribe", definition: "v. to command orders" },
+            { word: "Preserve", definition: "v. To keep something in its original state." },
+            { word: "Presume", definition: "v. To assume something to be true." },
+            { word: "Prevail", definition: "v. To win or be more powerful." },
+            { word: "Preventable", definition: "adj. Able to be avoided." },
+            { word: "Principle", definition: "n. basic truth, assumption, or rule" },
+            { word: "Probability", definition: "n. Likelihood of something happening." },
+            { word: "Proclaim", definition: "v. To announce officially." },
+            { word: "Produce", definition: "v. To create or generate something." },
+            { word: "Profusion", definition: "n. A large quantity of something." },
+            { word: "Prohibit", definition: "v. to command against, to outlaw" },
+            { word: "Prolong", definition: "v. To extend in duration." },
+            { word: "Prominent", definition: "adj. Important or well-known." },
+            { word: "Prompt", definition: "v. to incite, propel, or cause to act" },
+            { word: "Promulgate", definition: "v. to put into law or formally declare" },
+            { word: "Proponent", definition: "n. A supporter of a cause or idea." },
+            { word: "Prosecute", definition: "v. to bring criminal action against someone (in a trial)" },
+            { word: "Provocative", definition: "adj. intending to provoke, inspire, or arouse" },
+            { word: "Provoke", definition: "v. To stir up or incite." },
+            { word: "Prudently", definition: "adv. In a wise or careful manner." },
+            { word: "Qualitative", definition: "adj. involving qualities of something (features and content)" },
+            { word: "Quantitative", definition: "adj. involving quantities (numbers and amounts)" },
+            { word: "Quantity", definition: "n. An amount or number." },
+            { word: "Quarrel", definition: "n. An angry argument or dispute." },
+            { word: "Questionable", definition: "adj. Doubtful or uncertain." },
+            { word: "Quirk", definition: "n. a strange habit" },
+            { word: "Ramify", definition: "v. to split into two or more branches" },
+            { word: "Rarely", definition: "adv. Infrequently or seldom." },
+            { word: "Rash", definition: "adj. without attention to danger or risk" },
+            { word: "Rationalize", definition: "v. To justify an action with reasoning." },
+            { word: "Raw", definition: "adj. unrefined" },
+            { word: "Readily", definition: "adv. right away and without difficulty" },
+            { word: "Rebellion", definition: "n. An act of resistance against authority." },
+            { word: "Recalcitrant", definition: "adj. Stubbornly resistant to authority." },
+            { word: "Recant", definition: "v. To take back a previous statement." },
+            { word: "Receptive", definition: "adj. Open to new ideas." },
+            { word: "Reciprocate", definition: "v. To give in return." },
+            { word: "Recognizable", definition: "adj. Easily identified." },
+            { word: "Reconsideration", definition: "n. thinking again about a previously made choice" },
+            { word: "Rectify", definition: "v. To correct or fix something." },
+            { word: "Redefine", definition: "v. To change the meaning of something." },
+            { word: "Redress", definition: "v. To set right or remedy." },
+            { word: "Reform", definition: "v. to improve via change" },
+            { word: "Refuse", definition: "v. To decline or reject." },
+            { word: "Refute", definition: "v. to prove to be untrue, unfounded, or incorrect" },
+            { word: "Regrettable", definition: "adj. Causing sorrow or disappointment." },
+            { word: "Regulate", definition: "v. To control or manage." },
+            { word: "Reinforce", definition: "v. to strengthen or add support to" },
+            { word: "Reject", definition: "v. To dismiss or refuse to accept." },
+            { word: "Relocate", definition: "v. To move to a new place." },
+            { word: "Reluctantly", definition: "adv. somewhat unwillingly" },
+            { word: "Renounce", definition: "v. to give up (usu. power or a position)" },
+            { word: "Replenish", definition: "v. To refill or restore." },
+            { word: "Replicable", definition: "adj. Able to be copied or repeated." },
+            { word: "Representative", definition: "n. A person acting on behalf of others." },
+            { word: "Repress", definition: "v. To suppress or hold back." },
+            { word: "Reprieve", definition: "n. A temporary relief or delay." },
+            { word: "Reproach", definition: "v. to criticize" },
+            { word: "Repudiate", definition: "v. to refuse to recognize as true" },
+            { word: "Resilient", definition: "adj. Able to recover quickly." },
+            { word: "Resolve", definition: "v. To find a solution." },
+            { word: "Responsive", definition: "adj. Reacting quickly or positively." },
+            { word: "Restore", definition: "v. To bring back to original condition." },
+            { word: "Restrain", definition: "v. To hold back or limit." },
+            { word: "Retain", definition: "v. To keep or hold onto." },
+            { word: "Retaliate", definition: "v. To respond to an attack." },
+            { word: "Retention", definition: "n. the act of keeping something" },
+            { word: "Rousing", definition: "adj. Exciting or stirring." },
+            { word: "Rudimentary", definition: "adj. Basic or simple." },
+            { word: "Sanction", definition: "v. To authorize or approve." },
+            { word: "Sanguine", definition: "adj. Optimistic or hopeful." },
+            { word: "Satiated", definition: "adj. satisfied (usu. in hunger)" },
+            { word: "Saturate", definition: "v. To soak or fill completely." },
+            { word: "Savvy", definition: "adj. having practical intelligence or knowledge" },
+            { word: "Scandalous", definition: "adj. morally offensive, often causing damage to one’s reputation" },
+            { word: "Scorn", definition: "v. to look down on with disdain" },
+            { word: "Scrupulous", definition: "adj. paying great attention to detail" },
+            { word: "Scrutinize", definition: "v. to examine carefully and critically" },
+            { word: "Secrete", definition: "v. to produce or release (a substance)" },
+            { word: "Secretive", definition: "adj. Keeping things hidden." },
+            { word: "Sensitive", definition: "adj. Easily affected or aware." },
+            { word: "Sentiment", definition: "n. opinion" },
+            { word: "Sheer", definition: "adj. so thin that light can shine through" },
+            { word: "Simple", definition: "adj. easy; not complex" },
+            { word: "Simulate", definition: "v. To imitate or replicate." },
+            { word: "Sincerity", definition: "n. The quality of being genuine." },
+            { word: "Sinister", definition: "adj. ominous, evil" },
+            { word: "Skeptical", definition: "adj. Doubtful or questioning." },
+            { word: "Solidarity", definition: "n. the joining of commonalities or common purposes among a group" },
+            { word: "Sophisticated", definition: "adj. Complex or refined." },
+            { word: "Span", definition: "n. The extent or length of something." },
+            { word: "Sparingly", definition: "adv. insufficiently, meagerly, or in a restricted manner" },
+            { word: "Spawn", definition: "v. to release eggs" },
+            { word: "Speculate", definition: "v. To guess or theorize." },
+            { word: "Spur", definition: "v. to stimulate or incite" },
+            { word: "Spurious", definition: "adj. False or deceptive." },
+            { word: "Squalid", definition: "adj. run-down, sordid, or sleazy" },
+            { word: "Stark", definition: "adj. very plain; devoid of any details or features" },
+            { word: "Static", definition: "adj. motionless" },
+            { word: "Strenuously", definition: "adv. With great effort." },
+            { word: "Sturdily", definition: "adv. Strongly or solidly." },
+            { word: "Stymie", definition: "v. To hinder or block." },
+            { word: "Subordinate", definition: "v. to make dependent on or put at a lower rank" },
+            { word: "Subsequently", definition: "adv. happening later or after something" },
+            { word: "Substantial", definition: "adj. very large in amount or degree" },
+            { word: "Substantiate", definition: "v. to strengthen with new evidence or facts" },
+            { word: "Subtle", definition: "adj. hard to detect or analyze" },
+            { word: "Succumb", definition: "v. To give in or surrender." },
+            { word: "Sufficient", definition: "adj. enough; just meeting a requirement" },
+            { word: "Superficial", definition: "adj. Shallow or lacking depth." },
+            { word: "Supplement", definition: "v. To add to something." },
+            { word: "Surly", definition: "adj. unfriendly; inclined to anger" },
+            { word: "Surmise", definition: "v. To infer or guess." },
+            { word: "Surmount", definition: "v. to get on top of or overcome" },
+            { word: "Surpass", definition: "v. To exceed or go beyond." },
+            { word: "Surrender", definition: "v. To give up or yield." },
+            { word: "Susceptible", definition: "adj. to be vulnerable (to something)" },
+            { word: "Synchronization", definition: "n. The process of coordinating events." },
+            { word: "Tactful", definition: "adj. skilled at dealing with people" },
+            { word: "Taut", definition: "adj. pulled tight" },
+            { word: "Teeming", definition: "adj. abundantly filled (usu. with living organisms)" },
+            { word: "Temperament", definition: "n. usual mood or feelings" },
+            { word: "Tentative", definition: "adj. not yet finalized" },
+            { word: "Tenuous", definition: "adj. Weak or insubstantial." },
+            { word: "Theoretical", definition: "adj. Based on theory rather than practice." },
+            { word: "Theory", definition: "n. A system of ideas intended to explain something." },
+            { word: "Thoughtfulness", definition: "n. Consideration for others." },
+            { word: "Tranquil", definition: "adj. Peaceful and calm." },
+            { word: "Transform", definition: "v. To change in form or appearance." },
+            { word: "Transparent", definition: "adj. see-through; so thin that light can shine through" },
+            { word: "Treacherous", definition: "adj. dangerous and unstable" },
+            { word: "Tremendous", definition: "adj. very large, good, or bad in degree or size" },
+            { word: "Ubiquitous", definition: "adj. being everywhere at once" },
+            { word: "Unadorned", definition: "adj. undecorated, plain" },
+            { word: "Uncontroversial", definition: "adj. Not likely to cause disagreement." },
+            { word: "Undeniable", definition: "adj. Cannot be disputed." },
+            { word: "Undermine", definition: "v. to weaken or subvert (usu. gradually or secretly)" },
+            { word: "Underscore", definition: "v. to emphasize or give additional weight to" },
+            { word: "Undulate", definition: "v. to move as ripples or in a wavy pattern" },
+            { word: "Unilateral", definition: "adj. one-sided" },
+            { word: "Unimportant", definition: "adj. Not significant." },
+            { word: "Unintended", definition: "adj. Not planned or meant." },
+            { word: "Universal", definition: "adj. Common to all." },
+            { word: "Unjust", definition: "adj. unfair; not justified" },
+            { word: "Unmitigated", definition: "adj. downright, utter, total" },
+            { word: "Unmistakable", definition: "adj. Clearly recognizable." },
+            { word: "Unobtrusive", definition: "adj. Not attracting attention." },
+            { word: "Unoriginal", definition: "adj. Lacking originality." },
+            { word: "Unprecedented", definition: "adj. completely new and never having happened before; historic" },
+            { word: "Unpredictable", definition: "adj. Difficult to foresee." },
+            { word: "Unveil", definition: "v. to make visible; to reveal" },
+            { word: "Urge", definition: "v. to encourage or persuade" },
+            { word: "Validate", definition: "v. to prove or declare valid" },
+            { word: "Variable", definition: "adj. Likely to change." },
+            { word: "Verisimilitude", definition: "n. The appearance of being true or real." },
+            { word: "Veritable", definition: "adj. Used to emphasize truth." },
+            { word: "Viability", definition: "n. ability to be done in a practical or useful way" },
+            { word: "Vigilance", definition: "n. The action of keeping careful watch." },
+            { word: "Vital", definition: "adj. urgently necessary" },
+            { word: "Vow", definition: "v. to promise" },
+            { word: "Waive", definition: "v. To give up a right or claim voluntarily." },
+            { word: "Warrant", definition: "v. to prove to be reasonable" },
+            { word: "Warranted", definition: "adj. Justified or necessary." },
+            { word: "Widespread", definition: "adj. Found or occurring over a large area." },
+            { word: "Withdraw", definition: "v. To remove or retreat." },
+            { word: "Yield", definition: "v. to give way to or surrender to" },
+        ];
+
         const DOM = {
             body: document.body,
-            bookGrid: document.getElementById('book-grid'),
-            authorBookGrid: document.getElementById('author-book-grid'),
-            authorPortrait: document.getElementById('author-portrait'),
-            authorName: document.getElementById('author-name'),
-            authorBio: document.getElementById('author-bio'),
-            searchInput: document.getElementById('search-input'),
             modeToggle: document.getElementById('mode-toggle'),
+            startBtn: document.getElementById('start-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            levelsBtn: document.getElementById('levels-btn'),
+            startScreen: document.getElementById('start-screen'),
+            levelSelectScreen: document.getElementById('level-select-screen'),
+            quizContent: document.getElementById('quiz-content'),
+            resultsScreen: document.getElementById('results-screen'),
+            levelTitleEl: document.getElementById('level-title'),
+            scoreEl: document.getElementById('score'),
+            progressBar: document.getElementById('progress-bar'),
+            questionTextEl: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            feedbackContainer: document.getElementById('feedback-container'),
+            finalScoreEl: document.getElementById('final-score'),
+            levelButtonsContainer: document.getElementById('level-buttons-container'),
         };
 
         const state = {
-            mode: localStorage.getItem("kaffetishMode") || "light",
+            mode: localStorage.getItem("vocabQuizMode") || "light",
+            quizQuestions: [],
+            currentQuestionIndex: 0,
+            score: 0,
+            currentLevel: 0,
+            wordsPerLevel: [],
+            numBatches: 30,
         };
-
-        const authors = {
-            "Friedrich Nietzsche": {
-                bio: "A German philosopher and cultural critic whose work has exerted a profound influence on modern intellectual history.",
-                portrait: "https://upload.wikimedia.org/wikipedia/commons/1/1b/Nietzsche187a.jpg"
-            }
-        };
-
-        const libraryBooks = [
-            { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.harryhartog.com.au/cdn/shop/products/9781435159631.jpg?v=1662072834&width=480", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
-            { title: "Capital, Volume I", author: "Karl Marx", cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af" },
-            { title: "The Communist Manifesto", author: "Karl Marx", cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2" },
-            { title: "Frankenstein", author: "Mary Shelley", cover: "https://wordsworth-editions.com/wp-content/uploads/2022/07/9781840228342.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
-            { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
-            { title: "Beyond Good and Evil", author: "Friedrich Nietzsche", cover: "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781625586100/beyond-good-and-evil-9781625586100_hr.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
-            { title: "The Antichrist", author: "Friedrich Nietzsche", cover: "https://cdn.kobo.com/book-images/4bc3d45d-3de4-482f-95a4-759fb593d11e/353/569/90/False/the-anti-christ.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/antichrist.pdf?alt=media&token=6ed7b8ac-4fc7-481c-94fc-3522bb3791a7" },
-            { title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman", cover: "https://images.penguinrandomhouse.com/cover/9780593230343", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" },
-            { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" },
-            { title: "The Gift of The Magi", author: "O. Henry", cover: "https://cdn2.penguin.com.au/covers/original/9789888240579.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-gift-of-the-magi.pdf?alt=media&token=7670ff06-e08c-49dc-b5c9-02523cc1310e" },
-            { title: "To Build a Fire", author: "Jack London", cover: "https://m.media-amazon.com/images/I/81jd8E6yypL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/to-build-a-fire.pdf?alt=media&token=730b2ce4-5aec-437e-82b2-2f5ace5b6e57" }
-        ];
 
         function setMode(mode) {
             state.mode = mode;
             DOM.body.classList.toggle("dark-mode", mode === 'dark');
             const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
             DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
-            localStorage.setItem("kaffetishMode", mode);
+            localStorage.setItem("vocabQuizMode", mode);
+        }
+        
+        function setupLevels() {
+            DOM.levelButtonsContainer.innerHTML = '';
+            const totalWords = words.length;
+            if (totalWords === 0) {
+                DOM.levelButtonsContainer.innerHTML = '<p class="col-span-full text-center" style="color: var(--subtle);">Please paste the word list into the script to generate batches.</p>';
+                return;
+            }
+            const baseWords = Math.floor(totalWords / state.numBatches);
+            let remainder = totalWords % state.numBatches;
+            let startIndex = 0;
+            for (let i = 0; i < state.numBatches; i++) {
+                let numWords = baseWords + (remainder > 0 ? 1 : 0);
+                if (startIndex + numWords > totalWords) numWords = totalWords - startIndex;
+                if (numWords > 0) {
+                    state.wordsPerLevel[i] = words.slice(startIndex, startIndex + numWords);
+                    startIndex += numWords;
+                    if (remainder > 0) remainder--;
+
+                    const levelButton = document.createElement('button');
+                    levelButton.innerText = `${i + 1}`;
+                    levelButton.classList.add('batch-btn', 'font-bold', 'py-4', 'rounded-lg', 'text-lg');
+                    levelButton.onclick = () => startLevel(i);
+                    DOM.levelButtonsContainer.appendChild(levelButton);
+                }
+            }
         }
 
-        function createBookCard(book) {
-            const card = document.createElement('a');
-            card.className = 'book-card';
-            const readerBaseUrl = 'https://kaffetish.club/read/';
-            const readerUrl = `${readerBaseUrl}?url=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`;
-            card.href = readerUrl;
-            card.target = "_blank";
-            card.setAttribute('aria-label', `Read ${book.title} by ${book.author}`);
-            card.innerHTML = `
-                <div class="book-cover">
-                    <img src="${book.cover}" alt="Cover of ${book.title}" loading="lazy" 
-                         onerror="this.onerror=null;this.src='https://placehold.co/400x600/EAE8E4/2C2B2A?text=Cover';">
-                </div>
-                <div class="book-card-title">${book.title}</div>
-                <div class="book-card-author">${book.author}</div>
-            `;
-            return card;
+        function showScreen(screen) {
+            [DOM.startScreen, DOM.levelSelectScreen, DOM.quizContent, DOM.resultsScreen].forEach(s => s.classList.add('hidden'));
+            screen.classList.remove('hidden');
         }
 
-        function renderFeaturedAuthor(authorName) {
-            const authorData = authors[authorName];
-            if (!authorData) return;
-            const authorBooks = libraryBooks.filter(book => book.author === authorName);
-            DOM.authorPortrait.src = authorData.portrait;
-            DOM.authorPortrait.alt = `Portrait of ${authorName}`;
-            DOM.authorName.textContent = authorName;
-            DOM.authorBio.textContent = authorData.bio;
-            DOM.authorBookGrid.innerHTML = '';
-            authorBooks.forEach(book => {
-                DOM.authorBookGrid.appendChild(createBookCard(book));
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        function generateQuizQuestions(levelIndex) {
+            const levelWords = state.wordsPerLevel[levelIndex];
+            state.quizQuestions = shuffleArray([...levelWords]).map(correctWord => {
+                const allOtherWords = words.filter(w => w.word !== correctWord.word);
+                const incorrectOptions = shuffleArray(allOtherWords).slice(0, 3).map(w => w.definition);
+                const options = shuffleArray([correctWord.definition, ...incorrectOptions]);
+                return { word: correctWord.word, correctAnswer: correctWord.definition, options };
             });
         }
 
-        function renderMainLibrary() {
-            const searchTerm = DOM.searchInput.value.toLowerCase();
-            DOM.bookGrid.innerHTML = ''; 
-            const filteredBooks = libraryBooks.filter(book => 
-                book.title.toLowerCase().includes(searchTerm) || 
-                book.author.toLowerCase().includes(searchTerm)
-            );
-            if (filteredBooks.length === 0) {
-                DOM.bookGrid.innerHTML = '<p class="no-results">No books found matching your search.</p>';
-                return;
-            }
-            filteredBooks.forEach(book => {
-                DOM.bookGrid.appendChild(createBookCard(book));
+        function startLevel(levelIndex) {
+            state.currentLevel = levelIndex;
+            generateQuizQuestions(levelIndex);
+            state.currentQuestionIndex = 0;
+            state.score = 0;
+            DOM.scoreEl.textContent = state.score;
+            DOM.levelTitleEl.textContent = `Batch ${state.currentLevel + 1}`;
+            showScreen(DOM.quizContent);
+            showQuestion();
+        }
+
+        function showQuestion() {
+            DOM.feedbackContainer.innerHTML = '';
+            DOM.nextBtn.classList.add('hidden');
+            DOM.optionsContainer.innerHTML = '';
+            const question = state.quizQuestions[state.currentQuestionIndex];
+            const progress = ((state.currentQuestionIndex) / state.quizQuestions.length) * 100;
+            DOM.progressBar.style.width = `${progress}%`;
+            DOM.questionTextEl.textContent = `“${question.word}”`;
+            question.options.forEach(option => {
+                const button = document.createElement('button');
+                button.innerHTML = `<p class="text-lg">${option}</p>`;
+                button.classList.add('quiz-option', 'w-full', 'p-4', 'rounded-lg', 'text-left');
+                button.onclick = () => selectAnswer(button, option, question.correctAnswer);
+                DOM.optionsContainer.appendChild(button);
             });
         }
         
-        const debounce = (func, delay) => {
-            let timeoutId;
-            return (...args) => {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => func.apply(this, args), delay);
-            };
-        };
+        function selectAnswer(button, selectedOption, correctAnswer) {
+            Array.from(DOM.optionsContainer.children).forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent.trim() === correctAnswer.trim()) btn.classList.add('correct');
+                else btn.classList.add('opacity-50');
+            });
+            let feedbackHTML = '';
+            if (selectedOption === correctAnswer) {
+                state.score++;
+                DOM.scoreEl.textContent = state.score;
+                feedbackHTML = `<div class="p-4 rounded-lg" style="background-color: var(--correct-bg);"><h3 class="font-bold" style="color: var(--correct-ink);">Correct!</h3></div>`;
+            } else {
+                button.classList.remove('opacity-50');
+                button.classList.add('incorrect');
+                feedbackHTML = `<div class="p-4 rounded-lg" style="background-color: var(--incorrect-bg);"><h3 class="font-bold" style="color: var(--incorrect-ink);">Not quite</h3><p class="mt-1" style="color: var(--ink);"><span class="font-semibold">Correct answer:</span> ${correctAnswer}</p></div>`;
+            }
+            DOM.feedbackContainer.innerHTML = feedbackHTML;
+            DOM.nextBtn.classList.remove('hidden');
+        }
 
-        function setupEventListeners() {
-            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
-            DOM.searchInput.addEventListener('input', debounce(renderMainLibrary, 300));
+        function nextQuestion() {
+            state.currentQuestionIndex++;
+            if (state.currentQuestionIndex < state.quizQuestions.length) showQuestion();
+            else showResults();
+        }
+
+        function showResults() {
+            showScreen(DOM.resultsScreen);
+            const percentage = state.quizQuestions.length > 0 ? Math.round((state.score / state.quizQuestions.length) * 100) : 0;
+            DOM.finalScoreEl.textContent = `${percentage}%`;
         }
 
         function init() {
-            const savedMode = localStorage.getItem("kaffetishMode") || 'light';
-            setMode(savedMode);
-            renderFeaturedAuthor("Friedrich Nietzsche");
-            renderMainLibrary();
-            setupEventListeners();
+            setMode(state.mode);
+            setupLevels();
+            DOM.startBtn.addEventListener('click', () => showScreen(DOM.levelSelectScreen));
+            DOM.nextBtn.addEventListener('click', nextQuestion);
+            DOM.restartBtn.addEventListener('click', () => startLevel(state.currentLevel));
+            DOM.levelsBtn.addEventListener('click', () => showScreen(DOM.levelSelectScreen));
+            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
         }
 
         init();
     </script>
 </body>
 </html>
+
