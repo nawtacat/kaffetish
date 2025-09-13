@@ -1,108 +1,228 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF--8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SAT Vocabulary Quiz</title>
+    <title>SAT Vocabulary Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg: #FDFBF7;
+            --ink: #2C2B2A;
+            --accent: #FF3A44;
+            --subtle: #8A8886;
+            --border-color: #EAE8E4;
+            --shadow-color: rgba(44, 43, 42, 0.1);
+            --font-main: 'Lora', serif;
+            --font-ui: 'Poppins', sans-serif;
+            --correct-bg: #e6f4f1;
+            --correct-ink: #056e51;
+            --correct-border: #058f69;
+            --incorrect-bg: #fbe5e7;
+            --incorrect-ink: #a41024;
+            --incorrect-border: #da1a32;
+        }
+
+        body.dark-mode {
+            --bg: #21201F;
+            --ink: #EAE8E4;
+            --subtle: #999591;
+            --border-color: #3A3837;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+            --correct-bg: #1a3c34;
+            --correct-ink: #7dccb5;
+            --incorrect-bg: #3b1e22;
+            --incorrect-ink: #f19dac;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-ui);
+            background-color: var(--bg);
+            color: var(--ink);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0;
+            padding-top: 60px;
         }
+
+        .app-header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color); z-index: 1000;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .header-content {
+            max-width: 900px; height: 100%; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo {
+            font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
+            color: var(--accent); font-family: var(--font-main);
+        }
+        body.dark-mode .logo { color: var(--ink); }
+
+        .header-actions button {
+            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+            padding: 8px 10px; cursor: pointer; font-size: 1rem;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .header-actions button:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        
+        main { padding: 48px 24px; max-width: 900px; margin: 0 auto; }
+
+        #quiz-container {
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            background-color: var(--bg);
+            box-shadow: 0 8px 30px var(--shadow-color);
+        }
+
+        .quiz-option {
+            border: 1px solid var(--border-color);
+            background-color: var(--bg);
+            color: var(--ink);
+            transition: all 0.2s ease-in-out;
+            font-family: var(--font-main);
+        }
+        .quiz-option:not([disabled]):hover {
+            transform: translateY(-2px);
+            border-color: var(--subtle);
+            box-shadow: 0 4px 15px var(--shadow-color);
+        }
+
         .quiz-option.correct {
-            background-color: #22c55e !important; /* green-500 */
-            color: white !important;
-            border-color: #16a34a !important; /* green-600 */
+            border-color: var(--correct-border) !important;
+            background-color: var(--correct-bg) !important;
+            color: var(--correct-ink) !important;
         }
+
         .quiz-option.incorrect {
-            background-color: #ef4444 !important; /* red-500 */
-            color: white !important;
-            border-color: #dc2626 !important; /* red-600 */
+            border-color: var(--incorrect-border) !important;
+            background-color: var(--incorrect-bg) !important;
+            color: var(--incorrect-ink) !important;
+            opacity: 1 !important;
         }
-        .quiz-container {
-             min-height: 450px;
-             display: flex;
-             flex-direction: column;
-             justify-content: center;
-        }
-        .level-btn {
+        .batch-btn {
+            background-color: var(--bg);
+            border: 1px solid var(--border-color);
+            color: var(--ink);
             transition: all 0.2s ease-in-out;
         }
-        .level-btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .batch-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px var(--shadow-color);
+            border-color: var(--accent);
+            color: var(--accent);
         }
+        
+        .action-btn {
+             background-color: var(--accent); color: white;
+             transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+        .secondary-btn {
+            background-color: var(--border-color);
+            color: var(--subtle);
+        }
+        .secondary-btn:hover {
+            background-color: color-mix(in srgb, var(--border-color) 70%, black);
+            color: var(--ink);
+        }
+
+        #progress-bar { background-color: var(--accent); }
+
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 flex items-center justify-center min-h-screen p-4">
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="logo">Vocab Practice</h1>
+            <div class="header-actions">
+                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
 
-    <div id="app-container" class="w-full max-w-2xl mx-auto">
-        <div id="quiz-container" class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 md:p-8 transition-all duration-500 quiz-container">
-            
+    <main>
+        <div id="quiz-container">
             <!-- Start Screen -->
-            <div id="start-screen" class="text-center">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4">SAT Vocabulary Challenge</h1>
-                <p class="text-gray-600 dark:text-gray-300 mb-8">Test your knowledge with over 400 SAT vocabulary words, divided into 10 progressive levels.</p>
-                <button id="start-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
-                    Select a Level
+            <div id="start-screen" class="p-8 md:p-12 text-center">
+                <h1 style="font-family: var(--font-main);" class="text-3xl md:text-4xl font-bold mb-4">SAT Vocabulary</h1>
+                <p style="color: var(--subtle);" class="mb-8 max-w-xl mx-auto">Master hundreds of essential SAT vocabulary words with these targeted practice sets.</p>
+                <button id="start-btn" class="action-btn font-bold py-3 px-10 rounded-full text-lg">
+                    Get Started
                 </button>
             </div>
 
-            <!-- Level Select Screen -->
-            <div id="level-select-screen" class="hidden">
-                <h2 class="text-2xl md:text-3xl font-bold text-center text-gray-800 dark:text-white mb-6">Choose a Level</h2>
-                <div id="level-buttons-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                    <!-- Level buttons will be injected here -->
+            <!-- Batch Select Screen -->
+            <div id="level-select-screen" class="hidden p-8">
+                <h2 style="font-family: var(--font-main);" class="text-2xl font-bold mb-6 text-center">Vocabulary Batches</h2>
+                <div id="level-buttons-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    <!-- Batch buttons will be injected here -->
                 </div>
             </div>
 
-            <!-- Quiz Content (hidden initially) -->
+            <!-- Quiz Content -->
             <div id="quiz-content" class="hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <div>
-                        <h2 class="text-xl font-bold" id="level-title">Level 1</h2>
-                        <p class="text-sm text-gray-500">Question <span id="question-number"></span>/<span id="total-questions"></span></p>
+                 <div class="p-6 border-b" style="border-color: var(--border-color);">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-lg font-semibold" id="level-title" style="color: var(--subtle);">Batch 1</h2>
+                        <div class="text-md font-semibold" style="color: var(--subtle);">Score: <span id="score">0</span></div>
                     </div>
-                    <div class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">Score: <span id="score">0</span></div>
+                    <div class="w-full rounded-full h-2" style="background-color: var(--border-color);">
+                        <div id="progress-bar" class="h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-6">
-                    <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                <div class="p-6 md:p-8">
+                    <p class="text-sm font-semibold mb-2" style="color: var(--subtle);">What is the definition of...</p>
+                    <p style="font-family: var(--font-main);" class="text-2xl md:text-3xl font-bold mb-8" id="question-text"></p>
+                    <div id="options-container" class="grid grid-cols-1 gap-3"></div>
+                    <div id="feedback-container" class="mt-4 min-h-[80px]"></div>
+                    <button id="next-btn" class="hidden w-full sm:w-auto sm:float-right action-btn font-bold py-3 px-10 rounded-full text-lg">
+                        Next
+                    </button>
                 </div>
-
-                <p class="text-2xl md:text-3xl font-semibold mb-6 text-center" id="question-text"></p>
-                <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Options will be injected here by JS -->
-                </div>
-                <div id="feedback" class="mt-6 text-center text-lg font-medium"></div>
-                <button id="next-btn" class="hidden mt-6 w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                    Next Question
-                </button>
             </div>
 
-             <!-- Results Screen (hidden initially) -->
-            <div id="results-screen" class="hidden text-center">
-                 <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-white mb-4">Level Complete!</h1>
-                 <div class="bg-indigo-100 dark:bg-indigo-900/50 rounded-lg p-6 mb-8">
-                    <p class="text-lg text-gray-600 dark:text-gray-300">Your Final Score is</p>
-                    <p id="final-score" class="text-6xl font-bold text-indigo-600 dark:text-indigo-400 my-4">0</p>
+             <!-- Results Screen -->
+            <div id="results-screen" class="hidden text-center p-8 md:p-12">
+                 <h1 style="font-family: var(--font-main);" class="text-2xl md:text-3xl font-bold mb-2">Batch Complete!</h1>
+                 <p style="color: var(--subtle);" class="mb-6">Here's how you did:</p>
+                 <div class="p-6 mb-8 max-w-sm mx-auto rounded-lg" style="background-color: color-mix(in srgb, var(--border-color) 20%, transparent);">
+                    <p id="final-score" class="text-5xl font-bold">0</p>
                  </div>
                  <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button id="restart-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
-                        Try Again
+                    <button id="restart-btn" class="w-full sm:w-auto secondary-btn font-bold py-3 px-8 rounded-full text-lg">
+                        Practice Again
                     </button>
-                    <button id="levels-btn" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-300">
-                        Back to Levels
+                    <button id="levels-btn" class="w-full sm:w-auto action-btn font-bold py-3 px-8 rounded-full text-lg">
+                        Choose Another Batch
                     </button>
                  </div>
             </div>
         </div>
-    </div>
+    </main>
 
     <script>
-        // Combined and deduplicated word list
+        // =================================================================
+        // PASTE YOUR WORDS ARRAY HERE
+        // Replace the empty array below with your list of word objects.
+        // For example:
+        // const words = [
+        //   { word: "Abate", definition: "v. to become less active..." },
+        //   { word: "Abrupt", definition: "adj. Sudden and unexpected." },
+        //   ...
+        // ];
+        // =================================================================
         const words = [
-            { word: "Abate", definition: "v. to become less active, less intense, or less in amount" },
+             { word: "Abate", definition: "v. to become less active, less intense, or less in amount" },
             { word: "Abrupt", definition: "adj. Sudden and unexpected." },
             { word: "Abstract", definition: "adj. existing purely in the mind; not representing actual reality" },
             { word: "Abysmal", definition: "adj. extremely bad" },
@@ -682,61 +802,74 @@
             { word: "Yield", definition: "v. to give way to or surrender to" },
         ];
 
-        const NUM_LEVELS = 10;
-        
-        // Element references
-        const startBtn = document.getElementById('start-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const levelsBtn = document.getElementById('levels-btn');
-        
-        const startScreen = document.getElementById('start-screen');
-        const levelSelectScreen = document.getElementById('level-select-screen');
-        const quizContent = document.getElementById('quiz-content');
-        const resultsScreen = document.getElementById('results-screen');
-        
-        const levelTitleEl = document.getElementById('level-title');
-        const questionNumberEl = document.getElementById('question-number');
-        const totalQuestionsEl = document.getElementById('total-questions');
-        const scoreEl = document.getElementById('score');
-        const progressBar = document.getElementById('progress-bar');
-        const questionTextEl = document.getElementById('question-text');
-        const optionsContainer = document.getElementById('options-container');
-        const feedbackEl = document.getElementById('feedback');
-        const finalScoreEl = document.getElementById('final-score');
-        const levelButtonsContainer = document.getElementById('level-buttons-container');
+        const DOM = {
+            body: document.body,
+            modeToggle: document.getElementById('mode-toggle'),
+            startBtn: document.getElementById('start-btn'),
+            nextBtn: document.getElementById('next-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            levelsBtn: document.getElementById('levels-btn'),
+            startScreen: document.getElementById('start-screen'),
+            levelSelectScreen: document.getElementById('level-select-screen'),
+            quizContent: document.getElementById('quiz-content'),
+            resultsScreen: document.getElementById('results-screen'),
+            levelTitleEl: document.getElementById('level-title'),
+            scoreEl: document.getElementById('score'),
+            progressBar: document.getElementById('progress-bar'),
+            questionTextEl: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            feedbackContainer: document.getElementById('feedback-container'),
+            finalScoreEl: document.getElementById('final-score'),
+            levelButtonsContainer: document.getElementById('level-buttons-container'),
+        };
 
-        let quizQuestions = [];
-        let currentQuestionIndex = 0;
-        let score = 0;
-        let currentLevel = 0;
-        let wordsPerLevel = [];
+        const state = {
+            mode: localStorage.getItem("vocabQuizMode") || "light",
+            quizQuestions: [],
+            currentQuestionIndex: 0,
+            score: 0,
+            currentLevel: 0,
+            wordsPerLevel: [],
+            numBatches: 30,
+        };
 
+        function setMode(mode) {
+            state.mode = mode;
+            DOM.body.classList.toggle("dark-mode", mode === 'dark');
+            const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
+            DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
+            localStorage.setItem("vocabQuizMode", mode);
+        }
+        
         function setupLevels() {
+            DOM.levelButtonsContainer.innerHTML = '';
             const totalWords = words.length;
-            const baseWords = Math.floor(totalWords / NUM_LEVELS);
-            let remainder = totalWords % NUM_LEVELS;
+            if (totalWords === 0) {
+                DOM.levelButtonsContainer.innerHTML = '<p class="col-span-full text-center" style="color: var(--subtle);">Please paste the word list into the script to generate batches.</p>';
+                return;
+            }
+            const baseWords = Math.floor(totalWords / state.numBatches);
+            let remainder = totalWords % state.numBatches;
             let startIndex = 0;
-
-            for (let i = 0; i < NUM_LEVELS; i++) {
+            for (let i = 0; i < state.numBatches; i++) {
                 let numWords = baseWords + (remainder > 0 ? 1 : 0);
-                wordsPerLevel.push(words.slice(startIndex, startIndex + numWords));
-                startIndex += numWords;
-                if (remainder > 0) remainder--;
+                if (startIndex + numWords > totalWords) numWords = totalWords - startIndex;
+                if (numWords > 0) {
+                    state.wordsPerLevel[i] = words.slice(startIndex, startIndex + numWords);
+                    startIndex += numWords;
+                    if (remainder > 0) remainder--;
 
-                const levelButton = document.createElement('button');
-                levelButton.innerText = `Level ${i + 1}`;
-                levelButton.classList.add('level-btn', 'bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'font-bold', 'py-4', 'px-2', 'rounded-lg', 'text-lg', 'focus:outline-none', 'focus:ring-4', 'focus:ring-indigo-300');
-                levelButton.onclick = () => startLevel(i);
-                levelButtonsContainer.appendChild(levelButton);
+                    const levelButton = document.createElement('button');
+                    levelButton.innerText = `${i + 1}`;
+                    levelButton.classList.add('batch-btn', 'font-bold', 'py-4', 'rounded-lg', 'text-lg');
+                    levelButton.onclick = () => startLevel(i);
+                    DOM.levelButtonsContainer.appendChild(levelButton);
+                }
             }
         }
 
         function showScreen(screen) {
-            startScreen.classList.add('hidden');
-            levelSelectScreen.classList.add('hidden');
-            quizContent.classList.add('hidden');
-            resultsScreen.classList.add('hidden');
+            [DOM.startScreen, DOM.levelSelectScreen, DOM.quizContent, DOM.resultsScreen].forEach(s => s.classList.add('hidden'));
             screen.classList.remove('hidden');
         }
 
@@ -749,110 +882,86 @@
         }
         
         function generateQuizQuestions(levelIndex) {
-            const levelWords = wordsPerLevel[levelIndex];
-            quizQuestions = shuffleArray([...levelWords]).map(correctWord => {
-                const incorrectDefinitions = words
-                    .filter(word => word.word !== correctWord.word)
-                    .map(word => word.definition);
-
-                const options = shuffleArray([
-                    correctWord.definition,
-                    ...shuffleArray(incorrectDefinitions).slice(0, 3)
-                ]);
-
-                return {
-                    word: correctWord.word,
-                    correctAnswer: correctWord.definition,
-                    options: options
-                };
+            const levelWords = state.wordsPerLevel[levelIndex];
+            state.quizQuestions = shuffleArray([...levelWords]).map(correctWord => {
+                const allOtherWords = words.filter(w => w.word !== correctWord.word);
+                const incorrectOptions = shuffleArray(allOtherWords).slice(0, 3).map(w => w.definition);
+                const options = shuffleArray([correctWord.definition, ...incorrectOptions]);
+                return { word: correctWord.word, correctAnswer: correctWord.definition, options };
             });
         }
 
         function startLevel(levelIndex) {
-            currentLevel = levelIndex;
+            state.currentLevel = levelIndex;
             generateQuizQuestions(levelIndex);
-            
-            currentQuestionIndex = 0;
-            score = 0;
-            scoreEl.textContent = score;
-            totalQuestionsEl.textContent = quizQuestions.length;
-            levelTitleEl.textContent = `Level ${currentLevel + 1}`;
-            
-            showScreen(quizContent);
+            state.currentQuestionIndex = 0;
+            state.score = 0;
+            DOM.scoreEl.textContent = state.score;
+            DOM.levelTitleEl.textContent = `Batch ${state.currentLevel + 1}`;
+            showScreen(DOM.quizContent);
             showQuestion();
         }
 
         function showQuestion() {
-            feedbackEl.textContent = '';
-            nextBtn.classList.add('hidden');
-            optionsContainer.innerHTML = '';
-            
-            const question = quizQuestions[currentQuestionIndex];
-            
-            questionNumberEl.textContent = currentQuestionIndex + 1;
-            const progress = ((currentQuestionIndex) / quizQuestions.length) * 100;
-            progressBar.style.width = `${progress}%`;
-            questionTextEl.textContent = `What is the definition of "${question.word}"?`;
-
+            DOM.feedbackContainer.innerHTML = '';
+            DOM.nextBtn.classList.add('hidden');
+            DOM.optionsContainer.innerHTML = '';
+            const question = state.quizQuestions[state.currentQuestionIndex];
+            const progress = ((state.currentQuestionIndex) / state.quizQuestions.length) * 100;
+            DOM.progressBar.style.width = `${progress}%`;
+            DOM.questionTextEl.textContent = `“${question.word}”`;
             question.options.forEach(option => {
                 const button = document.createElement('button');
-                button.textContent = option;
-                button.classList.add('quiz-option', 'w-full', 'p-4', 'border-2', 'rounded-lg', 'transition', 'duration-200', 'text-left', 'hover:bg-indigo-100', 'dark:hover:bg-gray-700', 'dark:border-gray-600');
+                button.innerHTML = `<p class="text-lg">${option}</p>`;
+                button.classList.add('quiz-option', 'w-full', 'p-4', 'rounded-lg', 'text-left');
                 button.onclick = () => selectAnswer(button, option, question.correctAnswer);
-                optionsContainer.appendChild(button);
+                DOM.optionsContainer.appendChild(button);
             });
         }
         
         function selectAnswer(button, selectedOption, correctAnswer) {
-            Array.from(optionsContainer.children).forEach(btn => {
+            Array.from(DOM.optionsContainer.children).forEach(btn => {
                 btn.disabled = true;
-                if (btn.textContent === correctAnswer) {
-                    btn.classList.add('correct');
-                } else {
-                    btn.classList.add('opacity-50');
-                }
+                if (btn.textContent.trim() === correctAnswer.trim()) btn.classList.add('correct');
+                else btn.classList.add('opacity-50');
             });
-
+            let feedbackHTML = '';
             if (selectedOption === correctAnswer) {
-                score++;
-                scoreEl.textContent = score;
-                feedbackEl.textContent = "Correct!";
-                feedbackEl.classList.add('text-green-500');
-                feedbackEl.classList.remove('text-red-500');
+                state.score++;
+                DOM.scoreEl.textContent = state.score;
+                feedbackHTML = `<div class="p-4 rounded-lg" style="background-color: var(--correct-bg);"><h3 class="font-bold" style="color: var(--correct-ink);">Correct!</h3></div>`;
             } else {
                 button.classList.remove('opacity-50');
                 button.classList.add('incorrect');
-                feedbackEl.textContent = "Not quite!";
-                feedbackEl.classList.add('text-red-500');
-                feedbackEl.classList.remove('text-green-500');
+                feedbackHTML = `<div class="p-4 rounded-lg" style="background-color: var(--incorrect-bg);"><h3 class="font-bold" style="color: var(--incorrect-ink);">Not quite</h3><p class="mt-1" style="color: var(--ink);"><span class="font-semibold">Correct answer:</span> ${correctAnswer}</p></div>`;
             }
-            
-            nextBtn.classList.remove('hidden');
+            DOM.feedbackContainer.innerHTML = feedbackHTML;
+            DOM.nextBtn.classList.remove('hidden');
         }
 
         function nextQuestion() {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < quizQuestions.length) {
-                showQuestion();
-            } else {
-                showResults();
-            }
+            state.currentQuestionIndex++;
+            if (state.currentQuestionIndex < state.quizQuestions.length) showQuestion();
+            else showResults();
         }
 
         function showResults() {
-            showScreen(resultsScreen);
-            progressBar.style.width = '100%';
-            finalScoreEl.textContent = `${score} / ${quizQuestions.length}`;
+            showScreen(DOM.resultsScreen);
+            const percentage = state.quizQuestions.length > 0 ? Math.round((state.score / state.quizQuestions.length) * 100) : 0;
+            DOM.finalScoreEl.textContent = `${percentage}%`;
         }
 
-        startBtn.addEventListener('click', () => showScreen(levelSelectScreen));
-        nextBtn.addEventListener('click', nextQuestion);
-        restartBtn.addEventListener('click', () => startLevel(currentLevel));
-        levelsBtn.addEventListener('click', () => showScreen(levelSelectScreen));
+        function init() {
+            setMode(state.mode);
+            setupLevels();
+            DOM.startBtn.addEventListener('click', () => showScreen(DOM.levelSelectScreen));
+            DOM.nextBtn.addEventListener('click', nextQuestion);
+            DOM.restartBtn.addEventListener('click', () => startLevel(state.currentLevel));
+            DOM.levelsBtn.addEventListener('click', () => showScreen(DOM.levelSelectScreen));
+            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
+        }
 
-        // Initialize the app
-        setupLevels();
+        init();
     </script>
 </body>
 </html>
-
