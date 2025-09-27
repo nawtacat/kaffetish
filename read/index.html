@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Kaffetish</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -49,15 +49,19 @@
         color: var(--ink);
         transition: background-color 0.3s ease, color 0.3s ease;
         margin: 0;
-        padding-top: 60px;
+        padding-top: calc(60px + env(safe-area-inset-top));
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
     }
 
     .hidden { display: none !important; }
 
     .app-header {
-        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        position: fixed; top: 0; left: 0; width: 100%;
+        height: calc(60px + env(safe-area-inset-top));
+        padding-top: env(safe-area-inset-top);
+        box-sizing: border-box;
         background-color: color-mix(in srgb, var(--bg) 85%, transparent);
         backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border-color); z-index: 1000;
@@ -144,12 +148,41 @@
     .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; }
     .content p { margin: 0 0 1.5em; overflow-wrap: break-word; }
     .content p:last-child { margin-bottom: 0; }
-    .fade-in { animation: fadeIn 250ms ease-out both; }
-    @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
+    .fade-in-page { animation: fadeInPage 250ms ease-out both; }
+    @keyframes fadeInPage { from { opacity: 0.6; } to { opacity: 1; } }
     .page-number {
         position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
         color: var(--subtle); font-size: 0.9rem; user-select: none;
     }
+
+    /* --- NEW STYLES FOR EXPLANATION VIEW --- */
+    .content-container {
+        position: relative;
+    }
+    .content-container > div {
+        transition: opacity 250ms ease-in-out, visibility 250ms;
+    }
+    .content-container > div.explanation-hidden {
+        opacity: 0;
+        visibility: hidden;
+        position: absolute;
+        width: 100%;
+    }
+    #explanation-view {
+        font-size: 1rem; /* Slightly smaller base font for UI text */
+    }
+    .explanation-quote {
+        display: block;
+        border-left: 3px solid var(--accent);
+        padding-left: 1.5em;
+        margin: 0 0 2.5em 0;
+        font-style: italic;
+        color: var(--subtle);
+        font-size: 1.1em;
+    }
+    .explanation-body p:first-child { margin-top: 0; }
+    .explanation-body p:last-child { margin-bottom: 0; }
+    /* --- END NEW STYLES --- */
 
     .highlighted-text {
         background-color: color-mix(in srgb, var(--accent) 25%, transparent);
@@ -199,7 +232,7 @@
         z-index: 1500; opacity: 0; transition: opacity 0.3s ease;
         pointer-events: none;
     }
- .mobile-nav-menu {
+   .mobile-nav-menu {
     position: fixed; top: 0; right: 0; width: 300px; height: 100%;
     background-color: color-mix(in srgb, var(--bg) 90%, transparent);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -209,7 +242,7 @@
     box-shadow: -10px 0 30px rgba(0,0,0,0.1);
     border-left: 1px solid var(--border-color);
     overflow-y: auto;
-    overflow-x: hidden; /* Add this line */
+    overflow-x: hidden;
 }
     body.menu-open .mobile-menu-overlay { opacity: 1; pointer-events: auto; }
     body.menu-open .mobile-nav-menu { transform: translateX(0); }
@@ -253,7 +286,7 @@
         box-shadow: 0 10px 30px var(--shadow-color);
         opacity: 0;
         transform: translate(-50%, 20px);
-        transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        transition: opacity 0.3s ease-out, transform 0.3s ease-out, background-color 0.2s, color 0.2s;
         pointer-events: none;
     }
     .mobile-explain-btn.visible {
@@ -263,6 +296,7 @@
     }
     .mobile-explain-btn i {
         color: var(--accent);
+        transition: color 0.2s;
     }
     body.dark-mode .mobile-explain-btn i {
         color: var(--bg);
@@ -270,25 +304,24 @@
     
     @media (max-width: 860px) {
         .font-control button {
-    border: none;
-    border-radius: 6px;
-    width: auto;
-    height: auto;
-    padding: 8px 12px;
-    background-color: transparent;
-}
+            border: none;
+            border-radius: 6px;
+            width: auto;
+            height: auto;
+            padding: 8px 12px;
+            background-color: transparent;
+        }
         .content {
-    padding-bottom: 5rem; /* Adds space at the end of the page on mobile */
-}
+            padding-bottom: 5rem;
+        }
         .mobile-nav-menu {
-    padding-bottom: 80px; /* Adds space at the end of the menu on mobile */
-}
-
-.font-control button:hover,
-.font-control button:active {
-    background-color: color-mix(in srgb, var(--subtle) 20%, transparent);
-}
- 
+            padding-bottom: 80px;
+        }
+        .font-control button:hover,
+        .font-control button:active {
+            background-color: color-mix(in srgb, var(--subtle) 20%, transparent);
+        }
+    
         .header-content {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -327,15 +360,15 @@
         border: 3px solid var(--bg);
     }
     html:not(.touch-device) main::-webkit-scrollbar-thumb:hover { background-color: var(--subtle); }
-       .logo a {
-  color: inherit;
-  text-decoration: none;
-}
-       .mobile-nav-menu::after {
-    content: '';
-    display: block;
-    min-height: 40px; /* Adjust this value for more or less space */
-}
+    .logo a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .mobile-nav-menu::after {
+        content: '';
+        display: block;
+        min-height: 40px;
+    }
 </style>
 </head>
 <body>
@@ -366,27 +399,30 @@
     </header>
 
     <main id="main-content">
-    <section id="fallback-view" class="fallback-view hidden">
-         <div class="fallback-content">
-            <div class="fallback-icon"><i class="fa-solid fa-book-sparkles"></i></div>
-            <h2 class="fallback-title">No Book Loaded</h2>
-            <p class="fallback-text" id="fallback-text">It looks like there was an issue loading your book. Please return to the library to choose a title.</p>
-            <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
-        </div>
-    </section>
-    <section id="loading-view" class="loading-view">
-        <div class="spinner"></div>
-        <p id="loading-text">Brewing your document...</p>
-    </section>
-    <section id="reader-view" class="reader-view hidden">
-        <div class="page-container" id="page-container">
-            <article class="page">
-                <div id="page-content" class="content"></div>
-                <div id="page-number" class="page-number"></div>
-            </article>
-        </div>
-    </section>
-</main>
+        <section id="fallback-view" class="fallback-view hidden">
+           <div class="fallback-content">
+                <div class="fallback-icon"><i class="fa-solid fa-book-sparkles"></i></div>
+                <h2 class="fallback-title">No Book Loaded</h2>
+                <p class="fallback-text" id="fallback-text">It looks like there was an issue loading your book. Please return to the library to choose a title.</p>
+                <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
+            </div>
+        </section>
+        <section id="loading-view" class="loading-view">
+            <div class="spinner"></div>
+            <p id="loading-text">Brewing your document...</p>
+        </section>
+        <section id="reader-view" class="reader-view hidden">
+            <div class="page-container" id="page-container">
+                <article class="page">
+                    <div class="content-container">
+                        <div id="page-content" class="content"></div>
+                        <div id="explanation-view" class="content explanation-hidden"></div>
+                    </div>
+                    <div id="page-number" class="page-number"></div>
+                </article>
+            </div>
+        </section>
+    </main>
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
     <nav id="mobile-nav-menu" class="mobile-nav-menu">
         <div class="mobile-menu-header">
@@ -458,6 +494,7 @@
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
+    // IMPORTANT: For production, move this to a secure environment variable solution.
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
         authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -488,6 +525,7 @@
         loadingText: document.getElementById('loading-text'),
         pageContainer: document.getElementById('page-container'),
         pageContent: document.getElementById('page-content'),
+        explanationView: document.getElementById('explanation-view'), // NEW
         pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
         pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
         prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
@@ -530,6 +568,7 @@
         bookTitle: null,
         bookId: null,
         bookmark: null,
+        isExplanationViewActive: false, // NEW
     };
     const baseFontRem = 1.15;
 
@@ -628,9 +667,8 @@
 
             DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
             
-            let startingPage = 1; 
+            let startingPage = 1;
 
-            // Wait for auth state to be ready to check for user
             await auth.authStateReady();
             const user = auth.currentUser;
             
@@ -647,7 +685,6 @@
             await renderPage(startingPage);
             
             showView(DOM.readerView);
-
             startReadingSession(state.bookTitle);
 
         } catch (err) {
@@ -708,7 +745,7 @@
     
     async function renderPage(pageNum) {
         if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
-        if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "") return;
+        if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "" && !state.isExplanationViewActive) return;
         
         clearSelection();
         state.isRendering = true;
@@ -727,8 +764,8 @@
         
         DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
         
-        DOM.pageContent.classList.add("fade-in");
-        setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
+        DOM.pageContent.classList.add("fade-in-page");
+        setTimeout(() => DOM.pageContent.classList.remove("fade-in-page"), 300);
         
         DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
         DOM.pageTotal.textContent = `/ ${state.totalPages}`;
@@ -741,14 +778,11 @@
         DOM.nextBtn.disabled = pageNum >= state.totalPages;
         setFontRem(state.currentFontRem);
         
-        // --- THIS IS THE FIX ---
-        setTimeout(() => {
-            DOM.mainContent.scrollTop = 0;
-        }, 0);
-        // -----------------------
+        setTimeout(() => { DOM.mainContent.scrollTop = 0; }, 0);
 
         state.isRendering = false;
     }
+
     function showTooltipAt(rect) {
         DOM.tooltip.style.display = "flex";
         const topBoundary = 68;
@@ -774,6 +808,7 @@
         }
     }
 
+    // --- REFACTORED EXPLAIN LOGIC ---
     async function handleExplain() {
         if (!explainBookTextFn) {
             flashAI("Explanation feature is not available.");
@@ -783,21 +818,79 @@
             flashAI("Please select at least 4 characters to explain.");
             clearSelection(); return;
         }
-        DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-        DOM.aiQuote.classList.remove('hidden');
-        DOM.aiPanel.style.display = "flex";
-        DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+
         const textToExplain = state.lastSelectionText;
         await trackExplanationRequest(textToExplain);
-        clearSelection();
+
+        if (isTouchDevice) {
+            // --- MOBILE LOGIC ---
+            state.isExplanationViewActive = true;
+
+            DOM.pageContent.classList.add('explanation-hidden');
+            DOM.explanationView.classList.remove('explanation-hidden');
+
+            const mobileBtnIcon = DOM.mobileExplainBtn.querySelector('i');
+            const mobileBtnText = DOM.mobileExplainBtn.querySelector('span');
+            mobileBtnIcon.className = 'fa-solid fa-arrow-left';
+            mobileBtnText.textContent = 'Return';
+
+            DOM.explanationView.innerHTML = `
+                <blockquote class="explanation-quote">${escapeHTML(textToExplain)}</blockquote>
+                <div class="explanation-body"><div class="spinner" style="margin: 2rem auto;"></div></div>
+            `;
+            DOM.mainContent.scrollTop = 0;
+            clearSelection();
+
+        } else {
+            // --- DESKTOP LOGIC (UNCHANGED) ---
+            DOM.aiQuote.textContent = `"${textToExplain}"`;
+            DOM.aiQuote.classList.remove('hidden');
+            DOM.aiPanel.style.display = "flex";
+            DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
+            clearSelection();
+        }
+        
         try {
             const { data } = await explainBookTextFn({ text: textToExplain });
             const explanationText = data?.explanation || "No explanation was returned.";
-            DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
+            const formattedExplanation = explanationText.replace(/\n/g, '<br>');
+
+            if (isTouchDevice) {
+                DOM.explanationView.innerHTML = `
+                    <blockquote class="explanation-quote">${escapeHTML(textToExplain)}</blockquote>
+                    <div class="explanation-body">${formattedExplanation}</div>
+                `;
+            } else {
+                DOM.aiContent.innerHTML = formattedExplanation;
+            }
         } catch (err) {
             console.error("AI Explain Error:", err);
-            DOM.aiContent.textContent = "Sorry, an error occurred.";
+            const errorMsg = "Sorry, an error occurred while fetching the explanation.";
+            if (isTouchDevice) {
+                 DOM.explanationView.innerHTML = `
+                    <blockquote class="explanation-quote">${escapeHTML(textToExplain)}</blockquote>
+                    <div class="explanation-body"><p>${errorMsg}</p></div>
+                `;
+            } else {
+                DOM.aiContent.textContent = errorMsg;
+            }
         }
+    }
+
+    function handleReturnToReader() {
+        state.isExplanationViewActive = false;
+
+        DOM.explanationView.classList.add('explanation-hidden');
+        DOM.pageContent.classList.remove('explanation-hidden');
+        
+        const mobileBtnIcon = DOM.mobileExplainBtn.querySelector('i');
+        const mobileBtnText = DOM.mobileExplainBtn.querySelector('span');
+        mobileBtnIcon.className = 'fa-solid fa-wand-magic-sparkles';
+        mobileBtnText.textContent = 'Explain';
+        
+        DOM.mobileExplainBtn.classList.remove('visible');
+        DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
+        DOM.mainContent.scrollTop = 0;
     }
 
     function handleHighlight() {
@@ -818,14 +911,11 @@
             flashAI("Please sign in to save bookmarks.", 3000);
             return;
         }
-
         if (!state.bookId) return;
 
         const bookmarkData = {
-            userId: user.uid,
-            bookId: state.bookId,
-            pageNum: state.currentPage,
-            createdAt: serverTimestamp()
+            userId: user.uid, bookId: state.bookId,
+            pageNum: state.currentPage, createdAt: serverTimestamp()
         };
 
         try {
@@ -878,13 +968,18 @@
             const p = parseInt(DOM.mobilePageJumpInput.value, 10);
             if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
         });
+
+        // --- UPDATED MOBILE EXPLAIN BUTTON LISTENER ---
         DOM.mobileExplainBtn.addEventListener("click", () => {
-            DOM.mobileExplainBtn.classList.remove('visible');
-            DOM.mobileExplainBtn.setAttribute('aria-hidden', 'true');
-            handleExplain();
+            if (state.isExplanationViewActive) {
+                handleReturnToReader();
+            } else {
+                handleExplain();
+            }
         });
+
         document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || state.isRendering) return;
+            if (e.target.tagName === 'INPUT' || state.isRendering || state.isExplanationViewActive) return;
             if (e.key === 'ArrowLeft') DOM.prevBtn.click();
             else if (e.key === 'ArrowRight') DOM.nextBtn.click();
         });
@@ -899,6 +994,7 @@
     function setupSelectionHandler() {
         if (isTouchDevice) {
             document.addEventListener('selectionchange', () => {
+                if(state.isExplanationViewActive) return; // Don't show button in explanation view
                 const sel = window.getSelection();
                 const text = sel ? sel.toString().trim() : '';
                 if (text.length >= 4 && !sel.isCollapsed) {
@@ -931,13 +1027,13 @@
 
     function setupSwipeNavigation() {
         DOM.mainContent.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) return;
+            if (e.touches.length > 1 || state.isExplanationViewActive) return; // Disable swipe in explanation view
             const touch = e.touches[0];
             state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
             state.touch.startTime = Date.now();
         }, { passive: true });
         DOM.mainContent.addEventListener('touchend', (e) => {
-            if (e.touches.length > 0) return;
+            if (e.touches.length > 0 || state.isExplanationViewActive) return; // Disable swipe in explanation view
             const touch = e.changedTouches[0];
             const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
             const elapsedTime = Date.now() - state.touch.startTime;
