@@ -799,8 +799,12 @@
 
     function clearSelection() {
         hideTooltip();
-        DOM.mobileActionBtn.classList.remove('visible');
-        DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+        // This conditional check ensures the "Return" button is not hidden
+        // while the explanation view is active.
+        if (!state.isExplanationViewActive) {
+            DOM.mobileActionBtn.classList.remove('visible');
+            DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+        }
         if (window.getSelection) {
             window.getSelection().removeAllRanges();
         }
