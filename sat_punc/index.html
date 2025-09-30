@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAT Punctuation Practice Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .quiz-option.selected {
+            background-color: #dbeafe; /* blue-100 */
+            border-color: #3b82f6; /* blue-500 */
+        }
+        .quiz-option.correct {
+            background-color: #dcfce7; /* green-100 */
+            border-color: #22c55e; /* green-500 */
+        }
+        .quiz-option.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            border-color: #ef4444; /* red-500 */
+        }
+        /* Custom radio button styles */
+        .custom-radio {
+            appearance: none;
+            -webkit-appearance: none;
+            height: 1.25rem;
+            width: 1.25rem;
+            border-radius: 50%;
+            border: 2px solid #9ca3af; /* gray-400 */
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            cursor: pointer;
+        }
+        .custom-radio:checked {
+            border-color: #3b82f6; /* blue-500 */
+            background-color: #3b82f6; /* blue-500 */
+        }
+        .custom-radio:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background: white;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 antialiased">
+
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6 md:p-8">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">SAT Punctuation Quiz</h1>
+            <p class="text-gray-600 mt-2">Test your knowledge of commas, colons, semicolons, and dashes.</p>
+        </header>
+
+        <!-- Batch Navigation -->
+        <nav class="mb-6 bg-white p-3 rounded-xl shadow-sm">
+            <h2 class="text-sm font-semibold text-center text-gray-500 mb-3">QUESTION BATCHES</h2>
+            <div id="batch-navigation" class="grid grid-cols-5 sm:grid-cols-10 gap-2">
+                <!-- Batch buttons will be dynamically inserted here -->
+            </div>
+        </nav>
+
+        <!-- Quiz Container -->
+        <main id="quiz-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+            <!-- Questions will be dynamically inserted here -->
+            <div id="quiz-content"></div>
+            
+            <!-- Action Buttons -->
+            <div id="action-buttons" class="mt-8 text-center">
+                 <!-- Buttons like Submit, Next, etc., will be here -->
+            </div>
+        </main>
+        
+    </div>
+
+    <script>
+        // --- DATA: All 100 quiz questions ---
+        const allQuestions = [
+            // Batch 1
+            { id: 1, batch: 1, question: "The artist used three primary colors ______ red, yellow, and blue.", options: [{text: "colors:", isCorrect: true}, {text: "colors,", isCorrect: false}, {text: "colors;", isCorrect: false}, {text: "colors", isCorrect: false}], explanation: "A colon is used to introduce a list after a complete independent clause. 'The artist used three primary colors' is an independent clause."},
+            { id: 2, batch: 1, question: "Because the weather was beautiful ______ we decided to go for a hike.", options: [{text: "beautiful,", isCorrect: true}, {text: "beautiful;", isCorrect: false}, {text: "beautiful:", isCorrect: false}, {text: "beautiful", isCorrect: false}], explanation: "A comma is used to separate a dependent clause ('Because the weather was beautiful') from an independent clause ('we decided to go for a hike')."},
+            { id: 3, batch: 1, question: "The documentary was insightful ______ however, it was also quite long.", options: [{text: "insightful;", isCorrect: true}, {text: "insightful,", isCorrect: false}, {text: "insightful:", isCorrect: false}, {text: "insightful", isCorrect: false}], explanation: "A semicolon is used to link two independent clauses, especially when the second clause begins with a conjunctive adverb like 'however'."},
+            { id: 4, batch: 1, question: "My favorite author ______ Mark Twain ______ wrote many classic novels.", options: [{text: "author—Mark Twain—wrote", isCorrect: true}, {text: "author, Mark Twain, wrote", isCorrect: true}, {text: "author Mark Twain wrote", isCorrect: false}, {text: "author: Mark Twain wrote", isCorrect: false}], explanation: "Both commas and dashes can be used to set off a nonessential element ('Mark Twain'). Dashes often provide a bit more emphasis."},
+            { id: 5, batch: 1, question: "The main ingredients for the recipe are ______ flour, sugar, and eggs.", options: [{text: "are", isCorrect: true}, {text: "are:", isCorrect: false}, {text: "are,", isCorrect: false}, {text: "are;", isCorrect: false}], explanation: "No punctuation is needed here. The list is a direct part of the sentence and completes the verb 'are'. A colon would be incorrect because 'The main ingredients for the recipe are' is not a complete thought on its own."},
+            // Batch 2
+            { id: 6, batch: 2, question: "She was tired ______ so she went to bed early.", options: [{text: "tired,", isCorrect: true}, {text: "tired", isCorrect: false}, {text: "tired;", isCorrect: false}, {text: "tired:", isCorrect: false}], explanation: "A comma is used before a coordinating conjunction (like 'so') that links two independent clauses."},
+            { id: 7, batch: 2, question: "The old house stood on a hill ______ overlooking the entire valley.", options: [{text: "hill,", isCorrect: true}, {text: "hill;", isCorrect: false}, {text: "hill:", isCorrect: false}, {text: "hill", isCorrect: false}], explanation: "A comma is used to separate a nonessential participial phrase ('overlooking the entire valley') from the main clause."},
+            { id: 8, batch: 2, question: "We visited three cities on our trip ______ Paris, France; Rome, Italy; and London, England.", options: [{text: "trip:", isCorrect: true}, {text: "trip;", isCorrect: false}, {text: "trip,", isCorrect: false}, {text: "trip", isCorrect: false}], explanation: "A colon is used to introduce the list of cities. Semicolons are then used to separate the list items because the items themselves contain commas."},
+            { id: 9, batch: 2, question: "The experiment was a success ______ the results were conclusive.", options: [{text: "success;", isCorrect: true}, {text: "success,", isCorrect: false}, {text: "success:", isCorrect: false}, {text: "success", isCorrect: false}], explanation: "A semicolon correctly links two closely related independent clauses. A comma alone would create a comma splice."},
+            { id: 10, batch: 2, question: "The winner of the competition ______ a talented young pianist ______ received a standing ovation.", options: [{text: "pianist—received", isCorrect: false}, {text: "pianist, received", isCorrect: true}, {text: "pianist received", isCorrect: false}, {text: "pianist; received", isCorrect: false}], explanation: "Commas are used to set off the nonessential appositive phrase 'a talented young pianist' which renames 'The winner'."},
+            // Batch 3
+            { id: 11, batch: 3, question: "He finally achieved his lifelong dream ______ to climb Mount Everest.", options: [{text: "dream:", isCorrect: true}, {text: "dream;", isCorrect: false}, {text: "dream,", isCorrect: false}, {text: "dream", isCorrect: false}], explanation: "A colon is used to introduce an explanation or elaboration that follows an independent clause."},
+            { id: 12, batch: 3, question: "If you study hard ______ you will likely do well on the exam.", options: [{text: "hard,", isCorrect: true}, {text: "hard;", isCorrect: false}, {text: "hard:", isCorrect: false}, {text: "hard", isCorrect: false}], explanation: "A comma separates a starting dependent clause ('If you study hard') from the main independent clause."},
+            { id: 13, batch: 3, question: "The conference had attendees from many countries ______ including Japan, Brazil, and Nigeria.", options: [{text: "countries,", isCorrect: true}, {text: "countries;", isCorrect: false}, {text: "countries:", isCorrect: false}, {text: "countries", isCorrect: false}], explanation: "A comma is used to set off the nonessential phrase that provides examples."},
+            { id: 14, batch: 3, question: "The decision was difficult ______ but it was the right one.", options: [{text: "difficult,", isCorrect: true}, {text: "difficult;", isCorrect: false}, {text: "difficult:", isCorrect: false}, {text: "difficult", isCorrect: false}], explanation: "A comma comes before a coordinating conjunction ('but') linking two independent clauses."},
+            { id: 15, batch: 3, question: "The ancient artifact ______ a ceremonial dagger ______ was discovered in the tomb.", options: [{text: "dagger—was", isCorrect: false}, {text: "dagger, was", isCorrect: true}, {text: "dagger was", isCorrect: false}, {text: "dagger: was", isCorrect: false}], explanation: "Commas are necessary to set off the nonessential appositive phrase 'a ceremonial dagger'."},
+            // Batch 4
+            { id: 16, batch: 4, question: "The system has one major flaw ______ it is too complicated.", options: [{text: "flaw:", isCorrect: true}, {text: "flaw,", isCorrect: false}, {text: "flaw;", isCorrect: false}, {text: "flaw", isCorrect: false}], explanation: "A colon can introduce an explanation. 'The system has one major flaw' is a complete thought, and 'it is too complicated' explains that flaw."},
+            { id: 17, batch: 4, question: "She packed everything she needed ______ clothes, toiletries, and her passport.", options: [{text: "needed:", isCorrect: true}, {text: "needed,", isCorrect: false}, {text: "needed;", isCorrect: false}, {text: "needed", isCorrect: false}], explanation: "A colon is used to introduce this list because it follows a complete independent clause."},
+            { id: 18, batch: 4, question: "I went to the store ______ however, it was closed.", options: [{text: "store;", isCorrect: true}, {text: "store,", isCorrect: false}, {text: "store:", isCorrect: false}, {text: "store", isCorrect: false}], explanation: "A semicolon is used to connect two independent clauses, with the second one beginning with a conjunctive adverb like 'however'."},
+            { id: 19, batch: 4, question: "The book, which was a bestseller ______ was made into a movie.", options: [{text: "bestseller,", isCorrect: true}, {text: "bestseller;", isCorrect: false}, {text: "bestseller", isCorrect: false}, {text: "bestseller:", isCorrect: false}], explanation: "A second comma is needed to close the nonessential clause 'which was a bestseller' that starts after 'book'."},
+            { id: 20, batch: 4, question: "There are two options ______ leave now or stay and wait.", options: [{text: "options:", isCorrect: true}, {text: "options;", isCorrect: false}, {text: "options,", isCorrect: false}, {text: "options", isCorrect: false}], explanation: "A colon introduces the two options, which act as a list or explanation following the independent clause."},
+             // Batch 5
+            { id: 21, batch: 5, question: "Running through the park ______ the dog chased after the squirrel.", options: [{text: "park,", isCorrect: true}, {text: "park;", isCorrect: false}, {text: "park:", isCorrect: false}, {text: "park", isCorrect: false}], explanation: "A comma separates an introductory participial phrase from the main clause."},
+            { id: 22, batch: 5, question: "The plan, in my opinion ______ is destined to fail.", options: [{text: "opinion,", isCorrect: true}, {text: "opinion;", isCorrect: false}, {text: "opinion", isCorrect: false}, {text: "opinion—", isCorrect: false}], explanation: "A pair of commas is used to set off the nonessential phrase 'in my opinion'."},
+            { id: 23, batch: 5, question: "The concert was amazing ______ the band played all their hits.", options: [{text: "amazing;", isCorrect: true}, {text: "amazing,", isCorrect: false}, {text: "amazing:", isCorrect: false}, {text: "amazing", isCorrect: false}], explanation: "A semicolon connects these two closely related independent clauses. A comma would result in a comma splice."},
+            { id: 24, batch: 5, question: "To succeed in this class ______ you must complete all assignments.", options: [{text: "class,", isCorrect: true}, {text: "class;", isCorrect: false}, {text: "class:", isCorrect: false}, {text: "class", isCorrect: false}], explanation: "A comma is used after an introductory infinitive phrase."},
+            { id: 25, batch: 5, question: "The chef bought fresh ingredients ______ tomatoes, basil, and garlic.", options: [{text: "ingredients:", isCorrect: true}, {text: "ingredients,", isCorrect: false}, {text: "ingredients;", isCorrect: false}, {text: "ingredients", isCorrect: false}], explanation: "A colon introduces the list of ingredients after the complete thought 'The chef bought fresh ingredients'."},
+            // Batch 6
+            { id: 26, batch: 6, question: "Although the movie received poor reviews ______ I decided to see it for myself.", options: [{text: "reviews,", isCorrect: true}, {text: "reviews;", isCorrect: false}, {text: "reviews:", isCorrect: false}, {text: "reviews", isCorrect: false}], explanation: "A comma is used to separate the introductory dependent clause from the main clause."},
+            { id: 27, batch: 6, question: "The company is relocating its headquarters ______ consequently, many employees are moving.", options: [{text: "headquarters;", isCorrect: true}, {text: "headquarters,", isCorrect: false}, {text: "headquarters:", isCorrect: false}, {text: "headquarters", isCorrect: false}], explanation: "A semicolon connects two independent clauses, where the second begins with a conjunctive adverb like 'consequently'."},
+            { id: 28, batch: 6, question: "The path was steep and rocky ______ a difficult climb for even experienced hikers.", options: [{text: "rocky—", isCorrect: true}, {text: "rocky;", isCorrect: false}, {text: "rocky,", isCorrect: false}, {text: "rocky", isCorrect: false}], explanation: "A dash is used here for emphasis to set off a concluding phrase that explains or elaborates on the main clause."},
+            { id: 29, batch: 6, question: "The student who won the award ______ is also the captain of the debate team.", options: [{text: "award", isCorrect: true}, {text: "award,", isCorrect: false}, {text: "award;", isCorrect: false}, {text: "award:", isCorrect: false}], explanation: "No punctuation is needed. The clause 'who won the award' is essential to identify which student is being discussed, so it should not be set off by commas."},
+            { id: 30, batch: 6, question: "The package contained several items ______ a book, a scarf, and a handwritten note.", options: [{text: "items:", isCorrect: true}, {text: "items,", isCorrect: false}, {text: "items;", isCorrect: false}, {text: "items", isCorrect: false}], explanation: "A colon correctly introduces a list following a complete independent clause."},
+            // Batch 7
+            { id: 31, batch: 7, question: "He is a talented musician ______ he plays the piano and the violin.", options: [{text: "musician;", isCorrect: true}, {text: "musician,", isCorrect: false}, {text: "musician:", isCorrect: false}, {text: "musician", isCorrect: false}], explanation: "A semicolon is used to join two closely related independent clauses. A colon could also work here as an explanation, but the semicolon emphasizes the link between two complete thoughts."},
+            { id: 32, batch: 7, question: "When the sun sets ______ the temperature drops quickly.", options: [{text: "sets,", isCorrect: true}, {text: "sets;", isCorrect: false}, {text: "sets:", isCorrect: false}, {text: "sets", isCorrect: false}], explanation: "A comma separates the introductory dependent clause from the independent clause."},
+            { id: 33, batch: 7, question: "My brother, a skilled mechanic ______ can fix almost any car problem.", options: [{text: "mechanic,", isCorrect: true}, {text: "mechanic;", isCorrect: false}, {text: "mechanic", isCorrect: false}, {text: "mechanic—", isCorrect: false}], explanation: "A pair of commas sets off the nonessential appositive phrase 'a skilled mechanic'."},
+            { id: 34, batch: 7, question: "The museum's new exhibit features ______ artifacts from ancient Egypt.", options: [{text: "features", isCorrect: true}, {text: "features:", isCorrect: false}, {text: "features,", isCorrect: false}, {text: "features—", isCorrect: false}], explanation: "No punctuation is necessary. The phrase 'artifacts from ancient Egypt' is the direct object of the verb 'features'."},
+            { id: 35, batch: 7, question: "The team practiced for weeks ______ yet they still lost the championship game.", options: [{text: "weeks,", isCorrect: true}, {text: "weeks;", isCorrect: false}, {text: "weeks:", isCorrect: false}, {text: "weeks", isCorrect: false}], explanation: "A comma precedes the coordinating conjunction 'yet' when it connects two independent clauses."},
+            // Batch 8
+            { id: 36, batch: 8, question: "The city has a new policy ______ all plastic bags are now banned.", options: [{text: "policy:", isCorrect: true}, {text: "policy,", isCorrect: false}, {text: "policy;", isCorrect: false}, {text: "policy", isCorrect: false}], explanation: "A colon is used to introduce the explanation of the new policy, as it follows a complete independent clause."},
+            { id: 37, batch: 8, question: "Over the river and through the woods ______ to grandmother's house we go.", options: [{text: "woods,", isCorrect: true}, {text: "woods;", isCorrect: false}, {text: "woods:", isCorrect: false}, {text: "woods", isCorrect: false}], explanation: "A comma is used to separate introductory prepositional phrases from the main clause."},
+            { id: 38, batch: 8, question: "She wanted to travel the world ______ however, she had limited funds.", options: [{text: "world;", isCorrect: true}, {text: "world,", isCorrect: false}, {text: "world:", isCorrect: false}, {text: "world", isCorrect: false}], explanation: "A semicolon correctly links two independent clauses when the second clause begins with a conjunctive adverb like 'however'."},
+            { id: 39, batch: 8, question: "The software, which is still in beta ______ has a few bugs.", options: [{text: "beta,", isCorrect: true}, {text: "beta;", isCorrect: false}, {text: "beta", isCorrect: false}, {text: "beta—", isCorrect: false}], explanation: "A second comma is required to close the nonessential clause 'which is still in beta'."},
+            { id: 40, batch: 8, question: "The lecture covered three topics ______ history, science, and art.", options: [{text: "topics:", isCorrect: true}, {text: "topics;", isCorrect: false}, {text: "topics,", isCorrect: false}, {text: "topics", isCorrect: false}], explanation: "A colon is the correct punctuation to introduce a list after a complete independent clause."},
+            // Batch 9
+            { id: 41, batch: 9, question: "To be a great leader ______ one must be a great listener.", options: [{text: "leader,", isCorrect: true}, {text: "leader;", isCorrect: false}, {text: "leader:", isCorrect: false}, {text: "leader", isCorrect: false}], explanation: "An introductory infinitive phrase is set off from the main clause with a comma."},
+            { id: 42, batch: 9, question: "The jury reached its verdict ______ the defendant was found not guilty.", options: [{text: "verdict;", isCorrect: true}, {text: "verdict,", isCorrect: false}, {text: "verdict:", isCorrect: false}, {text: "verdict", isCorrect: false}], explanation: "A semicolon can link two closely related independent clauses. A colon would also be acceptable here as the second clause explains the verdict."},
+            { id: 43, batch: 9, question: "I need to buy a few things at the store ______ milk, bread, and cheese.", options: [{text: "store:", isCorrect: true}, {text: "store,", isCorrect: false}, {text: "store;", isCorrect: false}, {text: "store", isCorrect: false}], explanation: "A colon introduces a list that follows a complete sentence."},
+            { id: 44, batch: 9, question: "The painting ______ a masterpiece of impressionism ______ hung in the main gallery.", options: [{text: "impressionism—hung", isCorrect: false}, {text: "impressionism, hung", isCorrect: true}, {text: "impressionism hung", isCorrect: false}, {text: "impressionism; hung", isCorrect: false}], explanation: "Commas are used to set off the nonessential appositive 'a masterpiece of impressionism'."},
+            { id: 45, batch: 9, question: "She worked all night ______ but she couldn't finish the project.", options: [{text: "night,", isCorrect: true}, {text: "night;", isCorrect: false}, {text: "night:", isCorrect: false}, {text: "night", isCorrect: false}], explanation: "A comma is placed before the coordinating conjunction 'but' that joins two independent clauses."},
+            // Batch 10
+            { id: 46, batch: 10, question: "The committee includes ______ Dr. Evans, a biologist; Prof. Chen, a chemist; and Dr. Singh, a physicist.", options: [{text: "includes:", isCorrect: true}, {text: "includes;", isCorrect: false}, {text: "includes,", isCorrect: false}, {text: "includes", isCorrect: false}], explanation: "A colon introduces the complex list. Semicolons are then used to separate the list items because the items themselves contain commas."},
+            { id: 47, batch: 10, question: "After a long and difficult journey ______ they finally reached their destination.", options: [{text: "journey,", isCorrect: true}, {text: "journey;", isCorrect: false}, {text: "journey:", isCorrect: false}, {text: "journey", isCorrect: false}], explanation: "A comma separates the introductory prepositional phrase from the main clause."},
+            { id: 48, batch: 10, question: "The message was clear ______ we needed to evacuate immediately.", options: [{text: "clear:", isCorrect: true}, {text: "clear,", isCorrect: false}, {text: "clear;", isCorrect: false}, {text: "clear", isCorrect: false}], explanation: "A colon introduces the explanation of the message. The first part, 'The message was clear,' is a complete independent clause."},
+            { id: 49, batch: 10, question: "The actor, famous for his action roles ______ surprised everyone with his comedic timing.", options: [{text: "roles,", isCorrect: true}, {text: "roles;", isCorrect: false}, {text: "roles", isCorrect: false}, {text: "roles:", isCorrect: false}], explanation: "The nonessential phrase 'famous for his action roles' must be enclosed by a pair of commas."},
+            { id: 50, batch: 10, question: "The forest fire was a disaster ______ it destroyed thousands of acres.", options: [{text: "disaster;", isCorrect: true}, {text: "disaster,", isCorrect: false}, {text: "disaster:", isCorrect: false}, {text: "disaster", isCorrect: false}], explanation: "A semicolon properly connects these two closely related independent clauses."},
+            // Batch 11
+            { id: 51, batch: 11, question: "The instructions require two things ______ patience and a steady hand.", options: [{text: "things:", isCorrect: true}, {text: "things,", isCorrect: false}, {text: "things;", isCorrect: false}, {text: "things", isCorrect: false}], explanation: "A colon introduces a list or explanation following an independent clause."},
+            { id: 52, batch: 11, question: "While I was reading ______ the power suddenly went out.", options: [{text: "reading,", isCorrect: true}, {text: "reading;", isCorrect: false}, {text: "reading:", isCorrect: false}, {text: "reading", isCorrect: false}], explanation: "A comma separates an introductory dependent clause from the main clause."},
+            { id: 53, batch: 11, question: "The building, a historic landmark ______ was recently restored.", options: [{text: "landmark,", isCorrect: true}, {text: "landmark;", isCorrect: false}, {text: "landmark", isCorrect: false}, {text: "landmark:", isCorrect: false}], explanation: "A pair of commas sets off the nonessential appositive phrase 'a historic landmark'."},
+            { id: 54, batch: 11, question: "You can pay with a credit card ______ or you can use cash.", options: [{text: "card,", isCorrect: true}, {text: "card;", isCorrect: false}, {text: "card:", isCorrect: false}, {text: "card", isCorrect: false}], explanation: "A comma is used before the coordinating conjunction 'or' when it connects two independent clauses."},
+            { id: 55, batch: 11, question: "The garden was full of colorful flowers ______ roses, tulips, and daisies.", options: [{text: "flowers:", isCorrect: true}, {text: "flowers—", isCorrect: true}, {text: "flowers;", isCorrect: false}, {text: "flowers", isCorrect: false}], explanation: "Both a colon and a dash can be used to introduce a list at the end of a sentence. A colon is more formal, while a dash adds emphasis."},
+            // Batch 12
+            { id: 56, batch: 12, question: "The scientist made a groundbreaking discovery ______ a new species of deep-sea fish.", options: [{text: "discovery:", isCorrect: true}, {text: "discovery,", isCorrect: false}, {text: "discovery;", isCorrect: false}, {text: "discovery", isCorrect: false}], explanation: "A colon is used to introduce an explanation that renames or specifies the 'discovery'."},
+            { id: 57, batch: 12, question: "Exhausted from the long flight ______ the traveler went straight to the hotel.", options: [{text: "flight,", isCorrect: true}, {text: "flight;", isCorrect: false}, {text: "flight:", isCorrect: false}, {text: "flight", isCorrect: false}], explanation: "A comma sets off the introductory participial phrase 'Exhausted from the long flight'."},
+            { id: 58, batch: 12, question: "My sister is a doctor ______ my brother is an engineer.", options: [{text: "doctor;", isCorrect: true}, {text: "doctor,", isCorrect: false}, {text: "doctor:", isCorrect: false}, {text: "doctor", isCorrect: false}], explanation: "A semicolon is the correct way to connect these two distinct but related independent clauses."},
+            { id: 59, batch: 12, question: "The person who is in charge ______ will make the final decision.", options: [{text: "charge", isCorrect: true}, {text: "charge,", isCorrect: false}, {text: "charge;", isCorrect: false}, {text: "charge:", isCorrect: false}], explanation: "No punctuation is needed. The clause 'who is in charge' is essential information identifying the person and should not be set off by commas."},
+            { id: 60, batch: 12, question: "The new car has several advanced features ______ including a self-parking system.", options: [{text: "features,", isCorrect: true}, {text: "features;", isCorrect: false}, {text: "features:", isCorrect: false}, {text: "features", isCorrect: false}], explanation: "A comma is used to set off the concluding nonessential phrase that provides an example."},
+             // Batch 13
+            { id: 61, batch: 13, question: "The final exam will cover everything we've studied this semester ______ all the lectures, readings, and labs.", options: [{text: "semester—", isCorrect: true}, {text: "semester,", isCorrect: false}, {text: "semester;", isCorrect: false}, {text: "semester", isCorrect: false}], explanation: "A dash is used for emphasis to set off a summary or explanation at the end of a sentence. A colon would also be correct."},
+            { id: 62, batch: 13, question: "Since it was getting late ______ we decided to head home.", options: [{text: "late,", isCorrect: true}, {text: "late;", isCorrect: false}, {text: "late:", isCorrect: false}, {text: "late", isCorrect: false}], explanation: "A comma separates the introductory dependent clause from the main clause."},
+            { id: 63, batch: 13, question: "The restaurant, which is known for its pasta ______ is always crowded on weekends.", options: [{text: "pasta,", isCorrect: true}, {text: "pasta;", isCorrect: false}, {text: "pasta", isCorrect: false}, {text: "pasta:", isCorrect: false}], explanation: "A pair of commas is needed to enclose the nonessential clause 'which is known for its pasta'."},
+            { id: 64, batch: 13, question: "He didn't get the job ______ for he was not qualified.", options: [{text: "job,", isCorrect: true}, {text: "job;", isCorrect: false}, {text: "job:", isCorrect: false}, {text: "job", isCorrect: false}], explanation: "A comma is used before the coordinating conjunction 'for' when it connects two independent clauses."},
+            { id: 65, batch: 13, question: "The novel's protagonist faces a difficult choice ______ to betray his friend or to risk his own life.", options: [{text: "choice:", isCorrect: true}, {text: "choice—", isCorrect: true}, {text: "choice;", isCorrect: false}, {text: "choice,", isCorrect: false}], explanation: "A colon or a dash can be used to introduce the explanation of the difficult choice after a complete sentence."},
+            // Batch 14
+            { id: 66, batch: 14, question: "The team's success can be attributed to one factor ______ teamwork.", options: [{text: "factor:", isCorrect: true}, {text: "factor,", isCorrect: false}, {text: "factor;", isCorrect: false}, {text: "factor", isCorrect: false}], explanation: "A colon is used to introduce a word or phrase that explains the preceding independent clause."},
+            { id: 67, batch: 14, question: "Before you leave ______ please turn off all the lights.", options: [{text: "leave,", isCorrect: true}, {text: "leave;", isCorrect: false}, {text: "leave:", isCorrect: false}, {text: "leave", isCorrect: false}], explanation: "A comma follows an introductory dependent clause."},
+            { id: 68, batch: 14, question: "She is an expert in her field ______ moreover, she is an excellent teacher.", options: [{text: "field;", isCorrect: true}, {text: "field,", isCorrect: false}, {text: "field:", isCorrect: false}, {text: "field", isCorrect: false}], explanation: "A semicolon connects two independent clauses, with the second one beginning with a conjunctive adverb like 'moreover'."},
+            { id: 69, batch: 14, question: "My cousin ______ a software engineer in San Francisco ______ is visiting next month.", options: [{text: "Francisco,", isCorrect: true}, {text: "Francisco;", isCorrect: false}, {text: "Francisco", isCorrect: false}, {text: "Francisco—", isCorrect: false}], explanation: "The entire nonessential phrase 'a software engineer in San Francisco' must be enclosed in commas."},
+            { id: 70, batch: 14, question: "The dog wagged its tail ______ and it barked happily.", options: [{text: "tail,", isCorrect: true}, {text: "tail;", isCorrect: false}, {text: "tail:", isCorrect: false}, {text: "tail", isCorrect: false}], explanation: "A comma precedes the coordinating conjunction 'and' when it joins two independent clauses."},
+            // Batch 15
+            { id: 71, batch: 15, question: "I have a lot to do today ______ laundry, groceries, and cleaning.", options: [{text: "today:", isCorrect: true}, {text: "today,", isCorrect: false}, {text: "today;", isCorrect: false}, {text: "today", isCorrect: false}], explanation: "A colon correctly introduces the list of tasks following the independent clause."},
+            { id: 72, batch: 15, question: "If the alarm rings ______ evacuate the building immediately.", options: [{text: "rings,", isCorrect: true}, {text: "rings;", isCorrect: false}, {text: "rings:", isCorrect: false}, {text: "rings", isCorrect: false}], explanation: "A comma separates the introductory dependent 'if' clause from the main clause."},
+            { id: 73, batch: 15, question: "The winter was unusually cold ______ the spring was surprisingly warm.", options: [{text: "cold;", isCorrect: true}, {text: "cold,", isCorrect: false}, {text: "cold:", isCorrect: false}, {text: "cold", isCorrect: false}], explanation: "A semicolon is used to connect two closely related independent clauses that express a contrast."},
+            { id: 74, batch: 15, question: "The movie, based on a true story ______ was both inspiring and heartbreaking.", options: [{text: "story,", isCorrect: true}, {text: "story;", isCorrect: false}, {text: "story", isCorrect: false}, {text: "story:", isCorrect: false}], explanation: "A pair of commas is required to set off the nonessential phrase 'based on a true story'."},
+            { id: 75, batch: 15, question: "The project was ambitious ______ but ultimately successful.", options: [{text: "ambitious", isCorrect: true}, {text: "ambitious,", isCorrect: false}, {text: "ambitious;", isCorrect: false}, {text: "ambitious:", isCorrect: false}], explanation: "No comma is needed before 'but' because 'but ultimately successful' is not an independent clause; it shares the subject and verb from the first part of the sentence."},
+             // Batch 16
+            { id: 76, batch: 16, question: "The athlete trained for one thing ______ an Olympic gold medal.", options: [{text: "thing:", isCorrect: true}, {text: "thing—", isCorrect: true}, {text: "thing,", isCorrect: false}, {text: "thing;", isCorrect: false}], explanation: "A colon or a dash can introduce an explanation or elaboration at the end of an independent clause."},
+            { id: 77, batch: 16, question: "Because of the traffic ______ we were late for the meeting.", options: [{text: "traffic,", isCorrect: true}, {text: "traffic;", isCorrect: false}, {text: "traffic:", isCorrect: false}, {text: "traffic", isCorrect: false}], explanation: "A comma separates the introductory prepositional phrase from the main clause."},
+            { id: 78, batch: 16, question: "The presentation was informative ______ however, it was a bit dry.", options: [{text: "informative;", isCorrect: true}, {text: "informative,", isCorrect: false}, {text: "informative:", isCorrect: false}, {text: "informative", isCorrect: false}], explanation: "A semicolon is used to connect two independent clauses linked by a conjunctive adverb like 'however'."},
+            { id: 79, batch: 16, question: "The Amazon River ______ the second longest river in the world ______ flows through South America.", options: [{text: "world,", isCorrect: true}, {text: "world—", isCorrect: true}, {text: "world;", isCorrect: false}, {text: "world", isCorrect: false}], explanation: "A pair of commas or a pair of dashes can be used to set off the nonessential appositive phrase."},
+            { id: 80, batch: 16, question: "She wanted to learn to code ______ so she enrolled in a programming course.", options: [{text: "code,", isCorrect: true}, {text: "code;", isCorrect: false}, {text: "code:", isCorrect: false}, {text: "code", isCorrect: false}], explanation: "A comma is used before the coordinating conjunction 'so' when it joins two independent clauses."},
+            // Batch 17
+            { id: 81, batch: 17, question: "The car needs several repairs ______ a new battery, new tires, and an oil change.", options: [{text: "repairs:", isCorrect: true}, {text: "repairs,", isCorrect: false}, {text: "repairs;", isCorrect: false}, {text: "repairs", isCorrect: false}], explanation: "A colon is the correct punctuation to introduce a list following a complete independent clause."},
+            { id: 82, batch: 17, question: "When you finish your homework ______ you can watch television.", options: [{text: "homework,", isCorrect: true}, {text: "homework;", isCorrect: false}, {text: "homework:", isCorrect: false}, {text: "homework", isCorrect: false}], explanation: "A comma separates the introductory dependent clause from the main independent clause."},
+            { id: 83, batch: 17, question: "The company's CEO, an innovative leader ______ announced a new strategic plan.", options: [{text: "leader,", isCorrect: true}, {text: "leader;", isCorrect: false}, {text: "leader", isCorrect: false}, {text: "leader:", isCorrect: false}], explanation: "The nonessential appositive 'an innovative leader' must be set off by a pair of commas."},
+            { id: 84, batch: 17, question: "I like to read novels ______ and I also enjoy watching movies.", options: [{text: "novels,", isCorrect: true}, {text: "novels;", isCorrect: false}, {text: "novels:", isCorrect: false}, {text: "novels", isCorrect: false}], explanation: "A comma precedes the coordinating conjunction 'and' when it connects two independent clauses."},
+            { id: 85, batch: 17, question: "The park was quiet and peaceful ______ a perfect place for a walk.", options: [{text: "peaceful—", isCorrect: true}, {text: "peaceful,", isCorrect: true}, {text: "peaceful;", isCorrect: false}, {text: "peaceful:", isCorrect: false}], explanation: "A dash or a comma can set off a concluding phrase that renames or describes the subject. The dash adds more emphasis."},
+            // Batch 18
+            { id: 86, batch: 18, question: "There is only one way to solve this puzzle ______ by thinking outside the box.", options: [{text: "puzzle:", isCorrect: true}, {text: "puzzle,", isCorrect: false}, {text: "puzzle;", isCorrect: false}, {text: "puzzle", isCorrect: false}], explanation: "A colon introduces an explanation that clarifies the 'one way' mentioned in the independent clause."},
+            { id: 87, batch: 18, question: "After the storm passed ______ a beautiful rainbow appeared in the sky.", options: [{text: "passed,", isCorrect: true}, {text: "passed;", isCorrect: false}, {text: "passed:", isCorrect: false}, {text: "passed", isCorrect: false}], explanation: "A comma is used to separate the introductory dependent clause from the main clause."},
+            { id: 88, batch: 18, question: "The city is famous for its architecture ______ its museums are also world-class.", options: [{text: "architecture;", isCorrect: true}, {text: "architecture,", isCorrect: false}, {text: "architecture:", isCorrect: false}, {text: "architecture", isCorrect: false}], explanation: "A semicolon correctly connects these two closely related independent clauses."},
+            { id: 89, batch: 18, question: "The student who wrote the best essay ______ will receive a special prize.", options: [{text: "essay", isCorrect: true}, {text: "essay,", isCorrect: false}, {text: "essay;", isCorrect: false}, {text: "essay:", isCorrect: false}], explanation: "No punctuation is needed. The clause 'who wrote the best essay' is essential to identify the student and should not be set off by commas."},
+            { id: 90, batch: 18, question: "The new phone is sleek and powerful ______ but it is also very expensive.", options: [{text: "powerful,", isCorrect: true}, {text: "powerful;", isCorrect: false}, {text: "powerful:", isCorrect: false}, {text: "powerful", isCorrect: false}], explanation: "A comma is placed before the coordinating conjunction 'but' that joins two independent clauses."},
+            // Batch 19
+            { id: 91, batch: 19, question: "The recipe calls for three spices ______ cumin, coriander, and turmeric.", options: [{text: "spices:", isCorrect: true}, {text: "spices,", isCorrect: false}, {text: "spices;", isCorrect: false}, {text: "spices", isCorrect: false}], explanation: "A colon introduces a list that follows a complete independent clause."},
+            { id: 92, batch: 19, question: "To avoid traffic ______ we left early in the morning.", options: [{text: "traffic,", isCorrect: true}, {text: "traffic;", isCorrect: false}, {text: "traffic:", isCorrect: false}, {text: "traffic", isCorrect: false}], explanation: "A comma separates the introductory infinitive phrase from the main clause."},
+            { id: 93, batch: 19, question: "The movie was long and confusing ______ therefore, I didn't enjoy it.", options: [{text: "confusing;", isCorrect: true}, {text: "confusing,", isCorrect: false}, {text: "confusing:", isCorrect: false}, {text: "confusing", isCorrect: false}], explanation: "A semicolon connects two independent clauses when the second begins with a conjunctive adverb like 'therefore'."},
+            { id: 94, batch: 19, question: "Mount Everest, the highest peak in the world ______ attracts climbers from all over.", options: [{text: "world,", isCorrect: true}, {text: "world;", isCorrect: false}, {text: "world", isCorrect: false}, {text: "world:", isCorrect: false}], explanation: "A pair of commas is needed to set off the nonessential appositive 'the highest peak in the world'."},
+            { id: 95, batch: 19, question: "The team won the game ______ and the crowd went wild.", options: [{text: "game,", isCorrect: true}, {text: "game;", isCorrect: false}, {text: "game:", isCorrect: false}, {text: "game", isCorrect: false}], explanation: "A comma is used before 'and' when it connects two independent clauses."},
+            // Batch 20
+            { id: 96, batch: 20, question: "He had a clear goal ______ to finish the marathon in under four hours.", options: [{text: "goal:", isCorrect: true}, {text: "goal—", isCorrect: true}, {text: "goal,", isCorrect: false}, {text: "goal;", isCorrect: false}], explanation: "A colon or a dash can be used to introduce an explanation or elaboration at the end of a sentence."},
+            { id: 97, batch: 20, question: "Even though it was raining ______ the team continued to practice.", options: [{text: "raining,", isCorrect: true}, {text: "raining;", isCorrect: false}, {text: "raining:", isCorrect: false}, {text: "raining", isCorrect: false}], explanation: "A comma separates the introductory dependent clause from the main clause."},
+            { id: 98, batch: 20, question: "The library is closed on Sundays ______ it opens at 9 a.m. on Mondays.", options: [{text: "Sundays;", isCorrect: true}, {text: "Sundays,", isCorrect: false}, {text: "Sundays:", isCorrect: false}, {text: "Sundays", isCorrect: false}], explanation: "A semicolon correctly joins these two related independent clauses."},
+            { id: 99, batch: 20, question: "The report, which was meticulously researched ______ provided valuable insights.", options: [{text: "researched,", isCorrect: true}, {text: "researched;", isCorrect: false}, {text: "researched", isCorrect: false}, {text: "researched:", isCorrect: false}], explanation: "A pair of commas is required to enclose the nonessential clause 'which was meticulously researched'."},
+            { id: 100, batch: 20, question: "We can go to the beach ______ or we can go to the mountains.", options: [{text: "beach,", isCorrect: true}, {text: "beach;", isCorrect: false}, {text: "beach:", isCorrect: false}, {text: "beach", isCorrect: false}], explanation: "A comma is used before the coordinating conjunction 'or' when it connects two independent clauses."},
+        ];
+
+        // --- STATE MANAGEMENT ---
+        let currentBatch = 1;
+        let userAnswers = {};
+        let isSubmitted = false;
+
+        // --- DOM ELEMENTS ---
+        const batchNavigationContainer = document.getElementById('batch-navigation');
+        const quizContentContainer = document.getElementById('quiz-content');
+        const actionButtonsContainer = document.getElementById('action-buttons');
+        
+        // --- CORE FUNCTIONS ---
+
+        /**
+         * Renders the batch navigation buttons.
+         */
+        function renderBatchNavigation() {
+            let navHTML = '';
+            for (let i = 1; i <= 20; i++) {
+                const isActive = i === currentBatch ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+                navHTML += `<button data-batch="${i}" class="batch-btn w-full h-10 rounded-md text-sm font-semibold transition-colors ${isActive}">${i}</button>`;
+            }
+            batchNavigationContainer.innerHTML = navHTML;
+            
+            // Add event listeners to new buttons
+            document.querySelectorAll('.batch-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const batchNum = parseInt(btn.dataset.batch);
+                    loadBatch(batchNum);
+                });
+            });
+        }
+
+        /**
+         * Loads and displays a specific batch of questions.
+         * @param {number} batchNumber - The batch number to load.
+         */
+        function loadBatch(batchNumber) {
+            currentBatch = batchNumber;
+            userAnswers = {};
+            isSubmitted = false;
+            
+            const questionsForBatch = allQuestions.filter(q => q.batch === currentBatch);
+            let quizHTML = '';
+
+            questionsForBatch.forEach((q, index) => {
+                const optionsHTML = q.options.map((opt, optIndex) => `
+                    <label for="q${q.id}_opt${optIndex}" class="quiz-option block p-4 border-2 border-gray-300 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-gray-50 flex items-center space-x-4">
+                        <input type="radio" id="q${q.id}_opt${optIndex}" name="question_${q.id}" value="${opt.text}" class="custom-radio">
+                        <span class="font-medium">${opt.text}</span>
+                    </label>
+                `).join('');
+
+                quizHTML += `
+                    <div class="mb-8 question-block" data-question-id="${q.id}">
+                        <p class="text-lg text-gray-700 mb-4">${index + 1}. ${q.question.replace('______', '<span class="font-bold text-blue-600">______</span>')}</p>
+                        <div class="space-y-3">
+                            ${optionsHTML}
+                        </div>
+                        <div class="explanation mt-4 p-4 bg-gray-50 rounded-lg text-gray-700 hidden">
+                           <!-- Explanation will be shown here after submit -->
+                        </div>
+                    </div>
+                `;
+            });
+            
+            quizContentContainer.innerHTML = quizHTML;
+            actionButtonsContainer.innerHTML = `<button id="submit-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors shadow-md">Submit Batch</button>`;
+            
+            // Add event listeners
+            document.getElementById('submit-btn').addEventListener('click', handleSubmit);
+            document.querySelectorAll('.quiz-option input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', (event) => {
+                    const questionId = parseInt(event.target.name.split('_')[1]);
+                    userAnswers[questionId] = event.target.value;
+                    
+                    // Visual feedback for selection
+                    const allOptionsForQuestion = document.querySelectorAll(`input[name="question_${questionId}"]`);
+                    allOptionsForQuestion.forEach(r => r.closest('.quiz-option').classList.remove('selected'));
+                    event.target.closest('.quiz-option').classList.add('selected');
+                });
+            });
+            
+            renderBatchNavigation(); // Re-render to update active batch
+        }
+
+        /**
+         * Handles the submission of the current batch.
+         */
+        function handleSubmit() {
+            if (isSubmitted) return;
+            isSubmitted = true;
+            
+            let score = 0;
+            const questionsForBatch = allQuestions.filter(q => q.batch === currentBatch);
+
+            questionsForBatch.forEach(q => {
+                const questionBlock = document.querySelector(`.question-block[data-question-id='${q.id}']`);
+                const labels = questionBlock.querySelectorAll('.quiz-option');
+                const selectedAnswer = userAnswers[q.id];
+                const correctAnswerObj = q.options.find(opt => opt.isCorrect);
+
+                labels.forEach(label => {
+                    const input = label.querySelector('input');
+                    input.disabled = true;
+
+                    if (input.value === correctAnswerObj.text) {
+                        label.classList.add('correct');
+                    }
+                    
+                    if (input.value === selectedAnswer && selectedAnswer !== correctAnswerObj.text) {
+                        label.classList.add('incorrect');
+                    }
+                });
+
+                if (selectedAnswer === correctAnswerObj.text) {
+                    score++;
+                }
+                
+                // Show explanation
+                const explanationDiv = questionBlock.querySelector('.explanation');
+                explanationDiv.innerHTML = `<strong class="text-green-700">Explanation:</strong> ${q.explanation}`;
+                explanationDiv.classList.remove('hidden');
+            });
+            
+            // Display results and next steps
+            const scoreMessage = `<p class="text-2xl font-bold mb-4">You scored ${score} out of ${questionsForBatch.length}!</p>`;
+            let nextButtonHTML = '';
+            if (currentBatch < 20) {
+                 nextButtonHTML = `<button id="next-btn" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-colors shadow-md">Next Batch &rarr;</button>`;
+            } else {
+                 nextButtonHTML = `<p class="text-lg font-semibold text-gray-800">You've completed all the batches!</p><button id="restart-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 transition-colors shadow-md mt-4">Restart Quiz</button>`;
+            }
+
+            actionButtonsContainer.innerHTML = scoreMessage + nextButtonHTML;
+
+            // Add new event listeners
+            if (document.getElementById('next-btn')) {
+                document.getElementById('next-btn').addEventListener('click', () => loadBatch(currentBatch + 1));
+            }
+             if (document.getElementById('restart-btn')) {
+                document.getElementById('restart-btn').addEventListener('click', () => loadBatch(1));
+            }
+            
+            // Scroll to the top of the container to see the score
+            document.getElementById('quiz-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadBatch(1);
+        });
+    </script>
+</body>
+</html>
