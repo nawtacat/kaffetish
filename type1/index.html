@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEFL Speaking Task 1 Practice</title>
+    <style>
+        :root {
+            --primary-bg: #f0f2f5;
+            --container-bg: #ffffff;
+            --text-color: #1c1e21;
+            --primary-blue: #007bff;
+            --hover-blue: #0056b3;
+            --border-color: #dddfe2;
+            --timer-color: #d9534f;
+            --recording-color: #d9534f;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--container-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .screen {
+            display: none;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
+
+        .prompt-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin: 20px 0;
+            text-align: left;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+            color: var(--timer-color);
+        }
+
+        .status-header {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.2em;
+            color: var(--recording-color);
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .recording-indicator::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background-color: var(--recording-color);
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 10px 5px;
+            display: inline-block;
+        }
+
+        .button:hover {
+            background-color: var(--hover-blue);
+        }
+        
+        .button.secondary {
+            background-color: #6c757d;
+        }
+        
+        .button.secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .review-section {
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .review-section h3 {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .transcript-box {
+            background-color: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+        
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        
+        .history-item {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .history-item:hover {
+            background-color: #f0f2f5;
+        }
+        
+        .history-item-prompt {
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .history-item-date {
+            font-size: 0.9em;
+            color: #606770;
+        }
+
+        .button-group {
+            margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div id="main-screen" class="screen active">
+            <h1>TOEFL® Independent Speaking Practice</h1>
+            <p>This tool simulates Task 1 of the TOEFL iBT Speaking section.</p>
+            [cite_start]<p>You will have <strong>15 seconds to prepare</strong> and <strong>45 seconds to speak</strong>[cite: 10, 170].</p>
+            <div class="button-group">
+                <button id="start-btn" class="button">Start New Session</button>
+                <button id="history-btn" class="button secondary">Review Past Recordings</button>
+            </div>
+        </div>
+
+        <div id="practice-screen" class="screen">
+            <h2 id="practice-title">Speaking Task 1: Explain a Choice</h2>
+            <div id="prompt-container" class="prompt-text"></div>
+            <div id="timer-container">
+                <div id="status-header" class="status-header"></div>
+                <div id="timer" class="timer-display"></div>
+            </div>
+            <div id="recording-indicator" class="recording-indicator">RECORDING</div>
+        </div>
+
+        <div id="review-screen" class="screen">
+            <h2>Review Your Response</h2>
+            <div class="review-section">
+                <h3>Prompt</h3>
+                <div id="review-prompt" class="prompt-text"></div>
+            </div>
+            <div class="review-section">
+                <h3>Your Recording</h3>
+                <div id="audio-playback"></div>
+            </div>
+            <div class="review-section">
+                <h3>Your Transcript</h3>
+                <p style="font-size: 0.9em; color: #606770;">Note: Transcript is auto-generated and may contain errors. Its accuracy depends on your browser.</p>
+                <div id="review-transcript" class="transcript-box"></div>
+            </div>
+            <div class="button-group">
+                <button id="practice-another-btn" class="button">Practice Another Prompt</button>
+                <button id="back-to-main-btn" class="button secondary">Back to Main Menu</button>
+            </div>
+        </div>
+        
+        <div id="history-screen" class="screen">
+            <h2>Past Recordings</h2>
+            <ul id="history-list" class="history-list">
+                </ul>
+             <div class="button-group">
+                <button id="history-back-btn" class="button secondary">Back to Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PROMPT LIBRARY ---
+        const prompts = [
+            "Some people enjoy taking risks and trying new things. Others are not adventurous; they are cautious and prefer to avoid danger. Which behavior do you think is better? [cite_start]Explain why. [cite: 8, 9]",
+            "Some people think it is more fun to spend time with friends in restaurants or cafés. Others think it is more fun to spend time with friends at home. Which do you think is better? [cite_start]Explain why. [cite: 167, 168]",
+            "Some people prefer to learn about current events by watching television news. Others prefer to read about current events in newspapers or online. Which do you think is better? Explain why.",
+            "Some people believe that it is important for children to learn to play a musical instrument. Others believe that time is better spent on sports or academic clubs. Which view do you agree with? Explain your reasoning.",
+            "Some people prefer to work for a large company. Others prefer to work for a small company. Which do you think is better and why?",
+            "Do you agree or disagree with the following statement? 'It is more important to have a job you love with a low salary than a job you dislike with a high salary.' Use specific reasons to support your opinion.",
+            "Some students prefer to study for an exam in a group. Other students prefer to study alone. Which method do you think is more effective? Explain why.",
+            "Some people think that governments should spend money on exploring outer space. Others think the money should be spent on solving problems here on Earth. Which opinion do you agree with? Explain why.",
+            "Some people prefer to live in a place that has the same weather all year round. Others prefer to live in a place with four distinct seasons. Which do you prefer? Use specific reasons to support your choice.",
+            "Do you agree or disagree with the following statement? 'A person's childhood years are the most important years of their life.' Explain your reasoning.",
+            "Some people like to plan their vacations in detail before they go. Others prefer to be spontaneous and make decisions as they travel. Which approach do you think is better?",
+            "Some people believe that success comes from taking risks and chances. Others believe that success results from careful planning. In your opinion, which is more important for success?",
+            "Some people enjoy watching movies in a theater with a large audience. Others prefer to watch movies at home. Which experience do you think is more enjoyable? Explain why.",
+            "Do you agree or disagree with the following statement? 'It is better for students to attend a university in their home city than in a different city.' Use specific details and examples to support your answer.",
+            "Some people think that a country's top priority should be to improve its economy. Others believe that protecting the environment should be the top priority. Which view do you support?",
+            "Some people believe that it is essential for a person to have a university education to be successful. Others believe it is not necessary. What is your opinion? Explain why.",
+            "Some people prefer to communicate with friends and family by sending text messages. Others prefer to talk on the phone. Which method of communication do you think is better?",
+            // Add more prompts to reach 55
+            "Some people believe that technology has made our lives better. Others believe it has made our lives more complicated. Which view do you agree with?",
+            "Do you agree or disagree with the following statement? 'Grades are the most important indicator of a student's intelligence.' Explain your reasoning.",
+            "Some people prefer to buy new books. Others prefer to borrow books from a library. Which do you think is better?",
+            "Some people think it's important to always tell the truth. Others believe that sometimes it's better to tell a white lie. What is your opinion?",
+            "Do you agree or disagree: 'Travel is the best form of education.'?",
+            "Some people prefer to exercise outdoors, for example by running or hiking. Others prefer to exercise indoors at a gym. Which do you prefer and why?",
+            "Is it better to make important life decisions based on logic and reason, or based on feelings and intuition? Explain your choice.",
+            "Some people think that it is better to have a few close friends. Others think it is better to have many friends. Which do you prefer?",
+            "Do you agree or disagree with the statement: 'The internet has brought people closer together.'?",
+            "Some people enjoy cooking their own meals. Others prefer to eat out at restaurants. Which do you find more enjoyable?",
+            "Is it better for a boss to be strict with employees, or to be friendly and relaxed? Explain your opinion.",
+_           "Some people believe that money is the most important factor in a happy life. Others believe factors like relationships and experiences are more important. What is your view?",
+            "Do you agree or disagree: 'It is important for people to follow fashion trends.'?",
+            "Some people prefer to spend their free time on relaxing activities. Others prefer to use their free time to learn new skills. Which approach do you think is better?",
+            "Is it more important to be a good leader or a good follower? Explain your reasoning.",
+            "Some people think that advertisements have a positive influence on society. Others think their influence is negative. What is your opinion?",
+            "Do you agree or disagree: 'Young people have an easier life today than their grandparents did.'?",
+            "Some people prefer to live in modern homes. Others prefer to live in older, traditional homes. Which do you prefer?",
+            "Is it better to save money for the future or to spend it enjoying the present? Explain your choice.",
+            "Some people believe that students should be required to do volunteer work in their community. Others believe it should be optional. What is your opinion?",
+            "Do you agree or disagree: 'First impressions are almost always correct.'?",
+            "Some people prefer reading fiction, such as novels and stories. Others prefer reading non-fiction. Which do you enjoy more and why?",
+            "Is it more beneficial to be a specialist in one field or to have knowledge about many different fields? Explain your reasoning.",
+            "Some people think that children should be given a lot of freedom. Others think they should be supervised closely. Which approach is better?",
+            "Do you agree or disagree: 'It is never too late to get a university education.'?",
+            "Some people prefer to receive gifts that are practical and useful. Others prefer gifts that are fun and entertaining. Which type of gift do you prefer to receive?",
+            "Is it better to live in a city or in the countryside? Explain your preference with specific reasons.",
+            "Some people think that an active social life is essential for happiness. Others believe that a quiet, private life is better. What is your opinion?",
+            "Do you agree or disagree: 'Team sports are more beneficial for children than individual sports.'?",
+            "Some people prefer to learn by doing. Others prefer to learn by reading books or listening to lectures. Which learning style is better for you?",
+            "Is it more important to be respected or to be liked? Explain your choice.",
+_           "Some people believe that it is the responsibility of individuals to stay healthy. Others believe it is the government's responsibility to ensure its citizens are healthy. What is your view?",
+            "Do you agree or disagree: 'Failure is the best teacher.'?",
+            "Some people prefer jobs that require a lot of travel. Others prefer jobs that allow them to stay in one place. Which would you choose?",
+            "Is it better to confront a friend when you have a disagreement, or to avoid confrontation and hope the problem goes away? Explain your answer.",
+            "Some people believe that zoos are cruel to animals. Others believe that zoos play an important role in conservation and education. What is your opinion?",
+            "Do you agree or disagree: 'It is more important to be talented than to work hard.'?"
+        ];
+
+        // --- DOM ELEMENTS ---
+        const screens = document.querySelectorAll('.screen');
+        const startBtn = document.getElementById('start-btn');
+        const historyBtn = document.getElementById('history-btn');
+        const practiceAnotherBtn = document.getElementById('practice-another-btn');
+        const backToMainBtn = document.getElementById('back-to-main-btn');
+        const historyBackBtn = document.getElementById('history-back-btn');
+
+        const promptContainer = document.getElementById('prompt-container');
+        const statusHeader = document.getElementById('status-header');
+        const timerDisplay = document.getElementById('timer');
+        const recordingIndicator = document.getElementById('recording-indicator');
+        
+        const reviewPrompt = document.getElementById('review-prompt');
+        const audioPlaybackContainer = document.getElementById('audio-playback');
+        const reviewTranscript = document.getElementById('review-transcript');
+        
+        const historyList = document.getElementById('history-list');
+
+        // --- STATE & TIMERS ---
+        let currentPrompt = '';
+        let timerInterval;
+        let mediaRecorder;
+        let audioChunks = [];
+        let speechRecognition;
+        let finalTranscript = '';
+
+        // --- DATABASE (IndexedDB) SETUP ---
+        let db;
+        const dbRequest = indexedDB.open('toeflSpeakingApp', 1);
+
+        dbRequest.onupgradeneeded = event => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains('recordings')) {
+                db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+
+        dbRequest.onsuccess = event => {
+            db = event.target.result;
+        };
+        
+        dbRequest.onerror = event => {
+            console.error("Database error:", event.target.errorCode);
+        };
+
+        // --- AUDIO & SPEECH API SETUP ---
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognitionAPI) {
+            speechRecognition = new SpeechRecognitionAPI();
+            speechRecognition.continuous = true;
+            speechRecognition.interimResults = true;
+
+            speechRecognition.onresult = event => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+            };
+        } else {
+            console.warn("Speech Recognition API not supported in this browser.");
+        }
+
+
+        // --- NAVIGATION ---
+        function showScreen(screenId) {
+            screens.forEach(screen => {
+                screen.classList.toggle('active', screen.id === screenId);
+            });
+        }
+
+        // --- EVENT LISTENERS ---
+        startBtn.addEventListener('click', startPracticeSession);
+        historyBtn.addEventListener('click', showHistoryScreen);
+        practiceAnotherBtn.addEventListener('click', () => showScreen('main-screen'));
+        backToMainBtn.addEventListener('click', () => showScreen('main-screen'));
+        historyBackBtn.addEventListener('click', () => showScreen('main-screen'));
+
+        // --- CORE LOGIC ---
+        function startPracticeSession() {
+            // Get microphone permissions before starting
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    setupMediaRecorder(stream);
+                    const promptIndex = Math.floor(Math.random() * prompts.length);
+                    currentPrompt = prompts[promptIndex];
+                    promptContainer.textContent = currentPrompt.split('.trim(); // Display prompt without citation
+                    showScreen('practice-screen');
+                    startPreparation();
+                })
+                .catch(err => {
+                    alert("Microphone access is required for this app. Please allow microphone access and try again.");
+                    console.error("Error accessing microphone:", err);
+                });
+        }
+
+        function setupMediaRecorder(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.addEventListener("dataavailable", event => {
+                audioChunks.push(event.data);
+            });
+
+            mediaRecorder.addEventListener("stop", () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                saveRecording(currentPrompt, audioBlob, finalTranscript);
+                displayReview(currentPrompt, audioBlob, finalTranscript);
+                
+                // Stop the microphone stream tracks to turn off the indicator
+                stream.getTracks().forEach(track => track.stop());
+            });
+        }
+
+        function startTimer(duration, element, header, onComplete) {
+            clearInterval(timerInterval);
+            let timeLeft = duration;
+            statusHeader.textContent = header;
+            element.textContent = timeLeft;
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                element.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    onComplete();
+                }
+            }, 1000);
+        }
+
+        function startPreparation() {
+            recordingIndicator.classList.remove('active');
+            startTimer(15, timerDisplay, "PREPARE YOUR RESPONSE", startRecording);
+        }
+
+        function playBeep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A4 note
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2); // Beep for 0.2 seconds
+        }
+
+        function startRecording() {
+            playBeep();
+            finalTranscript = '';
+            mediaRecorder.start();
+            if (speechRecognition) speechRecognition.start();
+            recordingIndicator.classList.add('active');
+            startTimer(45, timerDisplay, "SPEAK NOW", stopRecording);
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            if (speechRecognition) speechRecognition.stop();
+            recordingIndicator.classList.remove('active');
+        }
+        
+        function saveRecording(prompt, audioBlob, transcript) {
+            if (!db) return;
+            const transaction = db.transaction(['recordings'], 'readwrite');
+            const store = transaction.objectStore('recordings');
+            const recording = {
+                prompt: prompt,
+                date: new Date().toISOString(),
+                audioBlob: audioBlob,
+                transcript: transcript
+            };
+            store.add(recording);
+        }
+        
+        function displayReview(prompt, audioBlob, transcript) {
+            reviewPrompt.textContent = prompt.split('.trim();
+            
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioPlaybackContainer.innerHTML = '';
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = audioUrl;
+            audioPlaybackContainer.appendChild(audio);
+            
+            reviewTranscript.textContent = transcript || "[No speech detected or speech recognition is not supported by your browser.]";
+            
+            showScreen('review-screen');
+        }
+        
+        function showHistoryScreen() {
+            if (!db) return;
+            const transaction = db.transaction(['recordings'], 'readonly');
+            const store = transaction.objectStore('recordings');
+            const getAllRequest = store.getAll();
+            
+            historyList.innerHTML = ''; // Clear previous list
+
+            getAllRequest.onsuccess = () => {
+                const recordings = getAllRequest.result.reverse(); // Show newest first
+                if (recordings.length === 0) {
+                    historyList.innerHTML = '<li>No past recordings found.</li>';
+                } else {
+                    recordings.forEach(rec => {
+                        const li = document.createElement('li');
+                        li.className = 'history-item';
+                        li.dataset.id = rec.id;
+                        
+                        const promptDiv = document.createElement('div');
+                        promptDiv.className = 'history-item-prompt';
+                        promptDiv.textContent = rec.prompt.split('.trim();
+                        
+                        const dateDiv = document.createElement('div');
+                        dateDiv.className = 'history-item-date';
+                        dateDiv.textContent = new Date(rec.date).toLocaleString();
+                        
+                        li.appendChild(promptDiv);
+                        li.appendChild(dateDiv);
+                        
+                        li.addEventListener('click', () => loadRecordingForReview(rec.id));
+                        
+                        historyList.appendChild(li);
+                    });
+                }
+            };
+            showScreen('history-screen');
+        }
+        
+        function loadRecordingForReview(id) {
+            if (!db) return;
+            const transaction = db.transaction(['recordings'], 'readonly');
+            const store = transaction.objectStore('recordings');
+            const getRequest = store.get(id);
+
+            getRequest.onsuccess = () => {
+                const rec = getRequest.result;
+                displayReview(rec.prompt, rec.audioBlob, rec.transcript);
+            };
+        }
+
+    </script>
+
+</body>
+</html>
