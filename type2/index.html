@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOEFL Speaking Task 1 Practice</title>
+    <title>TOEFL Speaking Task 2 Practice</title>
     <style>
         :root {
             --primary-bg: #f0f2f5;
@@ -61,12 +61,12 @@
             text-align: left;
         }
 
-        h1, h2 {
+        h1, h2, h3 {
             margin-top: 0;
         }
 
-        .prompt-text {
-            font-size: 1.2em;
+        .reading-passage, .prompt-text {
+            font-size: 1.1em;
             line-height: 1.6;
             margin: 20px 0;
             text-align: left;
@@ -74,6 +74,12 @@
             border: 1px solid var(--border-color);
             border-radius: 6px;
             background-color: #f9f9f9;
+        }
+        
+        .reading-passage h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2em;
         }
 
         .timer-display {
@@ -87,6 +93,12 @@
             font-size: 1.5em;
             font-weight: 500;
             margin-bottom: 10px;
+        }
+        
+        .listening-indicator {
+            font-size: 1.5em;
+            color: #333;
+            margin: 50px 0;
         }
         
         .recording-indicator {
@@ -213,12 +225,12 @@
 
     <div class="app-container">
         <div id="main-screen" class="screen active">
-            <h1>TOEFL® Independent Speaking Practice</h1>
+            <h1>TOEFL® Integrated Speaking (Task 2)</h1>
             <div id="api-support-warning">
-                <strong>Warning:</strong> Your browser does not support the Web Speech API required for transcription. Please use a modern desktop browser like Google Chrome or Microsoft Edge for this feature.
+                <strong>Warning:</strong> Your browser does not support the Web Speech API required for transcription and/or voice synthesis. Please use a modern desktop browser like Google Chrome or Microsoft Edge for all features.
             </div>
-            <p>This tool simulates Task 1 of the TOEFL iBT Speaking section.</p>
-            <p>You will have <strong>15 seconds to prepare</strong> and <strong>45 seconds to speak</strong>.</p>
+            <p>This tool simulates the campus-related integrated speaking task.</p>
+            <p>You will <strong>read</strong> a passage (45s), <strong>listen</strong> to a conversation, <strong>prepare</strong> your response (30s), and then <strong>speak</strong> (60s).</p>
             <div class="button-group">
                 <button id="start-btn" class="button">Start New Session</button>
                 <button id="history-btn" class="button secondary">Review Past Recordings</button>
@@ -226,19 +238,34 @@
         </div>
 
         <div id="practice-screen" class="screen">
-            <h2 id="practice-title">Speaking Task 1: Explain a Choice</h2>
-            <div id="prompt-container" class="prompt-text"></div>
-            <div id="timer-container">
-                <div id="status-header" class="status-header"></div>
-                <div id="timer" class="timer-display"></div>
+            <h2 id="practice-title">Integrated Speaking Task</h2>
+            
+            <div id="reading-phase" style="display: none;">
+                <div class="status-header">Read the article.</div>
+                <div id="timer" class="timer-display">45</div>
+                <div id="reading-passage-container" class="reading-passage">
+                    <h3 id="reading-title"></h3>
+                    <p id="reading-text"></p>
+                </div>
             </div>
-            <div id="recording-indicator" class="recording-indicator">RECORDING</div>
+
+            <div id="listening-phase" style="display: none;">
+                <div class="status-header">Now listen to a conversation on the same topic.</div>
+                <div class="listening-indicator">🎧 Listening...</div>
+            </div>
+
+            <div id="response-phase" style="display: none;">
+                <div id="prompt-container" class="prompt-text"></div>
+                <div id="status-header-response" class="status-header"></div>
+                <div id="timer-response" class="timer-display"></div>
+                <div id="recording-indicator" class="recording-indicator">RECORDING</div>
+            </div>
         </div>
 
         <div id="review-screen" class="screen">
-            <h2>Review Your Response</h2>
+             <h2>Review Your Response</h2>
             <div class="review-section">
-                <h3>Prompt</h3>
+                <h3>Question</h3>
                 <div id="review-prompt" class="prompt-text"></div>
             </div>
             <div class="review-section">
@@ -258,8 +285,7 @@
         
         <div id="history-screen" class="screen">
             <h2>Past Recordings</h2>
-            <ul id="history-list" class="history-list">
-                </ul>
+            <ul id="history-list" class="history-list"></ul>
              <div class="button-group">
                 <button id="history-back-btn" class="button secondary">Back to Main Menu</button>
             </div>
@@ -267,64 +293,156 @@
     </div>
 
     <script>
-        // --- PROMPT LIBRARY ---
+        // --- 10 PROMPTS DATA ---
         const prompts = [
-            "Some people enjoy taking risks and trying new things. Others are not adventurous; they are cautious and prefer to avoid danger. Which behavior do you think is better? Explain why.",
-            "Some people think it is more fun to spend time with friends in restaurants or cafés. Others think it is more fun to spend time with friends at home. Which do you think is better? Explain why.",
-            "Some people prefer to learn about current events by watching television news. Others prefer to read about current events in newspapers or online. Which do you think is better? Explain why.",
-            "Some people believe that it is important for children to learn to play a musical instrument. Others believe that time is better spent on sports or academic clubs. Which view do you agree with? Explain your reasoning.",
-            "Some people prefer to work for a large company. Others prefer to work for a small company. Which do you think is better and why?",
-            "Do you agree or disagree with the following statement? 'It is more important to have a job you love with a low salary than a job you dislike with a high salary.' Use specific reasons to support your opinion.",
-            "Some students prefer to study for an exam in a group. Other students prefer to study alone. Which method do you think is more effective? Explain why.",
-            "Some people think that governments should spend money on exploring outer space. Others think the money should be spent on solving problems here on Earth. Which opinion do you agree with? Explain why.",
-            "Some people prefer to live in a place that has the same weather all year round. Others prefer to live in a place with four distinct seasons. Which do you prefer? Use specific reasons to support your choice.",
-            "Do you agree or disagree with the following statement? 'A person's childhood years are the most important years of their life.' Explain your reasoning.",
-            "Some people like to plan their vacations in detail before they go. Others prefer to be spontaneous and make decisions as they travel. Which approach do you think is better?",
-            "Some people believe that success comes from taking risks and chances. Others believe that success results from careful planning. In your opinion, which is more important for success?",
-            "Some people enjoy watching movies in a theater with a large audience. Others prefer to watch movies at home. Which experience do you think is more enjoyable? Explain why.",
-            "Do you agree or disagree with the following statement? 'It is better for students to attend a university in their home city than in a different city.' Use specific details and examples to support your answer.",
-            "Some people think that a country's top priority should be to improve its economy. Others believe that protecting the environment should be the top priority. Which view do you support?",
-            "Some people believe that it is essential for a person to have a university education to be successful. Others believe it is not necessary. What is your opinion? Explain why.",
-            "Some people prefer to communicate with friends and family by sending text messages. Others prefer to talk on the phone. Which method of communication do you think is better?",
-            "Some people believe that technology has made our lives better. Others believe it has made our lives more complicated. Which view do you agree with?",
-            "Do you agree or disagree with the following statement? 'Grades are the most important indicator of a student's intelligence.' Explain your reasoning.",
-            "Some people prefer to buy new books. Others prefer to borrow books from a library. Which do you think is better?",
-            "Some people think it's important to always tell the truth. Others believe that sometimes it's better to tell a white lie. What is your opinion?",
-            "Do you agree or disagree: 'Travel is the best form of education.'?",
-            "Some people prefer to exercise outdoors, for example by running or hiking. Others prefer to exercise indoors at a gym. Which do you prefer and why?",
-            "Is it better to make important life decisions based on logic and reason, or based on feelings and intuition? Explain your choice.",
-            "Some people think that it is better to have a few close friends. Others think it is better to have many friends. Which do you prefer?",
-            "Do you agree or disagree with the statement: 'The internet has brought people closer together.'?",
-            "Some people enjoy cooking their own meals. Others prefer to eat out at restaurants. Which do you find more enjoyable?",
-            "Is it better for a boss to be strict with employees, or to be friendly and relaxed? Explain your opinion.",
-            "Some people believe that money is the most important factor in a happy life. Others believe factors like relationships and experiences are more important. What is your view?",
-            "Do you agree or disagree: 'It is important for people to follow fashion trends.'?",
-            "Some people prefer to spend their free time on relaxing activities. Others prefer to use their free time to learn new skills. Which approach do you think is better?",
-            "Is it more important to be a good leader or a good follower? Explain your reasoning.",
-            "Some people think that advertisements have a positive influence on society. Others think their influence is negative. What is your opinion?",
-            "Do you agree or disagree: 'Young people have an easier life today than their grandparents did.'?",
-            "Some people prefer to live in modern homes. Others prefer to live in older, traditional homes. Which do you prefer?",
-            "Is it better to save money for the future or to spend it enjoying the present? Explain your choice.",
-            "Some people believe that students should be required to do volunteer work in their community. Others believe it should be optional. What is your opinion?",
-            "Do you agree or disagree: 'First impressions are almost always correct.'?",
-            "Some people prefer reading fiction, such as novels and stories. Others prefer reading non-fiction. Which do you enjoy more and why?",
-            "Is it more beneficial to be a specialist in one field or to have knowledge about many different fields? Explain your reasoning.",
-            "Some people think that children should be given a lot of freedom. Others think they should be supervised closely. Which approach is better?",
-            "Do you agree or disagree: 'It is never too late to get a university education.'?",
-            "Some people prefer to receive gifts that are practical and useful. Others prefer gifts that are fun and entertaining. Which type of gift do you prefer to receive?",
-            "Is it better to live in a city or in the countryside? Explain your preference with specific reasons.",
-            "Some people think that an active social life is essential for happiness. Others believe that a quiet, private life is better. What is your opinion?",
-            "Do you agree or disagree: 'Team sports are more beneficial for children than individual sports.'?",
-            "Some people prefer to learn by doing. Others prefer to learn by reading books or listening to lectures. Which learning style is better for you?",
-            "Is it more important to be respected or to be liked? Explain your choice.",
-            "Some people believe that it is the responsibility of individuals to stay healthy. Others believe it is the government's responsibility to ensure its citizens are healthy. What is your view?",
-            "Do you agree or disagree: 'Failure is the best teacher.'?",
-            "Some people prefer jobs that require a lot of travel. Others prefer jobs that allow them to stay in one place. Which would you choose?",
-            "Is it better to confront a friend when you have a disagreement, or to avoid confrontation and hope the problem goes away? Explain your answer.",
-            "Some people believe that zoos are cruel to animals. Others believe that zoos play an important role in conservation and education. What is your opinion?",
-            "Do you agree or disagree: 'It is more important to be talented than to work hard.'?"
+            {
+                id: 1,
+                readingTitle: "Sculpture Courses to Be Discontinued",
+                readingText: "University administrators announced yesterday that the sculpture program, a division of the art department, will be eliminated. “The main reason is a lack of student interest,” reported one administrator. “Although the number of art students has increased, fewer and fewer art majors are taking sculpture classes.” Furthermore, the department’s only sculpture professor is retiring this year. “Given the art department’s limited budget,” the administrator explained, “it just doesn’t make sense to hire a new full-time professor to teach sculpture for only a handful of students.”",
+                conversation: [
+                    { speaker: "Male", line: "Everything alright?" },
+                    { speaker: "Female", line: "Yeah, I’m just upset about that article I showed you this morning." },
+                    { speaker: "Male", line: "Why, what’s the big deal?" },
+                    { speaker: "Female", line: "Well, as an art major, I think it’s a big loss for the department. The university’s got it all wrong." },
+                    { speaker: "Male", line: "What do you mean?" },
+                    { speaker: "Female", line: "Well, the low enrollment isn’t because art majors don’t want to take these classes. Problem is, who has time to take them when there are so many other requirements?" },
+                    { speaker: "Male", line: "I don't understand." },
+                    { speaker: "Female", line: "See, the classes they’re eliminating are all optional. The required courses are mostly painting and drawing, and they take up all our time. What we really need are different requirements—then art majors could take a better variety of classes, all the things we’re interested in." },
+                    { speaker: "Male", line: "That makes sense. But, the thing about the professor..." },
+                    { speaker: "Female", line: "Well, that’s true. But still, they’re being drastic. If money’s the problem, they could hire a part-time professor! Or, most of the professors in the department have secondary fields." },
+                    { speaker: "Male", line: "Really?" },
+                    { speaker: "Female", line: "Yeah! At least a few painting teachers are also great sculptors. I’m sure one of them could teach a class." }
+                ],
+                question: "The woman expresses her opinion of the university's plan to discontinue sculpture courses. State her opinion and explain the reasons she gives for holding that opinion."
+            },
+            {
+                id: 2,
+                readingTitle: "New Campus Fitness Center Policy",
+                readingText: "The University Fitness Center has announced a new policy requiring all students to pay a $50 per semester fee for gym access, starting next fall. Previously, access was included in standard student fees. The center's director stated, 'This new fee is essential for purchasing new equipment and expanding our class offerings. The current budget is insufficient to keep the facility up to modern standards, and we believe a dedicated fee is the fairest way to fund these necessary improvements.'",
+                conversation: [
+                    { speaker: "Female", line: "Can you believe they're going to charge us to use the gym now?" },
+                    { speaker: "Male", line: "I know, I just read that. It sounds terrible." },
+                    { speaker: "Female", line: "It is! They say it's for new equipment, but the equipment they have is perfectly fine." },
+                    { speaker: "Male", line: "So you don't think it's necessary?" },
+                    { speaker: "Female", line: "Not at all. I think they just want more money. If they really need it, they should take it out of our tuition, not add another fee. We already pay enough to go to school here. It feels like they're just nickel-and-diming us." },
+                    { speaker: "Male", line: "I agree. And their reasoning about fairness seems off." },
+                    { speaker: "Female", line: "Exactly! They say it's 'fair,' but many students don't even use the gym because they're too busy with classes and work. So now, those students are being forced to pay for something they don't even use. It would be fairer to offer a membership that people can choose to buy if they want it." }
+                ],
+                question: "The woman expresses her opinion of the new fitness center policy. State her opinion and explain the reasons she gives for holding that opinion."
+            },
+            {
+                id: 3,
+                readingTitle: "University Newspaper to Go Online-Only",
+                readingText: "Starting next month, the 'Campus Daily Chronicle' will cease its print publication and become an exclusively online newspaper. The decision was made to cut costs associated with printing and distribution. 'Moving online will save the university thousands of dollars annually,' said the editor. 'Furthermore, an online format allows for more timely news updates and interactive features like videos and polls, which we believe will increase student engagement.'",
+                conversation: [
+                    { speaker: "Male", line: "Did you hear about the 'Chronicle'? No more physical papers." },
+                    { speaker: "Female", line: "Yeah, I just saw that. I think it's a really bad idea." },
+                    { speaker: "Male", line: "Really? Why? It seems like it'll save money and be more modern." },
+                    { speaker: "Female", line: "I don't think so. First, a lot of students, myself included, grab a paper on the way to class. It's easy to read between classes or at lunch. I'm not going to pull out my laptop in the cafeteria just to read the news. I think fewer people will read it, not more." },
+                    { speaker: "Male", line: "That's a good point. I hadn't thought of that." },
+                    { speaker: "Female", line: "Also, what about the journalism students? Writing for a print newspaper is a valuable experience. It teaches you about deadlines, layout, and a different style of writing. That's a huge part of the program's appeal. Taking away the print edition really hurts their learning opportunities." }
+                ],
+                question: "The woman expresses her opinion on the plan to make the university newspaper online-only. State her opinion and explain the reasons she gives for holding that opinion."
+            },
+            {
+                id: 4,
+                readingTitle: "Change in Cafeteria Food Vendor",
+                readingText: "The university has announced that it will not be renewing its contract with the current cafeteria food provider, 'Campus Cuisine.' Instead, it will be contracting with a new national vendor, 'Fresh & Fast,' known for its standardized menus and efficient service. The change is intended to provide more consistent service and a wider variety of options. A university spokesperson said, 'Fresh & Fast will offer more brand-name choices that we believe students will find more appealing than the current local offerings.'",
+                conversation: [
+                    { speaker: "Female", line: "So, new food in the cafeteria next semester." },
+                    { speaker: "Male", line: "Yeah, I read that. I'm actually really disappointed." },
+                    { speaker: "Female", line: "Why? Don't you think 'Fresh & Fast' will be better?" },
+                    { speaker: "Male", line: "Honestly, no. I really like that Campus Cuisine uses locally sourced ingredients. It feels healthier, and it supports local farms. This new company is a huge national chain; the food is probably all frozen and processed. The quality is going to go way down." },
+                    { speaker: "Female", line: "I see your point about local food. But what about the variety?" },
+                    { speaker: "Male", line: "That's the other thing. The article says they offer brand names, but that just means the same burgers and pizza you can get anywhere. Campus Cuisine was great because they would often have special menus and try new recipes. It was interesting. I think a standardized menu is going to get boring really fast. It's less variety, not more." }
+                ],
+                question: "The man expresses his opinion of the university's decision to change food vendors. State his opinion and explain the reasons he gives for holding that opinion."
+            },
+            {
+                id: 5,
+                readingTitle: "Mandatory On-Campus Housing for First-Year Students",
+                readingText: "The Office of Student Life has implemented a new policy requiring all first-year students to live in on-campus dormitories. The university states that this will help new students build a stronger sense of community and become more involved in campus activities. 'Living on campus provides students with easy access to resources like the library and tutoring centers, which we believe will improve their academic performance,' an administrator added.",
+                conversation: [
+                    { speaker: "Male", line: "I guess my little brother will have to live in the dorms next year." },
+                    { speaker: "Female", line: "Oh yeah, that new mandatory housing rule. I don't think that's fair at all." },
+                    { speaker: "Male", line: "You don't? It seems like a good way to get to know people." },
+                    { speaker: "Female", line: "Maybe, but it's incredibly expensive. For a lot of students who are from this town, it's much cheaper to live at home with their parents. This new rule forces them to pay thousands more for housing they don't even need. It could make attending this university unaffordable for some local students." },
+                    { speaker: "Male", line: "That's true, the dorms are pricey. But what about the academic support?" },
+                    { speaker: "Female", line: "I think that's an exaggeration. Students who live off-campus can still use the library and tutors. And honestly, the dorms can be really noisy and distracting. It's often easier to study at home where it's quiet. I don't think forcing students into a potentially loud environment is going to improve their grades." }
+                ],
+                question: "The woman expresses her opinion on the new mandatory housing policy for first-year students. State her opinion and explain the reasons she gives for holding it."
+            },
+            {
+                id: 6,
+                readingTitle: "University to Ban Bicycles from Central Quad",
+                readingText: "Citing safety concerns, the university has announced a ban on riding and parking bicycles in the central quad area of campus. 'The quad has become too congested with pedestrian traffic,' said the head of campus safety. 'We've had several near-accidents between cyclists and pedestrians. This ban will make the quad a safer and more pleasant walking area for everyone. Bike racks will be moved to the perimeter of the quad.'",
+                conversation: [
+                    { speaker: "Female", line: "I can't believe they're banning bikes from the quad. That's ridiculous." },
+                    { speaker: "Male", line: "I don't know, it gets pretty crowded. Maybe it's a good idea for safety." },
+                    { speaker: "Female", line: "But the quad is the most direct route to get across campus. Banning bikes there means cyclists will have to go all the way around, which will add a lot of time to their commute between classes. People use bikes to get to class on time, and this will make it much harder." },
+                    { speaker: "Male", line: "I guess that's true. But what about the congestion?" },
+                    { speaker: "Female", line: "They're solving the wrong problem. Instead of a complete ban, they should just create a dedicated bike lane through the middle of the quad. That would separate the bikes from the pedestrians and solve the safety issue without inconveniencing everyone who rides a bike. A ban is just a lazy solution." }
+                ],
+                question: "The woman gives her opinion of the plan to ban bicycles from the quad. State her opinion and explain the reasons she provides."
+            },
+            {
+                id: 7,
+                readingTitle: "Library to Extend Weekend Hours",
+                readingText: "The university library announced that it will be extending its hours on Saturdays and Sundays. It will now stay open until midnight instead of closing at 8 PM. The head librarian stated, 'We've received numerous student requests for longer hours, especially during midterms and finals. This change will provide students with more quiet study time and access to our resources when they need it most. We believe this will be a significant academic benefit.'",
+                conversation: [
+                    { speaker: "Male", line: "Great news! The library is staying open later on weekends." },
+                    { speaker: "Female", line: "I saw that. Honestly, I don't think it's going to make much of a difference." },
+                    { speaker: "Male", line: "What? Why not? More study time is always good, right?" },
+                    { speaker: "Female", line: "The problem isn't the hours, it's the space. The library is already completely full on weekends. Even if it's open longer, there are no empty seats. So, extending the time doesn't help if you can't even find a place to sit and study." },
+                    { speaker: "Male", line: "Hmm, I see. It does get crowded." },
+                    { speaker: "Female", line: "Exactly. What they really need to do is open up more study areas. They could convert some of the unused classrooms in the buildings nearby into quiet study rooms on the weekends. That would actually solve the problem of overcrowding and give people a place to work. Just keeping the same crowded building open longer doesn't really help." }
+                ],
+                question: "The woman expresses her opinion about the library's plan to extend its hours. State her opinion and explain her reasons."
+            },
+            {
+                id: 8,
+                readingTitle: "New Mandatory Public Speaking Course",
+                readingText: "The university's academic council has approved a new graduation requirement for all undergraduate students: a one-semester course in public speaking. The council argues that this skill is essential for success in any career. 'Effective communication is crucial,' said the academic dean. 'This course will ensure that every graduate from our university is confident and capable when it comes to presenting their ideas to an audience.'",
+                conversation: [
+                    { speaker: "Female", line: "Did you see this? They're adding a public speaking class as a requirement for everyone." },
+                    { speaker: "Male", line: "Yeah, I did. I think it's a complete waste of time." },
+                    { speaker: "Female", line: "A waste of time? But public speaking is a useful skill." },
+                    { speaker: "Male", line: "It is, but most majors already include it. For example, in my business program, we have to give presentations in almost every class. We already get plenty of practice. Forcing us to take another basic course on it is redundant and takes up space in our schedule that we could use for a class we actually need for our major." },
+                    { speaker: "Female", line: "I guess that makes sense for business majors. But what about others?" },
+                    { speaker: "Male", line: "Even for other majors, like science or art, they often present at conferences or critiques. A single, required class isn't the best way to do it. It would be much better to integrate speaking assignments into the existing courses within each major. That way, students learn to speak specifically about their own field of study, which is far more useful than giving a generic speech in a required class." }
+                ],
+                question: "The man shares his opinion of the new public speaking requirement. State his opinion and explain the reasons he gives for holding that opinion."
+            },
+            {
+                id: 9,
+                readingTitle: "Volunteer Requirement for Graduation",
+                readingText: "The university is considering a new proposal that would require all students to complete 20 hours of volunteer work in the local community before they can graduate. The proposal's authors claim this will strengthen the university's relationship with the town and help students develop a sense of social responsibility. 'This experience will be a valuable addition to a student's education and resume,' the proposal states.",
+                conversation: [
+                    { speaker: "Male", line: "So what do you think about this mandatory volunteer idea?" },
+                    { speaker: "Female", line: "I think it's a terrible plan. I really hope it doesn't pass." },
+                    { speaker: "Male", line: "Why? It sounds like a good way to get students involved in the community." },
+                    { speaker: "Female", line: "But students are already incredibly busy. Between a full course load and part-time jobs to pay for tuition, most of us don't have any extra time. Adding a 20-hour requirement is a huge burden. It's not that students don't want to volunteer; it's that they literally don't have the time for it." },
+                    { speaker: "Male", line: "I see. It would be hard to fit in. But what about the 'social responsibility' part?" },
+                    { speaker: "Female", line: "Well, forcing someone to do something doesn't teach them responsibility. It just makes them resent it. People will just do the easiest thing possible to get the hours done, not because they care. If the university wants to encourage volunteering, they should create a program that connects interested students with opportunities, or offer academic credit for it. Making it mandatory just defeats the whole purpose." }
+                ],
+                question: "The woman expresses her opinion of the proposed volunteer requirement. State her opinion and explain the reasons she gives."
+            },
+            {
+                id: 10,
+                readingTitle: "University Cancels Free Campus Bus Service",
+                readingText: "Due to recent budget cuts, the university announced it will be eliminating the free shuttle bus service that connects the main campus with the satellite campuses and remote parking lots. The university's transportation director stated, 'While this was a difficult decision, the bus service was one of our most significant expenses. Students will need to find alternative transportation, such as using the city bus system or carpooling, starting next semester.'",
+                conversation: [
+                    { speaker: "Female", line: "This is a disaster. They're getting rid of the free shuttle bus." },
+                    { speaker: "Male", line: "Yeah, I know. I relied on that bus every single day. I'm not sure what I'm going to do." },
+                    { speaker: "Female", line: "But the university says we can use the city bus." },
+                    { speaker: "Male", line: "That's not a real solution. The city bus route is very indirect. It takes almost an hour to get from the remote parking lot to the science campus, while the university shuttle took just 15 minutes. It's going to make a lot of people late for class, or they'll have to leave home an hour earlier." },
+                    { speaker: "Female", line: "That's a huge difference. What about the budget cuts, though? They said it was too expensive." },
+                    { speaker: "Male", line: "I think there are better ways to save money. Instead of cutting the service completely, they could just reduce it. Maybe have the buses run every 30 minutes instead of every 15. That would cut costs in half but still provide the service. Or, they could charge a very small fee, like 50 cents per ride. I'm sure most students would be willing to pay that instead of having no bus at all." }
+                ],
+                question: "The man expresses his opinion of the university's decision to cancel the bus service. State his opinion and explain the reasons he gives."
+            }
         ];
-
+        
         // --- DOM ELEMENTS ---
         const screens = document.querySelectorAll('.screen');
         const startBtn = document.getElementById('start-btn');
@@ -334,80 +452,116 @@
         const historyBackBtn = document.getElementById('history-back-btn');
 
         const apiSupportWarning = document.getElementById('api-support-warning');
-        const promptContainer = document.getElementById('prompt-container');
-        const statusHeader = document.getElementById('status-header');
-        const timerDisplay = document.getElementById('timer');
-        const recordingIndicator = document.getElementById('recording-indicator');
         
+        // Practice Screen Elements
+        const readingPhaseDiv = document.getElementById('reading-phase');
+        const listeningPhaseDiv = document.getElementById('listening-phase');
+        const responsePhaseDiv = document.getElementById('response-phase');
+        const readingTitle = document.getElementById('reading-title');
+        const readingText = document.getElementById('reading-text');
+        const timerDisplay = document.getElementById('timer');
+        const promptContainer = document.getElementById('prompt-container');
+        const statusHeaderResponse = document.getElementById('status-header-response');
+        const timerResponseDisplay = document.getElementById('timer-response');
+        const recordingIndicator = document.getElementById('recording-indicator');
+
+        // Review Screen Elements
         const reviewPrompt = document.getElementById('review-prompt');
         const audioPlaybackContainer = document.getElementById('audio-playback');
         const reviewTranscript = document.getElementById('review-transcript');
         
+        // History Screen Elements
         const historyList = document.getElementById('history-list');
 
         // --- STATE & TIMERS ---
-        let currentPrompt = '';
+        let currentPrompt = {};
         let timerInterval;
         let mediaRecorder;
         let audioChunks = [];
         let speechRecognition;
         let finalTranscript = '';
+        let synth = window.speechSynthesis;
+        let maleVoice, femaleVoice;
 
         // --- DATABASE (IndexedDB) SETUP ---
         let db;
-        const dbRequest = indexedDB.open('toeflSpeakingApp', 1);
-
+        const dbRequest = indexedDB.open('toeflTask2App', 1);
         dbRequest.onupgradeneeded = event => {
             db = event.target.result;
             if (!db.objectStoreNames.contains('recordings')) {
                 db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
             }
         };
-
-        dbRequest.onsuccess = event => {
-            db = event.target.result;
-        };
+        dbRequest.onsuccess = event => { db = event.target.result; };
+        dbRequest.onerror = event => { console.error("Database error:", event.target.errorCode); };
         
-        dbRequest.onerror = event => {
-            console.error("Database error:", event.target.errorCode);
-        };
-
-        // --- AUDIO & SPEECH API SETUP & CHECK ---
+        // --- SPEECH & AUDIO SETUP ---
         const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognitionAPI) {
-            speechRecognition = new SpeechRecognitionAPI();
-            speechRecognition.continuous = true;
-            speechRecognition.interimResults = true;
+        
+        function setupApis() {
+            if (!SpeechRecognitionAPI || !synth) {
+                apiSupportWarning.style.display = 'block';
+            }
 
-            speechRecognition.onresult = event => {
-                let interimTranscript = '';
-                finalTranscript = ''; // Reset final transcript on new result
-                for (let i = 0; i < event.results.length; ++i) {
-                     finalTranscript += event.results[i][0].transcript;
+            if (SpeechRecognitionAPI) {
+                speechRecognition = new SpeechRecognitionAPI();
+                speechRecognition.continuous = true;
+                speechRecognition.interimResults = true;
+                speechRecognition.onresult = event => {
+                    finalTranscript = '';
+                    for (let i = 0; i < event.results.length; ++i) {
+                         finalTranscript += event.results[i][0].transcript;
+                    }
+                };
+                speechRecognition.onerror = event => {
+                    console.error("Speech recognition error:", event.error);
+                    finalTranscript = `[Transcription failed: ${event.error}]`;
+                };
+            }
+            
+            // Load voices for speech synthesis
+            function loadVoices() {
+                const voices = synth.getVoices();
+                if (voices.length > 0) {
+                    // Preference for higher quality voices
+                    femaleVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google') && v.name.includes('Female')) ||
+                                  voices.find(v => v.lang.startsWith('en') && v.name.includes('Samantha')) ||
+                                  voices.find(v => v.lang.startsWith('en') && v.name.includes('Female'));
+                    
+                    maleVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google') && v.name.includes('Male')) ||
+                                voices.find(v => v.lang.startsWith('en') && v.name.includes('Daniel')) ||
+                                voices.find(v => v.lang.startsWith('en') && v.name.includes('Male'));
+                    
+                    // Fallback if specific voices aren't found
+                    if (!femaleVoice) femaleVoice = voices.find(v => v.lang.startsWith('en'));
+                    if (!maleVoice) maleVoice = voices.find(v => v.lang.startsWith('en'));
+
+                } else {
+                    console.warn("No speech synthesis voices found.");
                 }
-            };
-
-            // ** NEW: ERROR HANDLING **
-            speechRecognition.onerror = event => {
-                console.error("Speech recognition error:", event.error);
-                finalTranscript = `[Transcription failed: ${event.error}. Please check your internet connection and microphone permissions.]`;
-            };
-
-        } else {
-            // ** NEW: BROWSER SUPPORT WARNING **
-            apiSupportWarning.style.display = 'block';
-            console.warn("Speech Recognition API not supported in this browser.");
+            }
+            loadVoices();
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = loadVoices;
+            }
+        }
+        
+        // --- NAVIGATION & UI ---
+        function showScreen(screenId) {
+            screens.forEach(screen => screen.classList.toggle('active', screen.id === screenId));
         }
 
-
-        // --- NAVIGATION ---
-        function showScreen(screenId) {
-            screens.forEach(screen => {
-                screen.classList.toggle('active', screen.id === screenId);
-            });
+        function showPracticePhase(phase) {
+            readingPhaseDiv.style.display = 'none';
+            listeningPhaseDiv.style.display = 'none';
+            responsePhaseDiv.style.display = 'none';
+            if (phase === 'reading') readingPhaseDiv.style.display = 'block';
+            if (phase === 'listening') listeningPhaseDiv.style.display = 'block';
+            if (phase === 'response') responsePhaseDiv.style.display = 'block';
         }
 
         // --- EVENT LISTENERS ---
+        window.addEventListener('load', setupApis);
         startBtn.addEventListener('click', startPracticeSession);
         historyBtn.addEventListener('click', showHistoryScreen);
         practiceAnotherBtn.addEventListener('click', () => showScreen('main-screen'));
@@ -421,38 +575,19 @@
                     setupMediaRecorder(stream);
                     const promptIndex = Math.floor(Math.random() * prompts.length);
                     currentPrompt = prompts[promptIndex];
-                    promptContainer.textContent = currentPrompt;
                     showScreen('practice-screen');
-                    startPreparation();
+                    startReadingPhase();
                 })
                 .catch(err => {
-                    alert("Microphone access is required for this app. Please allow microphone access and try again.");
+                    alert("Microphone access is required. Please allow microphone access and try again.");
                     console.error("Error accessing microphone:", err);
                 });
         }
 
-        function setupMediaRecorder(stream) {
-            mediaRecorder = new MediaRecorder(stream);
-            audioChunks = [];
-            mediaRecorder.addEventListener("dataavailable", event => {
-                audioChunks.push(event.data);
-            });
-
-            mediaRecorder.addEventListener("stop", () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                saveRecording(currentPrompt, audioBlob, finalTranscript);
-                displayReview(currentPrompt, audioBlob, finalTranscript);
-                
-                stream.getTracks().forEach(track => track.stop());
-            });
-        }
-
-        function startTimer(duration, element, header, onComplete) {
+        function startTimer(duration, element, onComplete) {
             clearInterval(timerInterval);
             let timeLeft = duration;
-            statusHeader.textContent = header;
             element.textContent = timeLeft;
-
             timerInterval = setInterval(() => {
                 timeLeft--;
                 element.textContent = timeLeft;
@@ -463,9 +598,47 @@
             }, 1000);
         }
 
-        function startPreparation() {
-            recordingIndicator.classList.remove('active');
-            startTimer(15, timerDisplay, "PREPARE YOUR RESPONSE", startRecording);
+        function startReadingPhase() {
+            showPracticePhase('reading');
+            readingTitle.textContent = currentPrompt.readingTitle;
+            readingText.textContent = currentPrompt.readingText;
+            startTimer(45, timerDisplay, startListeningPhase);
+        }
+
+        function startListeningPhase() {
+            showPracticePhase('listening');
+            playConversation(currentPrompt.conversation, startPreparationPhase);
+        }
+
+        function playConversation(conversation, onComplete) {
+            if (!synth || !maleVoice || !femaleVoice) {
+                alert("Speech synthesis is not available or voices could not be loaded. Cannot play conversation.");
+                onComplete();
+                return;
+            }
+
+            let utteranceIndex = 0;
+
+            function speakNext() {
+                if (utteranceIndex >= conversation.length) {
+                    onComplete();
+                    return;
+                }
+                const turn = conversation[utteranceIndex];
+                const utterance = new SpeechSynthesisUtterance(turn.line);
+                utterance.voice = turn.speaker === 'Male' ? maleVoice : femaleVoice;
+                utterance.onend = speakNext; // Chain the next utterance
+                synth.speak(utterance);
+                utteranceIndex++;
+            }
+            speakNext();
+        }
+
+        function startPreparationPhase() {
+            showPracticePhase('response');
+            promptContainer.textContent = currentPrompt.question;
+            statusHeaderResponse.textContent = "PREPARE YOUR RESPONSE";
+            startTimer(30, timerResponseDisplay, startRecording);
         }
 
         function playBeep() {
@@ -480,100 +653,76 @@
             oscillator.start();
             oscillator.stop(audioContext.currentTime + 0.2);
         }
-
+        
         function startRecording() {
             playBeep();
             finalTranscript = '';
             mediaRecorder.start();
             if (speechRecognition) speechRecognition.start();
             recordingIndicator.classList.add('active');
-            startTimer(45, timerDisplay, "SPEAK NOW", stopRecording);
+            statusHeaderResponse.textContent = "SPEAK NOW";
+            startTimer(60, timerResponseDisplay, stopRecording);
         }
 
         function stopRecording() {
-            if(mediaRecorder.state !== "inactive") mediaRecorder.stop();
+            if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
             if (speechRecognition) speechRecognition.stop();
             recordingIndicator.classList.remove('active');
         }
         
+        function setupMediaRecorder(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                saveRecording(currentPrompt, audioBlob, finalTranscript);
+                displayReview(currentPrompt, audioBlob, finalTranscript);
+                stream.getTracks().forEach(track => track.stop());
+            };
+        }
+        
+        // --- DATA & REVIEW ---
         function saveRecording(prompt, audioBlob, transcript) {
             if (!db) return;
             const transaction = db.transaction(['recordings'], 'readwrite');
             const store = transaction.objectStore('recordings');
-            const recording = {
-                prompt: prompt,
-                date: new Date().toISOString(),
-                audioBlob: audioBlob,
-                transcript: transcript
-            };
-            store.add(recording);
+            store.add({ promptData: prompt, date: new Date().toISOString(), audioBlob: audioBlob, transcript: transcript });
         }
         
         function displayReview(prompt, audioBlob, transcript) {
-            reviewPrompt.textContent = prompt;
-            
+            reviewPrompt.textContent = prompt.question;
             const audioUrl = URL.createObjectURL(audioBlob);
             audioPlaybackContainer.innerHTML = '';
             const audio = document.createElement('audio');
             audio.controls = true;
             audio.src = audioUrl;
             audioPlaybackContainer.appendChild(audio);
-            
-            reviewTranscript.textContent = transcript || "[No speech was detected.]";
-            
+            reviewTranscript.textContent = transcript || "[No speech detected or transcription failed.]";
             showScreen('review-screen');
         }
         
         function showHistoryScreen() {
             if (!db) return;
-            const transaction = db.transaction(['recordings'], 'readonly');
-            const store = transaction.objectStore('recordings');
-            const getAllRequest = store.getAll();
-            
             historyList.innerHTML = '';
-
-            getAllRequest.onsuccess = () => {
-                const recordings = getAllRequest.result.reverse();
+            const store = db.transaction(['recordings'], 'readonly').objectStore('recordings');
+            store.getAll().onsuccess = event => {
+                const recordings = event.target.result.reverse();
                 if (recordings.length === 0) {
                     historyList.innerHTML = '<li>No past recordings found.</li>';
                 } else {
                     recordings.forEach(rec => {
                         const li = document.createElement('li');
                         li.className = 'history-item';
-                        li.dataset.id = rec.id;
-                        
-                        const promptDiv = document.createElement('div');
-                        promptDiv.className = 'history-item-prompt';
-                        promptDiv.textContent = rec.prompt;
-                        
-                        const dateDiv = document.createElement('div');
-                        dateDiv.className = 'history-item-date';
-                        dateDiv.textContent = new Date(rec.date).toLocaleString();
-                        
-                        li.appendChild(promptDiv);
-                        li.appendChild(dateDiv);
-                        
-                        li.addEventListener('click', () => loadRecordingForReview(rec.id));
-                        
+                        li.innerHTML = `<div class="history-item-prompt">${rec.promptData.readingTitle}</div>
+                                        <div class="history-item-date">${new Date(rec.date).toLocaleString()}</div>`;
+                        li.onclick = () => displayReview(rec.promptData, rec.audioBlob, rec.transcript);
                         historyList.appendChild(li);
                     });
                 }
-            };
-            showScreen('history-screen');
-        }
-        
-        function loadRecordingForReview(id) {
-            if (!db) return;
-            const transaction = db.transaction(['recordings'], 'readonly');
-            const store = transaction.objectStore('recordings');
-            const getRequest = store.get(id);
-
-            getRequest.onsuccess = () => {
-                const rec = getRequest.result;
-                displayReview(rec.prompt, rec.audioBlob, rec.transcript);
+                showScreen('history-screen');
             };
         }
-
     </script>
 
 </body>
