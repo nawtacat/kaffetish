@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOefl Speaking Task 4 Practice</title>
+    <style>
+        :root {
+            --primary-bg: #f0f2f5;
+            --container-bg: #ffffff;
+            --text-color: #1c1e21;
+            --primary-blue: #007bff;
+            --hover-blue: #0056b3;
+            --border-color: #dddfe2;
+            --timer-color: #d9534f;
+            --recording-color: #d9534f;
+            --warning-color: #8a6d3b;
+            --warning-bg: #fcf8e3;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--container-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .screen {
+            display: none;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: block;
+        }
+        
+        #api-support-warning {
+            display: none;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--warning-color);
+            background-color: var(--warning-bg);
+            border-color: #faebcc;
+            text-align: left;
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
+
+        .prompt-text {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin: 20px 0;
+            text-align: left;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+            color: var(--timer-color);
+        }
+
+        .status-header {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .listening-indicator {
+            font-size: 1.5em;
+            color: #333;
+            margin: 50px 0;
+        }
+        
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.2em;
+            color: var(--recording-color);
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .recording-indicator::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background-color: var(--recording-color);
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 10px 5px;
+            display: inline-block;
+        }
+
+        .button:hover {
+            background-color: var(--hover-blue);
+        }
+        
+        .button.secondary {
+            background-color: #6c757d;
+        }
+        
+        .button.secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .review-section {
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .review-section h3 {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .transcript-box {
+            background-color: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+        
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        
+        .history-item {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .history-item:hover {
+            background-color: #f0f2f5;
+        }
+        
+        .history-item-prompt {
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .history-item-date {
+            font-size: 0.9em;
+            color: #606770;
+        }
+
+        .button-group {
+            margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div id="main-screen" class="screen active">
+            <h1>TOEFL® Integrated Speaking (Task 4)</h1>
+            <div id="api-support-warning">
+                <strong>Warning:</strong> Your browser does not support the Web Speech API required for transcription and/or voice synthesis. Please use a modern desktop browser like Google Chrome or Microsoft Edge for all features.
+            </div>
+            <p>This tool simulates the academic lecture speaking task.</p>
+            <p>You will <strong>listen</strong> to a lecture, <strong>prepare</strong> your response (20s), and then <strong>speak</strong> (60s).</p>
+            <div class="button-group">
+                <button id="start-btn" class="button">Start New Session</button>
+                <button id="history-btn" class="button secondary">Review Past Recordings</button>
+            </div>
+        </div>
+
+        <div id="practice-screen" class="screen">
+            <h2 id="practice-title">Integrated Speaking Task (Academic Lecture)</h2>
+            
+            <div id="listening-phase" style="display: none;">
+                <div class="status-header">Listen to a part of a lecture.</div>
+                <div class="listening-indicator">🎧 Listening...</div>
+            </div>
+
+            <div id="response-phase" style="display: none;">
+                <div id="prompt-container" class="prompt-text"></div>
+                <div id="status-header-response" class="status-header"></div>
+                <div id="timer-response" class="timer-display"></div>
+                <div id="recording-indicator" class="recording-indicator">RECORDING</div>
+            </div>
+        </div>
+
+        <div id="review-screen" class="screen">
+             <h2>Review Your Response</h2>
+            <div class="review-section">
+                <h3>Question</h3>
+                <div id="review-prompt" class="prompt-text"></div>
+            </div>
+            <div class="review-section">
+                <h3>Your Recording</h3>
+                <div id="audio-playback"></div>
+            </div>
+            <div class="review-section">
+                <h3>Your Transcript</h3>
+                <p style="font-size: 0.9em; color: #606770;">Note: Transcript accuracy depends on your browser, internet connection, and microphone clarity.</p>
+                <div id="review-transcript" class="transcript-box"></div>
+            </div>
+            <div class="button-group">
+                <button id="practice-another-btn" class="button">Practice Another Prompt</button>
+                <button id="back-to-main-btn" class="button secondary">Back to Main Menu</button>
+            </div>
+        </div>
+        
+        <div id="history-screen" class="screen">
+            <h2>Past Recordings</h2>
+            <ul id="history-list" class="history-list"></ul>
+             <div class="button-group">
+                <button id="history-back-btn" class="button secondary">Back to Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 10 PROMPTS DATA ---
+        const prompts = [
+            {
+                id: 1,
+                lectureTitle: "Two Pricing Strategies",
+                lecture: [
+                    { speaker: "Professor", line: "Today, we’ll talk about how companies determine the initial price for their products. [cite_start]There are different approaches, and today we’ll discuss two of them." [cite: 117, 118]},
+                    [cite_start]{ speaker: "Professor", line: "One strategy sets the initial price of the product high, followed by a lower price at a later stage." [cite: 119]},
+                    [cite_start]{ speaker: "Professor", line: "When introducing a new product, companies want to build a high-quality image for it, as products that cost more are believed to be of higher quality." [cite: 120, 121]},
+                    [cite_start]{ speaker: "Professor", line: "Companies can make high profits from consumers willing to pay more to get an innovative, high-tech product sooner, like when video cameras or cell phones first came out." [cite: 122, 123, 124]},
+                    [cite_start]{ speaker: "Professor", line: "Another strategy sets an initial price low. This is often used when the market is already saturated, and the goal is to undercut competitors." [cite: 126]},
+                    [cite_start]{ speaker: "Professor", line: "For example, a new computer maker might offer a computer at an affordable price, lower than existing brands." [cite: 127, 128]},
+                    [cite_start]{ speaker: "Professor", line: "This appeals to new consumers and tempts existing consumers to switch brands." [cite: 129, 130]},
+                    [cite_start]{ speaker: "Professor", line: "The company then makes profits by encouraging customers to buy accessories manufactured by them, like printers or software." [cite: 131, 132]}
+                ],
+                [cite_start]question: "Using the points and examples from the lecture, explain the two pricing strategies described by the professor." [cite: 137]
+            },
+            {
+                id: 2,
+                lectureTitle: "Animal Adaptations to Desert Life",
+                lecture: [
+                    { speaker: "Professor", line: "Animals that live in the desert have developed incredible adaptations to survive in such a harsh environment with little water and extreme heat. Let's discuss two types of adaptations: physiological and behavioral." },
+                    { speaker: "Professor", line: "First are physiological adaptations, which are changes to an animal's body. A great example is the camel. Camels can survive for long periods without water because their bodies are designed to conserve it. They have oval-shaped red blood cells that can flow easily even when they're dehydrated, and their bodies can tolerate large changes in temperature to reduce water loss from sweating. They also produce very concentrated urine to avoid losing water." },
+                    { speaker: "Professor", line: "Second are behavioral adaptations, which are things animals do to survive. Think of the fennec fox. It's a small fox that lives in the Sahara Desert. To escape the brutal heat of the day, it stays in a burrow underground. It's nocturnal, meaning it only comes out at night to hunt when the temperatures are much cooler. This behavior of staying out of the sun is crucial for its survival and prevents it from overheating." }
+                ],
+                question: "Using the examples of the camel and the fennec fox, explain two types of animal adaptations to desert life."
+            },
+            {
+                id: 3,
+                lectureTitle: "Two Types of Memory",
+                lecture: [
+                    { speaker: "Professor", line: "In psychology, we often distinguish between two major types of long-term memory: procedural memory and declarative memory." },
+                    { speaker: "Professor", line: "Procedural memory is the memory of how to do things, like motor skills. It's often unconscious; you do it without thinking. For instance, riding a bicycle. Once you learn, you never forget. When you get on a bike, you don't consciously think 'Okay, now I must push the left pedal, then the right, while balancing.' Your body just remembers how to do it. That's procedural memory at work." },
+                    { speaker: "Professor", line: "Declarative memory, on the other hand, is the memory of facts and events. It's conscious and can be explicitly stated or 'declared.' For example, knowing that Paris is the capital of France is a declarative memory. You can consciously recall and state that fact. Similarly, remembering what you did on your vacation last summer is a declarative memory of a specific event. You can describe it in words." }
+                ],
+                question: "Using the examples from the lecture, explain the difference between procedural and declarative memory."
+            },
+            {
+                id: 4,
+                lectureTitle: "Two Types of Social Groups",
+                lecture: [
+                    { speaker: "Professor", line: "Sociologists classify social groups into two main categories based on the level of intimacy and importance to our identity. These are primary groups and secondary groups." },
+                    { speaker: "Professor", line: "Primary groups are small, characterized by close, personal, and long-lasting relationships. The members have a powerful influence on each other. The most classic example of a primary group is your family. The relationships are deeply personal and emotional, and they play a huge role in shaping who you are, your values, and your beliefs." },
+                    { speaker: "Professor", line: "Secondary groups are much larger and more impersonal. They are often temporary and based on achieving a specific goal or activity. The relationships are formal and goal-oriented. For example, your classmates in a large university lecture course form a secondary group. You are all there for the same purpose—to pass the class—but you may not know most of them personally, and the group will disband at the end of the semester." }
+                ],
+                question: "Explain the two types of social groups discussed by the professor, using the examples provided."
+            },
+            {
+                id: 5,
+                lectureTitle: "Two Defense Mechanisms in Plants",
+                lecture: [
+                    { speaker: "Professor", line: "Plants, like animals, have developed defense mechanisms to protect themselves from being eaten by herbivores. Let's look at two types of defenses: mechanical and chemical." },
+                    { speaker: "Professor", line: "Mechanical defenses are physical structures that make the plant difficult to eat. A perfect example is the cactus. It's covered in sharp spines. These spines are modified leaves that physically deter most animals from trying to take a bite. It's a very effective physical barrier that says 'don't touch me'." },
+                    { speaker: "Professor", line: "Chemical defenses, on the other hand, involve producing toxic or unpleasant-tasting substances. For example, the milkweed plant produces a milky, poisonous sap. When an insect tries to eat its leaves, the sap makes the insect sick. Most animals learn to avoid the milkweed because of this toxic chemical, which serves as an excellent defense against being eaten." }
+                ],
+                question: "Using the examples of the cactus and the milkweed, explain two types of defense mechanisms in plants."
+            },
+            {
+                id: 6,
+                lectureTitle: "Artist Patronage in the Renaissance",
+                lecture: [
+                    { speaker: "Professor", line: "During the Renaissance, most great art was not created just for the artist's self-expression. It was funded by patrons—wealthy individuals or institutions who commissioned the art. There were two main types of patrons: the Church and private families." },
+                    { speaker: "Professor", line: "First, the Church was a massive patron of the arts. The goal of Church-commissioned art was religious instruction and inspiration. For example, the Pope commissioned Michelangelo to paint the ceiling of the Sistine Chapel. The subject matter was not Michelangelo's choice; he was instructed to paint scenes from the Bible to inspire awe and devotion in the worshippers below. The art served a clear religious function." },
+                    { speaker: "Professor", line: "Second, you had wealthy private families, like the Medici family in Florence. They also commissioned a lot of art, but their motivations were often different. They wanted to display their wealth, power, and status. For instance, a wealthy merchant might hire a famous artist to paint a portrait of his wife wearing expensive jewelry and clothing. The goal was not religious, but to show off his family's high social standing." }
+                ],
+                question: "Using the examples from the lecture, explain the role of two different types of patrons in Renaissance art."
+            },
+            {
+                id: 7,
+                lectureTitle: "Two Types of Motivation",
+                lecture: [
+                    { speaker: "Professor", line: "When we talk about what drives us to do things, psychologists often discuss two types of motivation: intrinsic and extrinsic." },
+                    { speaker: "Professor", line: "Intrinsic motivation is when you do something because it is personally rewarding. The activity itself is the reward. For example, someone who loves to paint might spend hours on a painting just for the joy and satisfaction of creating it. They are not doing it for money or praise, but for the pure enjoyment of the process. That's intrinsic motivation." },
+                    { speaker: "Professor", line: "Extrinsic motivation is when you do something to earn an external reward or avoid a punishment. The motivation comes from the outside. For example, an employee might work hard on a project, not because they love the project, but because they want to get a bonus or a promotion. The bonus is the external reward driving their behavior. If the bonus were removed, their motivation might disappear." }
+                ],
+                question: "Explain the difference between intrinsic and extrinsic motivation, using the examples from the lecture."
+            },
+            {
+                id: 8,
+                lectureTitle: "Two Leadership Styles",
+                lecture: [
+                    { speaker: "Professor", line: "In business management, we often study different leadership styles. Let's focus on two contrasting styles: autocratic and democratic." },
+                    { speaker: "Professor", line: "An autocratic leader makes decisions on their own, without much input from their team. They hold all the authority and expect employees to follow their orders. This style can be effective in situations that require quick, decisive action. For example, a fire chief responding to an emergency can't stop to ask all the firefighters for their opinion. The chief must make immediate, autocratic decisions to ensure everyone's safety and to control the situation efficiently." },
+                    { speaker: "Professor", line: "A democratic leader, by contrast, actively involves their team in the decision-making process. They encourage discussion and consider everyone's feedback before making a final choice. This style is very effective for promoting creativity and team morale. For example, a manager of a software development team might use a democratic style when designing a new product. By getting input from all the programmers and designers, the manager can foster innovation and make the team feel more invested in the project's success." }
+                ],
+                question: "Using the examples of the fire chief and the software manager, explain two different leadership styles."
+            },
+            {
+                id: 9,
+                lectureTitle: "Two Types of Erosion",
+                lecture: [
+                    { speaker: "Professor", line: "Erosion is the process by which natural forces wear away and transport soil and rock. Today we'll look at two powerful agents of erosion: water and wind." },
+                    { speaker: "Professor", line: "First, water erosion. This is incredibly powerful, especially in the form of rivers. Over millions of years, the constant flow of a river can carve deep canyons into the earth. The Grand Canyon is a prime example. The Colorado River's persistent flow wore away layer after layer of rock, creating the massive canyon we see today. The water acted like a slow, steady cutting tool." },
+                    { speaker: "Professor", line: "Second, there's wind erosion. This is most common in dry, arid regions with little vegetation to hold the soil in place. The wind can pick up sand and small particles and blast them against rock formations. Over long periods, this acts like a sandblaster, sculpting the rocks into unusual shapes. The famous arches in Arches National Park, for example, were largely formed by wind erosion carrying away softer rock and leaving the harder rock behind." }
+                ],
+                question: "Using the examples of the Grand Canyon and Arches National Park, explain two types of erosion."
+            },
+            {
+                id: 10,
+                lectureTitle: "Two Methods of Heat Transfer",
+                lecture: [
+                    { speaker: "Professor", line: "Heat transfer is the movement of thermal energy from one thing to another. There are several ways this can happen, but let's focus on two: conduction and convection." },
+                    { speaker: "Professor", line: "Conduction is the transfer of heat through direct contact. When you touch a hot object, the heat transfers directly to your hand. For example, if you leave a metal spoon in a pot of hot soup, the spoon itself will become very hot. The heat from the soup is transferred directly up the spoon's handle, molecule by molecule, until the entire spoon is hot. That's conduction." },
+                    { speaker: "Professor", line: "Convection is the transfer of heat through the movement of fluids—that is, liquids or gases. When a fluid is heated, it becomes less dense and rises. Cooler, denser fluid then sinks to take its place, gets heated, and rises in turn. This creates a current. A great example is boiling water in a pot. The burner heats the water at the bottom, which rises. The cooler water at the top sinks, gets heated, and rises. This circular movement, called a convection current, is what heats the entire pot of water." }
+                ],
+                question: "Explain two methods of heat transfer, using the examples of the metal spoon and the pot of boiling water."
+            }
+        ];
+        
+        // --- DOM ELEMENTS AND STATE ---
+        const screens = document.querySelectorAll('.screen');
+        const startBtn = document.getElementById('start-btn');
+        const historyBtn = document.getElementById('history-btn');
+        const practiceAnotherBtn = document.getElementById('practice-another-btn');
+        const backToMainBtn = document.getElementById('back-to-main-btn');
+        const historyBackBtn = document.getElementById('history-back-btn');
+        const apiSupportWarning = document.getElementById('api-support-warning');
+        const listeningPhaseDiv = document.getElementById('listening-phase');
+        const responsePhaseDiv = document.getElementById('response-phase');
+        const promptContainer = document.getElementById('prompt-container');
+        const statusHeaderResponse = document.getElementById('status-header-response');
+        const timerResponseDisplay = document.getElementById('timer-response');
+        const recordingIndicator = document.getElementById('recording-indicator');
+        const reviewPrompt = document.getElementById('review-prompt');
+        const audioPlaybackContainer = document.getElementById('audio-playback');
+        const reviewTranscript = document.getElementById('review-transcript');
+        const historyList = document.getElementById('history-list');
+
+        let currentPrompt = {};
+        let timerInterval;
+        let mediaRecorder;
+        let audioChunks = [];
+        let speechRecognition;
+        let finalTranscript = '';
+        let synth = window.speechSynthesis;
+        let professorVoice;
+
+        // --- DATABASE SETUP ---
+        let db;
+        const dbRequest = indexedDB.open('toeflTask4App', 1);
+        dbRequest.onupgradeneeded = event => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains('recordings')) {
+                db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        dbRequest.onsuccess = event => { db = event.target.result; };
+        dbRequest.onerror = event => { console.error("Database error:", event.target.errorCode); };
+        
+        // --- SPEECH & AUDIO SETUP ---
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        function setupApis() {
+            if (!SpeechRecognitionAPI || !synth) {
+                apiSupportWarning.style.display = 'block';
+            }
+
+            if (SpeechRecognitionAPI) {
+                speechRecognition = new SpeechRecognitionAPI();
+                speechRecognition.continuous = true;
+                speechRecognition.interimResults = true;
+                speechRecognition.onresult = event => {
+                    finalTranscript = '';
+                    for (let i = 0; i < event.results.length; ++i) {
+                         finalTranscript += event.results[i][0].transcript;
+                    }
+                };
+                speechRecognition.onerror = event => {
+                    console.error("Speech recognition error:", event.error);
+                    finalTranscript = `[Transcription failed: ${event.error}]`;
+                };
+            }
+            
+            function loadVoices() {
+                const voices = synth.getVoices();
+                if (voices.length > 0) {
+                    professorVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google') && !v.name.includes('Female')) || 
+                                     voices.find(v => v.lang.startsWith('en') && v.name.includes('David')) ||
+                                     voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
+                                     voices.find(v => v.lang.startsWith('en'));
+                } else {
+                    console.warn("No speech synthesis voices found.");
+                }
+            }
+            loadVoices();
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = loadVoices;
+            }
+        }
+        
+        // --- NAVIGATION & UI ---
+        function showScreen(screenId) {
+            screens.forEach(screen => screen.classList.toggle('active', screen.id === screenId));
+        }
+
+        function showPracticePhase(phase) {
+            listeningPhaseDiv.style.display = 'none';
+            responsePhaseDiv.style.display = 'none';
+            if (phase === 'listening') listeningPhaseDiv.style.display = 'block';
+            if (phase === 'response') responsePhaseDiv.style.display = 'block';
+        }
+
+        // --- EVENT LISTENERS ---
+        window.addEventListener('load', setupApis);
+        startBtn.addEventListener('click', startPracticeSession);
+        historyBtn.addEventListener('click', showHistoryScreen);
+        practiceAnotherBtn.addEventListener('click', () => showScreen('main-screen'));
+        backToMainBtn.addEventListener('click', () => showScreen('main-screen'));
+        historyBackBtn.addEventListener('click', () => showScreen('main-screen'));
+
+        // --- CORE LOGIC ---
+        function startPracticeSession() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    setupMediaRecorder(stream);
+                    const promptIndex = Math.floor(Math.random() * prompts.length);
+                    currentPrompt = prompts[promptIndex];
+                    showScreen('practice-screen');
+                    startListeningPhase();
+                })
+                .catch(err => {
+                    alert("Microphone access is required. Please allow microphone access and try again.");
+                    console.error("Error accessing microphone:", err);
+                });
+        }
+
+        function startTimer(duration, element, onComplete) {
+            clearInterval(timerInterval);
+            let timeLeft = duration;
+            element.textContent = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                element.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    onComplete();
+                }
+            }, 1000);
+        }
+
+        function startListeningPhase() {
+            showPracticePhase('listening');
+            playLecture(currentPrompt.lecture, startPreparationPhase);
+        }
+
+        function playLecture(lecture, onComplete) {
+            if (!synth || !professorVoice) {
+                alert("Speech synthesis is not available or a voice could not be loaded. Cannot play lecture.");
+                onComplete();
+                return;
+            }
+            let utteranceIndex = 0;
+            function speakNext() {
+                if (utteranceIndex >= lecture.length) {
+                    onComplete();
+                    return;
+                }
+                const turn = lecture[utteranceIndex];
+                const utterance = new SpeechSynthesisUtterance(turn.line);
+                utterance.voice = professorVoice;
+                utterance.onend = speakNext;
+                synth.speak(utterance);
+                utteranceIndex++;
+            }
+            speakNext();
+        }
+
+        function startPreparationPhase() {
+            showPracticePhase('response');
+            promptContainer.textContent = currentPrompt.question;
+            statusHeaderResponse.textContent = "PREPARE YOUR RESPONSE";
+            startTimer(20, timerResponseDisplay, startRecording); // ** 20 SECONDS PREP TIME **
+        }
+
+        function playBeep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+        
+        function startRecording() {
+            playBeep();
+            finalTranscript = '';
+            mediaRecorder.start();
+            if (speechRecognition) speechRecognition.start();
+            recordingIndicator.classList.add('active');
+            statusHeaderResponse.textContent = "SPEAK NOW";
+            startTimer(60, timerResponseDisplay, stopRecording);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
+            if (speechRecognition) speechRecognition.stop();
+            recordingIndicator.classList.remove('active');
+        }
+        
+        function setupMediaRecorder(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                saveRecording(currentPrompt, audioBlob, finalTranscript);
+                displayReview(currentPrompt, audioBlob, finalTranscript);
+                stream.getTracks().forEach(track => track.stop());
+            };
+        }
+        
+        // --- DATA & REVIEW ---
+        function saveRecording(prompt, audioBlob, transcript) {
+            if (!db) return;
+            const transaction = db.transaction(['recordings'], 'readwrite');
+            const store = transaction.objectStore('recordings');
+            store.add({ promptData: prompt, date: new Date().toISOString(), audioBlob: audioBlob, transcript: transcript });
+        }
+        
+        function displayReview(prompt, audioBlob, transcript) {
+            reviewPrompt.textContent = prompt.question;
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioPlaybackContainer.innerHTML = '';
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = audioUrl;
+            audioPlaybackContainer.appendChild(audio);
+            reviewTranscript.textContent = transcript || "[No speech detected or transcription failed.]";
+            showScreen('review-screen');
+        }
+        
+        function showHistoryScreen() {
+            if (!db) return;
+            historyList.innerHTML = '';
+            const store = db.transaction(['recordings'], 'readonly').objectStore('recordings');
+            store.getAll().onsuccess = event => {
+                const recordings = event.target.result.reverse();
+                if (recordings.length === 0) {
+                    historyList.innerHTML = '<li>No past recordings found.</li>';
+                } else {
+                    recordings.forEach(rec => {
+                        const li = document.createElement('li');
+                        li.className = 'history-item';
+                        li.innerHTML = `<div class="history-item-prompt">${rec.promptData.lectureTitle}</div>
+                                        <div class="history-item-date">${new Date(rec.date).toLocaleString()}</div>`;
+                        li.onclick = () => displayReview(rec.promptData, rec.audioBlob, rec.transcript);
+                        historyList.appendChild(li);
+                    });
+                }
+                showScreen('history-screen');
+            };
+        }
+    </script>
+
+</body>
+</html>
