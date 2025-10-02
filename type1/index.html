@@ -14,6 +14,8 @@
             --border-color: #dddfe2;
             --timer-color: #d9534f;
             --recording-color: #d9534f;
+            --warning-color: #8a6d3b;
+            --warning-bg: #fcf8e3;
         }
 
         body {
@@ -45,6 +47,18 @@
 
         .screen.active {
             display: block;
+        }
+        
+        #api-support-warning {
+            display: none;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--warning-color);
+            background-color: var(--warning-bg);
+            border-color: #faebcc;
+            text-align: left;
         }
 
         h1, h2 {
@@ -200,6 +214,9 @@
     <div class="app-container">
         <div id="main-screen" class="screen active">
             <h1>TOEFL® Independent Speaking Practice</h1>
+            <div id="api-support-warning">
+                <strong>Warning:</strong> Your browser does not support the Web Speech API required for transcription. Please use a modern desktop browser like Google Chrome or Microsoft Edge for this feature.
+            </div>
             <p>This tool simulates Task 1 of the TOEFL iBT Speaking section.</p>
             <p>You will have <strong>15 seconds to prepare</strong> and <strong>45 seconds to speak</strong>.</p>
             <div class="button-group">
@@ -230,7 +247,7 @@
             </div>
             <div class="review-section">
                 <h3>Your Transcript</h3>
-                <p style="font-size: 0.9em; color: #606770;">Note: Transcript is auto-generated and may contain errors. Its accuracy depends on your browser.</p>
+                <p style="font-size: 0.9em; color: #606770;">Note: Transcript accuracy depends on your browser, internet connection, and microphone clarity.</p>
                 <div id="review-transcript" class="transcript-box"></div>
             </div>
             <div class="button-group">
@@ -316,6 +333,7 @@
         const backToMainBtn = document.getElementById('back-to-main-btn');
         const historyBackBtn = document.getElementById('history-back-btn');
 
+        const apiSupportWarning = document.getElementById('api-support-warning');
         const promptContainer = document.getElementById('prompt-container');
         const statusHeader = document.getElementById('status-header');
         const timerDisplay = document.getElementById('timer');
@@ -354,7 +372,7 @@
             console.error("Database error:", event.target.errorCode);
         };
 
-        // --- AUDIO & SPEECH API SETUP ---
+        // --- AUDIO & SPEECH API SETUP & CHECK ---
         const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognitionAPI) {
             speechRecognition = new SpeechRecognitionAPI();
@@ -363,15 +381,21 @@
 
             speechRecognition.onresult = event => {
                 let interimTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
-                    } else {
-                        interimTranscript += event.results[i][0].transcript;
-                    }
+                finalTranscript = ''; // Reset final transcript on new result
+                for (let i = 0; i < event.results.length; ++i) {
+                     finalTranscript += event.results[i][0].transcript;
                 }
             };
+
+            // ** NEW: ERROR HANDLING **
+            speechRecognition.onerror = event => {
+                console.error("Speech recognition error:", event.error);
+                finalTranscript = `[Transcription failed: ${event.error}. Please check your internet connection and microphone permissions.]`;
+            };
+
         } else {
+            // ** NEW: BROWSER SUPPORT WARNING **
+            apiSupportWarning.style.display = 'block';
             console.warn("Speech Recognition API not supported in this browser.");
         }
 
@@ -392,13 +416,11 @@
 
         // --- CORE LOGIC ---
         function startPracticeSession() {
-            // Get microphone permissions before starting
             navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(stream => {
                     setupMediaRecorder(stream);
                     const promptIndex = Math.floor(Math.random() * prompts.length);
                     currentPrompt = prompts[promptIndex];
-                    // ** THIS IS THE CORRECTED LINE **
                     promptContainer.textContent = currentPrompt;
                     showScreen('practice-screen');
                     startPreparation();
@@ -421,7 +443,6 @@
                 saveRecording(currentPrompt, audioBlob, finalTranscript);
                 displayReview(currentPrompt, audioBlob, finalTranscript);
                 
-                // Stop the microphone stream tracks to turn off the indicator
                 stream.getTracks().forEach(track => track.stop());
             });
         }
@@ -454,10 +475,10 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
             oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A4 note
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
             gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
             oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.2); // Beep for 0.2 seconds
+            oscillator.stop(audioContext.currentTime + 0.2);
         }
 
         function startRecording() {
@@ -470,7 +491,7 @@
         }
 
         function stopRecording() {
-            mediaRecorder.stop();
+            if(mediaRecorder.state !== "inactive") mediaRecorder.stop();
             if (speechRecognition) speechRecognition.stop();
             recordingIndicator.classList.remove('active');
         }
@@ -498,7 +519,7 @@
             audio.src = audioUrl;
             audioPlaybackContainer.appendChild(audio);
             
-            reviewTranscript.textContent = transcript || "[No speech detected or speech recognition is not supported by your browser.]";
+            reviewTranscript.textContent = transcript || "[No speech was detected.]";
             
             showScreen('review-screen');
         }
@@ -509,10 +530,10 @@
             const store = transaction.objectStore('recordings');
             const getAllRequest = store.getAll();
             
-            historyList.innerHTML = ''; // Clear previous list
+            historyList.innerHTML = '';
 
             getAllRequest.onsuccess = () => {
-                const recordings = getAllRequest.result.reverse(); // Show newest first
+                const recordings = getAllRequest.result.reverse();
                 if (recordings.length === 0) {
                     historyList.innerHTML = '<li>No past recordings found.</li>';
                 } else {
