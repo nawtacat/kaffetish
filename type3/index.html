@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOEFL Speaking Task 3 Practice</title>
+    <style>
+        :root {
+            --primary-bg: #f0f2f5;
+            --container-bg: #ffffff;
+            --text-color: #1c1e21;
+            --primary-blue: #007bff;
+            --hover-blue: #0056b3;
+            --border-color: #dddfe2;
+            --timer-color: #d9534f;
+            --recording-color: #d9534f;
+            --warning-color: #8a6d3b;
+            --warning-bg: #fcf8e3;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            background-color: var(--container-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .screen {
+            display: none;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: block;
+        }
+        
+        #api-support-warning {
+            display: none;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--warning-color);
+            background-color: var(--warning-bg);
+            border-color: #faebcc;
+            text-align: left;
+        }
+
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+
+        .reading-passage, .prompt-text {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin: 20px 0;
+            text-align: left;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #f9f9f9;
+        }
+        
+        .reading-passage h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .timer-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+            color: var(--timer-color);
+        }
+
+        .status-header {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .listening-indicator {
+            font-size: 1.5em;
+            color: #333;
+            margin: 50px 0;
+        }
+        
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.2em;
+            color: var(--recording-color);
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .recording-indicator::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background-color: var(--recording-color);
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 10px 5px;
+            display: inline-block;
+        }
+
+        .button:hover {
+            background-color: var(--hover-blue);
+        }
+        
+        .button.secondary {
+            background-color: #6c757d;
+        }
+        
+        .button.secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .review-section {
+            text-align: left;
+            margin-top: 20px;
+        }
+        
+        .review-section h3 {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .transcript-box {
+            background-color: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+        
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        
+        .history-item {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .history-item:hover {
+            background-color: #f0f2f5;
+        }
+        
+        .history-item-prompt {
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .history-item-date {
+            font-size: 0.9em;
+            color: #606770;
+        }
+
+        .button-group {
+            margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div id="main-screen" class="screen active">
+            <h1>TOEFL® Integrated Speaking (Task 3)</h1>
+            <div id="api-support-warning">
+                <strong>Warning:</strong> Your browser does not support the Web Speech API required for transcription and/or voice synthesis. Please use a modern desktop browser like Google Chrome or Microsoft Edge for all features.
+            </div>
+            <p>This tool simulates the academic integrated speaking task.</p>
+            <p>You will <strong>read</strong> a passage (45s), <strong>listen</strong> to a lecture, <strong>prepare</strong> your response (30s), and then <strong>speak</strong> (60s).</p>
+            <div class="button-group">
+                <button id="start-btn" class="button">Start New Session</button>
+                <button id="history-btn" class="button secondary">Review Past Recordings</button>
+            </div>
+        </div>
+
+        <div id="practice-screen" class="screen">
+            <h2 id="practice-title">Integrated Speaking Task (Academic)</h2>
+            
+            <div id="reading-phase" style="display: none;">
+                <div class="status-header">Read the passage.</div>
+                <div id="timer" class="timer-display">45</div>
+                <div id="reading-passage-container" class="reading-passage">
+                    <h3 id="reading-title"></h3>
+                    <p id="reading-text"></p>
+                </div>
+            </div>
+
+            <div id="listening-phase" style="display: none;">
+                <div class="status-header">Now listen to part of a lecture on the same topic.</div>
+                <div class="listening-indicator">🎧 Listening...</div>
+            </div>
+
+            <div id="response-phase" style="display: none;">
+                <div id="prompt-container" class="prompt-text"></div>
+                <div id="status-header-response" class="status-header"></div>
+                <div id="timer-response" class="timer-display"></div>
+                <div id="recording-indicator" class="recording-indicator">RECORDING</div>
+            </div>
+        </div>
+
+        <div id="review-screen" class="screen">
+             <h2>Review Your Response</h2>
+            <div class="review-section">
+                <h3>Question</h3>
+                <div id="review-prompt" class="prompt-text"></div>
+            </div>
+            <div class="review-section">
+                <h3>Your Recording</h3>
+                <div id="audio-playback"></div>
+            </div>
+            <div class="review-section">
+                <h3>Your Transcript</h3>
+                <p style="font-size: 0.9em; color: #606770;">Note: Transcript accuracy depends on your browser, internet connection, and microphone clarity.</p>
+                <div id="review-transcript" class="transcript-box"></div>
+            </div>
+            <div class="button-group">
+                <button id="practice-another-btn" class="button">Practice Another Prompt</button>
+                <button id="back-to-main-btn" class="button secondary">Back to Main Menu</button>
+            </div>
+        </div>
+        
+        <div id="history-screen" class="screen">
+            <h2>Past Recordings</h2>
+            <ul id="history-list" class="history-list"></ul>
+             <div class="button-group">
+                <button id="history-back-btn" class="button secondary">Back to Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 10 PROMPTS DATA ---
+        const prompts = [
+            {
+                id: 1,
+                readingTitle: "Revealing Coloration",
+                readingText: "Many animals use coloration to protect themselves from predators. One defensive strategy involving the use of coloration is what is known as revealing coloration. Animals employing this strategy have an area of bright color on some part of their body; this bright color is usually hidden from predators’ view. When approached by a predator, the animal suddenly reveals the area of bright color; this unexpected display of color startles or confuses the predator and provides the would-be prey with an opportunity to escape.",
+                lecture: [
+                    { speaker: "Professor", line: "There’s a large tropical insect called the peanut bug. And the peanut bug’s front wings are colored so that they blend in with their surroundings." },
+                    { speaker: "Professor", line: "But its back wings, which are usually closed and hidden, have these bright, colorful spots on them. And when the peanut bug is attacked, it suddenly opens its back wings, and out pop these big, bright colors." },
+                    { speaker: "Professor", line: "This surprises the predator, and gives the peanut bug a chance to get away." },
+                    { speaker: "Professor", line: "Then you have a butterfly called the morpho butterfly. And parts of the morpho butterfly's wings are very shiny; they reflect a lot of sunlight. When this butterfly is resting, this shiny part of its wings is hidden." },
+                    { speaker: "Professor", line: "So when a bird approaches, the morpho flies away. And when the morpho flaps its wings, all the bird can see are flashes of light reflected from the wings. Those flashes of light make it very difficult for the bird to follow the morpho, and it is usually able to get away." }
+                ],
+                question: "Using the examples of the peanut bug and the morpho butterfly, explain the concept of revealing coloration."
+            },
+            {
+                id: 2,
+                readingTitle: "Cognitive Dissonance",
+                readingText: "In psychology, the term cognitive dissonance describes a state of discomfort felt by a person who holds two or more conflicting beliefs, ideas, or values, or when their beliefs are inconsistent with their actions. When this conflict occurs, people tend to become motivated to change one of the conflicting elements to reduce the discomfort. This might involve changing their behavior, justifying their behavior, or changing their beliefs.",
+                lecture: [
+                    { speaker: "Professor", line: "So let’s take a classic example. Imagine a person who considers themselves an environmentalist. They believe in protecting the environment and reducing waste." },
+                    { speaker: "Professor", line: "But, this person also loves the convenience of driving their big, fuel-inefficient car to work every day, instead of taking the bus. This creates a conflict, a dissonance. Their action of driving the gas-guzzler contradicts their belief in environmentalism." },
+                    { speaker: "Professor", line: "To reduce this mental discomfort, they might change their behavior, maybe by selling the car and taking the bus. Or, more commonly, they might justify their behavior. They might tell themselves, 'Well, I recycle everything at home, and I donate to environmental charities, so it’s okay that I drive this car.' They add new beliefs to make their action seem less contradictory." },
+                    { speaker: "Professor", line: "Here’s another example. Someone is on a strict diet, but they eat a large piece of chocolate cake at a party. This creates dissonance. They believe they should be dieting, but their action is to eat cake." },
+                    { speaker: "Professor", line: "To resolve this, they can’t undo the action. So, they might change their belief. They might say, 'You know what, it's important to treat yourself sometimes. A little cake once in a while is actually good for morale and helps you stick to the diet in the long run.' They modify their belief to align with their behavior." }
+                ],
+                question: "Using the examples from the lecture, explain the concept of cognitive dissonance and how people try to reduce it."
+            },
+            {
+                id: 3,
+                readingTitle: "Product Placement",
+                readingText: "Product placement is a form of advertising where branded goods and services are featured in a production that targets a large audience. In media like movies or television shows, a product might be used by a character or appear in the background. Unlike traditional advertising, which is overt, product placement is often subtle. The goal is to create a positive association with the brand in a more natural, less intrusive way.",
+                lecture: [
+                    { speaker: "Professor", line: "Product placement is everywhere, and it works in a couple of ways. One way is to create a sense of realism or aspiration." },
+                    { speaker: "Professor", line: "Think about a spy movie. The main character is always cool, sophisticated, and drives a very specific brand of luxury sports car. The audience sees this charismatic hero driving the car, and they begin to associate the car with those same qualities of excitement and style. The placement makes the brand seem aspirational." },
+                    { speaker: "Professor", line: "Another example might be in a family sitcom. You might see the family eating a specific brand of cereal at the breakfast table every morning. This makes the product seem like a normal, trustworthy part of everyday family life. It integrates the brand into a relatable scenario." },
+                    { speaker: "Professor", line: "A different strategy is to use the product to move the plot forward. This makes the product seem essential." },
+                    { speaker: "Professor", line: "Imagine a sci-fi movie where an astronaut is stranded on a distant planet. Her only way to communicate with Earth is by using a specific brand of tablet computer. The entire plot revolves around her using this device to solve problems. The audience sees the tablet as reliable and crucial for survival, which is a very powerful form of advertising." }
+                ],
+                question: "Explain what product placement is, using the examples of the luxury car and the tablet computer to illustrate two different strategies."
+            },
+            {
+                id: 4,
+                readingTitle: "Commensalism",
+                readingText: "Commensalism is a type of relationship between two different species of organisms in which one species benefits from the association, while the other is neither harmed nor helped. This is different from mutualism, where both species benefit, and parasitism, where one benefits at the other's expense. In commensalism, the host species is essentially unaffected by the presence of the commensal species.",
+                lecture: [
+                    { speaker: "Professor", line: "There are many fascinating examples of commensalism in the natural world. One common case involves transportation." },
+                    { speaker: "Professor", line: "Take the remora, a type of fish that has a suction cup on its head. It attaches itself to larger marine animals, like sharks or whales. The remora gets a free ride through the ocean and also feeds on the scraps of food left over when the shark eats. The remora clearly benefits. The shark, on the other hand, is so large that it doesn't even notice the small fish attached to it. It’s not harmed, and it doesn’t get any benefit. It's completely unaffected." },
+                    { speaker: "Professor", line: "Another example of commensalism relates to housing. Some birds, like certain types of wrens, will build their nests in the hollows of large cacti in the desert." },
+                    { speaker: "Professor", line: "The cactus provides a safe, protected place for the bird to raise its young, away from predators. The bird benefits greatly from this shelter. The cactus, however, is not affected. The nest doesn't harm the cactus, nor does it provide any benefit to the cactus. The bird is simply using the cactus as a home without impacting it." }
+                ],
+                question: "Using the examples of the remora and the wren, explain the biological relationship of commensalism."
+            },
+            {
+                id: 5,
+                readingTitle: "Franchising",
+                readingText: "Franchising is a business model where an individual, the franchisee, buys the rights to operate a business using the name, branding, and operational model of a larger, established company, the franchisor. The franchisee pays an initial fee and ongoing royalties to the franchisor. In return, they receive a proven business plan, brand recognition, and support with marketing and training. This model allows for rapid expansion of a brand.",
+                lecture: [
+                    { speaker: "Professor", line: "So, franchising offers distinct advantages to both the franchisor and the franchisee. Let's look at it from each side." },
+                    { speaker: "Professor", line: "First, consider the franchisor—the main company. Let's say you own a popular local coffee shop. If you want to expand to another city, you'd need a lot of your own money to rent a new space, hire staff, and manage it. But with franchising, someone else—the franchisee—pays the costs to open the new shop. The franchisor gets to expand their brand's presence and earn money from the fees without a large upfront investment. It’s a low-risk way to grow quickly." },
+                    { speaker: "Professor", line: "Now, think about the franchisee—the person buying the business. Imagine you want to open a restaurant, but you have no experience. It's very risky. You don't know what to put on the menu, how to advertise, or how to run the kitchen efficiently." },
+                    { speaker: "Professor", line: "But if you buy a franchise of a famous fast-food chain, all those problems are solved for you. The company gives you the menu, the recipes, the national advertising campaigns, and a complete training manual. You get a business that customers already know and trust. Your risk of failure is much lower because you are following a successful formula." }
+                ],
+                question: "Explain the business model of franchising and its benefits for both the franchisor and the franchisee, using the examples from the lecture."
+            },
+            {
+                id: 6,
+                readingTitle: "Flow State",
+                readingText: "In psychology, 'flow' is a mental state in which a person performing an activity is fully immersed in a feeling of energized focus, full involvement, and enjoyment. This state is characterized by a complete absorption in what one does, sometimes resulting in a loss of one's sense of time. Flow is not typically experienced during passive, relaxing activities, but rather when one is engaged in a challenging task that requires a high level of skill.",
+                lecture: [
+                    { speaker: "Professor", line: "The concept of flow can be seen in many different areas of life, often when skill and challenge are perfectly matched. For instance, think about a skilled musician, like a concert pianist." },
+                    { speaker: "Professor", line: "When she is playing a very complex piece of music that she has practiced for years, she isn't thinking about each individual note. Her fingers just seem to know where to go. She is completely absorbed in the music, not worried about the audience or the time. Hours might feel like minutes. She is operating at a high level of skill, and the music provides a constant challenge. This is a perfect environment for flow." },
+                    { speaker: "Professor", line: "Another great example is an experienced rock climber. When climbing a difficult route, she isn't thinking about her problems at home or what she'll have for dinner." },
+                    { speaker: "Professor", line: "Her entire focus is on the rock face in front of her—where to place her hand, where to shift her weight. Every move is a challenge that requires her full concentration and skill. She feels in complete control and merges with the activity. She loses all track of time and is completely in the moment. That intense, focused immersion is the essence of the flow state." }
+                ],
+                question: "Using the examples of the pianist and the rock climber, explain the psychological concept of a 'flow state'."
+            },
+            {
+                id: 7,
+                readingTitle: "Convergent Evolution",
+                readingText: "Convergent evolution is a process in biology where unrelated or distantly related species independently evolve similar traits or characteristics. This occurs not because they share a recent common ancestor, but because they have had to adapt to similar environments or ecological niches. These similar traits that arise through convergent evolution are known as analogous structures.",
+                lecture: [
+                    { speaker: "Professor", line: "A classic example of convergent evolution is the development of wings for flight. Birds and insects both have wings and can fly. However, birds and insects are not closely related. They evolved from very different ancestors." },
+                    { speaker: "Professor", line: "The structure of their wings is also very different. Bird wings are made of bones, skin, and feathers. Insect wings are made of a thin membrane called chitin. They developed the ability to fly independently because it provided a huge advantage for escaping predators and finding food. The environmental pressure to fly led to the same solution—wings—in two completely separate evolutionary lines." },
+                    { speaker: "Professor", line: "We see another example in body shape. Look at sharks and dolphins. They look remarkably similar, with streamlined bodies, fins, and a powerful tail. But sharks are fish, and dolphins are mammals." },
+                    { speaker: "Professor", line: "Their last common ancestor lived hundreds of millions of years ago and looked nothing like them. They both evolved that streamlined shape because it is the most efficient design for moving quickly through water to hunt prey. The similar demands of a marine environment pushed both species to converge on the same effective body plan." }
+                ],
+                question: "Explain the concept of convergent evolution using the examples of wings in birds and insects, and body shape in sharks and dolphins."
+            },
+            {
+                id: 8,
+                readingTitle: "Emotional Intelligence",
+                readingText: "Emotional intelligence, often abbreviated as EQ, refers to the ability to perceive, control, and evaluate emotions—both one's own emotions and the emotions of others. It involves several key skills, such as being aware of your emotional state, managing your emotional reactions, and understanding the social cues and feelings of the people around you. High emotional intelligence is considered important for effective communication and interpersonal relationships.",
+                lecture: [
+                    { speaker: "Professor", line: "Let's break down emotional intelligence with a couple of workplace scenarios. First, consider self-management. Imagine a manager is leading a very important project, and a team member makes a big mistake that jeopardizes the deadline." },
+                    { speaker: "Professor", line: "A manager with low emotional intelligence might react with anger, yelling at the employee in front of others. This damages morale and doesn't solve the problem. But a manager with high emotional intelligence would recognize her own anger, control that initial impulse, and think about the best way to handle the situation. She might pull the employee aside, calmly discuss what went wrong, and work with them to find a solution. She manages her own emotions to achieve a better outcome." },
+                    { speaker: "Professor", line: "Now, let's consider social awareness—understanding others' emotions. Suppose you are trying to convince a coworker to help you with a task. You notice that your coworker seems very stressed and is sighing a lot." },
+                    { speaker: "Professor", line: "Someone with low emotional intelligence might just ignore these signals and keep pushing, demanding help. But a person with high EQ would perceive the coworker's stress. They would recognize it's a bad time to ask for a favor and might say, 'You look really busy right now, is everything okay? Let's talk about this later.' They read the emotional cues and adapt their approach, which preserves the relationship." }
+                ],
+                question: "Using the examples of the manager and the coworker, explain two key components of emotional intelligence."
+            },
+            {
+                id: 9,
+                readingTitle: "Behavioral Economics",
+                readingText: "Behavioral economics is a field of study that combines insights from psychology with economic theory to understand how people make economic decisions. Unlike traditional economics, which assumes that humans are perfectly rational, behavioral economics acknowledges that people are often influenced by emotions, biases, and social factors. It examines why people sometimes make choices that seem illogical or counter to their own best interests.",
+                lecture: [
+                    { speaker: "Professor", line: "A key concept in behavioral economics is the 'framing effect.' This is when the way information is presented, or framed, affects the choices people make. For example, imagine a doctor telling a patient about a surgery." },
+                    { speaker: "Professor", line: "The doctor could frame the outcome in positive terms, saying 'This surgery has a 90% success rate.' Or, she could frame it in negative terms: 'This surgery has a 10% failure rate.' Even though the information is identical, research shows that patients are much more likely to agree to the surgery when it's framed positively with the 90% success rate. The framing influences their decision, even though a rational person should see them as the same." },
+                    { speaker: "Professor", line: "Another concept is 'loss aversion.' This is the idea that people feel the pain of a loss much more strongly than the pleasure of an equivalent gain. Consider a simple bet." },
+                    { speaker: "Professor", line: "If I offer you a coin flip where you could win 150 dollars but you could lose 100 dollars, most people won't take the bet. The potential pain of losing 100 dollars feels much stronger than the potential pleasure of winning 150 dollars, even though the potential gain is larger. A purely rational person might take that bet, but our aversion to loss makes us act irrationally and avoid the risk." }
+                ],
+                question: "Using the examples of the surgery and the coin flip, explain how behavioral economics shows that people are not always rational decision-makers."
+            },
+            {
+                id: 10,
+                readingTitle: "Ecological Niche",
+                readingText: "In ecology, an organism's niche refers to its specific role or function within its ecosystem. This includes more than just its physical habitat; it encompasses all the biotic (living) and abiotic (non-living) factors that the organism interacts with. A niche includes what the organism eats, what eats it, its mating and nesting behaviors, and its effect on the environment. The principle of competitive exclusion states that two species cannot occupy the exact same niche in the same habitat at the same time.",
+                lecture: [
+                    { speaker: "Professor", line: "To understand niches, let's look at how species adapt to avoid competition. For example, in the African savanna, you have many different grazing animals that all eat plants, but they don't occupy the exact same niche." },
+                    { speaker: "Professor", line: "Zebras, for instance, primarily eat the tough, upper parts of the grasses. They have digestive systems suited for this high-fiber material. After the zebras have eaten, other animals like wildebeest move in. They eat the middle parts of the grass that were exposed by the zebras. Finally, gazelles come through and eat the small, new shoots that grow close to the ground. They are all eating grass in the same area, but they specialize in different parts of the grass, so they occupy different niches and can coexist." },
+                    { speaker: "Professor", "line": "We see a similar thing with birds in a forest. Two species of warblers might live in the same type of tree and eat the same type of insects." },
+                    { speaker: "Professor", line: "But one species might spend all its time foraging for insects on the upper branches in the sunlight. The other species might stick to the lower, shadier branches near the trunk. By specializing in different parts of the same tree, they avoid direct competition for food. They have partitioned the resource, creating two distinct niches in the same tree." }
+                ],
+                question: "Explain the concept of an ecological niche using the examples of the savanna grazers and the forest warblers."
+            }
+        ];
+        
+        // --- DOM ELEMENTS AND STATE (similar to previous app) ---
+        const screens = document.querySelectorAll('.screen');
+        const startBtn = document.getElementById('start-btn');
+        const historyBtn = document.getElementById('history-btn');
+        const practiceAnotherBtn = document.getElementById('practice-another-btn');
+        const backToMainBtn = document.getElementById('back-to-main-btn');
+        const historyBackBtn = document.getElementById('history-back-btn');
+        const apiSupportWarning = document.getElementById('api-support-warning');
+        const readingPhaseDiv = document.getElementById('reading-phase');
+        const listeningPhaseDiv = document.getElementById('listening-phase');
+        const responsePhaseDiv = document.getElementById('response-phase');
+        const readingTitle = document.getElementById('reading-title');
+        const readingText = document.getElementById('reading-text');
+        const timerDisplay = document.getElementById('timer');
+        const promptContainer = document.getElementById('prompt-container');
+        const statusHeaderResponse = document.getElementById('status-header-response');
+        const timerResponseDisplay = document.getElementById('timer-response');
+        const recordingIndicator = document.getElementById('recording-indicator');
+        const reviewPrompt = document.getElementById('review-prompt');
+        const audioPlaybackContainer = document.getElementById('audio-playback');
+        const reviewTranscript = document.getElementById('review-transcript');
+        const historyList = document.getElementById('history-list');
+
+        let currentPrompt = {};
+        let timerInterval;
+        let mediaRecorder;
+        let audioChunks = [];
+        let speechRecognition;
+        let finalTranscript = '';
+        let synth = window.speechSynthesis;
+        let professorVoice;
+
+        // --- DATABASE SETUP ---
+        let db;
+        const dbRequest = indexedDB.open('toeflTask3App', 1);
+        dbRequest.onupgradeneeded = event => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains('recordings')) {
+                db.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+        dbRequest.onsuccess = event => { db = event.target.result; };
+        dbRequest.onerror = event => { console.error("Database error:", event.target.errorCode); };
+        
+        // --- SPEECH & AUDIO SETUP ---
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        function setupApis() {
+            if (!SpeechRecognitionAPI || !synth) {
+                apiSupportWarning.style.display = 'block';
+            }
+
+            if (SpeechRecognitionAPI) {
+                speechRecognition = new SpeechRecognitionAPI();
+                speechRecognition.continuous = true;
+                speechRecognition.interimResults = true;
+                speechRecognition.onresult = event => {
+                    finalTranscript = '';
+                    for (let i = 0; i < event.results.length; ++i) {
+                         finalTranscript += event.results[i][0].transcript;
+                    }
+                };
+                speechRecognition.onerror = event => {
+                    console.error("Speech recognition error:", event.error);
+                    finalTranscript = `[Transcription failed: ${event.error}]`;
+                };
+            }
+            
+            function loadVoices() {
+                const voices = synth.getVoices();
+                if (voices.length > 0) {
+                    professorVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google') && !v.name.includes('Female')) || // Prefer Google Male
+                                     voices.find(v => v.lang.startsWith('en') && v.name.includes('David')) ||
+                                     voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || // Any Google voice
+                                     voices.find(v => v.lang.startsWith('en') && (v.name.includes('Male') || v.name.includes('Female'))); // Any English voice
+                    if(!professorVoice) professorVoice = voices.find(v => v.lang.startsWith('en'));
+                } else {
+                    console.warn("No speech synthesis voices found.");
+                }
+            }
+            loadVoices();
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = loadVoices;
+            }
+        }
+        
+        // --- NAVIGATION & UI ---
+        function showScreen(screenId) {
+            screens.forEach(screen => screen.classList.toggle('active', screen.id === screenId));
+        }
+
+        function showPracticePhase(phase) {
+            readingPhaseDiv.style.display = 'none';
+            listeningPhaseDiv.style.display = 'none';
+            responsePhaseDiv.style.display = 'none';
+            if (phase === 'reading') readingPhaseDiv.style.display = 'block';
+            if (phase === 'listening') listeningPhaseDiv.style.display = 'block';
+            if (phase === 'response') responsePhaseDiv.style.display = 'block';
+        }
+
+        // --- EVENT LISTENERS ---
+        window.addEventListener('load', setupApis);
+        startBtn.addEventListener('click', startPracticeSession);
+        historyBtn.addEventListener('click', showHistoryScreen);
+        practiceAnotherBtn.addEventListener('click', () => showScreen('main-screen'));
+        backToMainBtn.addEventListener('click', () => showScreen('main-screen'));
+        historyBackBtn.addEventListener('click', () => showScreen('main-screen'));
+
+        // --- CORE LOGIC ---
+        function startPracticeSession() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    setupMediaRecorder(stream);
+                    const promptIndex = Math.floor(Math.random() * prompts.length);
+                    currentPrompt = prompts[promptIndex];
+                    showScreen('practice-screen');
+                    startReadingPhase();
+                })
+                .catch(err => {
+                    alert("Microphone access is required. Please allow microphone access and try again.");
+                    console.error("Error accessing microphone:", err);
+                });
+        }
+
+        function startTimer(duration, element, onComplete) {
+            clearInterval(timerInterval);
+            let timeLeft = duration;
+            element.textContent = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                element.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    onComplete();
+                }
+            }, 1000);
+        }
+
+        function startReadingPhase() {
+            showPracticePhase('reading');
+            readingTitle.textContent = currentPrompt.readingTitle;
+            readingText.textContent = currentPrompt.readingText;
+            startTimer(45, timerDisplay, startListeningPhase);
+        }
+
+        function startListeningPhase() {
+            showPracticePhase('listening');
+            playLecture(currentPrompt.lecture, startPreparationPhase);
+        }
+
+        function playLecture(lecture, onComplete) {
+            if (!synth || !professorVoice) {
+                alert("Speech synthesis is not available or a voice could not be loaded. Cannot play lecture.");
+                onComplete();
+                return;
+            }
+
+            let utteranceIndex = 0;
+            function speakNext() {
+                if (utteranceIndex >= lecture.length) {
+                    onComplete();
+                    return;
+                }
+                const turn = lecture[utteranceIndex];
+                const utterance = new SpeechSynthesisUtterance(turn.line);
+                utterance.voice = professorVoice;
+                utterance.onend = speakNext;
+                synth.speak(utterance);
+                utteranceIndex++;
+            }
+            speakNext();
+        }
+
+        function startPreparationPhase() {
+            showPracticePhase('response');
+            promptContainer.textContent = currentPrompt.question;
+            statusHeaderResponse.textContent = "PREPARE YOUR RESPONSE";
+            startTimer(30, timerResponseDisplay, startRecording);
+        }
+
+        function playBeep() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+        
+        function startRecording() {
+            playBeep();
+            finalTranscript = '';
+            mediaRecorder.start();
+            if (speechRecognition) speechRecognition.start();
+            recordingIndicator.classList.add('active');
+            statusHeaderResponse.textContent = "SPEAK NOW";
+            startTimer(60, timerResponseDisplay, stopRecording);
+        }
+
+        function stopRecording() {
+            if (mediaRecorder.state !== "inactive") mediaRecorder.stop();
+            if (speechRecognition) speechRecognition.stop();
+            recordingIndicator.classList.remove('active');
+        }
+        
+        function setupMediaRecorder(stream) {
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                saveRecording(currentPrompt, audioBlob, finalTranscript);
+                displayReview(currentPrompt, audioBlob, finalTranscript);
+                stream.getTracks().forEach(track => track.stop());
+            };
+        }
+        
+        // --- DATA & REVIEW ---
+        function saveRecording(prompt, audioBlob, transcript) {
+            if (!db) return;
+            const transaction = db.transaction(['recordings'], 'readwrite');
+            const store = transaction.objectStore('recordings');
+            store.add({ promptData: prompt, date: new Date().toISOString(), audioBlob: audioBlob, transcript: transcript });
+        }
+        
+        function displayReview(prompt, audioBlob, transcript) {
+            reviewPrompt.textContent = prompt.question;
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioPlaybackContainer.innerHTML = '';
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.src = audioUrl;
+            audioPlaybackContainer.appendChild(audio);
+            reviewTranscript.textContent = transcript || "[No speech detected or transcription failed.]";
+            showScreen('review-screen');
+        }
+        
+        function showHistoryScreen() {
+            if (!db) return;
+            historyList.innerHTML = '';
+            const store = db.transaction(['recordings'], 'readonly').objectStore('recordings');
+            store.getAll().onsuccess = event => {
+                const recordings = event.target.result.reverse();
+                if (recordings.length === 0) {
+                    historyList.innerHTML = '<li>No past recordings found.</li>';
+                } else {
+                    recordings.forEach(rec => {
+                        const li = document.createElement('li');
+                        li.className = 'history-item';
+                        li.innerHTML = `<div class="history-item-prompt">${rec.promptData.readingTitle}</div>
+                                        <div class="history-item-date">${new Date(rec.date).toLocaleString()}</div>`;
+                        li.onclick = () => displayReview(rec.promptData, rec.audioBlob, rec.transcript);
+                        historyList.appendChild(li);
+                    });
+                }
+                showScreen('history-screen');
+            };
+        }
+    </script>
+
+</body>
+</html>
