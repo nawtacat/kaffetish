@@ -201,7 +201,7 @@
         <div id="main-screen" class="screen active">
             <h1>TOEFL® Independent Speaking Practice</h1>
             <p>This tool simulates Task 1 of the TOEFL iBT Speaking section.</p>
-            [cite_start]<p>You will have <strong>15 seconds to prepare</strong> and <strong>45 seconds to speak</strong>[cite: 10, 170].</p>
+            <p>You will have <strong>15 seconds to prepare</strong> and <strong>45 seconds to speak</strong>.</p>
             <div class="button-group">
                 <button id="start-btn" class="button">Start New Session</button>
                 <button id="history-btn" class="button secondary">Review Past Recordings</button>
@@ -252,8 +252,8 @@
     <script>
         // --- PROMPT LIBRARY ---
         const prompts = [
-            "Some people enjoy taking risks and trying new things. Others are not adventurous; they are cautious and prefer to avoid danger. Which behavior do you think is better? [cite_start]Explain why. [cite: 8, 9]",
-            "Some people think it is more fun to spend time with friends in restaurants or cafés. Others think it is more fun to spend time with friends at home. Which do you think is better? [cite_start]Explain why. [cite: 167, 168]",
+            "Some people enjoy taking risks and trying new things. Others are not adventurous; they are cautious and prefer to avoid danger. Which behavior do you think is better? Explain why.",
+            "Some people think it is more fun to spend time with friends in restaurants or cafés. Others think it is more fun to spend time with friends at home. Which do you think is better? Explain why.",
             "Some people prefer to learn about current events by watching television news. Others prefer to read about current events in newspapers or online. Which do you think is better? Explain why.",
             "Some people believe that it is important for children to learn to play a musical instrument. Others believe that time is better spent on sports or academic clubs. Which view do you agree with? Explain your reasoning.",
             "Some people prefer to work for a large company. Others prefer to work for a small company. Which do you think is better and why?",
@@ -269,7 +269,6 @@
             "Some people think that a country's top priority should be to improve its economy. Others believe that protecting the environment should be the top priority. Which view do you support?",
             "Some people believe that it is essential for a person to have a university education to be successful. Others believe it is not necessary. What is your opinion? Explain why.",
             "Some people prefer to communicate with friends and family by sending text messages. Others prefer to talk on the phone. Which method of communication do you think is better?",
-            // Add more prompts to reach 55
             "Some people believe that technology has made our lives better. Others believe it has made our lives more complicated. Which view do you agree with?",
             "Do you agree or disagree with the following statement? 'Grades are the most important indicator of a student's intelligence.' Explain your reasoning.",
             "Some people prefer to buy new books. Others prefer to borrow books from a library. Which do you think is better?",
@@ -281,7 +280,7 @@
             "Do you agree or disagree with the statement: 'The internet has brought people closer together.'?",
             "Some people enjoy cooking their own meals. Others prefer to eat out at restaurants. Which do you find more enjoyable?",
             "Is it better for a boss to be strict with employees, or to be friendly and relaxed? Explain your opinion.",
-           "Some people believe that money is the most important factor in a happy life. Others believe factors like relationships and experiences are more important. What is your view?",
+            "Some people believe that money is the most important factor in a happy life. Others believe factors like relationships and experiences are more important. What is your view?",
             "Do you agree or disagree: 'It is important for people to follow fashion trends.'?",
             "Some people prefer to spend their free time on relaxing activities. Others prefer to use their free time to learn new skills. Which approach do you think is better?",
             "Is it more important to be a good leader or a good follower? Explain your reasoning.",
@@ -301,7 +300,7 @@
             "Do you agree or disagree: 'Team sports are more beneficial for children than individual sports.'?",
             "Some people prefer to learn by doing. Others prefer to learn by reading books or listening to lectures. Which learning style is better for you?",
             "Is it more important to be respected or to be liked? Explain your choice.",
-         "Some people believe that it is the responsibility of individuals to stay healthy. Others believe it is the government's responsibility to ensure its citizens are healthy. What is your view?",
+            "Some people believe that it is the responsibility of individuals to stay healthy. Others believe it is the government's responsibility to ensure its citizens are healthy. What is your view?",
             "Do you agree or disagree: 'Failure is the best teacher.'?",
             "Some people prefer jobs that require a lot of travel. Others prefer jobs that allow them to stay in one place. Which would you choose?",
             "Is it better to confront a friend when you have a disagreement, or to avoid confrontation and hope the problem goes away? Explain your answer.",
@@ -399,6 +398,7 @@
                     setupMediaRecorder(stream);
                     const promptIndex = Math.floor(Math.random() * prompts.length);
                     currentPrompt = prompts[promptIndex];
+                    // ** THIS IS THE CORRECTED LINE **
                     promptContainer.textContent = currentPrompt;
                     showScreen('practice-screen');
                     startPreparation();
@@ -489,7 +489,7 @@
         }
         
         function displayReview(prompt, audioBlob, transcript) {
-            reviewPrompt.textContent = prompt.split('.trim();
+            reviewPrompt.textContent = prompt;
             
             const audioUrl = URL.createObjectURL(audioBlob);
             audioPlaybackContainer.innerHTML = '';
@@ -523,7 +523,7 @@
                         
                         const promptDiv = document.createElement('div');
                         promptDiv.className = 'history-item-prompt';
-                        promptDiv.textContent = rec.prompt.split('.trim();
+                        promptDiv.textContent = rec.prompt;
                         
                         const dateDiv = document.createElement('div');
                         dateDiv.className = 'history-item-date';
