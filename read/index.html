@@ -560,12 +560,13 @@
         touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
         lastSelectionText: "",
         lastSelectionRange: null,
+        lastSelectionContext: "", // ✅ ADDED: To store the surrounding paragraph context
         currentSessionId: null,
         bookTitle: null,
         bookId: null,
         bookmark: null,
-        isExplanationViewActive: false, // NEW: Tracks if immersive explanation view is active
-        cachedPageHTML: null, // NEW: Caches the book page HTML when switching to explanation view
+        isExplanationViewActive: false,
+        cachedPageHTML: null,
     };
     const baseFontRem = 1.15;
 
@@ -664,7 +665,7 @@
 
             DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
             
-            let startingPage = 1; 
+            let startingPage = 1;
 
             await auth.authStateReady();
             const user = auth.currentUser;
@@ -782,6 +783,7 @@
 
         state.isRendering = false;
     }
+
     function showTooltipAt(rect) {
         DOM.tooltip.style.display = "flex";
         const topBoundary = 68;
@@ -800,8 +802,6 @@
 
     function clearSelection() {
         hideTooltip();
-        // This conditional check ensures the "Return" button is not hidden
-        // while the explanation view is active.
         if (!state.isExplanationViewActive) {
             DOM.mobileActionBtn.classList.remove('visible');
             DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
@@ -811,69 +811,109 @@
         }
     }
 
-    // --- NEW: Immersive Explanation View Logic ---
-    async function enterExplanationView() {
-        if (!explainBookTextFn) {
-            alert("Explanation feature is not available.");
+    // ✅ UPDATED: Handles both desktop and mobile explanation flows
+    async function handleExplain() {
+        const textToExplain = state.lastSelectionText;
+        const contextText = state.lastSelectionContext;
+
+        if (!textToExplain || !explainBookTextFn) {
+            console.warn("handleExplain called with no text or Firebase function not ready.");
             return;
         }
-        if (!state.lastSelectionText || state.lastSelectionText.length < 4) return;
 
+        clearSelection();
+        await trackExplanationRequest(textToExplain);
+
+        // Show a loading state in the appropriate UI
+        if (isTouchDevice) {
+            enterExplanationView('<div class="spinner"></div>'); // Show spinner immediately
+        } else {
+            DOM.aiQuote.textContent = `"${textToExplain}"`;
+            DOM.aiQuote.classList.remove('hidden');
+            DOM.aiPanel.style.display = "flex";
+            DOM.aiContent.innerHTML = '<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>';
+        }
+
+        try {
+            const { data } = await explainBookTextFn({
+                text: textToExplain,
+                bookTitle: state.bookTitle,
+                contextText: contextText
+            });
+
+            const { simpleExplanation, contextualMeaning, keywords } = data.explanation;
+            
+            let formattedExplanation = `<p>${escapeHTML(simpleExplanation)}</p>`;
+            if (contextualMeaning) {
+                formattedExplanation += `<p><strong>In this context:</strong> ${escapeHTML(contextualMeaning)}</p>`;
+            }
+            if (keywords && keywords.length > 0) {
+                formattedExplanation += '<strong>Key Terms:</strong><ul>';
+                keywords.forEach(kw => {
+                    formattedExplanation += `<li><strong>${escapeHTML(kw.term)}:</strong> ${escapeHTML(kw.definition)}</li>`;
+                });
+                formattedExplanation += '</ul>';
+            }
+
+            // Update the UI with the final formatted explanation
+            if (isTouchDevice) {
+                updateExplanationView(formattedExplanation);
+            } else {
+                DOM.aiContent.innerHTML = formattedExplanation;
+            }
+
+        } catch (err) {
+            console.error("Error fetching explanation:", err);
+            const errorMsg = "Sorry, an error occurred while getting the explanation.";
+            if (isTouchDevice) {
+                updateExplanationView(`<p>${errorMsg}</p>`);
+            } else {
+                DOM.aiContent.textContent = errorMsg;
+            }
+        }
+    }
+
+    // ✅ UPDATED: Enters the mobile immersive view
+    function enterExplanationView(initialContent) {
         state.isExplanationViewActive = true;
         state.cachedPageHTML = DOM.pageContent.innerHTML;
         
-        const textToExplain = state.lastSelectionText;
-        await trackExplanationRequest(textToExplain);
-
-        // Transform button to "Return"
-        DOM.mobileActionBtn.classList.add('return-mode');
+        DOM.mobileActionBtn.classList.add('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
         DOM.mobileActionText.textContent = 'Return';
         
-        // Fade out book content
-        DOM.pageContent.classList.add('content-fading');
-        
-        setTimeout(async () => {
-            // Populate with explanation content (loading state)
-            DOM.pageContent.innerHTML = `
-                <div class="explanation-view-content">
-                    <blockquote class="explanation-quote">${escapeHTML(textToExplain)}</blockquote>
-                    <h4 class="explanation-title"><i class="fa-solid fa-star"></i>Explanation</h4>
-                    <div class="explanation-text"><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>
-                </div>
-            `;
-            setFontRem(state.currentFontRem); // Re-apply font size
-            DOM.pageContent.classList.remove('content-fading');
-            DOM.mainContent.scrollTop = 0;
-
-            // Fetch explanation
-            try {
-                const { data } = await explainBookTextFn({ text: textToExplain });
-                const explanationText = data?.explanation || "No explanation was returned.";
-                const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
-                if (explanationTextElement) {
-                    explanationTextElement.innerHTML = explanationText.replace(/\n/g, '<br>');
-                }
-            } catch (err) {
-                console.error("AI Explain Error:", err);
-                const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
-                if (explanationTextElement) {
-                    explanationTextElement.textContent = "Sorry, an error occurred.";
-                }
-            }
-        }, 200); // Wait for fade-out transition
-        
-        clearSelection();
-    }
-    
-    function returnToBookView() {
-        state.isExplanationViewActive = false;
-
-        // Fade out explanation content
         DOM.pageContent.classList.add('content-fading');
         
         setTimeout(() => {
-            // Restore original book content
+            const explanationHTML = `
+                <div class="explanation-view-content">
+                    <h4 class="explanation-title"><i class="fa-solid fa-star"></i>Explanation</h4>
+                    <div class="explanation-text">${initialContent}</div>
+                </div>
+            `;
+            DOM.pageContent.innerHTML = explanationHTML;
+            setFontRem(state.currentFontRem); // Re-apply font size
+            DOM.pageContent.classList.remove('content-fading');
+            DOM.mainContent.scrollTop = 0;
+        }, 200);
+    }
+
+    // ✅ NEW: Helper to update the content of the immersive view once AI responds
+    function updateExplanationView(finalContent) {
+        const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
+        if (explanationTextElement) {
+            explanationTextElement.innerHTML = finalContent;
+        }
+    }
+    
+    // ✅ UPDATED: Returns from the mobile immersive view
+    function returnToBookView() {
+        if (!state.isExplanationViewActive) return;
+        state.isExplanationViewActive = false;
+
+        DOM.pageContent.classList.add('content-fading');
+        
+        setTimeout(() => {
             DOM.pageContent.innerHTML = state.cachedPageHTML;
             state.cachedPageHTML = null;
             setFontRem(state.currentFontRem);
@@ -881,42 +921,10 @@
             DOM.mainContent.scrollTop = 0;
         }, 200);
         
-        // Transform button back to "Explain" and hide it
         DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
         DOM.mobileActionText.textContent = 'Explain';
         DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
-    }
-
-    async function handleExplain() {
-        if (!isTouchDevice) { // Desktop behavior remains the same
-             if (!explainBookTextFn) {
-                flashAI("Explanation feature is not available.");
-                return;
-            }
-            if (!state.lastSelectionText || state.lastSelectionText.length < 4) {
-                flashAI("Please select at least 4 characters to explain.");
-                clearSelection(); return;
-            }
-            DOM.aiQuote.textContent = `"${state.lastSelectionText}"`;
-            DOM.aiQuote.classList.remove('hidden');
-            DOM.aiPanel.style.display = "flex";
-            DOM.aiContent.innerHTML = `<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>`;
-            const textToExplain = state.lastSelectionText;
-            await trackExplanationRequest(textToExplain);
-            clearSelection();
-            try {
-                const { data } = await explainBookTextFn({ text: textToExplain });
-                const explanationText = data?.explanation || "No explanation was returned.";
-                DOM.aiContent.innerHTML = explanationText.replace(/\n/g, '<br>');
-            } catch (err) {
-                console.error("AI Explain Error:", err);
-                DOM.aiContent.textContent = "Sorry, an error occurred.";
-            }
-        } else {
-            // On mobile, this function now enters the immersive view
-            enterExplanationView();
-        }
     }
 
     function handleHighlight() {
@@ -998,7 +1006,6 @@
             if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
         });
 
-        // NEW: Event listener for the unified mobile action button
         DOM.mobileActionBtn.addEventListener("click", () => {
             if (state.isExplanationViewActive) {
                 returnToBookView();
@@ -1019,93 +1026,70 @@
         setupSelectionHandler();
         if (isTouchDevice) { setupSwipeNavigation(); }
     }
-    // In your `index.js` file for Cloud Functions
-
-exports.explainBookText = onCall({ secrets: [openAIAPIKey], region: 'us-central1' }, async (request) => {
-    // 1. Authentication and Validation
-    if (!request.auth) {
-        throw new functions.https.HttpsError("unauthenticated", "You must be signed in.");
-    }
-
-    const { text, bookTitle, contextText } = request.data;
-    if (!text || !contextText) {
-        throw new functions.https.HttpsError("invalid-argument", 'Request must include "text" and "contextText".');
-    }
-
-    // 2. Advanced Prompt Engineering for Non-Native Speakers
-    const openai = new OpenAI({ apiKey: openAIAPIKey.value() });
     
-    const systemPrompt = `
-You are an expert language tutor named Thelo, specializing in helping non-native English speakers.
-Your student is an intermediate English learner (CEFR B1 level).
-Your goal is to explain a selected text *within its original context* using simple, clear language.
+    // ✅ UPDATED: Handles selection and context gathering
+    function setupSelectionHandler() {
+        const contentArea = DOM.pageContent;
 
-**RULES:**
-1.  **Be Brief:** Your main explanation must be ONE or TWO short sentences.
-2.  **Use Simple English:** Avoid jargon, idioms, or complex sentence structures.
-3.  **Focus:** Explain only the *selected text*. Use the context to understand it, but do not explain the whole context.
-4.  **JSON Output:** Respond with a JSON object with this exact structure:
-    {"simpleExplanation": "...", "contextualMeaning": "...", "keywords": [{"term": "...", "definition": "..."}]}
+        const handleSelection = () => {
+            setTimeout(() => {
+                if (state.isExplanationViewActive) return;
 
-**JSON FIELD INSTRUCTIONS:**
--   "simpleExplanation": The main, simple definition of the selected text.
--   "contextualMeaning": A single sentence explaining what the selected text means *in this specific situation*.
--   "keywords": An array identifying 1-2 important words from the *selected text* with very simple definitions. If the selection is just one word, this array should contain only that word.
-`;
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
 
-    const userMessage = `
-The student is reading: "${bookTitle || 'a book'}".
+                if (text.length >= 1 && !sel.isCollapsed) {
+                    state.lastSelectionText = text;
+                    try {
+                        const range = sel.getRangeAt(0);
+                        state.lastSelectionRange = range;
+                        
+                        let contextNode = range.commonAncestorContainer;
+                        if (contextNode.nodeType === Node.TEXT_NODE) {
+                            contextNode = contextNode.parentNode;
+                        }
+                        
+                        if (contentArea.contains(contextNode)) {
+                            state.lastSelectionContext = contextNode.textContent || '';
+                        } else {
+                            state.lastSelectionContext = text;
+                        }
+                    } catch (e) {
+                        console.error("Could not get selection range or context.", e);
+                        state.lastSelectionContext = text;
+                    }
+                    
+                    if (isTouchDevice) {
+                        DOM.mobileActionBtn.classList.add('visible');
+                        DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
+                    } else {
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+                    }
+                } else {
+                    if (isTouchDevice) {
+                        DOM.mobileActionBtn.classList.remove('visible');
+                        DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+                    } else {
+                        hideTooltip();
+                    }
+                }
+            }, 100);
+        };
 
-The full context from the page is:
-"${contextText}"
-
-The specific text the student selected to be explained is:
-"${text}"
-
-Please provide the explanation in the required JSON format.
-`;
-
-    try {
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userMessage },
-            ],
-            temperature: 0.1,
-            max_tokens: 400,
-            response_format: { type: "json_object" },
-        });
-
-        const content = response.choices[0]?.message?.content;
-        if (!content) {
-            throw new Error("AI response was empty.");
-        }
-        
-        const aiResult = JSON.parse(content);
-
-        // 3. Validate and return the structured JSON
-        if (!aiResult.simpleExplanation) {
-            throw new Error("AI response did not contain the required 'simpleExplanation' field.");
-        }
-
-        return { explanation: aiResult };
-
-    } catch (error) {
-        console.error("Error in explainBookText:", error);
-        throw new functions.https.HttpsError("internal", "Failed to get an explanation. Please try again.");
+        document.addEventListener('selectionchange', handleSelection);
+        document.addEventListener('mouseup', handleSelection);
     }
-});
+
 
     function setupSwipeNavigation() {
         DOM.mainContent.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1 || state.isExplanationViewActive) return; // Disable swipe in explanation view
+            if (e.touches.length > 1 || state.isExplanationViewActive) return;
             const touch = e.touches[0];
             state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
             state.touch.startTime = Date.now();
         }, { passive: true });
         DOM.mainContent.addEventListener('touchend', (e) => {
-            if (e.touches.length > 0 || state.isExplanationViewActive) return; // Disable swipe in explanation view
+            if (e.touches.length > 0 || state.isExplanationViewActive) return;
             const touch = e.changedTouches[0];
             const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
             const elapsedTime = Date.now() - state.touch.startTime;
@@ -1129,18 +1113,16 @@ Please provide the explanation in the required JSON format.
         } else {
             showView(DOM.fallbackView);
         }
-        if (!explainBookTextFn) DOM.tooltipExplain.style.display = "none";
+        if (!explainBookTextFn) {
+           [DOM.tooltipExplain, DOM.mobileActionBtn].forEach(el => el.style.display = 'none');
+        }
     }
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            if (user.isAnonymous) {
-                DOM.bookmarkPageBtn.classList.add('hidden');
-                DOM.mobileBookmarkPageBtn.classList.add('hidden');
-            } else {
-                DOM.bookmarkPageBtn.classList.remove('hidden');
-                DOM.mobileBookmarkPageBtn.classList.remove('hidden');
-            }
+            const isAnon = user.isAnonymous;
+            DOM.bookmarkPageBtn.classList.toggle('hidden', isAnon);
+            DOM.mobileBookmarkPageBtn.classList.toggle('hidden', isAnon);
             trackUserActivity();
         } else {
             signInAnonymously(auth).catch(err => {
@@ -1149,6 +1131,7 @@ Please provide the explanation in the required JSON format.
         }
     });
 
+    // Initialize the app once the first auth state is confirmed
     auth.onAuthStateChanged(user => {
         initApp();
     }, { onlyOnce: true });
