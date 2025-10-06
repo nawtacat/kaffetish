@@ -1019,40 +1019,83 @@
         setupSelectionHandler();
         if (isTouchDevice) { setupSwipeNavigation(); }
     }
-    
-    function setupSelectionHandler() {
-        if (isTouchDevice) {
-            document.addEventListener('selectionchange', () => {
-                if(state.isExplanationViewActive) return; // Don't trigger on selection in explanation view
-                const sel = window.getSelection();
-                const text = sel ? sel.toString().trim() : '';
-                if (text.length >= 4 && !sel.isCollapsed) {
-                    state.lastSelectionText = text;
-                    try { state.lastSelectionRange = sel.getRangeAt(0); } catch (e) {}
-                    DOM.mobileActionBtn.classList.add('visible');
-                    DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
-                } else {
-                    DOM.mobileActionBtn.classList.remove('visible');
-                    DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
-                }
-            });
-        }
-        else {
-            document.addEventListener('mouseup', () => {
-                setTimeout(() => {
-                    const sel = window.getSelection();
-                    const text = sel.toString().trim();
-                    if (text.length >= 4 && !sel.isCollapsed) {
-                        state.lastSelectionText = text;
-                        state.lastSelectionRange = sel.getRangeAt(0);
-                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                    } else {
-                        hideTooltip();
-                    }
-                }, 50);
-            });
-        }
+    // In your `index.js` file for Cloud Functions
+
+exports.explainBookText = onCall({ secrets: [openAIAPIKey], region: 'us-central1' }, async (request) => {
+    // 1. Authentication and Validation
+    if (!request.auth) {
+        throw new functions.https.HttpsError("unauthenticated", "You must be signed in.");
     }
+
+    const { text, bookTitle, contextText } = request.data;
+    if (!text || !contextText) {
+        throw new functions.https.HttpsError("invalid-argument", 'Request must include "text" and "contextText".');
+    }
+
+    // 2. Advanced Prompt Engineering for Non-Native Speakers
+    const openai = new OpenAI({ apiKey: openAIAPIKey.value() });
+    
+    const systemPrompt = `
+You are an expert language tutor named Thelo, specializing in helping non-native English speakers.
+Your student is an intermediate English learner (CEFR B1 level).
+Your goal is to explain a selected text *within its original context* using simple, clear language.
+
+**RULES:**
+1.  **Be Brief:** Your main explanation must be ONE or TWO short sentences.
+2.  **Use Simple English:** Avoid jargon, idioms, or complex sentence structures.
+3.  **Focus:** Explain only the *selected text*. Use the context to understand it, but do not explain the whole context.
+4.  **JSON Output:** Respond with a JSON object with this exact structure:
+    {"simpleExplanation": "...", "contextualMeaning": "...", "keywords": [{"term": "...", "definition": "..."}]}
+
+**JSON FIELD INSTRUCTIONS:**
+-   "simpleExplanation": The main, simple definition of the selected text.
+-   "contextualMeaning": A single sentence explaining what the selected text means *in this specific situation*.
+-   "keywords": An array identifying 1-2 important words from the *selected text* with very simple definitions. If the selection is just one word, this array should contain only that word.
+`;
+
+    const userMessage = `
+The student is reading: "${bookTitle || 'a book'}".
+
+The full context from the page is:
+"${contextText}"
+
+The specific text the student selected to be explained is:
+"${text}"
+
+Please provide the explanation in the required JSON format.
+`;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage },
+            ],
+            temperature: 0.1,
+            max_tokens: 400,
+            response_format: { type: "json_object" },
+        });
+
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+            throw new Error("AI response was empty.");
+        }
+        
+        const aiResult = JSON.parse(content);
+
+        // 3. Validate and return the structured JSON
+        if (!aiResult.simpleExplanation) {
+            throw new Error("AI response did not contain the required 'simpleExplanation' field.");
+        }
+
+        return { explanation: aiResult };
+
+    } catch (error) {
+        console.error("Error in explainBookText:", error);
+        throw new functions.https.HttpsError("internal", "Failed to get an explanation. Please try again.");
+    }
+});
 
     function setupSwipeNavigation() {
         DOM.mainContent.addEventListener('touchstart', (e) => {
