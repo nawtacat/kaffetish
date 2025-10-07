@@ -122,7 +122,10 @@
 </head>
 <body data-theme="dark">
     <div id="desktop"></div>
-    <div id="top-menu-bar"></div>
+    <div id="top-menu-bar">
+        <div class="menu-section left"></div>
+        <div class="menu-section right"></div>
+    </div>
     <div id="dock"></div>
     <div id="spotlight-overlay">
         <div id="spotlight-search">
@@ -134,7 +137,7 @@
     const ICONS = {
         'Finder': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAFyElEQVR4Xu2dP48cNRSFz/d6E7i1oKChoKCgoKCgoKCgoKCgoKCgoKCgoKChoKDgP0KCA0EhwUFCISFBQkJCQkJCREJCQkKCQyQ4JIeFwQ1+tLd29947O/PuaZObzI5nZ3ffN/t27w6XmYyPj3d7e3s72Xz9+nU7Pz9vR0dH28n06NEjW1lZ+fWzXFtb235+fp7N/B+4/3g7Ozvb7u/vj+b3n34s4+Pj/T5/N/zRkXb/hAsXLmzHjx9/3Wz2T7bT09M/+3c6hG1gIADXrl2zgwcPbu7cE3oN7G9s/N/7B0B/L/b+wX54eLidnp5u7Xf/4uLibrP5h4eH/W4/e/as/f///xP64qWlpb3O68/m9fA/uLi4/Otz//p06+vrY3e2m9Xh6+vrcX2jI83k/xH5rM/v7+83gX8z8f7+/vY/9/9qjY+P9zvw/hHwf6+P/b9a39/fH9/i/oH8/3T/z5/fNl3yX9749u3b7dGjR9vOnTsX3v/s7Gzb399vFxcXy93n/7+fH8m/fPny3hW7zR6Y+L6+vo/9i/u/eB+4X3l7e3s3+z/d5wF9/P/9y/vP7/59//b29p/2/7J+J3oNLAJAAAJAAAJAAAJAAAIwUAI4PDx8/7k+kAAkAAkAgSMAcDAYgX/58mW3u7vb7u7u/u99cHAwm6gEIAEJQAIQgAQgAQm4BCA+hP/7+vo+8n6/d4v7R/Z4+j+l8/vP73f/uP/8T2w8x8fHO/I+cO3aNdvd3d3953N7ezs7Oztj97cQAAkAgScA8Uf2W7dulYMDAAFAAI4gAPFP7F+/vjs+Pr5/3o/58+eP7d+/P14/d+7c8eXLl8e7j/u/O84/+T9/4v7x/i/+w/n5+eP/f6dOnTrW39+/y/3Z2dl47V9cXByvLgFIAAI4hwDc3t7+2z0gAQk4jgD8T8Tz/R/p/l05Pj7+13kEIAEJQAIQgAQgAQn4BQHI+Pj4n+0/NjbW/d5v/gGA//3337ePHz/+s7/ZzP+BvH/58mX3//706VP3/+6/vH/x4kV3/P+X/P9/G/d/4X/++vXrb+9v5+fn3d5+Pj4+/vW57+7u/s1p3g4EAiAAASCAcwjA3d3d+t7LzWYA+Pn52Z6enravr298Xwz+d+/eff/t7u5u7f/i4uLzB9b9+/d/+qf35+fn/d1eXl4ezyWAAAQgAAEgAAEgAAEIgIELwNPT0/b29nZeQAIQgAQgAAkAgSgA7nN4eLjd3d1tqAMPDAxsnz59+s0BOH/+/L7b399/Xn26zR5++PDh/X53l/zv7u6+L2z+j+sBAQEAgAAQgAQgAAQgAAQgAAQgAQlA/A/g+Pj4P8gDSQASgAQgAIkEIP4I/n3f7+7u/us8AkACEIAEIACJUwCbAQGAgAAgAAEIwBAE4IULF8btb53vP93n/u/+/fvb0dHR5/Uf6/z+D/Z/5/cP9n/+/Pnz/R/u+Ph4N/i/X63+3+3/D51fX1/328/m9QCAwN/fP/5n/z/Zf/z4cTwGggAEAQEAgAAQeAIQ3w/w9PS0/f///3+7T19fH9/3/3d/8X7w/vL+/v4+2H/+8Pz8/P6f7e8D/P/+H/vPnz/f7p/s+Pv7Oz6fEAAgAIEgAO5vB/jP/+7k5GR/8n/79u3x/Xp+fr4357Ozsx/vYxSAAAQgAAEgAAEgAAEImIQA/D/v6urqP+gDSQASgAQgAIkQgPhj+X/mAwABQAACQACGJADRj+f8/Pyt/QMA/hH95ubm/d3m/5H+l3f/33d3d+M1/wcCgP+d8/vPnz/X78f/d/l/L+j+X3P8/3/g/3e/Pz/9P9v/u/w/FHD/7hCAgAAgAAEIQMABAeDq6mp/9j85Oflv/+3k5GT79ddf//V5fRKAQAACQACeCAD+b/+P/R+vPxQ/gAAQgAAQgAAQgAAQgAAS/wWc7vL5v5oJNAAAAABJRU5ErkJggg==',
         'System Settings': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAFpUlEQVR4Xu2dP48cNRSAz1nIuA14C4aGgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoIC/wPcgAsggoIiJiZGREQkIiIiIiIiIiIiIjIyIiKy2G8aM7Ozb4/b1yZ5kk1m5+fdV/u/u/ftVlPZ3d097Ozs/Fk3t7e3t729vb097MHBwW15eTnb2Nj4u+dZW1vbHh4eHm03/g/wL95eXl5u+/v7Z9P/138K4+PjA3/+bvjDIwL/Qrh58+b2/PnzW6vNfsn29vb2T/8uJ2B3YCMAnjp1qv3111/X7NkTegu2PzZ+8HwAGD3EHgDZ3d29NTc3N1ar/Qf/i7N5wM/PzwP65B88eLDNzc3N9evXrw/oK19fXw/s9a/N6+F/cXEx/b/u/vTp8uXLe8PudrM6fH19fdze6EhA/p/IHfJ8f39/BP93wP39/T/5P/h/L4+Pjwfo/TPA/x4f+H9t/f39/THc/QP5/1P//8y/bZf8f3P89u3b2NjY2L/Z2VlZfN+zZ8/a8vLy8PL4n87+xPJ/+/btW1e02QwA+P7+/pj/mP/F/UD+xevr63+z/8f3eQAfv/+feP/hf/3r6+uv+n/p+4Tegk0AAAAAAAQAAAAAgAAAAMCACXBwcPDWcz0gAIAAIAAEjgHAYDDw58+f7/b29rbt7Ox80X99fHyMiaiAAgAAAQAAAQAAAQABXAJQPwD8/f19xPr93q3/H8kfSP/P5/yv/3f/8X9h4zk5Odni/wDXrl3bPDw8/NXczc3N7e3t/THc3wIAAQAA4AkA+SO5e/fudaQDAACAAByBAJH8kT9//ny3vb39vP2MDRs2bMiTJ0/G6xMnTgzvPu7/7jj/5H/+xP3j/Rf/wfz8/Pj/P3Xq1OHh4eF173/58uV49cHBwePWBQABAAAcQgDu7++P5AdAAAhwBAH4B4L5/Q/v/lU5OTn5r/MIQAAAIAAAIAAAIAAAD/gDAPkjs7Ky8lzvN5cDAv+X/P/u7Oxszc/P3+rn4eHh3/0bGxv/d57//7i4OL1/4X/9+vXrb3P+wYMHG6v/4eHhT/O83x/2h4SEAAACQADHEIC7u7v9vWd2HwHg4eHhvrKy8v8+GAz+d+/eff/29vZ2y7+4uPjNAXD9+vXP+vP1x8fHx/s5Ozt72Z/n5+e3r/n5+fntK4AAAEAAAAAgAAAAMCAC8PT09Pb29nZeAQIAAQAAAQAAjggAvs/Pz7e9vb3NCoDjx4/v27dv378XwDdv3ty+v7//vPq42Qw+efLkdr87yf/+/v5XNv8n9AEBAAAAEAAAAAAAAAAAEAAAAAAAAID4B+Dk5OSX+SAlAQAAAgAA4EgEIP4Y/P+O6/1/+oAAAIAAAIAAAI5TAJsBIAAAAQAAQADAEAD+9OkT9/61fR/u/+7cuXMlICDwm/+je/n6+prX/+3t7fM/v5/O/7i4OFar/0v25+fn/f6zX8v1n3/L/n+z/w+dX15ezus/m9cDAIF/e3vb5P/4//z58+NZAQAAAgAAAAAA4AEBPP1D+vTp02G5x8fH++Xk5OTWf/L//v378X/R+yP7D+4D95f39/f/uT6vPv/+hP+4//z58+NfEAAAAAAAAEBAAu7u7gb4L/x/eHh43z8xMDDwBwMBAAEAAAAAAAgAAAAAAAAAgCQ/APl//fr1o35IEgAAAIAAAEBEBCH+iPkf8AFAAAIAAABAIAlA9AP5z58/b/8AgH9Ev7+/v/n+/j/R/+Uf//85OTnpt/xX/f//P/V+P/2/X/63+3fr//X+79T/1/t//f/4/yD/7kUAAAAAAIAABCAA5J+s/2v/33//fU7Oz8/Pfn9eXwQQAAAIAADwggD4b/+P7T9u/8QAAQAAAQAAAAAAAQAAQOJfgM+9eGf8Gj2YAAAAAElFTkSuQmCC',
-        'Calculator': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAADIklEQVR4Xu3ZMQ7CMBAAwXASd3MhXgMhbosb0GgIuAgHwImLsRkSgqg7g9+fJG3/tXzSjY1eA0ACEIAEJIAjASR3AgkACEAAAmACQHJ3IAEJQAAC0CSAzG1AEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMDAH4A2qB8WJ/zAAAAAElFTkSuQmCC',
+        'Calculator': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAADIklEQVR4Xu3ZMQ7CMBAAwXASd3MhXgMhbosb0GgIuAgHwImLsRkSgqg7g9+fJG3/tXzSjY1eA0ACEIAEJIAjASR3AgkACEAAAmACQHJ3IAEJQAAC0CSAzG1AEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMAEgOTuQAIQgAAEoEkAmdtAEgACEICAdQJIchkCEIAABDgSQHIDkAQgAQhAQCMAJI1RAAm4AEjuBBIACEAACMDAH4A2qB8WJ/zAAAAAElFTkSuQmCC',
         'TextEdit': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACF0lEQVR4Xu3ZMQ4CMRBE0WwngVw25yAOAiGu4kQ4iwto5gC5t3EMj5A+Qn4JqO/3J/n9u6GkhwASgAQgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAn8BfbA7rJ5DBZBAAAAAElFTkSuQmCC',
     };
     
@@ -162,10 +165,10 @@
         init() {
             this.loadState();
             this.applySettings();
+            this.updateMenuBar(); // Build the menu bar structure first
             this.renderDock();
-            this.updateMenuBar();
-            this.updateTime();
-            setInterval(() => this.updateTime(), 1000);
+            this.updateTime(); // Now it's safe to update time
+            setInterval(() => this.updateTime(), 5000); // Update time less frequently
             this.setupEventListeners();
         }
 
@@ -181,21 +184,19 @@
         applySettings() { document.body.dataset.theme = this.state.settings.theme; }
         
         updateTime() {
-            document.querySelector('#top-menu-bar .right').innerHTML = `
-                <i class="sys-icon ph-fill ph-wifi-high"></i>
-                <i class="sys-icon ph-fill ph-battery-full"></i>
-                <span id="clock">${new Date().toLocaleString('en-US', {weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'})}</span>`;
+            const clockEl = document.getElementById('clock');
+            if (clockEl) {
+                clockEl.textContent = new Date().toLocaleString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                });
+            }
         }
         
         updateMenuBar() {
             const app = this.apps[this.state.activeApp];
-            const left = document.querySelector('#top-menu-bar .left') || document.createElement('div');
-            left.className = 'menu-section left';
-            left.innerHTML = `<i class="ph-fill ph-apple-logo"></i><span class="app-name">${this.state.activeApp}</span>`;
-            if (app && app.menus) {
-                // (Menu rendering logic here - can be complex, for now this is simplified)
-            }
-            if(!left.parentElement) document.getElementById('top-menu-bar').prepend(left);
+            const left = document.querySelector('#top-menu-bar .left');
+            left.innerHTML = `<i class="ph-fill ph-apple-logo" style="font-size: 18px;"></i><span class="app-name">${this.state.activeApp}</span>`;
+            // Simplified menu logic for now
         }
         
         renderDock() {
@@ -291,7 +292,7 @@
             const spotlightInput = document.getElementById('spotlight-input');
             const spotlightResults = document.getElementById('spotlight-results');
             document.addEventListener('keydown', e => {
-                if (e.ctrlKey && e.code === 'Space') {
+                if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
                     e.preventDefault();
                     spotlight.classList.toggle('show');
                     if (spotlight.classList.contains('show')) {
@@ -333,7 +334,7 @@
     class SystemSettings {
         constructor(os) {
             this.os = os; this.body = document.createElement('div');
-            this.body.className = 'settings-body';
+            this.body.className = 'settings-body'; this.title = "System Settings";
             this.render('Appearance'); this.addEventListeners();
         }
         render(page) {
@@ -355,7 +356,7 @@
 
     class Calculator {
         constructor() {
-            this.body = document.createElement('div'); this.body.className = 'calculator-body';
+            this.body = document.createElement('div'); this.body.className = 'calculator-body'; this.title = "Calculator";
             this.displayValue = '0'; this.firstOperand = null; this.waiting = false; this.operator = null;
             this.render(); this.addEventListeners();
         }
