@@ -3,415 +3,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeminiOS Fluent</title>
-
+    <title>Gemini macOS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
     <style>
         :root {
-            --font-family: 'Be Vietnam Pro', sans-serif;
-            --wallpaper-default: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2940&auto=format=fit=crop');
-            --acrylic-bg: rgba(25, 25, 30, 0.65);
-            --window-bg: rgba(35, 35, 42, 0.8);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --shadow-color: rgba(0, 0, 0, 0.5);
-            --primary-text: #f0f0f0;
-            --secondary-text: #a0a0a0;
-            --highlight-color: #4a90e2;
-            --highlight-text: #ffffff;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --wallpaper: url('https://images.unsplash.com/photo-1563286348-34301c130960?q=80&w=2940&auto=format&fit=crop');
+            --acrylic-bg: rgba(240, 240, 240, 0.5);
+            --acrylic-bg-dark: rgba(40, 40, 40, 0.7);
+            --window-header: #ececec;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --primary-text: #222;
+            --highlight-color: #007aff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
+        body { font-family: var(--font-family); background: var(--wallpaper) center/cover; color: var(--primary-text); user-select: none; }
 
-        body {
-            font-family: var(--font-family);
-            background: var(--wallpaper, var(--wallpaper-default)) center/cover no-repeat;
-            color: var(--primary-text);
-            user-select: none;
-            transition: background-image 0.5s ease-in-out;
+        #desktop { height: 100%; width: 100%; position: relative; }
+        
+        /* --- Top Menu Bar --- */
+        #top-menu-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 28px;
+            background: var(--acrylic-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 10px; z-index: 10000; font-size: 14px;
         }
-
-        #desktop { height: 100%; width: 100%; position: relative; overflow: hidden; }
-
-        /* --- Taskbar --- */
-        #taskbar {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 52px;
-            background: var(--acrylic-bg); backdrop-filter: blur(30px) saturate(1.5); -webkit-backdrop-filter: blur(30px) saturate(1.5);
-            border-top: 1px solid var(--border-color); display: flex; align-items: center;
-            justify-content: space-between; padding: 0 12px; z-index: 10000;
+        .menu-section { display: flex; align-items: center; gap: 15px; }
+        .apple-logo { font-size: 18px; }
+        .app-name { font-weight: 600; }
+        .menu-item { position: relative; padding: 4px 8px; border-radius: 4px; cursor: default; }
+        .menu-item:hover { background: rgba(0,0,0,0.1); }
+        .dropdown-menu {
+            display: none; position: absolute; top: 100%; left: 0; background: var(--acrylic-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 6px; box-shadow: 0 5px 25px var(--shadow-color); padding: 5px;
+            border: 1px solid rgba(0,0,0,0.05); min-width: 180px;
         }
-        .taskbar-section { display: flex; align-items: center; height: 100%; gap: 8px; }
-        #start-button { font-size: 26px; padding: 8px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
-        #start-button:hover, #start-button.active { background-color: var(--highlight-color); }
-        .taskbar-app { position: relative; padding: 0 12px; height: 100%; display: flex; align-items: center; font-size: 24px; cursor: pointer; }
-        .taskbar-app::after {
-            content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-            width: 0; height: 3px; background-color: var(--highlight-color); border-radius: 2px;
-            transition: width 0.2s ease;
-        }
-        .taskbar-app.running::after { width: 24px; }
-        .taskbar-app.active::after { background-color: var(--highlight-text); }
-        #system-tray { cursor: pointer; padding: 8px 12px; border-radius: 6px; text-align: right; transition: background-color 0.2s; }
-        #system-tray:hover { background-color: rgba(255,255,255,0.1); }
-        #time { font-weight: 500; font-size: 14px; }
-        #date { font-size: 12px; color: var(--secondary-text); }
+        .menu-item:hover .dropdown-menu { display: block; }
+        .dropdown-item { padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .dropdown-item:hover { background: var(--highlight-color); color: white; }
+        .dropdown-divider { height: 1px; background: rgba(0,0,0,0.1); margin: 5px 0; }
+        .sys-icon { font-size: 18px; padding: 4px; border-radius: 4px; cursor: pointer; }
 
-        /* --- Widget Center --- */
-        #widget-center {
-            position: absolute; top: 0; right: 0; width: 380px; height: 100%;
-            background: rgba(10,10,15,0.8); backdrop-filter: blur(50px) saturate(1.5); -webkit-backdrop-filter: blur(50px) saturate(1.5);
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 9990; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;
+        /* --- Dock --- */
+        #dock {
+            position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: flex-end; padding: 8px;
+            background: var(--acrylic-bg); backdrop-filter: blur(25px);
+            border-radius: 18px; box-shadow: 0 5px 30px var(--shadow-color);
+            border: 1px solid rgba(255,255,255,0.2);
+            height: 60px;
         }
-        #widget-center.show { transform: translateX(0); }
-        .widget-calendar { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; }
-        .calendar-header { font-weight: bold; font-size: 18px; margin-bottom: 15px; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .calendar-grid span { padding: 8px 0; border-radius: 4px; }
-        .day-name { color: var(--secondary-text); font-size: 12px; }
-        .today { background-color: var(--highlight-color); color: var(--highlight-text); border-radius: 50%; }
+        .dock-item { position: relative; width: 52px; transition: all 0.2s cubic-bezier(0.3, 1.5, 0.7, 1); cursor: pointer; }
+        .dock-item img { width: 100%; }
+        .dock-item .running-indicator {
+            position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+            width: 5px; height: 5px; background: #555; border-radius: 50%; display: none;
+        }
+        .dock-item.running .running-indicator { display: block; }
 
-        /* --- Start Menu & Windows & Other styles remain similar but can be refined --- */
-        /* You can copy and adapt the window, context menu, and desktop icon styles from the previous version, they work well here */
+        /* --- Windows --- */
         .window {
-            position: absolute; width: 700px; height: 500px;
-            background: var(--window-bg); backdrop-filter: blur(50px) saturate(1.2);
-            border-radius: 10px; border: 1px solid var(--border-color);
-            box-shadow: 0 10px 60px var(--shadow-color); display: flex; flex-direction: column;
-            overflow: hidden; resize: both; animation: openWindow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: absolute; width: 800px; height: 550px; background: var(--window-header);
+            border-radius: 12px; box-shadow: 0 10px 50px var(--shadow-color);
+            display: flex; flex-direction: column; resize: both; overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.15); animation: openWindow 0.3s ease;
         }
-        @keyframes openWindow { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
-        .window.minimized { display: none; }
-        .window-header { height: 40px; display: flex; align-items: center; padding: 0 10px; flex-shrink: 0; cursor: grab; }
+        @keyframes openWindow { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .window-header {
+            height: 40px; display: flex; align-items: center; padding: 0 12px;
+            flex-shrink: 0; cursor: grab; position: relative;
+        }
         .window-header:active { cursor: grabbing; }
-        .window-controls { display: flex; gap: 8px; }
-        .control-btn { width: 14px; height: 14px; border-radius: 50%; border: none; cursor: pointer; }
+        .window-controls { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); display: flex; gap: 8px; }
+        .control-btn { width: 13px; height: 13px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); }
         .close { background-color: #ff605c; } .minimize { background-color: #ffbd44; } .maximize { background-color: #00ca4e; }
-        .window-title { flex-grow: 1; text-align: center; font-weight: 500; font-size: 14px; padding-right: 70px; }
-        .window-body { flex-grow: 1; overflow: auto; display: flex; flex-direction: column; }
-        #start-menu {
-            position: absolute; bottom: 62px; left: 12px; width: 450px;
-            background: var(--acrylic-bg); backdrop-filter: blur(30px) saturate(1.5);
-            border: 1px solid var(--border-color); border-radius: 12px;
-            z-index: 9999; padding: 15px; opacity: 0; transform: translateY(10px); pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-        #start-menu.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        .app-list-item { display: flex; align-items: center; gap: 15px; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 500;}
-        .app-list-item:hover { background-color: rgba(255,255,255,0.1); }
-        .app-list-item i { font-size: 28px; color: var(--highlight-color); }
-        
-        /* --- App Specific Styles --- */
-        .settings-body { display: flex; }
-        .settings-sidebar { width: 180px; padding: 10px; border-right: 1px solid var(--border-color); }
-        .settings-content { flex-grow: 1; padding: 20px; }
-        .wallpaper-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
-        .wallpaper-thumb { width: 100%; aspect-ratio: 16/10; border-radius: 8px; background-size: cover; cursor: pointer; border: 3px solid transparent; transition: border-color 0.2s; }
-        .wallpaper-thumb:hover { border-color: rgba(255,255,255,0.5); }
-        .wallpaper-thumb.selected { border-color: var(--highlight-color); }
-        
-        .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
-        .store-item { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; text-align: center; }
-        .store-item i { font-size: 48px; margin-bottom: 10px; }
-        .store-item button { background: var(--highlight-color); color: var(--highlight-text); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
-        .store-item button:hover { background-color: #3a80d2; }
-        .store-item button:disabled { background-color: #555; cursor: not-allowed; }
+        .window-title { flex-grow: 1; text-align: center; font-weight: 500; }
+        .window-body { flex-grow: 1; background: #fff; display: flex; overflow: auto; }
 
-        .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 10px; }
-        .photo-thumb { width: 100%; aspect-ratio: 1/1; border-radius: 8px; background-size: cover; cursor: pointer; }
+        /* --- Apps: Finder, TextEdit, Settings --- */
+        .finder-body { width: 100%; display: flex; }
+        .finder-sidebar { width: 200px; background: #f0f0f0; padding: 10px; border-right: 1px solid #ddd; }
+        .sidebar-item { padding: 8px 10px; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .sidebar-item.active, .sidebar-item:hover { background: #dcdcdc; }
+        .finder-content { flex-grow: 1; padding: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-content: flex-start; }
+        .file-icon { width: 80px; text-align: center; }
+        .file-icon i { font-size: 48px; color: #007aff; }
+        .file-icon span { display: block; margin-top: 5px; font-size: 13px; }
+
+        .textedit-textarea { width: 100%; height: 100%; border: none; outline: none; padding: 20px; font-size: 16px; font-family: 'Georgia', serif; resize: none; }
+        
+        .settings-body { width: 100%; display: flex; }
+        .settings-sidebar { width: 220px; background: #f0f0f0; padding: 10px; border-right: 1px solid #ddd; }
+        .settings-content { flex-grow: 1; padding: 30px; }
+
+        /* --- Launchpad --- */
+        #launchpad {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.2); backdrop-filter: blur(25px);
+            z-index: 11000; display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        #launchpad.show { display: flex; opacity: 1; }
+        .launchpad-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 40px; }
+        .launchpad-item { text-align: center; color: white; }
+        .launchpad-item img { width: 80px; }
+        .launchpad-item span { display: block; margin-top: 10px; font-weight: 500; }
+
     </style>
 </head>
 <body>
-    <div id="desktop"></div>
-    <div id="taskbar">
-        <div class="taskbar-section">
-            <div id="start-button"><i class="ph-fill ph-grid-four"></i></div>
-            <div id="taskbar-apps"></div>
+
+    <div id="top-menu-bar">
+        <div class="menu-section left">
+            <i class="apple-logo ph-fill ph-apple-logo"></i>
+            <span class="app-name">Finder</span>
+            <div class="menu-item">File</div>
+            <div class="menu-item">Edit</div>
+            <div class="menu-item">View</div>
+            <div class="menu-item">Go</div>
+            <div class="menu-item">Window</div>
+            <div class="menu-item">Help</div>
         </div>
-        <div class="taskbar-section">
-            <div id="system-tray">
-                <div id="time">9:41 PM</div>
-                <div id="date">Wed, 08 Oct</div>
-            </div>
+        <div class="menu-section right">
+            <i class="sys-icon ph-fill ph-wifi-high"></i>
+            <i class="sys-icon ph-fill ph-battery-full"></i>
+            <i class="sys-icon" id="control-center-toggle"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOCIgaGVpZ2h0PSIxOCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTQgMjFoNC43OTE2MUM5LjIxMTE0IDIxIDEwIDE5Ljg5ODUgMTAgMTguMzgzMlYxNC42MTY4QzEwIDEzLjExMTUgOS4yMTEwMyAxMiA4LjA3OTQyIDEySDQiLz48cGF0aCBkPSJNMTQgNGgtNC43OTE2MUM4Ljc4ODg2IDQgOCA1LjExMTUgOCA2LjYxNjZWOS4zODMyQzggMTAuODg4NSA4Ljc4ODk3IDEyIDEwLjA3OTQgMTJIMTQiLz48cGF0aCBkPSJNMTQgMjBoNC43OTE2QzE5LjIxMTEgMjAgMjAgMTguODg4NSAyMCAxNy4zODMyVjE0LjYxNjhDMjAgMTMuMTExNSAxOS4yMTEgMTIgMTguMDc5NCAxMkgxNCIvPjwvc3ZnPg==" /></i>
+            <span id="clock">Wed Oct 8 12:59 AM</span>
         </div>
     </div>
-    <div id="start-menu"></div>
-    <div id="widget-center"></div>
+    <div id="desktop"></div>
+    <div id="dock"></div>
+
+    <div id="launchpad">
+        <div class="launchpad-grid"></div>
+    </div>
 
     <script>
-    class GeminiOS_Fluent {
+    // --- App Icons Data (Base64 to keep it self-contained) ---
+    const ICONS = {
+        'Finder': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAFyElEQVR4Xu2dP48cNRSFz/d6E7i1oKChoKCgoKCgoKChoKCgoKCgoKChoKDgP0KCA0EhwUFCISFBQkJCQkJCREJCQkKCQyQ4JIeFwQ1+tLd29947O/PuaZObzI5nZ3ffN/t27w6XmYyPj3d7e3s72Xz9+nU7Pz9vR0dH28n06NEjW1lZ+fWzXFtb235+fp7N/B+4/3g7Ozvb7u/vj+b3n34s4+Pj/T5/N/zRkXb/hAsXLmzHjx9/3Wz2T7bT09M/+3c6hG1gIADXrl2zgwcPbu7cE3oN7G9s/N/7B0B/L/b+wX54eLidnp5u7Xf/4uLibrP5h4eH/W4/e/as/f///xP64qWlpb3O68/m9fA/uLi4/Otz//p06+vrY3e2m9Xh6+vrcX2jI83k/xH5rM/v7+83gX8z8f7+/vY/9/9qjY+P9zvw/hHwf6+P/b9a39/fH9/i/oH8/3T/z5/fNl3yX9749u3b7dGjR9vOnTsX3v/s7Gzb399vFxcXy93n/7+fH8m/fPny3hW7zR6Y+L6+vo/9i/u/eB+4X3l7e3s3+z/d5wF9/P/9y/vP7/59//b29p/2/7J+J3oNLAJAAAJAAAJAAAJAAAIwUAI4PDx8/7k+kAAkAAkAgSMAcDAYgX/58mW3u7vb7u7u/u99cHAwm6gEIAEJQAIQgAQgAQm4BCA+hP/7+vo+8n6/d4v7R/Z4+j+l8/vP73f/uP/8T2w8x8fHO/I+cO3aNdvd3d3953N7ezs7Oztj97cQAAkAgScA8Uf2W7dulYMDAAFAAI4gAPFP7F+/vjs+Pr5/3o/58+eP7d+/P14/d+7c8eXLl8e7j/u/O84/+T9/4v7x/i/+w/n5+eP/f6dOnTrW39+/y/3Z2dl47V9cXByvLgFIAAI4hwDc3t7+2z0gAQk4jgD8T8Tz/R/p/l05Pj7+13kEIAEJQAIQgAQgAQn4BQHI+Pj4n+0/NjbW/d5v/gGA//3337ePHz/+s7/ZzP+BvH/58mX3//706VP3/+6/vH/x4kV3/P+X/P9/G/d/4X/++vXrb+9v5+fn3d5+Pj4+/vW57+7u/s1p3g4EAiAAASCAcwjA3d3d+t7LzWYA+Pn52Z6enravr298Xwz+d+/eff/t7u5u7f/i4uLzB9b9+/d/+qf35+fn/d1eXl4ezyWAAAQgAAEgAAEgAAEIgIELwNPT0/b29nZeQAIQgAQgAAkAgSgA7nN4eLjd3d1tqAMPDAxsnz59+s0BOH/+/L7b399/Xn26zR5++PDh/X53l/zv7u6+L2z+j+sBAQEAgAAQgAQgAAQgAAQgAAQgAQlA/A/g+Pj4P8gDSQASgAQgAIkEIP4I/n3f7+7u/us8AkACEIAEIACJUwCbAQGAgAAgAAEIwBAE4IULF8btb53vP93n/u/+/fvb0dHR5/Uf6/z+D/Z/5/cP9n/+/Pnz/R/u+Ph4N/i/X63+3+3/D51fX1/328/m9QCAwN/fP/5n/z/Zf/z4cTwGggAEAQEAgAAQeAIQ3w/w9PS0/f///3+7T19fH9/3/3d/8X7w/vL+/v4+2H/+8Pz8/P6f7e8D/P/+H/vPnz/f7p/s+Pv7Oz6fEAAgAIEgAO5vB/jP/+7k5GR/8n/79u3x/Xp+fr4357Ozsx/vYxSAAAQgAAEgAAEgAAEImIQA/D/v6urqP+gDSQASgAQgAIkQgPhj+X/mAwABQAACQACGJADRj+f8/Pyt/QMA/hH95ubm/d3m/5H+l3f/33d3d+M1/wcCgP+d8/vPnz/X78f/d/l/L+j+X3P8/3/g/3e/Pz/9P9v/u/w/FHD/7hCAgAAgAAEIQMABAeDq6mp/9j85Oflv/+3k5GT79ddf//V5fRKAQAACQACeCAD+b/+P/R+vPxQ/gAAQgAAQgAAQgAAQgAAS/wWc7vL5v5oJNAAAAABJRU5ErkJggg==',
+        'System Settings': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAFpUlEQVR4Xu2dP48cNRSAz1nIuA14C4aGgoKCgoKCgoKCgoKCgoKCgoKCgoIC/wPcgAsggoIiJiZGREQkIiIiIiIiIiIiIjIyIiKy2G8aM7Ozb4/b1yZ5kk1m5+fdV/u/u/ftVlPZ3d097Ozs/Fk3t7e3t729vb097MHBwW15eTnb2Nj4u+dZW1vbHh4eHm03/g/wL95eXl5u+/v7Z9P/138K4+PjA3/+bvjDIwL/Qrh58+b2/PnzW6vNfsn29vb2T/8uJ2B3YCMAnjp1qv3111/X7NkTegu2PzZ+8HwAGD3EHgDZ3d29NTc3N1ar/Qf/i7N5wM/PzwP65B88eLDNzc3N9evXrw/oK19fXw/s9a/N6+F/cXEx/b/u/vTp8uXLe8PudrM6fH19fdze6EhA/p/IHfJ8f39/BP93wP39/T/5P/h/L4+Pjwfo/TPA/x4f+H9t/f39/THc/QP5/1P//8y/bZf8f3P89u3bbWNj47B/s7KyMnzfs2fP2vLy8vDy+J/O/sTyf/ny5a0rdpvNAPj+/v6Yf5j/xf1A/sXr6+t/s//H93kAH7//v3j/4X/96+vrr/p/6fuE3oJNAAAAABAAAAAAgAAAAMCACHBwcPDWcz0gAIAAIAAEjgHAYDDw58+f7/b29rbt7Ox80X99fHyMiaiAAgAAAQAAAQAAAQABXAJQPwD8/f19xPr93q3/H8kfSP/P5/yv/3f/8X9h4zk5Odni/wDXrl3bPDw8/NXczc3N7e3t/THc3wIAAQAA4AkA+SO5e/fudaQDAACAAByBAJH8kT9//ny3vb39vP2MDRs2bMiTJ0/G6xMnTgzvPu7/7jj/5H/+xP3j/Rf/wfz8/Pj/P3Xq1OHh4eF173/58uV49cHBwePWBQABAAAcQgDu7++P5AdAAAhwBAH4B4L5/Q/v/lU5OTn5r/MIQAAAIAAAIAAAIAAAD/gDAPkjs7Ky8lzvN5cDAv+X/P/u7Oxszc/P3+rn4eHh3/0bGxv/d57//7i4OL1/4X/9+vXrb3P+wYMHG6v/4eHhT/O83x/2h4SEAAACQADHEIC7u7v9vWd2HwHg4eHhvrKy8v8+GAz+d+/eff/29vZ2y7+4uPjNAXD9+vXP+vP1x8fHx/s5Ozt72Z/n5+e3r/n5+fntK4AAAEAAAAAgAAAAMCAC8PT09Pb29nZeAQIAAQAAAQAAjggAvs/Pz7e9vb3NCoDjx4/v27dv378XwDdv3ty+v7//vPq42Qw+efLkdr87yf/+/v5XNv8n9AEBAAAAEAAAAAAAAAAAEAAAAAAAAID4B+Dk5OSX+SAlAQAAAgAA4EgEIP4Y/P+O6/1/+oAAAIAAAIAAAI5TAJsBIAAAAQAAQADAEAD+9OkT9/61fR/u/+7cuXMlICDwm/+je/n6+prX/+3t7fM/v5/O/7i4OFar/0v25+fn/f6zX8v1n3/L/n+z/w+dX15ezus/m9cDAIF/e3vb5P/4//z58+NZAQAAAgAAAAAA4AEBPP1D+vTp02G5x8fH++Xk5OTWf/L//v378X/R+yP7D+4D95f39/f/uT6vPv/+hP+4//z58+NfEAAAAAAAAEBAAu7u7gb4L/x/eHh43z8xMDDwBwMBAAEAAAAAAAgAAAAAAAAAgCQ/APl//fr1o35IEgAAAIAAAEBEBCH+iPkf8AFAAAIAAABAIAlA9AP5z58/b/8AgH9Ev7+/v/n+/j/R/+Uf//85OTnpt/xX/f//P/V+P/2/X/63+3fr//X+79T/1/t//f/4/yD/7kUAAAAAAIAABCAA5J+s/2v/33//fU7Oz8/Pfn9eXwQQAAAIAADwggD4b/+P7T9u/8QAAQAAAQAAAAAAAQAAQOJfgM+9eGf8Gj2YAAAAAElFTkSuQmCC',
+        'TextEdit': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAACF0lEQVR4Xu3ZMQ4CMRBE0WwngVw25yAOAiGu4kQ4iwto5gC5t3EMj5A+Qn4JqO/3J/n9u6GkhwASgAQgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAkAydwBCUACEAACTQBI7gYkAAEgAIGdAJA8gQYgAQgAgScA5EkgAYgTAJI7gASAAASAgAn8BfbA7rJ5DBZBAAAAAElFTkSuQmCC',
+        'Launchpad': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAADbUlEQVR4Xu2ZTW7CQBCFN4gLqQv0DnoCCgU1pQdCn0BP4CUKxAfokahQqdBnKBCiVwgfQJFSQeHh5jCPhvHYs5M4k2SkzWZmJv92dnZ3l8vY2dnpra+vL7u+vr6+sVisvL29/V3/WVlZ2S4vL3fbzP8B/sW7vLy8bD6f/7T+/9W/o7u7u/n5u+Efj8j8F+Lm5uY2Pz9/czbrJ9sXFxf/6d+lBDgGNgZw4sSJE/bq1at/L9uTegu2Pzb+4HkA6HHEHgA4Ozt76+rqamvV/vP/4mydwM/PzwP65PX19TX29vbG+vXr1wf0lS8vLw/s9azN6+F/cXEx/b/u/u/z5Y+Pj3s7dns2pwO+vr7u2zsdCcj+J3JHvM/n8yP4vxP3+/v7f/J/8P/ePD4+HqD3zwD/e3zg/7X9/f39Idz9A8n/1/7/zL9tV/y/N357e3ubm5ubN/1neXl5+L5nZ2fb8vLykPV/Oj8jyf/Lly/ft6psMwD+/f39Mf8w/4v7gfSL19fX/2b/j+9zgB9//794/+F//esf2f8l7xN6CzYBAAAAAAAAAAAAAACAgAIcHR3ds57rAQEAAAAAAAA4BgDD4fDnz5/vtra2tr29vZ39f318fExMVAUAAAAAAAAAAAAA4BKA+gHg7+/vEev3erf+f2T/SPp/Pu//63/3H/+Xjed0dnZ2ZfgLcPXq1e3h4eH/uZubm9ve3v7HcHsTAgAAAAAAAAA8AeCPSPfu3TsdaQcAAAAAAAAHkCDyR/78+XNvb29/bj/j9u3bt6Snp8f1iYmJwf2O+787zj/5H/+J++f9F//B/Pz8+P8/OTk53N/fv+79Ly8vH9cODg4O1y4AAAAAAAAAcAgBuL+/P5IdAAAAAAAAjiCAf/C8/+Hdf1VnZ+e/ziMAAAAAAAAAAAAAAIB/APJHdnZ2ds51v7kcEPgv+f/d3d3dNT8/f6Ofh4eHf/d3d3f/7zz//3Fxcfr+wv/69evXb5/5gw8fPhyv/4eHh3+a5/3+sD8kJAQAAAAAAADHEIC7u7v9vWd2HwHg4eHhvrKy8v8+GAz+d+/eff/29vZ2y7+4uPjNAXD9+vXP+vP1x8fHx/s5Ozt72Z/n5+e3r/n5+fntK4AAAAAAAAAAAMBAC8DT09Pb29nZeQEAAAAAAAAAQBwBwPe5ubltb29vswI4fPjwvv379//7BYBv3ry5fX9//3n1cTMZvPz58+fe707y/+fn57e2+T+hDwAAAAAAAABQABAAAAAAAEAAQAAAQPwDcHR09Jd5ICUAAAAAAAAcSQDiD8H//+j+6f4EAAAAAAAAcEwBbAYAAAAAAAAgAIARAPzZs2f3/tX2ebj/u3PnzgkBAT+7x/9oXn9/f/P6v729fX7+53fS/xsXF8er/0v25+fn/f6zX8v1n3/L/n+z/w+dX15ezus/m9cDAIH/9/bGeX//Pz8/P14WAAAAAAAAAADgAQE8/UP69OnTYbnHx8f75eTk5NZ/8v/+ffvx/+L3R/Yf3AfuL+/v7//n+rz6/PsT/sf958+fH/8KAAAAAAAAgIAE3N3dDfBf+P/w8PD+fsTAwMAfDAYAAAAAAAAAAAQAAAAAAAAAyPJDkv/Lly9f9UOSAAAAAAAAACBCBCH+iPkf8AEAABwJQPQD+c+fP2//AID/iH5/f3/z/f1/ov/L//h/fnZ2duu3/FX//z/r/X76f7/+b/fvlX+v93+n/r/e/+v/x/8H+XcvAAAAAAAAAAAIQADyT9b/tf9vv/12Tvb8/PyX5/VFAAEAAAAAAAA8IAD+2//j9ke3fyIAAQAAAAAAAACAAACAAEj8CzT/xN8sWwBqAAAAAElFTkSuQmCC'
+    };
+    // Dummy Photos Data
+    const PHOTOS = Array.from({length: 18}, (_, i) => `https://picsum.photos/400/400?random=${i+10}`);
+
+    class GeminiMacOS {
         constructor() {
             this.state = {
-                vfs: { desktop: [], contents: {} },
+                vfs: {
+                    'Desktop': [],
+                    'Documents': [],
+                    'Downloads': [],
+                    'contents': {}
+                },
                 openWindows: {},
-                installedApps: ['Files', 'Settings', 'Store', 'Photos'],
-                settings: {
-                    wallpaper: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2940&auto=format=fit=crop"
-                }
+                activeApp: 'Finder',
+                settings: { wallpaper: 'https://images.unsplash.com/photo-1563286348-34301c130960?q=80&w=2940&auto=format=fit-crop' }
             };
             this.highestZIndex = 100;
-            this.wallpapers = [
-                "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2940&auto=format=fit-crop",
-                "https://images.unsplash.com/photo-1536532184021-da5392b55da1?q=80&w=2864&auto=format=fit-crop",
-                "https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=2832&auto=format=fit-crop",
-                "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=2787&auto=format=fit-crop"
-            ];
-             this.storeApps = [
-                { name: 'Browser', icon: 'ph-globe-simple' },
-                { name: 'Notepad', icon: 'ph-note-pencil' },
-                { name: 'Terminal', icon: 'ph-terminal-window' },
-            ];
+            this.apps = {
+                'Finder': { icon: ICONS.Finder, menus: {'File':{'New Folder':()=>console.log('new folder')}} },
+                'TextEdit': { icon: ICONS.TextEdit, menus: {
+                    'File': { 'New': null, 'Open': null, 'Save': (app) => app.saveFile() },
+                    'Edit': { 'Cut': null, 'Copy': null, 'Paste': null }
+                }},
+                'System Settings': { icon: ICONS['System Settings'], menus: {}},
+                'Launchpad': { icon: ICONS.Launchpad }
+            };
             this.init();
         }
 
         init() {
-            this.loadState();
-            this.applySettings();
-            this.renderStartMenu();
-            this.renderTaskbar();
-            this.renderWidgets();
+            this.renderDock();
+            this.updateMenuBar();
             this.setupEventListeners();
             this.updateTime();
             setInterval(() => this.updateTime(), 1000);
         }
 
-        saveState() {
-            localStorage.setItem('geminiOSFluentState', JSON.stringify(this.state));
-        }
-
-        loadState() {
-            const savedState = localStorage.getItem('geminiOSFluentState');
-            if (savedState) {
-                this.state = JSON.parse(savedState);
-            }
-        }
-
-        applySettings() {
-            document.body.style.setProperty('--wallpaper', `url('${this.state.settings.wallpaper}')`);
-        }
-
         updateTime() {
-            const now = new Date();
-            document.getElementById('time').textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-            document.getElementById('date').textContent = now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+            document.getElementById('clock').textContent = new Date().toLocaleString('en-US', {
+                weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+            });
         }
         
-        createWindow(appName) {
-            if (this.state.openWindows[appName]) {
-                this.focusWindow(appName);
-                return;
+        updateMenuBar() {
+            const app = this.apps[this.state.activeApp];
+            const leftSection = document.querySelector('#top-menu-bar .left');
+            leftSection.innerHTML = `
+                <i class="apple-logo ph-fill ph-apple-logo"></i>
+                <span class="app-name">${this.state.activeApp}</span>
+            `;
+            if (app && app.menus) {
+                for (const menuName in app.menus) {
+                    const menu = document.createElement('div');
+                    menu.className = 'menu-item';
+                    menu.textContent = menuName;
+                    
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'dropdown-menu';
+                    for (const itemName in app.menus[menuName]) {
+                        const item = document.createElement('div');
+                        item.className = 'dropdown-item';
+                        item.textContent = itemName;
+                        item.onclick = () => {
+                           if(app.menus[menuName][itemName]) app.menus[menuName][itemName](this.state.openWindows[this.state.activeApp]?.instance);
+                        };
+                        dropdown.appendChild(item);
+                    }
+                    menu.appendChild(dropdown);
+                    leftSection.appendChild(menu);
+                }
             }
+        }
+        
+        renderDock() {
+            const dock = document.getElementById('dock');
+            dock.innerHTML = '';
+            for (const appName in this.apps) {
+                const item = document.createElement('div');
+                item.className = 'dock-item';
+                item.dataset.app = appName;
+                if(this.state.openWindows[appName]) item.classList.add('running');
+                
+                item.innerHTML = `
+                    <img src="${this.apps[appName].icon}" alt="${appName}">
+                    <div class="running-indicator"></div>`;
+                dock.appendChild(item);
+            }
+        }
 
-            const id = `win_${Date.now()}`;
-            const windowEl = document.createElement('div');
-            windowEl.className = 'window';
-            windowEl.dataset.app = appName;
-            windowEl.dataset.id = id;
-            
-            // Smart positioning
-            const offset = Object.keys(this.state.openWindows).length * 30;
-            windowEl.style.top = `${50 + offset}px`;
-            windowEl.style.left = `${100 + offset}px`;
+        createWindow(appName) {
+            if (this.state.openWindows[appName]) { this.focusWindow(appName); return; }
+            const win = document.createElement('div');
+            win.className = 'window';
+            win.dataset.app = appName;
+            this.state.activeApp = appName;
 
-            const appContent = this.getAppContent(appName);
-            windowEl.innerHTML = `
-                <div class="window-header">
-                    <div class="window-controls">
-                        <button class="control-btn close"></button>
-                        <button class="control-btn minimize"></button>
-                        <button class="control-btn maximize"></button>
-                    </div>
-                    <div class="window-title">${appName}</div>
-                </div>
-                <div class="window-body">${appContent.body}</div>`;
+            const appInstance = this.getAppInstance(appName, win);
+            this.state.openWindows[appName] = { el: win, instance: appInstance };
             
-            document.getElementById('desktop').appendChild(windowEl);
-            this.state.openWindows[appName] = { id, minimized: false, el: windowEl };
+            win.innerHTML = `<div class="window-header"><div class="window-controls"><span class="control-btn close"></span><span class="control-btn minimize"></span><span class="control-btn maximize"></span></div><div class="window-title">${appInstance.title || ''}</div></div>`;
+            win.appendChild(appInstance.body);
+            
+            document.getElementById('desktop').appendChild(win);
             this.focusWindow(appName);
-            this.renderTaskbar();
-            if (appContent.postRender) appContent.postRender(windowEl, this);
+            this.renderDock();
         }
 
         focusWindow(appName) {
-            if (this.state.openWindows[appName].minimized) {
-                this.state.openWindows[appName].el.classList.remove('minimized');
-                this.state.openWindows[appName].minimized = false;
-            }
+            this.state.activeApp = appName;
             this.highestZIndex++;
             this.state.openWindows[appName].el.style.zIndex = this.highestZIndex;
-            this.renderTaskbar();
+            this.updateMenuBar();
         }
 
         closeWindow(appName) {
             this.state.openWindows[appName].el.remove();
             delete this.state.openWindows[appName];
-            this.renderTaskbar();
+            this.state.activeApp = 'Finder'; // Revert to Finder
+            this.updateMenuBar();
+            this.renderDock();
         }
-
-        minimizeWindow(appName) {
-            this.state.openWindows[appName].el.classList.add('minimized');
-            this.state.openWindows[appName].minimized = true;
-            this.renderTaskbar();
-        }
-
-        renderStartMenu() {
-            const menu = document.getElementById('start-menu');
-            const appList = this.state.installedApps.map(app => 
-                `<div class="app-list-item" data-app="${app}">
-                    <i class="ph-fill ${this.getAppContent(app).icon}"></i> ${app}
-                </div>`
-            ).join('');
-            menu.innerHTML = `<div class="app-list">${appList}</div>`;
-        }
-
-        renderTaskbar() {
-            const container = document.getElementById('taskbar-apps');
-            container.innerHTML = '';
-            for (const appName in this.state.openWindows) {
-                const appData = this.state.openWindows[appName];
-                const icon = document.createElement('div');
-                icon.className = 'taskbar-app running';
-                icon.dataset.app = appName;
-                if (!appData.minimized && appData.el.style.zIndex == this.highestZIndex) {
-                    icon.classList.add('active');
-                }
-                icon.innerHTML = `<i class="ph-fill ${this.getAppContent(appName).icon}"></i>`;
-                container.appendChild(icon);
-            }
-        }
-
-        renderWidgets() {
-            const container = document.getElementById('widget-center');
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const firstDay = new Date(year, month, 1).getDay();
-            
-            let calendarHtml = `<div class="widget-calendar"><div class="calendar-header">${now.toLocaleString('default', { month: 'long', year: 'numeric' })}</div><div class="calendar-grid">`;
-            'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',').forEach(d => calendarHtml += `<span class="day-name">${d}</span>`);
-            for(let i = 0; i < firstDay; i++) calendarHtml += `<span></span>`;
-            for(let i = 1; i <= daysInMonth; i++) {
-                let className = i === now.getDate() ? 'today' : '';
-                calendarHtml += `<span class="${className}">${i}</span>`;
-            }
-            calendarHtml += '</div></div>';
-            container.innerHTML = calendarHtml;
-        }
-
+        
         setupEventListeners() {
-            // Start Menu
-            const startButton = document.getElementById('start-button');
-            const startMenu = document.getElementById('start-menu');
-            startButton.addEventListener('click', e => {
-                e.stopPropagation();
-                startMenu.classList.toggle('show');
-                startButton.classList.toggle('active');
+            const dock = document.getElementById('dock');
+            dock.addEventListener('click', e => {
+                const item = e.target.closest('.dock-item');
+                if (item) {
+                    const appName = item.dataset.app;
+                    if (appName === 'Launchpad') {
+                        this.toggleLaunchpad();
+                    } else {
+                        this.createWindow(appName);
+                    }
+                }
             });
-            startMenu.addEventListener('click', e => {
-                const appItem = e.target.closest('.app-list-item');
-                if (appItem) this.createWindow(appItem.dataset.app);
+            
+            dock.addEventListener('mousemove', e => {
+                const rect = dock.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                
+                Array.from(dock.children).forEach(item => {
+                    const itemRect = item.getBoundingClientRect();
+                    const itemCenterX = itemRect.left - rect.left + itemRect.width / 2;
+                    const distance = Math.abs(mouseX - itemCenterX);
+                    const scale = Math.max(1, 1.8 - distance / 100);
+                    item.style.width = `${52 * scale}px`;
+                });
             });
-            // Widget Center
-            document.getElementById('system-tray').addEventListener('click', () => {
-                document.getElementById('widget-center').classList.toggle('show');
+
+            dock.addEventListener('mouseleave', () => {
+                 Array.from(dock.children).forEach(item => item.style.width = '52px');
             });
-            // Global Click
-            document.addEventListener('click', () => {
-                startMenu.classList.remove('show');
-                startButton.classList.remove('active');
-            });
-             // Window Controls
-            document.getElementById('desktop').addEventListener('click', e => {
-                const target = e.target;
-                const windowEl = target.closest('.window');
-                if (!windowEl) return;
-                const appName = windowEl.dataset.app;
-                if (target.classList.contains('close')) this.closeWindow(appName);
-                if (target.classList.contains('minimize')) this.minimizeWindow(appName);
-            });
+            
             document.getElementById('desktop').addEventListener('mousedown', e => {
-                 const windowEl = e.target.closest('.window');
-                 if (windowEl) this.focusWindow(windowEl.dataset.app);
+                const win = e.target.closest('.window');
+                if (win) this.focusWindow(win.dataset.app);
+                else {
+                    this.state.activeApp = 'Finder';
+                    this.updateMenuBar();
+                }
             });
-            // Taskbar App clicks
-            document.getElementById('taskbar-apps').addEventListener('click', e => {
-                const appItem = e.target.closest('.taskbar-app');
-                if(appItem) this.focusWindow(appItem.dataset.app);
+
+            document.getElementById('desktop').addEventListener('click', e => {
+                const c = e.target;
+                if(c.classList.contains('close')) this.closeWindow(c.closest('.window').dataset.app);
+            });
+            
+            document.getElementById('launchpad').addEventListener('click', e => {
+                const item = e.target.closest('.launchpad-item');
+                if (item) this.createWindow(item.dataset.app);
+                this.toggleLaunchpad();
             });
         }
         
-        getAppContent(appName) {
-            // This now acts as a central repository for app data
+        toggleLaunchpad() {
+            const lp = document.getElementById('launchpad');
+            const grid = lp.querySelector('.launchpad-grid') || document.createElement('div');
+            if(!lp.classList.contains('show')) {
+                grid.className = 'launchpad-grid';
+                grid.innerHTML = Object.keys(this.apps).map(app => `
+                    <div class="launchpad-item" data-app="${app}">
+                        <img src="${this.apps[app].icon}"><span>${app}</span>
+                    </div>`).join('');
+                lp.appendChild(grid);
+            }
+            lp.classList.toggle('show');
+        }
+
+        getAppInstance(appName) {
             switch(appName) {
-                case 'Files': return { icon: 'ph-folder-simple', body: 'File system coming soon.' };
-                case 'Settings': return { icon: 'ph-gear', body: `
-                    <div class="settings-body">
-                        <div class="settings-sidebar">Personalization</div>
-                        <div class="settings-content">
-                            <h3>Wallpaper</h3>
-                            <div class="wallpaper-grid">
-                                ${this.wallpapers.map(url => `<div class="wallpaper-thumb ${this.state.settings.wallpaper === url ? 'selected' : ''}" style="background-image: url('${url}')" data-url="${url}"></div>`).join('')}
-                            </div>
-                        </div>
-                    </div>`,
-                    postRender: (win, os) => {
-                        win.querySelector('.wallpaper-grid').addEventListener('click', e => {
-                            const thumb = e.target.closest('.wallpaper-thumb');
-                            if (thumb) {
-                                os.state.settings.wallpaper = thumb.dataset.url;
-                                os.saveState();
-                                os.applySettings();
-                                win.querySelectorAll('.wallpaper-thumb').forEach(t => t.classList.remove('selected'));
-                                thumb.classList.add('selected');
-                            }
-                        });
-                    }
-                };
-                case 'Store': return { icon: 'ph-storefront', body: `
-                    <div class="store-grid">
-                        ${this.storeApps.map(app => `
-                            <div class="store-item">
-                                <i class="ph-fill ${app.icon}"></i>
-                                <h4>${app.name}</h4>
-                                <button data-app="${app.name}" ${this.state.installedApps.includes(app.name) ? 'disabled' : ''}>
-                                    ${this.state.installedApps.includes(app.name) ? 'Installed' : 'Install'}
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>`,
-                    postRender: (win, os) => {
-                        win.querySelector('.store-grid').addEventListener('click', e => {
-                            const btn = e.target.closest('button');
-                            if(btn && !btn.disabled) {
-                                const appName = btn.dataset.app;
-                                os.state.installedApps.push(appName);
-                                os.saveState();
-                                os.renderStartMenu();
-                                btn.textContent = 'Installed';
-                                btn.disabled = true;
-                            }
-                        });
-                    }
-                };
-                case 'Photos': return { icon: 'ph-images-square', body: `
-                    <div class="photos-grid">
-                        ${[...Array(15).keys()].map(i => `<div class="photo-thumb" style="background-image: url('https://picsum.photos/400/400?random=${i}')"></div>`).join('')}
-                    </div>`
-                };
-                // Apps that can be "installed"
-                case 'Browser': return { icon: 'ph-globe-simple', body: 'Browser coming soon.' };
-                case 'Notepad': return { icon: 'ph-note-pencil', body: 'Notepad coming soon.' };
-                case 'Terminal': return { icon: 'ph-terminal-window', body: 'Terminal coming soon.' };
-                default: return { icon: 'ph-app-window', body: 'Not a valid app.'};
+                case "Finder": return new Finder(this.state.vfs);
+                case "TextEdit": return new TextEdit();
+                // Add other apps here
+                default: return { body: document.createElement('div') };
             }
         }
     }
-    new GeminiOS_Fluent();
+
+    // --- Application Classes ---
+    class Finder {
+        constructor(vfs) {
+            this.vfs = vfs;
+            this.body = document.createElement('div');
+            this.body.className = 'finder-body';
+            this.render();
+        }
+        render() {
+            this.body.innerHTML = `
+                <div class="finder-sidebar">
+                    <div class="sidebar-item active">Desktop</div>
+                    <div class="sidebar-item">Documents</div>
+                    <div class="sidebar-item">Downloads</div>
+                </div>
+                <div class="finder-content">
+                    ${this.vfs['Desktop'].map(f => `<div class="file-icon"><i class="ph-fill ph-folder"></i><span>${f.name}</span></div>`).join('')}
+                </div>`;
+        }
+    }
+    class TextEdit {
+        constructor() {
+            this.body = document.createElement('textarea');
+            this.body.className = 'textedit-textarea';
+            this.body.value = 'Untitled document.';
+        }
+        saveFile() {
+            // In a real scenario, this would open a save dialog.
+            // For now, we'll just log it.
+            console.log("Saving content:", this.body.value);
+            alert("File content saved to console!");
+        }
+    }
+
+    new GeminiMacOS();
     </script>
 </body>
 </html>
