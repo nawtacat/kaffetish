@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sleek OS</title>
+    <title>Aura OS</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
     <style>
-        /* --- Reset & Base Styles --- */
         :root {
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-            --background-image: url('https://images.unsplash.com/photo-1554141311-9335a0a38636?q=80&w=2940&auto=format&fit=crop');
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2940&auto=format&fit=crop');
             --primary-text: #f0f0f0;
-            --secondary-text: #a0a0a0;
-            --glass-bg: rgba(25, 25, 25, 0.3);
-            --icon-bg-hover: rgba(255, 255, 255, 0.15);
+            --glass-bg: rgba(25, 25, 25, 0.25);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --app-hover-bg: rgba(255, 255, 255, 0.1);
         }
 
         * {
@@ -21,139 +28,325 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: var(--font-family);
             background-image: var(--background-image);
             background-size: cover;
             background-position: center;
             color: var(--primary-text);
-            height: 100vh;
+            user-select: none;
+        }
+
+        #desktop {
+            height: 100%;
+            width: 100%;
+            position: relative;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            user-select: none; /* Prevents text selection */
         }
 
         /* --- Top Bar --- */
         #top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 40px;
+            height: 36px;
             background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px); /* For Safari */
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0 20px;
-            flex-shrink: 0;
+            z-index: 1000;
         }
 
-        #top-bar .menu-item {
-            font-weight: 500;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 6px;
-            transition: background-color 0.2s ease;
-        }
-
-        #top-bar .menu-item:hover {
-            background-color: var(--icon-bg-hover);
+        #top-bar .logo {
+            font-size: 20px;
         }
 
         #status-icons {
             display: flex;
             align-items: center;
-            gap: 20px;
-        }
-
-        #clock {
+            gap: 15px;
+            font-size: 14px;
             font-weight: 500;
         }
+
+        /* --- Dock --- */
+        #dock {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            padding: 8px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 30px var(--shadow-color);
+            z-index: 1000;
+        }
+
+        .dock-item {
+            width: 56px;
+            height: 56px;
+            font-size: 32px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease;
+        }
+
+        .dock-item:hover {
+            transform: scale(1.2) translateY(-8px);
+            background-color: var(--app-hover-bg);
+        }
+
+        /* --- Windows --- */
+        .window {
+            position: absolute;
+            width: 600px;
+            height: 400px;
+            background: rgba(30, 30, 30, 0.5);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 40px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;
+        }
+
+        .window-header {
+            height: 36px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            cursor: grab;
+        }
+        .window-header:active {
+            cursor: grabbing;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+        .close { background-color: #ff5f56; }
+        .minimize { background-color: #ffbd2e; }
+        .maximize { background-color: #27c93f; }
+
+        .window-title {
+            flex-grow: 1;
+            text-align: center;
+            font-weight: 500;
+            font-size: 14px;
+        }
         
-        /* --- Desktop Area --- */
-        #desktop {
+        .window-body {
             flex-grow: 1;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            flex-wrap: wrap;
-            align-content: flex-start;
-            gap: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .window-body h3 {
+            margin-bottom: 10px;
         }
 
-        .icon {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100px;
-            height: 100px;
-            text-align: center;
-            cursor: pointer;
+        /* --- Context Menu --- */
+        #context-menu {
+            position: absolute;
+            display: none;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: 8px;
-            transition: background-color 0.2s ease;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 20px var(--shadow-color);
+            padding: 5px;
+            z-index: 2000;
         }
 
-        .icon:hover {
-            background-color: var(--icon-bg-hover);
+        #context-menu ul {
+            list-style: none;
         }
-        
-        .icon .icon-image {
-            font-size: 48px;
-            line-height: 1;
+
+        #context-menu li {
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.1s ease;
         }
-        
-        .icon .icon-label {
-            margin-top: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        #context-menu li:hover {
+            background-color: var(--app-hover-bg);
+        }
+        #context-menu hr {
+            border: none;
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 5px 0;
         }
 
     </style>
 </head>
 <body>
 
-    <div id="top-bar">
-        <div class="menu-item"></div>
-        <div id="status-icons">
-            <div id="clock">10:07 PM</div>
+    <div id="desktop">
+        <div id="top-bar">
+            <div class="logo"><i class="ph-fill ph-wind"></i></div>
+            <div id="status-icons">
+                <div id="clock">10:07 PM</div>
+            </div>
+        </div>
+
+        <div id="dock">
+            <div class="dock-item" data-app="Finder" data-icon="ph-folder-simple">
+                <i class="ph-fill ph-folder-simple"></i>
+            </div>
+            <div class="dock-item" data-app="Terminal" data-icon="ph-terminal-window">
+                <i class="ph-fill ph-terminal-window"></i>
+            </div>
+            <div class="dock-item" data-app="Settings" data-icon="ph-gear">
+                <i class="ph-fill ph-gear"></i>
+            </div>
+             <div class="dock-item" data-app="Notes" data-icon="ph-note-pencil">
+                <i class="ph-fill ph-note-pencil"></i>
+            </div>
+        </div>
+        
+        <div id="context-menu">
+            <ul>
+                <li>New Folder</li>
+                <hr>
+                <li>Change Wallpaper</li>
+                <li>Display Settings</li>
+            </ul>
         </div>
     </div>
 
-    <main id="desktop">
-        <div class="icon">
-            <div class="icon-image">🚀</div>
-            <div class="icon-label">Projects</div>
-        </div>
-        <div class="icon">
-            <div class="icon-image">📦</div>
-            <div class="icon-label">Storage</div>
-        </div>
-        <div class="icon">
-            <div class="icon-image">⚙️</div>
-            <div class="icon-label">Settings</div>
-        </div>
-         <div class="icon">
-            <div class="icon-image">🗑️</div>
-            <div class="icon-label">Trash</div>
-        </div>
-    </main>
-
     <script>
-        // --- Dynamic Clock Functionality ---
+        // --- 1. CLOCK FUNCTIONALITY ---
         const clockElement = document.getElementById('clock');
-
         function updateClock() {
             const now = new Date();
             const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             clockElement.textContent = timeString;
         }
-
-        // Update the clock immediately and then every second
         updateClock();
         setInterval(updateClock, 1000);
+
+        // --- 2. CONTEXT MENU FUNCTIONALITY ---
+        const contextMenu = document.getElementById('context-menu');
+        const desktop = document.getElementById('desktop');
+        desktop.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = `${e.clientX}px`;
+            contextMenu.style.top = `${e.clientY}px`;
+        });
+        document.addEventListener('click', () => {
+            contextMenu.style.display = 'none';
+        });
+
+        // --- 3. WINDOWING SYSTEM ---
+        const dockItems = document.querySelectorAll('.dock-item');
+        let highestZIndex = 100;
+        let windowCount = 0;
+
+        dockItems.forEach(item => {
+            item.addEventListener('click', () => {
+                createWindow(item.dataset.app, item.dataset.icon);
+            });
+        });
+        
+        function createWindow(appName, appIcon) {
+            windowCount++;
+            const newWindow = document.createElement('div');
+            newWindow.className = 'window';
+            newWindow.style.zIndex = ++highestZIndex;
+            newWindow.style.top = `${50 + windowCount * 20}px`;
+            newWindow.style.left = `${100 + windowCount * 20}px`;
+            
+            newWindow.innerHTML = `
+                <div class="window-header">
+                    <div class="window-controls">
+                        <button class="control-btn close"></button>
+                        <button class="control-btn minimize"></button>
+                        <button class="control-btn maximize"></button>
+                    </div>
+                    <div class="window-title">
+                        <i class="ph-fill ${appIcon}" style="margin-right: 5px; vertical-align: -2px;"></i>
+                        ${appName}
+                    </div>
+                </div>
+                <div class="window-body">
+                    <h3>Welcome to ${appName}</h3>
+                    <p>This is a simulated application window. You can drag it by its header and close it using the red button.</p>
+                </div>
+            `;
+            
+            desktop.appendChild(newWindow);
+
+            // Add functionality to new window
+            makeDraggable(newWindow);
+
+            newWindow.querySelector('.close').addEventListener('click', () => {
+                newWindow.remove();
+            });
+
+            newWindow.addEventListener('mousedown', () => {
+                 newWindow.style.zIndex = ++highestZIndex;
+            });
+        }
+
+        function makeDraggable(element) {
+            const header = element.querySelector('.window-header');
+            let isDragging = false;
+            let offsetX, offsetY;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - element.offsetLeft;
+                offsetY = e.clientY - element.offsetTop;
+                header.style.cursor = 'grabbing';
+                element.style.zIndex = ++highestZIndex;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    element.style.left = `${e.clientX - offsetX}px`;
+                    element.style.top = `${e.clientY - offsetY}px`;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                header.style.cursor = 'grab';
+            });
+        }
     </script>
 </body>
 </html>
