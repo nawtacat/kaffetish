@@ -3,385 +3,415 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini OS Pro</title>
+    <title>GeminiOS Fluent</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
         :root {
-            --font-family-ui: 'Inter', sans-serif;
-            --font-family-mono: 'Fira Code', monospace;
-            --wallpaper: url('https://images.unsplash.com/photo-1505089859222-1875b1a7b037?q=80&w=2832&auto=format&fit=crop');
-            --glass-bg: rgba(25, 25, 30, 0.5);
-            --window-bg: rgba(30, 30, 35, 0.7);
+            --font-family: 'Be Vietnam Pro', sans-serif;
+            --wallpaper-default: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2940&auto=format=fit=crop');
+            --acrylic-bg: rgba(25, 25, 30, 0.65);
+            --window-bg: rgba(35, 35, 42, 0.8);
             --border-color: rgba(255, 255, 255, 0.1);
             --shadow-color: rgba(0, 0, 0, 0.5);
             --primary-text: #f0f0f0;
-            --highlight-color: #5a9cf8;
+            --secondary-text: #a0a0a0;
+            --highlight-color: #4a90e2;
+            --highlight-text: #ffffff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
 
         body {
-            font-family: var(--font-family-ui);
-            background: var(--wallpaper) center/cover no-repeat;
+            font-family: var(--font-family);
+            background: var(--wallpaper, var(--wallpaper-default)) center/cover no-repeat;
             color: var(--primary-text);
             user-select: none;
+            transition: background-image 0.5s ease-in-out;
         }
 
         #desktop { height: 100%; width: 100%; position: relative; overflow: hidden; }
 
         /* --- Taskbar --- */
         #taskbar {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 48px;
-            background: var(--glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 52px;
+            background: var(--acrylic-bg); backdrop-filter: blur(30px) saturate(1.5); -webkit-backdrop-filter: blur(30px) saturate(1.5);
             border-top: 1px solid var(--border-color); display: flex; align-items: center;
-            justify-content: space-between; padding: 0 10px; z-index: 10000;
+            justify-content: space-between; padding: 0 12px; z-index: 10000;
         }
-        #start-button {
-            width: 48px; height: 100%; font-size: 24px; display: grid; place-items: center; cursor: pointer;
-            border-radius: 6px; transition: background-color 0.2s;
-        }
+        .taskbar-section { display: flex; align-items: center; height: 100%; gap: 8px; }
+        #start-button { font-size: 26px; padding: 8px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
         #start-button:hover, #start-button.active { background-color: var(--highlight-color); }
-        #app-icons { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        #system-tray { display: flex; align-items: center; gap: 15px; font-size: 14px; font-weight: 500; padding-right: 10px; }
-        .tray-icon { font-size: 18px; cursor: pointer; padding: 5px; border-radius: 4px; transition: background-color 0.2s; }
-        .tray-icon:hover { background-color: rgba(255,255,255,0.1); }
-        
-        /* --- Start Menu --- */
+        .taskbar-app { position: relative; padding: 0 12px; height: 100%; display: flex; align-items: center; font-size: 24px; cursor: pointer; }
+        .taskbar-app::after {
+            content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 3px; background-color: var(--highlight-color); border-radius: 2px;
+            transition: width 0.2s ease;
+        }
+        .taskbar-app.running::after { width: 24px; }
+        .taskbar-app.active::after { background-color: var(--highlight-text); }
+        #system-tray { cursor: pointer; padding: 8px 12px; border-radius: 6px; text-align: right; transition: background-color 0.2s; }
+        #system-tray:hover { background-color: rgba(255,255,255,0.1); }
+        #time { font-weight: 500; font-size: 14px; }
+        #date { font-size: 12px; color: var(--secondary-text); }
+
+        /* --- Widget Center --- */
+        #widget-center {
+            position: absolute; top: 0; right: 0; width: 380px; height: 100%;
+            background: rgba(10,10,15,0.8); backdrop-filter: blur(50px) saturate(1.5); -webkit-backdrop-filter: blur(50px) saturate(1.5);
+            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 9990; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;
+        }
+        #widget-center.show { transform: translateX(0); }
+        .widget-calendar { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; }
+        .calendar-header { font-weight: bold; font-size: 18px; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .calendar-grid span { padding: 8px 0; border-radius: 4px; }
+        .day-name { color: var(--secondary-text); font-size: 12px; }
+        .today { background-color: var(--highlight-color); color: var(--highlight-text); border-radius: 50%; }
+
+        /* --- Start Menu & Windows & Other styles remain similar but can be refined --- */
+        /* You can copy and adapt the window, context menu, and desktop icon styles from the previous version, they work well here */
+        .window {
+            position: absolute; width: 700px; height: 500px;
+            background: var(--window-bg); backdrop-filter: blur(50px) saturate(1.2);
+            border-radius: 10px; border: 1px solid var(--border-color);
+            box-shadow: 0 10px 60px var(--shadow-color); display: flex; flex-direction: column;
+            overflow: hidden; resize: both; animation: openWindow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes openWindow { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+        .window.minimized { display: none; }
+        .window-header { height: 40px; display: flex; align-items: center; padding: 0 10px; flex-shrink: 0; cursor: grab; }
+        .window-header:active { cursor: grabbing; }
+        .window-controls { display: flex; gap: 8px; }
+        .control-btn { width: 14px; height: 14px; border-radius: 50%; border: none; cursor: pointer; }
+        .close { background-color: #ff605c; } .minimize { background-color: #ffbd44; } .maximize { background-color: #00ca4e; }
+        .window-title { flex-grow: 1; text-align: center; font-weight: 500; font-size: 14px; padding-right: 70px; }
+        .window-body { flex-grow: 1; overflow: auto; display: flex; flex-direction: column; }
         #start-menu {
-            position: absolute; bottom: 58px; left: 10px; width: 350px;
-            background: var(--glass-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid var(--border-color); border-radius: 8px;
-            z-index: 9999; padding: 10px;
-            opacity: 0; transform: translateY(10px); pointer-events: none;
+            position: absolute; bottom: 62px; left: 12px; width: 450px;
+            background: var(--acrylic-bg); backdrop-filter: blur(30px) saturate(1.5);
+            border: 1px solid var(--border-color); border-radius: 12px;
+            z-index: 9999; padding: 15px; opacity: 0; transform: translateY(10px); pointer-events: none;
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
         #start-menu.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        .app-list-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 6px; cursor: pointer; }
+        .app-list-item { display: flex; align-items: center; gap: 15px; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 500;}
         .app-list-item:hover { background-color: rgba(255,255,255,0.1); }
-        .app-list-item i { font-size: 24px; }
+        .app-list-item i { font-size: 28px; color: var(--highlight-color); }
         
-        /* --- Desktop Icons --- */
-        .desktop-icon {
-            position: absolute; display: flex; flex-direction: column; align-items: center;
-            width: 80px; text-align: center; padding: 5px; border-radius: 6px; cursor: pointer;
-        }
-        .desktop-icon:hover { background-color: rgba(255, 255, 255, 0.15); }
-        .desktop-icon.selected { background-color: var(--highlight-color); border: 1px solid rgba(255,255,255,0.5); }
-        .desktop-icon i { font-size: 42px; color: #79bced; }
-        .desktop-icon .ph-file-text { color: #ccc; }
-        .desktop-icon-label { margin-top: 5px; font-size: 13px; text-shadow: 0 1px 2px #000; word-break: break-word; }
-        .desktop-icon-label input { width: 100%; background: #fff; border: 1px solid var(--highlight-color); text-align: center; outline: none; }
+        /* --- App Specific Styles --- */
+        .settings-body { display: flex; }
+        .settings-sidebar { width: 180px; padding: 10px; border-right: 1px solid var(--border-color); }
+        .settings-content { flex-grow: 1; padding: 20px; }
+        .wallpaper-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+        .wallpaper-thumb { width: 100%; aspect-ratio: 16/10; border-radius: 8px; background-size: cover; cursor: pointer; border: 3px solid transparent; transition: border-color 0.2s; }
+        .wallpaper-thumb:hover { border-color: rgba(255,255,255,0.5); }
+        .wallpaper-thumb.selected { border-color: var(--highlight-color); }
         
-        /* --- Windows (from previous versions, with minor tweaks) --- */
-        .window {
-            position: absolute; width: 700px; height: 450px;
-            background: var(--window-bg); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            border-radius: 12px; border: 1px solid var(--border-color);
-            box-shadow: 0 10px 50px var(--shadow-color); display: flex; flex-direction: column;
-            overflow: hidden; resize: both; animation: openWindow 0.2s ease-out;
-        }
-        @keyframes openWindow { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .window-header { height: 36px; display: flex; align-items: center; padding: 0 10px; flex-shrink: 0; cursor: grab; background: rgba(0,0,0,0.2); }
-        .window-header:active { cursor: grabbing; }
-        /* Add other window styles here from previous version if needed */
-        .window-controls { display: flex; gap: 8px; }
-        .control-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
-        .close { background-color: #ff5f56; }
-        .minimize { background-color: #ffbd2e; }
-        .maximize { background-color: #27c93f; }
-        .window-title { flex-grow: 1; text-align: center; font-weight: 500; font-size: 14px; padding-right: 60px; }
-        .window-body { flex-grow: 1; overflow: auto; display: flex; flex-direction: column; }
-        
-        /* --- App Specific: Notepad --- */
-        .app-notepad-body { display: flex; flex-direction: column; flex-grow: 1; }
-        .app-notepad-menu { padding: 5px; background: rgba(0,0,0,0.2); }
-        .app-notepad-menu button { background: none; border: 1px solid #555; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        .app-notepad-textarea { flex-grow: 1; background: transparent; border: none; color: white; padding: 15px; font-family: var(--font-family-mono); font-size: 14px; resize: none; outline: none; }
-        
-        /* --- Context Menu --- */
-        #context-menu {
-            position: absolute; display: none; background: var(--glass-bg); backdrop-filter: blur(20px);
-            border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px var(--shadow-color);
-            padding: 5px; z-index: 2000;
-        }
-        #context-menu ul { list-style: none; }
-        #context-menu li { padding: 8px 15px; font-size: 14px; cursor: pointer; border-radius: 4px; }
-        #context-menu li:hover { background-color: var(--highlight-color); }
-        #context-menu hr { border: none; height: 1px; background-color: var(--border-color); margin: 5px 0; }
+        .store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
+        .store-item { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; text-align: center; }
+        .store-item i { font-size: 48px; margin-bottom: 10px; }
+        .store-item button { background: var(--highlight-color); color: var(--highlight-text); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+        .store-item button:hover { background-color: #3a80d2; }
+        .store-item button:disabled { background-color: #555; cursor: not-allowed; }
+
+        .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 10px; }
+        .photo-thumb { width: 100%; aspect-ratio: 1/1; border-radius: 8px; background-size: cover; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div id="desktop"></div>
-    
     <div id="taskbar">
-        <div id="start-button"><i class="ph-fill ph-command"></i></div>
-        <div id="app-icons"></div>
-        <div id="system-tray">
-            <i class="tray-icon ph-fill ph-wifi-high"></i>
-            <i class="tray-icon ph-fill ph-speaker-simple-high"></i>
-            <div id="clock">9:13 PM</div>
+        <div class="taskbar-section">
+            <div id="start-button"><i class="ph-fill ph-grid-four"></i></div>
+            <div id="taskbar-apps"></div>
+        </div>
+        <div class="taskbar-section">
+            <div id="system-tray">
+                <div id="time">9:41 PM</div>
+                <div id="date">Wed, 08 Oct</div>
+            </div>
         </div>
     </div>
-    
-    <div id="start-menu">
-        <div class="app-list">
-             <div class="app-list-item" data-app="Browser"><i class="ph-fill ph-globe"></i> Browser</div>
-             <div class="app-list-item" data-app="Notepad"><i class="ph-fill ph-note-pencil"></i> Notepad</div>
-        </div>
-    </div>
-    
-    <div id="context-menu">
-        <ul>
-            <li data-action="new-folder">New Folder</li>
-            <li data-action="new-file">New Text File</li>
-            <hr data-context="item">
-            <li data-action="rename" data-context="item">Rename</li>
-            <li data-action="delete" data-context="item">Delete</li>
-        </ul>
-    </div>
+    <div id="start-menu"></div>
+    <div id="widget-center"></div>
 
     <script>
-        // --- VIRTUAL OS STATE ---
-        class GeminiOS {
-            constructor() {
-                this.vfs = { desktop: [], contents: {} };
-                this.openWindows = {};
-                this.highestZIndex = 100;
-                this.desktopElement = document.getElementById('desktop');
-                this.contextMenu = document.getElementById('context-menu');
-                this.startMenu = document.getElementById('start-menu');
-                this.init();
-            }
-            
-            init() {
-                this.loadState();
-                this.renderDesktop();
-                this.setupEventListeners();
-                this.updateClock();
-                setInterval(() => this.updateClock(), 1000);
-            }
-
-            saveState() {
-                localStorage.setItem('geminiOSState', JSON.stringify(this.vfs));
-            }
-            
-            loadState() {
-                const savedState = localStorage.getItem('geminiOSState');
-                if (savedState) {
-                    this.vfs = JSON.parse(savedState);
-                } else {
-                    // Default files if no state is saved
-                    this.vfs.desktop = [
-                        { id: `file_${Date.now()}`, type: 'folder', name: 'Projects', top: 30, left: 30 },
-                        { id: `file_${Date.now()+1}`, type: 'file', name: 'readme.txt', top: 150, left: 30 }
-                    ];
-                    this.vfs.contents[`file_${Date.now()+1}`] = "Welcome to Gemini OS Pro!\n\n- Right-click the desktop to create files.\n- Drag icons to move them.\n- Double-click 'readme.txt' to learn more.";
+    class GeminiOS_Fluent {
+        constructor() {
+            this.state = {
+                vfs: { desktop: [], contents: {} },
+                openWindows: {},
+                installedApps: ['Files', 'Settings', 'Store', 'Photos'],
+                settings: {
+                    wallpaper: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2940&auto=format=fit=crop"
                 }
-            }
+            };
+            this.highestZIndex = 100;
+            this.wallpapers = [
+                "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2940&auto=format=fit-crop",
+                "https://images.unsplash.com/photo-1536532184021-da5392b55da1?q=80&w=2864&auto=format=fit-crop",
+                "https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=2832&auto=format=fit-crop",
+                "https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=2787&auto=format=fit-crop"
+            ];
+             this.storeApps = [
+                { name: 'Browser', icon: 'ph-globe-simple' },
+                { name: 'Notepad', icon: 'ph-note-pencil' },
+                { name: 'Terminal', icon: 'ph-terminal-window' },
+            ];
+            this.init();
+        }
 
-            renderDesktop() {
-                this.desktopElement.innerHTML = '';
-                this.vfs.desktop.forEach(file => {
-                    const icon = document.createElement('div');
-                    icon.className = 'desktop-icon';
-                    icon.style.top = `${file.top}px`;
-                    icon.style.left = `${file.left}px`;
-                    icon.dataset.id = file.id;
-                    
-                    const iconImage = file.type === 'folder' ? 'ph-folder' : 'ph-file-text';
-                    icon.innerHTML = `
-                        <i class="ph-fill ${iconImage}"></i>
-                        <span class="desktop-icon-label">${file.name}</span>
-                    `;
-                    this.desktopElement.appendChild(icon);
-                });
-            }
+        init() {
+            this.loadState();
+            this.applySettings();
+            this.renderStartMenu();
+            this.renderTaskbar();
+            this.renderWidgets();
+            this.setupEventListeners();
+            this.updateTime();
+            setInterval(() => this.updateTime(), 1000);
+        }
 
-            createFile(type, x, y) {
-                const id = `file_${Date.now()}`;
-                const name = type === 'folder' ? 'New Folder' : 'New Text File.txt';
-                this.vfs.desktop.push({ id, type, name, top: y, left: x });
-                if (type === 'file') {
-                    this.vfs.contents[id] = "";
-                }
-                this.saveState();
-                this.renderDesktop();
-            }
+        saveState() {
+            localStorage.setItem('geminiOSFluentState', JSON.stringify(this.state));
+        }
 
-            deleteFile(id) {
-                this.vfs.desktop = this.vfs.desktop.filter(f => f.id !== id);
-                delete this.vfs.contents[id];
-                this.saveState();
-                this.renderDesktop();
-            }
-            
-            renameFile(id, newName) {
-                const file = this.vfs.desktop.find(f => f.id === id);
-                if (file) {
-                    file.name = newName;
-                    this.saveState();
-                    this.renderDesktop();
-                }
-            }
-            
-            updateFilePosition(id, top, left) {
-                const file = this.vfs.desktop.find(f => f.id === id);
-                if (file) {
-                    file.top = top;
-                    file.left = left;
-                    this.saveState();
-                }
-            }
-            
-            setupEventListeners() {
-                // --- Context Menu ---
-                document.addEventListener('contextmenu', e => {
-                    e.preventDefault();
-                    const targetIcon = e.target.closest('.desktop-icon');
-                    this.contextMenu.style.display = 'block';
-                    this.contextMenu.style.top = `${e.clientY}px`;
-                    this.contextMenu.style.left = `${e.clientX}px`;
-                    
-                    this.contextMenu.dataset.targetId = targetIcon ? targetIcon.dataset.id : '';
-                    this.contextMenu.querySelectorAll('[data-context="item"]').forEach(el => {
-                        el.style.display = targetIcon ? 'block' : 'none';
-                    });
-                });
-                
-                document.addEventListener('click', () => {
-                    this.contextMenu.style.display = 'none';
-                    this.startMenu.classList.remove('show');
-                    document.getElementById('start-button').classList.remove('active');
-                });
-                
-                this.contextMenu.addEventListener('click', e => {
-                    const action = e.target.dataset.action;
-                    const targetId = this.contextMenu.dataset.targetId;
-                    if (action === 'new-folder') this.createFile('folder', parseInt(this.contextMenu.style.left), parseInt(this.contextMenu.style.top));
-                    if (action === 'new-file') this.createFile('file', parseInt(this.contextMenu.style.left), parseInt(this.contextMenu.style.top));
-                    if (action === 'delete' && targetId) this.deleteFile(targetId);
-                    if (action === 'rename' && targetId) this.initiateRename(targetId);
-                });
-
-                // --- Start Menu ---
-                const startButton = document.getElementById('start-button');
-                startButton.addEventListener('click', e => {
-                    e.stopPropagation();
-                    this.startMenu.classList.toggle('show');
-                    startButton.classList.toggle('active');
-                });
-
-                // --- Icon Dragging ---
-                this.desktopElement.addEventListener('mousedown', e => {
-                    const icon = e.target.closest('.desktop-icon');
-                    if (!icon || e.button !== 0) return;
-
-                    const offsetX = e.clientX - icon.offsetLeft;
-                    const offsetY = e.clientY - icon.offsetTop;
-                    
-                    const moveHandler = (moveEvent) => {
-                        icon.style.left = `${moveEvent.clientX - offsetX}px`;
-                        icon.style.top = `${moveEvent.clientY - offsetY}px`;
-                    };
-
-                    const upHandler = () => {
-                        document.removeEventListener('mousemove', moveHandler);
-                        document.removeEventListener('mouseup', upHandler);
-                        this.updateFilePosition(icon.dataset.id, icon.offsetTop, icon.offsetLeft);
-                    };
-                    
-                    document.addEventListener('mousemove', moveHandler);
-                    document.addEventListener('mouseup', upHandler);
-                });
-
-                // --- Icon Double Click to Open ---
-                this.desktopElement.addEventListener('dblclick', e => {
-                    const icon = e.target.closest('.desktop-icon');
-                    if (!icon) return;
-                    
-                    const file = this.vfs.desktop.find(f => f.id === icon.dataset.id);
-                    if (file && file.type === 'file') {
-                        this.createWindow('Notepad', file);
-                    }
-                });
-            }
-            
-            initiateRename(id) {
-                const icon = document.querySelector(`.desktop-icon[data-id="${id}"]`);
-                const label = icon.querySelector('.desktop-icon-label');
-                const oldName = label.textContent;
-                label.innerHTML = `<input type="text" value="${oldName}" />`;
-                const input = label.querySelector('input');
-                input.focus();
-                input.select();
-                
-                const finishRename = () => {
-                    const newName = input.value.trim() || oldName;
-                    this.renameFile(id, newName);
-                };
-                
-                input.addEventListener('blur', finishRename);
-                input.addEventListener('keydown', e => e.key === 'Enter' && input.blur());
-            }
-
-            createWindow(appName, file = null) {
-                // This is a simplified window creator. A full implementation would manage open windows, etc.
-                const windowEl = document.createElement('div');
-                windowEl.className = 'window';
-                windowEl.style.zIndex = ++this.highestZIndex;
-                
-                let title = appName;
-                let body = `<div>Welcome to ${appName}</div>`;
-
-                if (appName === 'Notepad' && file) {
-                    title = `${file.name} - Notepad`;
-                    body = `
-                        <div class="app-notepad-body">
-                           <div class="app-notepad-menu"><button data-file-id="${file.id}">Save</button></div>
-                           <textarea class="app-notepad-textarea">${this.vfs.contents[file.id]}</textarea>
-                        </div>
-                    `;
-                }
-                
-                windowEl.innerHTML = `
-                    <div class="window-header">
-                        <div class="window-controls"><button class="control-btn close"></button></div>
-                        <div class="window-title">${title}</div>
-                    </div>
-                    <div class="window-body">${body}</div>
-                `;
-                this.desktopElement.appendChild(windowEl);
-                
-                // Add event listeners for the new window
-                windowEl.querySelector('.close').addEventListener('click', () => windowEl.remove());
-                const saveButton = windowEl.querySelector('.app-notepad-menu button');
-                if (saveButton) {
-                    saveButton.addEventListener('click', () => {
-                        const fileId = saveButton.dataset.fileId;
-                        const content = windowEl.querySelector('textarea').value;
-                        this.vfs.contents[fileId] = content;
-                        this.saveState();
-                        // You could add a 'saved' confirmation here
-                    });
-                }
-            }
-
-            updateClock() {
-                document.getElementById('clock').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        loadState() {
+            const savedState = localStorage.getItem('geminiOSFluentState');
+            if (savedState) {
+                this.state = JSON.parse(savedState);
             }
         }
 
-        // --- Initialize the OS ---
-        new GeminiOS();
+        applySettings() {
+            document.body.style.setProperty('--wallpaper', `url('${this.state.settings.wallpaper}')`);
+        }
 
+        updateTime() {
+            const now = new Date();
+            document.getElementById('time').textContent = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            document.getElementById('date').textContent = now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+        }
+        
+        createWindow(appName) {
+            if (this.state.openWindows[appName]) {
+                this.focusWindow(appName);
+                return;
+            }
+
+            const id = `win_${Date.now()}`;
+            const windowEl = document.createElement('div');
+            windowEl.className = 'window';
+            windowEl.dataset.app = appName;
+            windowEl.dataset.id = id;
+            
+            // Smart positioning
+            const offset = Object.keys(this.state.openWindows).length * 30;
+            windowEl.style.top = `${50 + offset}px`;
+            windowEl.style.left = `${100 + offset}px`;
+
+            const appContent = this.getAppContent(appName);
+            windowEl.innerHTML = `
+                <div class="window-header">
+                    <div class="window-controls">
+                        <button class="control-btn close"></button>
+                        <button class="control-btn minimize"></button>
+                        <button class="control-btn maximize"></button>
+                    </div>
+                    <div class="window-title">${appName}</div>
+                </div>
+                <div class="window-body">${appContent.body}</div>`;
+            
+            document.getElementById('desktop').appendChild(windowEl);
+            this.state.openWindows[appName] = { id, minimized: false, el: windowEl };
+            this.focusWindow(appName);
+            this.renderTaskbar();
+            if (appContent.postRender) appContent.postRender(windowEl, this);
+        }
+
+        focusWindow(appName) {
+            if (this.state.openWindows[appName].minimized) {
+                this.state.openWindows[appName].el.classList.remove('minimized');
+                this.state.openWindows[appName].minimized = false;
+            }
+            this.highestZIndex++;
+            this.state.openWindows[appName].el.style.zIndex = this.highestZIndex;
+            this.renderTaskbar();
+        }
+
+        closeWindow(appName) {
+            this.state.openWindows[appName].el.remove();
+            delete this.state.openWindows[appName];
+            this.renderTaskbar();
+        }
+
+        minimizeWindow(appName) {
+            this.state.openWindows[appName].el.classList.add('minimized');
+            this.state.openWindows[appName].minimized = true;
+            this.renderTaskbar();
+        }
+
+        renderStartMenu() {
+            const menu = document.getElementById('start-menu');
+            const appList = this.state.installedApps.map(app => 
+                `<div class="app-list-item" data-app="${app}">
+                    <i class="ph-fill ${this.getAppContent(app).icon}"></i> ${app}
+                </div>`
+            ).join('');
+            menu.innerHTML = `<div class="app-list">${appList}</div>`;
+        }
+
+        renderTaskbar() {
+            const container = document.getElementById('taskbar-apps');
+            container.innerHTML = '';
+            for (const appName in this.state.openWindows) {
+                const appData = this.state.openWindows[appName];
+                const icon = document.createElement('div');
+                icon.className = 'taskbar-app running';
+                icon.dataset.app = appName;
+                if (!appData.minimized && appData.el.style.zIndex == this.highestZIndex) {
+                    icon.classList.add('active');
+                }
+                icon.innerHTML = `<i class="ph-fill ${this.getAppContent(appName).icon}"></i>`;
+                container.appendChild(icon);
+            }
+        }
+
+        renderWidgets() {
+            const container = document.getElementById('widget-center');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDay = new Date(year, month, 1).getDay();
+            
+            let calendarHtml = `<div class="widget-calendar"><div class="calendar-header">${now.toLocaleString('default', { month: 'long', year: 'numeric' })}</div><div class="calendar-grid">`;
+            'Sun,Mon,Tue,Wed,Thu,Fri,Sat'.split(',').forEach(d => calendarHtml += `<span class="day-name">${d}</span>`);
+            for(let i = 0; i < firstDay; i++) calendarHtml += `<span></span>`;
+            for(let i = 1; i <= daysInMonth; i++) {
+                let className = i === now.getDate() ? 'today' : '';
+                calendarHtml += `<span class="${className}">${i}</span>`;
+            }
+            calendarHtml += '</div></div>';
+            container.innerHTML = calendarHtml;
+        }
+
+        setupEventListeners() {
+            // Start Menu
+            const startButton = document.getElementById('start-button');
+            const startMenu = document.getElementById('start-menu');
+            startButton.addEventListener('click', e => {
+                e.stopPropagation();
+                startMenu.classList.toggle('show');
+                startButton.classList.toggle('active');
+            });
+            startMenu.addEventListener('click', e => {
+                const appItem = e.target.closest('.app-list-item');
+                if (appItem) this.createWindow(appItem.dataset.app);
+            });
+            // Widget Center
+            document.getElementById('system-tray').addEventListener('click', () => {
+                document.getElementById('widget-center').classList.toggle('show');
+            });
+            // Global Click
+            document.addEventListener('click', () => {
+                startMenu.classList.remove('show');
+                startButton.classList.remove('active');
+            });
+             // Window Controls
+            document.getElementById('desktop').addEventListener('click', e => {
+                const target = e.target;
+                const windowEl = target.closest('.window');
+                if (!windowEl) return;
+                const appName = windowEl.dataset.app;
+                if (target.classList.contains('close')) this.closeWindow(appName);
+                if (target.classList.contains('minimize')) this.minimizeWindow(appName);
+            });
+            document.getElementById('desktop').addEventListener('mousedown', e => {
+                 const windowEl = e.target.closest('.window');
+                 if (windowEl) this.focusWindow(windowEl.dataset.app);
+            });
+            // Taskbar App clicks
+            document.getElementById('taskbar-apps').addEventListener('click', e => {
+                const appItem = e.target.closest('.taskbar-app');
+                if(appItem) this.focusWindow(appItem.dataset.app);
+            });
+        }
+        
+        getAppContent(appName) {
+            // This now acts as a central repository for app data
+            switch(appName) {
+                case 'Files': return { icon: 'ph-folder-simple', body: 'File system coming soon.' };
+                case 'Settings': return { icon: 'ph-gear', body: `
+                    <div class="settings-body">
+                        <div class="settings-sidebar">Personalization</div>
+                        <div class="settings-content">
+                            <h3>Wallpaper</h3>
+                            <div class="wallpaper-grid">
+                                ${this.wallpapers.map(url => `<div class="wallpaper-thumb ${this.state.settings.wallpaper === url ? 'selected' : ''}" style="background-image: url('${url}')" data-url="${url}"></div>`).join('')}
+                            </div>
+                        </div>
+                    </div>`,
+                    postRender: (win, os) => {
+                        win.querySelector('.wallpaper-grid').addEventListener('click', e => {
+                            const thumb = e.target.closest('.wallpaper-thumb');
+                            if (thumb) {
+                                os.state.settings.wallpaper = thumb.dataset.url;
+                                os.saveState();
+                                os.applySettings();
+                                win.querySelectorAll('.wallpaper-thumb').forEach(t => t.classList.remove('selected'));
+                                thumb.classList.add('selected');
+                            }
+                        });
+                    }
+                };
+                case 'Store': return { icon: 'ph-storefront', body: `
+                    <div class="store-grid">
+                        ${this.storeApps.map(app => `
+                            <div class="store-item">
+                                <i class="ph-fill ${app.icon}"></i>
+                                <h4>${app.name}</h4>
+                                <button data-app="${app.name}" ${this.state.installedApps.includes(app.name) ? 'disabled' : ''}>
+                                    ${this.state.installedApps.includes(app.name) ? 'Installed' : 'Install'}
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>`,
+                    postRender: (win, os) => {
+                        win.querySelector('.store-grid').addEventListener('click', e => {
+                            const btn = e.target.closest('button');
+                            if(btn && !btn.disabled) {
+                                const appName = btn.dataset.app;
+                                os.state.installedApps.push(appName);
+                                os.saveState();
+                                os.renderStartMenu();
+                                btn.textContent = 'Installed';
+                                btn.disabled = true;
+                            }
+                        });
+                    }
+                };
+                case 'Photos': return { icon: 'ph-images-square', body: `
+                    <div class="photos-grid">
+                        ${[...Array(15).keys()].map(i => `<div class="photo-thumb" style="background-image: url('https://picsum.photos/400/400?random=${i}')"></div>`).join('')}
+                    </div>`
+                };
+                // Apps that can be "installed"
+                case 'Browser': return { icon: 'ph-globe-simple', body: 'Browser coming soon.' };
+                case 'Notepad': return { icon: 'ph-note-pencil', body: 'Notepad coming soon.' };
+                case 'Terminal': return { icon: 'ph-terminal-window', body: 'Terminal coming soon.' };
+                default: return { icon: 'ph-app-window', body: 'Not a valid app.'};
+            }
+        }
+    }
+    new GeminiOS_Fluent();
     </script>
 </body>
 </html>
