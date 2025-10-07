@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleek OS</title>
+    <style>
+        /* --- Reset & Base Styles --- */
+        :root {
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            --background-image: url('https://images.unsplash.com/photo-1554141311-9335a0a38636?q=80&w=2940&auto=format&fit=crop');
+            --primary-text: #f0f0f0;
+            --secondary-text: #a0a0a0;
+            --glass-bg: rgba(25, 25, 25, 0.3);
+            --icon-bg-hover: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-image: var(--background-image);
+            background-size: cover;
+            background-position: center;
+            color: var(--primary-text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            user-select: none; /* Prevents text selection */
+        }
+
+        /* --- Top Bar --- */
+        #top-bar {
+            width: 100%;
+            height: 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px); /* For Safari */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            flex-shrink: 0;
+        }
+
+        #top-bar .menu-item {
+            font-weight: 500;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        #top-bar .menu-item:hover {
+            background-color: var(--icon-bg-hover);
+        }
+
+        #status-icons {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        #clock {
+            font-weight: 500;
+        }
+        
+        /* --- Desktop Area --- */
+        #desktop {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 20px;
+        }
+
+        .icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+        }
+
+        .icon:hover {
+            background-color: var(--icon-bg-hover);
+        }
+        
+        .icon .icon-image {
+            font-size: 48px;
+            line-height: 1;
+        }
+        
+        .icon .icon-label {
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="top-bar">
+        <div class="menu-item"></div>
+        <div id="status-icons">
+            <div id="clock">10:07 PM</div>
+        </div>
+    </div>
+
+    <main id="desktop">
+        <div class="icon">
+            <div class="icon-image">🚀</div>
+            <div class="icon-label">Projects</div>
+        </div>
+        <div class="icon">
+            <div class="icon-image">📦</div>
+            <div class="icon-label">Storage</div>
+        </div>
+        <div class="icon">
+            <div class="icon-image">⚙️</div>
+            <div class="icon-label">Settings</div>
+        </div>
+         <div class="icon">
+            <div class="icon-image">🗑️</div>
+            <div class="icon-label">Trash</div>
+        </div>
+    </main>
+
+    <script>
+        // --- Dynamic Clock Functionality ---
+        const clockElement = document.getElementById('clock');
+
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            clockElement.textContent = timeString;
+        }
+
+        // Update the clock immediately and then every second
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
