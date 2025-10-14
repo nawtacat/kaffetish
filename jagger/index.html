@@ -1,562 +1,268 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Offline Audio Player</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="apple-touch-icon" href="https://placehold.co/180x180/7e22ce/ffffff?text=Audio&font=inter">
-    <style>
-        :root {
-            --primary-color: #8b5cf6;
-            --secondary-color: #1f2937;
-            --background-color: #111827;
-            --text-color: #f3f4f6;
-            --card-color: #1f2937;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            -webkit-tap-highlight-color: transparent;
-        }
-        .progress-bar-container {
-            background-color: #374151;
-            height: 6px;
-        }
-        .progress-bar {
-            background-color: var(--primary-color);
-            height: 100%;
-            transition: width 0.1s linear;
-        }
-        /* Style for the file input */
-        input[type="file"] {
-            display: none;
-        }
-        .custom-file-upload {
-            border: 2px dashed #4b5563;
-            display: inline-block;
-            padding: 1rem 2rem;
-            cursor: pointer;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease-in-out;
-        }
-        .custom-file-upload:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--primary-color);
-        }
-        /* For iOS safe areas */
-        body {
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .player-controls {
-            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-        }
-        /* Loading Spinner */
-        .loader {
-            border: 4px solid #f3f3f340;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- iOS Add to Home Screen meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Jagger">
+  <link rel="apple-touch-icon" href="data:image/png;base64,ICON_PLACEHOLDER">
+  <title>Jagger — Standalone Offline Audio</title>
+  <meta name="theme-color" content="#ADD8E6">
+  <style>
+    :root{
+      --brand:#ADD8E6; --text:#0f172a; --muted:#f1f5f9; --border:#e2e8f0;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial; color:var(--text);}
+    header{position:sticky;top:0;background:linear-gradient(180deg,#fff,rgba(255,255,255,.85));backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+    .container{max-width:880px;margin:0 auto;padding:20px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:28px;height:28px;border-radius:8px;background:#ADD8E6;display:inline-block;position:relative;overflow:hidden}
+    .logo:after{content:"";position:absolute;left:9px;top:6px;border-left:12px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent}
+    h1{font-size:18px;margin:0}
+    .card{border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:14px;box-shadow:0 10px 24px rgba(0,0,0,.05)}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button, label.button{appearance:none;border:none;background:var(--brand);color:#003b5c;padding:9px 13px;border-radius:12px;font-weight:700;box-shadow:0 6px 18px rgba(173,216,230,.5);}
+    button.secondary{background:#e2e8f0;color:#0f172a;box-shadow:none}
+    #fileInput{display:none}
+    .small{font-size:12px;color:#64748b}
+    .drag{border:2px dashed #94a3b8;border-radius:14px;padding:22px;text-align:center;background:var(--muted);color:#475569}
+    .drag.dragover{border-color:#0ea5e9;background:#e0f2fe;color:#0369a1}
+    .hint{background:#fff7ed;border:1px dashed #fdba74;color:#9a3412;padding:12px;border-radius:12px;margin-top:10px}
+    audio{width:100%;margin-top:8px}
+    ul{list-style:none;margin:0;padding:0}
+    .track{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:10px 0}
+    .track-title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
+    .track-meta{font-size:12px;color:#475569}
+    footer{text-align:center;color:#64748b;font-size:12px;padding:30px}
+  </style>
 </head>
-<body class="flex flex-col h-screen antialiased">
+<body>
+  <header>
+    <div class="container">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <h1>Jagger — Offline Audio (Single File)</h1>
+      </div>
+    </div>
+  </header>
 
-    <!-- Header -->
-    <header class="bg-gray-900/80 backdrop-blur-sm p-4 text-center sticky top-0 z-10 shadow-lg">
-        <h1 class="text-xl font-bold tracking-wider text-purple-400">AudioBox</h1>
-        <p class="text-xs text-gray-400">Your Offline Audio Player</p>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-grow overflow-y-auto p-4 md:p-6" id="main-content">
-        <!-- Playlist -->
-        <div id="playlist-container" class="space-y-3">
-            <!-- Audio items will be injected here -->
-        </div>
-
-        <!-- Empty State / Upload Prompt -->
-        <div id="empty-state" class="hidden text-center text-gray-400 mt-12 p-8">
-            <div class="flex justify-center mb-6">
-                <svg class="w-20 h-20 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 6l12-3"></path></svg>
-            </div>
-            <h2 class="text-2xl font-semibold mb-2 text-gray-300">Your AudioBox is Empty</h2>
-            <p class="mb-6">Upload audio files to listen to them anytime, anywhere—even offline.</p>
-            <label for="file-upload" class="custom-file-upload text-purple-400">
-                <i class="fas fa-plus mr-2"></i>
-                <span>Tap to Upload Audio</span>
-            </label>
-        </div>
-        
-        <!-- Add to Home Screen Instruction -->
-        <div id="install-prompt" class="hidden bg-gray-800 p-4 rounded-lg mt-8 text-center text-sm">
-            <p>To install, tap the 'Share' icon in Safari and then 'Add to Home Screen'.</p>
-        </div>
-    </main>
-
-    <!-- Player Controls -->
-    <footer class="player-controls bg-gray-900/80 backdrop-blur-sm p-4 sticky bottom-0 z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.3)]">
-        <div class="max-w-2xl mx-auto">
-            <div id="current-track-info" class="text-center mb-3">
-                <p id="track-title" class="font-bold truncate">No track selected</p>
-                <p id="track-artist" class="text-xs text-gray-400">---</p>
-            </div>
-            
-            <!-- Progress Bar -->
-            <div class="mb-3">
-                <div id="progress-container" class="progress-bar-container rounded-full cursor-pointer">
-                    <div id="progress-bar" class="progress-bar rounded-full"></div>
-                </div>
-                <div class="flex justify-between text-xs text-gray-400 mt-1">
-                    <span id="current-time">0:00</span>
-                    <span id="duration">0:00</span>
-                </div>
-            </div>
-
-            <!-- Player Buttons -->
-            <div class="flex items-center justify-center space-x-6">
-                <button id="prev-btn" class="text-gray-400 hover:text-white transition-colors disabled:opacity-50 text-2xl"><i class="fas fa-backward-step"></i></button>
-                <button id="play-pause-btn" class="bg-purple-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl shadow-lg hover:bg-purple-500 transition-colors disabled:opacity-50"><i class="fas fa-play"></i></button>
-                <button id="next-btn" class="text-gray-400 hover:text-white transition-colors disabled:opacity-50 text-2xl"><i class="fas fa-forward-step"></i></button>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Deletion Confirmation Modal -->
-    <div id="delete-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center shadow-xl">
-            <h3 class="text-lg font-semibold mb-2">Delete Track</h3>
-            <p class="text-gray-400 mb-6">Are you sure you want to permanently delete this track?</p>
-            <div class="flex justify-center space-x-4">
-                <button id="modal-cancel-btn" class="px-6 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">Cancel</button>
-                <button id="modal-confirm-btn" class="px-6 py-2 rounded-md bg-red-600 hover:bg-red-500 transition-colors">Delete</button>
-            </div>
-        </div>
+  <main class="container">
+    <div class="card">
+      <div class="controls">
+        <label for="fileInput" class="button">Upload audio</label>
+        <button id="clearAll" class="secondary">Clear all</button>
+        <span class="small">Files stay on this device (IndexedDB).</span>
+      </div>
+      <div id="drop" class="drag" style="margin-top:12px;">
+        Drag & drop audio files here (MP3, M4A, WAV, OGG, etc.)
+      </div>
+      <div id="a2hs" class="hint" hidden>
+        iPhone tip: Open in Safari → Share → <b>Add to Home Screen</b>. Open from Home Screen for the best offline experience.
+      </div>
+      <div id="persistHint" class="hint" hidden>
+        Storage: we requested persistent space so your tracks aren't auto-cleared. Keep free space on your device.
+      </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 p-4">
-        <div class="loader"></div>
-        <p class="text-white mt-4">Adding tracks...</p>
+    <div class="card">
+      <h3 style="margin:0 0 8px 0;">Now Playing</h3>
+      <audio id="player" controls preload="metadata" playsinline></audio>
     </div>
 
-    <!-- Error Modal -->
-    <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center shadow-xl">
-            <div class="text-red-500 mb-4">
-                <i class="fas fa-exclamation-triangle fa-2x"></i>
-            </div>
-            <h3 class="text-lg font-semibold mb-2">An Error Occurred</h3>
-            <p id="error-message" class="text-gray-400 mb-6 break-words">Something went wrong. Please try again.</p>
-            <div class="flex justify-center">
-                <button id="error-ok-btn" class="px-6 py-2 rounded-md bg-purple-600 hover:bg-purple-500 transition-colors">OK</button>
-            </div>
-        </div>
+    <div class="card">
+      <h3 style="margin:0 0 8px 0;">Your Library</h3>
+      <ul id="playlist"></ul>
     </div>
+  </main>
 
-    <!-- Hidden audio element -->
-    <audio id="audio-player" class="hidden"></audio>
-    <input type="file" id="file-upload" accept="audio/*" multiple>
+  <footer>Jagger • Single-file web app • Works offline</footer>
 
-    <script>
-        // --- PWA Setup: Manifest & Service Worker ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // 1. Dynamically create and inject the manifest
-            const manifest = {
-                "name": "Offline Audio Player",
-                "short_name": "AudioBox",
-                "start_url": ".",
-                "display": "standalone",
-                "background_color": "#111827",
-                "theme_color": "#8b5cf6",
-                "description": "An offline-first audio player PWA.",
-                "icons": [{
-                    "src": "https://placehold.co/192x192/7e22ce/ffffff?text=AB&font=inter",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                }, {
-                    "src": "https://placehold.co/512x512/7e22ce/ffffff?text=AudioBox&font=inter",
-                    "sizes": "512x512",
-                    "type": "image/png"
-                }]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-            const manifestURL = URL.createObjectURL(manifestBlob);
-            const linkEl = document.createElement('link');
-            linkEl.rel = 'manifest';
-            linkEl.href = manifestURL;
-            document.head.appendChild(linkEl);
+  <input id="fileInput" type="file" accept="audio/*" multiple />
 
-            // 2. Register the service worker
-            if ('serviceWorker' in navigator) {
-                const swContent = `
-                    const CACHE_NAME = 'audio-player-cache-v1';
-                    const urlsToCache = [
-                        '/',
-                        'https://cdn.tailwindcss.com',
-                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2'
-                    ];
-                    self.addEventListener('install', event => {
-                        event.waitUntil(
-                            caches.open(CACHE_NAME).then(cache => {
-                                console.log('Opened cache');
-                                return cache.addAll(urlsToCache);
-                            })
-                        );
-                    });
-                    self.addEventListener('fetch', event => {
-                        event.respondWith(
-                            caches.match(event.request).then(response => {
-                                return response || fetch(event.request);
-                            })
-                        );
-                    });
-                `;
-                const swBlob = new Blob([swContent], { type: 'application/javascript' });
-                const swURL = URL.createObjectURL(swBlob);
-                navigator.serviceWorker.register(swURL)
-                    .then(registration => console.log('Service Worker registered with scope:', registration.scope))
-                    .catch(error => console.log('Service Worker registration failed:', error));
-            }
+  <!-- Inline service worker source (will be registered via Blob URL) -->
+  <script id="sw-src" type="text/plain">
+    const CACHE_NAME = 'jagger-onefile-v1';
+    const APP_SHELL = ['.']; // cache this document
+    self.addEventListener('install', (event) => {
+      event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', (event) => {
+      event.waitUntil(caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', (event) => {
+      const url = new URL(event.request.url);
+      if (url.origin === self.location.origin) {
+        event.respondWith(
+          caches.match(event.request).then((cached) => cached || fetch(event.request).then((resp) => {
+            const copy = resp.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+            return resp;
+          }).catch(() => cached))
+        );
+      }
+    });
+  </script>
 
-            // 3. Show install prompt for iOS
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            if (isIOS && !window.navigator.standalone) {
-                document.getElementById('install-prompt').classList.remove('hidden');
-            }
-        });
+  <script>
+    // --- Minimal IndexedDB helpers ---
+    const dbName = 'jagger-audio-onefile';
+    const storeName = 'tracks';
+    let db, currentId = null;
 
-        // --- Application Logic ---
-        const dbName = "AudioPlayerDB";
-        let db;
+    const $ = (s) => document.querySelector(s);
+    const on = (el,ev,fn)=> el.addEventListener(ev,fn);
+    const fmtBytes = (b)=>{
+      if (b===0) return '0 B';
+      const u=['B','KB','MB','GB']; let i=0;
+      while (b>=1024 && i<u.length-1){b/=1024;i++;}
+      return b.toFixed(i?1:0)+' '+u[i];
+    };
 
-        function initDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(dbName, 1);
-                request.onerror = event => reject("Database error: " + event.target.errorCode);
-                request.onsuccess = event => {
-                    db = event.target.result;
-                    resolve();
-                };
-                request.onupgradeneeded = event => {
-                    const db = event.target.result;
-                    db.createObjectStore("tracks", { keyPath: "id", autoIncrement: true });
-                };
-            });
-        }
-        
-        // DOM Elements
-        const fileUpload = document.getElementById('file-upload');
-        const customUploadLabel = document.querySelector('.custom-file-upload');
-        const playlistContainer = document.getElementById('playlist-container');
-        const emptyState = document.getElementById('empty-state');
-        const audioPlayer = document.getElementById('audio-player');
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const progressBar = document.getElementById('progress-bar');
-        const progressContainer = document.getElementById('progress-container');
-        const currentTimeEl = document.getElementById('current-time');
-        const durationEl = document.getElementById('duration');
-        const trackTitleEl = document.getElementById('track-title');
-        const trackArtistEl = document.getElementById('track-artist');
-        const deleteModal = document.getElementById('delete-modal');
-        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
-        const modalCancelBtn = document.getElementById('modal-cancel-btn');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const errorModal = document.getElementById('error-modal');
-        const errorMessageEl = document.getElementById('error-message');
-        const errorOkBtn = document.getElementById('error-ok-btn');
+    function openDB(){
+      return new Promise((res,rej)=>{
+        const r = indexedDB.open(dbName,1);
+        r.onupgradeneeded = (e)=>{
+          const db = e.target.result;
+          const os = db.createObjectStore(storeName, { keyPath:'id', autoIncrement:true });
+          os.createIndex('addedAt','addedAt',{unique:false});
+        };
+        r.onsuccess = ()=> res(r.result);
+        r.onerror = ()=> rej(r.error);
+      });
+    }
+    function idbAdd(t){
+      return new Promise((res,rej)=>{
+        const tx = db.transaction(storeName,'readwrite');
+        tx.oncomplete = ()=> res(true);
+        tx.onerror = ()=> rej(tx.error);
+        tx.objectStore(storeName).add(t);
+      });
+    }
+    function idbAll(){
+      return new Promise((res,rej)=>{
+        const tx = db.transaction(storeName,'readonly');
+        const q = tx.objectStore(storeName).getAll();
+        q.onsuccess = ()=> res(q.result||[]);
+        q.onerror = ()=> rej(q.error);
+      });
+    }
+    function idbGet(id){
+      return new Promise((res,rej)=>{
+        const tx = db.transaction(storeName,'readonly');
+        const q = tx.objectStore(storeName).get(Number(id));
+        q.onsuccess = ()=> res(q.result||null);
+        q.onerror = ()=> rej(q.error);
+      });
+    }
+    function idbDel(id){
+      return new Promise((res,rej)=>{
+        const tx = db.transaction(storeName,'readwrite');
+        tx.oncomplete = ()=> res(true);
+        tx.onerror = ()=> rej(tx.error);
+        tx.objectStore(storeName).delete(Number(id));
+      });
+    }
 
+    function render(list){
+      const ul = $('#playlist');
+      ul.innerHTML='';
+      if (!list.length){
+        ul.innerHTML = '<li class="small">No tracks yet. Use Upload or drag & drop.</li>';
+        return;
+      }
+      for (const t of list.sort((a,b)=>b.addedAt-a.addedAt)){
+        const li = document.createElement('li');
+        li.className='track';
+        li.innerHTML = `
+          <div>
+            <div class="track-title" title="${{t.name}}">${{t.name}}</div>
+            <div class="track-meta">${{fmtBytes(t.size)}} • ${{t.type||'audio'}}</div>
+          </div>
+          <div>
+            <button class="secondary play" data-id="${{t.id}}">Play</button>
+            <button class="secondary del" data-id="${{t.id}}">Delete</button>
+          </div>`;
+        ul.appendChild(li);
+      }
+    }
 
-        let playlist = [];
-        let currentTrackIndex = -1;
-        let trackIdToDelete = null;
+    async function loadAndRender(){
+      render(await idbAll());
+    }
 
-        // --- Error Handling ---
-        function showError(message, error = '') {
-            console.error(message, error);
-            const details = error ? ` Details: ${error.name || 'Error'}: ${error.message || 'Unknown error'}` : '';
-            errorMessageEl.textContent = `${message}${details}`;
-            errorModal.classList.remove('hidden');
-        }
+    async function handleFiles(files){
+      const hint = $('#persistHint');
+      for (const f of files){
+        if (!f.type.startsWith('audio/')) continue;
+        const buf = await f.arrayBuffer();
+        const blob = new Blob([buf], {type: f.type || 'audio/mpeg'});
+        await idbAdd({ name:f.name, size:f.size, type:f.type, addedAt:Date.now(), blob });
+      }
+      await loadAndRender();
+      hint.hidden = false;
+      if (navigator.storage && navigator.storage.persist) {
+        try { await navigator.storage.persist(); } catch (e) {}
+      }
+    }
 
-        // --- File Handling & DB ---
-        async function handleFiles(files) {
-            if (!files || files.length === 0) {
-                console.log("File selection was cancelled or no files were chosen.");
-                return;
-            }
-            console.log(`handleFiles triggered. Number of files selected: ${files.length}`);
-            loadingOverlay.classList.remove('hidden');
-            try {
-                for (const file of files) {
-                    const isAudio = file.type.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg|flac)$/i.test(file.name);
-                    if (isAudio) {
-                        const track = {
-                            name: file.name.replace(/\.[^/.]+$/, ""),
-                            artist: "Unknown Artist",
-                            data: file,
-                            added: new Date()
-                        };
-                        await saveTrack(track);
-                    } else {
-                        console.warn(`Skipped non-audio file: ${file.name}`);
-                    }
-                }
-                await loadPlaylist();
-            } catch (error) {
-                showError("Could not save the selected audio files.", error);
-            } finally {
-                loadingOverlay.classList.add('hidden');
-                fileUpload.value = '';
-            }
-        }
+    function setupDnD(){
+      const drop = $('#drop');
+      ['dragenter','dragover'].forEach(evt => on(drop,evt,(e)=>{e.preventDefault(); drop.classList.add('dragover');}));
+      ['dragleave','drop'].forEach(evt => on(drop,evt,(e)=>{e.preventDefault(); drop.classList.remove('dragover');}));
+      on(drop,'drop', async (e)=>{ await handleFiles(e.dataTransfer.files); });
+    }
 
-        function saveTrack(track) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(["tracks"], "readwrite");
-                const store = transaction.objectStore("tracks");
-                const request = store.add(track);
-                request.onsuccess = () => resolve();
-                request.onerror = event => reject(event.target.error);
-            });
-        }
-        
-        async function loadPlaylist() {
-            playlist = await getAllTracks();
-            renderPlaylist();
-            updatePlayerState();
-        }
+    function playTrack(t){
+      const audio = $('#player');
+      const url = URL.createObjectURL(t.blob);
+      audio.src = url;
+      currentId = t.id;
+      audio.play().catch(()=>{});
+    }
 
-        function getAllTracks() {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(["tracks"], "readonly");
-                const store = transaction.objectStore("tracks");
-                const request = store.getAll();
-                request.onsuccess = event => resolve(event.target.result);
-                request.onerror = event => reject(event.target.error);
-            });
-        }
-        
-        function deleteTrack(id) {
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(["tracks"], "readwrite");
-                const store = transaction.objectStore("tracks");
-                const request = store.delete(id);
-                request.onsuccess = () => {
-                    if (currentTrackIndex > -1 && playlist[currentTrackIndex]?.id === id) {
-                        audioPlayer.pause();
-                        currentTrackIndex = -1;
-                        updatePlayerUI();
-                    }
-                    resolve();
-                };
-                request.onerror = event => reject(event.target.error);
-            });
-        }
+    // Register SW from inline source via Blob URL (single-file trick)
+    async function registerSW(){
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        const src = document.getElementById('sw-src').textContent;
+        const blob = new Blob([src], { type: 'application/javascript' });
+        const url = URL.createObjectURL(blob);
+        await navigator.serviceWorker.register(url, { scope: './' });
+      } catch (e) {
+        console.warn('SW registration failed', e);
+      }
+    }
 
-        // --- UI Rendering ---
-        function renderPlaylist() {
-            playlistContainer.innerHTML = '';
-            if (playlist.length === 0) {
-                emptyState.classList.remove('hidden');
-                playlistContainer.classList.add('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                playlistContainer.classList.remove('hidden');
-                playlist.forEach((track, index) => {
-                    const isPlaying = index === currentTrackIndex;
-                    const trackElement = document.createElement('div');
-                    trackElement.className = `flex items-center p-3 rounded-lg cursor-pointer transition-colors ${isPlaying ? 'bg-purple-600' : 'bg-gray-800 hover:bg-gray-700'}`;
-                    trackElement.dataset.index = index;
-                    trackElement.innerHTML = `
-                        <div class="mr-4">
-                           <i class="fas ${isPlaying && !audioPlayer.paused ? 'fa-pause text-purple-300' : 'fa-play text-purple-400'} text-lg"></i>
-                        </div>
-                        <div class="flex-grow truncate">
-                            <p class="font-semibold">${track.name}</p>
-                            <p class="text-sm text-gray-400">${track.artist}</p>
-                        </div>
-                        <button class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-2" data-id="${track.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    `;
-                    playlistContainer.appendChild(trackElement);
-                });
-            }
-        }
-        
-        // --- Player Logic ---
-        function playTrack(index) {
-            if (index < 0 || index >= playlist.length) return;
+    async function boot(){
+      // A2HS guidance for iPhone
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      if (!isStandalone && /iphone|ipad|ipod/i.test(navigator.userAgent)) document.getElementById('a2hs').hidden = false;
 
-            // Revoke the old object URL to prevent memory leaks
-            if (audioPlayer.src && audioPlayer.src.startsWith('blob:')) {
-                URL.revokeObjectURL(audioPlayer.src);
-            }
-            
-            currentTrackIndex = index;
-            const track = playlist[index];
-            const objectURL = URL.createObjectURL(track.data);
-            audioPlayer.src = objectURL;
-            audioPlayer.play();
-            
-            trackTitleEl.textContent = track.name;
-            trackArtistEl.textContent = track.artist;
+      await registerSW();
+      db = await openDB();
+      await loadAndRender();
+      setupDnD();
 
-            updatePlayerState();
-            renderPlaylist();
-        }
+      document.getElementById('fileInput').addEventListener('change', async (e)=>{ await handleFiles(e.target.files); e.target.value=''; });
+      document.getElementById('playlist').addEventListener('click', async (e)=>{
+        const btn = e.target.closest('button'); if(!btn) return;
+        const id = btn.dataset.id;
+        if (btn.classList.contains('play')) { const t = await idbGet(id); if (t) playTrack(t); }
+        if (btn.classList.contains('del'))  { await idbDel(id); if (Number(id)===currentId) { const a=document.getElementById('player'); a.pause(); a.removeAttribute('src'); a.load(); } await loadAndRender(); }
+      });
+      document.getElementById('clearAll').addEventListener('click', async ()=>{
+        if (!confirm('Delete all tracks from this device?')) return;
+        const tx = db.transaction(storeName,'readwrite'); tx.objectStore(storeName).clear();
+        await loadAndRender(); const a=document.getElementById('player'); a.pause(); a.removeAttribute('src'); a.load();
+      });
+    }
 
-        function togglePlayPause() {
-            if (audioPlayer.paused) {
-                if (currentTrackIndex === -1 && playlist.length > 0) {
-                    playTrack(0);
-                } else {
-                    audioPlayer.play();
-                }
-            } else {
-                audioPlayer.pause();
-            }
-        }
-
-        function playNext() {
-            let nextIndex = currentTrackIndex + 1;
-            if (nextIndex >= playlist.length) {
-                nextIndex = 0; // Loop back to the start
-            }
-            playTrack(nextIndex);
-        }
-
-        function playPrev() {
-            let prevIndex = currentTrackIndex - 1;
-            if (prevIndex < 0) {
-                prevIndex = playlist.length - 1; // Loop to the end
-            }
-            playTrack(prevIndex);
-        }
-        
-        function updatePlayerUI() {
-            const isPlaying = !audioPlayer.paused;
-            playPauseBtn.innerHTML = `<i class="fas ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>`;
-            
-            if (currentTrackIndex === -1) {
-                trackTitleEl.textContent = "No track selected";
-                trackArtistEl.textContent = "---";
-            }
-            renderPlaylist();
-        }
-
-        function updatePlayerState() {
-            const hasTracks = playlist.length > 0;
-            playPauseBtn.disabled = !hasTracks;
-            prevBtn.disabled = !hasTracks;
-            nextBtn.disabled = !hasTracks;
-        }
-        
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
-        }
-
-        function updateProgress() {
-            if (audioPlayer.duration) {
-                const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
-                progressBar.style.width = `${progressPercent}%`;
-                currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
-            }
-        }
-        
-        function setProgress(e) {
-            const width = this.clientWidth;
-            const clickX = e.offsetX;
-            const duration = audioPlayer.duration;
-            if (duration) {
-                audioPlayer.currentTime = (clickX / width) * duration;
-            }
-        }
-        
-        // --- Event Listeners ---
-        customUploadLabel.addEventListener('click', () => fileUpload.click());
-        fileUpload.addEventListener('change', e => handleFiles(e.target.files));
-
-        playlistContainer.addEventListener('click', async e => {
-            const trackElement = e.target.closest('div[data-index]');
-            if (e.target.closest('.delete-btn')) {
-                e.stopPropagation();
-                const button = e.target.closest('.delete-btn');
-                const idToDelete = parseInt(button.dataset.id);
-                if (!isNaN(idToDelete)) {
-                     trackIdToDelete = idToDelete;
-                     deleteModal.classList.remove('hidden');
-                }
-            } else if (trackElement) {
-                const index = parseInt(trackElement.dataset.index);
-                if (index === currentTrackIndex) {
-                    togglePlayPause();
-                } else {
-                    playTrack(index);
-                }
-            }
-        });
-
-        modalConfirmBtn.addEventListener('click', async () => {
-            if (trackIdToDelete !== null) {
-                await deleteTrack(trackIdToDelete);
-                await loadPlaylist();
-                trackIdToDelete = null;
-            }
-            deleteModal.classList.add('hidden');
-        });
-
-        modalCancelBtn.addEventListener('click', () => {
-            trackIdToDelete = null;
-            deleteModal.classList.add('hidden');
-        });
-
-        errorOkBtn.addEventListener('click', () => {
-            errorModal.classList.add('hidden');
-        });
-
-        playPauseBtn.addEventListener('click', togglePlayPause);
-        nextBtn.addEventListener('click', playNext);
-        prevBtn.addEventListener('click', playPrev);
-        
-        audioPlayer.addEventListener('play', updatePlayerUI);
-        audioPlayer.addEventListener('pause', updatePlayerUI);
-        audioPlayer.addEventListener('ended', playNext);
-        audioPlayer.addEventListener('timeupdate', updateProgress);
-        audioPlayer.addEventListener('loadedmetadata', () => {
-            durationEl.textContent = formatTime(audioPlayer.duration);
-        });
-
-        progressContainer.addEventListener('click', setProgress);
-
-        // --- Initial Load ---
-        window.addEventListener('load', async () => {
-            try {
-                await initDB();
-                await loadPlaylist();
-            } catch (error) {
-                showError("The app could not start correctly.", "Failed to initialize the offline database.");
-            }
-        });
-    </script>
-
+    document.addEventListener('DOMContentLoaded', boot);
+  </script>
 </body>
 </html>
-
