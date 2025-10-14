@@ -56,6 +56,19 @@
         .player-controls {
             padding-bottom: calc(1rem + env(safe-area-inset-bottom));
         }
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f340;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen antialiased">
@@ -132,9 +145,15 @@
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center z-50 p-4">
+        <div class="loader"></div>
+        <p class="text-white mt-4">Adding tracks...</p>
+    </div>
+
     <!-- Hidden audio element -->
     <audio id="audio-player" class="hidden"></audio>
-    <input type="file" id="file-upload" accept="audio/mpeg,audio/wav,audio/mp4,audio/x-m4a,.mp3,.m4a,.wav" multiple>
+    <input type="file" id="file-upload" accept="audio/*" multiple>
 
     <script>
         // --- PWA Setup: Manifest & Service Worker ---
@@ -227,7 +246,6 @@
         // DOM Elements
         const fileUpload = document.getElementById('file-upload');
         const customUploadLabel = document.querySelector('.custom-file-upload');
-        const mainContent = document.getElementById('main-content');
         const playlistContainer = document.getElementById('playlist-container');
         const emptyState = document.getElementById('empty-state');
         const audioPlayer = document.getElementById('audio-player');
@@ -243,6 +261,7 @@
         const deleteModal = document.getElementById('delete-modal');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const loadingOverlay = document.getElementById('loading-overlay');
 
         let playlist = [];
         let currentTrackIndex = -1;
@@ -250,18 +269,31 @@
 
         // --- File Handling & DB ---
         async function handleFiles(files) {
-            for (const file of files) {
-                if (file.type.startsWith('audio/')) {
-                    const track = {
-                        name: file.name.replace(/\.[^/.]+$/, ""), // remove extension
-                        artist: "Unknown Artist", // You could try to parse metadata later
-                        data: file,
-                        added: new Date()
-                    };
-                    await saveTrack(track);
+            loadingOverlay.classList.remove('hidden');
+            try {
+                for (const file of files) {
+                    // More robust check for audio files, including a fallback for file extension
+                    const isAudio = file.type.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg|flac)$/i.test(file.name);
+                    if (isAudio) {
+                        const track = {
+                            name: file.name.replace(/\.[^/.]+$/, ""), // remove extension
+                            artist: "Unknown Artist",
+                            data: file,
+                            added: new Date()
+                        };
+                        await saveTrack(track);
+                    } else {
+                        console.warn(`Skipped non-audio file: ${file.name}`);
+                    }
                 }
+                await loadPlaylist();
+            } catch (error) {
+                console.error("Error processing files:", error);
+            } finally {
+                loadingOverlay.classList.add('hidden');
+                // Clear the file input value to allow re-uploading the same file
+                fileUpload.value = '';
             }
-            loadPlaylist();
         }
 
         function saveTrack(track) {
@@ -296,7 +328,6 @@
                 const store = transaction.objectStore("tracks");
                 const request = store.delete(id);
                 request.onsuccess = () => {
-                    // If the deleted track was the currently playing one
                     if (currentTrackIndex > -1 && playlist[currentTrackIndex]?.id === id) {
                         audioPlayer.pause();
                         currentTrackIndex = -1;
@@ -307,7 +338,6 @@
                 request.onerror = event => reject("Error deleting track: " + event.target.error);
             });
         }
-
 
         // --- UI Rendering ---
         function renderPlaylist() {
