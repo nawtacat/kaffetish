@@ -44,7 +44,7 @@
             border-radius: 0.5rem;
             transition: all 0.2s ease-in-out;
         }
-        .custom-file-upload:hover, .custom-file-upload.dragover {
+        .custom-file-upload:hover {
             background-color: var(--secondary-color);
             border-color: var(--primary-color);
         }
@@ -119,6 +119,18 @@
             </div>
         </div>
     </footer>
+
+    <!-- Deletion Confirmation Modal -->
+    <div id="delete-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center shadow-xl">
+            <h3 class="text-lg font-semibold mb-2">Delete Track</h3>
+            <p class="text-gray-400 mb-6">Are you sure you want to permanently delete this track?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="modal-cancel-btn" class="px-6 py-2 rounded-md bg-gray-600 hover:bg-gray-500 transition-colors">Cancel</button>
+                <button id="modal-confirm-btn" class="px-6 py-2 rounded-md bg-red-600 hover:bg-red-500 transition-colors">Delete</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Hidden audio element -->
     <audio id="audio-player" class="hidden"></audio>
@@ -228,9 +240,13 @@
         const durationEl = document.getElementById('duration');
         const trackTitleEl = document.getElementById('track-title');
         const trackArtistEl = document.getElementById('track-artist');
+        const deleteModal = document.getElementById('delete-modal');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
         let playlist = [];
         let currentTrackIndex = -1;
+        let trackIdToDelete = null;
 
         // --- File Handling & DB ---
         async function handleFiles(files) {
@@ -281,7 +297,7 @@
                 const request = store.delete(id);
                 request.onsuccess = () => {
                     // If the deleted track was the currently playing one
-                    if (currentTrackIndex > -1 && playlist[currentTrackIndex].id === id) {
+                    if (currentTrackIndex > -1 && playlist[currentTrackIndex]?.id === id) {
                         audioPlayer.pause();
                         currentTrackIndex = -1;
                         updatePlayerUI();
@@ -414,36 +430,15 @@
         customUploadLabel.addEventListener('click', () => fileUpload.click());
         fileUpload.addEventListener('change', e => handleFiles(e.target.files));
 
-        // Drag & Drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            mainContent.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            }, false);
-        });
-        ['dragenter', 'dragover'].forEach(eventName => {
-            mainContent.addEventListener(eventName, () => {
-                customUploadLabel.classList.add('dragover');
-            }, false);
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-            mainContent.addEventListener(eventName, () => {
-                customUploadLabel.classList.remove('dragover');
-            }, false);
-        });
-        mainContent.addEventListener('drop', e => {
-            handleFiles(e.dataTransfer.files);
-        }, false);
-        
         playlistContainer.addEventListener('click', async e => {
             const trackElement = e.target.closest('div[data-index]');
             if (e.target.closest('.delete-btn')) {
                 e.stopPropagation();
                 const button = e.target.closest('.delete-btn');
                 const idToDelete = parseInt(button.dataset.id);
-                if (!isNaN(idToDelete) && confirm('Are you sure you want to delete this track?')) {
-                     await deleteTrack(idToDelete);
-                     await loadPlaylist();
+                if (!isNaN(idToDelete)) {
+                     trackIdToDelete = idToDelete;
+                     deleteModal.classList.remove('hidden');
                 }
             } else if (trackElement) {
                 const index = parseInt(trackElement.dataset.index);
@@ -453,6 +448,20 @@
                     playTrack(index);
                 }
             }
+        });
+
+        modalConfirmBtn.addEventListener('click', async () => {
+            if (trackIdToDelete !== null) {
+                await deleteTrack(trackIdToDelete);
+                await loadPlaylist();
+                trackIdToDelete = null;
+            }
+            deleteModal.classList.add('hidden');
+        });
+
+        modalCancelBtn.addEventListener('click', () => {
+            trackIdToDelete = null;
+            deleteModal.classList.add('hidden');
         });
 
         playPauseBtn.addEventListener('click', togglePlayPause);
@@ -475,11 +484,11 @@
                 await initDB();
                 await loadPlaylist();
             } catch (error) {
-                console.error(error);
-                alert("Could not initialize the database. The app may not work correctly.");
+                console.error("Could not initialize the database. The app may not work correctly.", error);
             }
         });
     </script>
 
 </body>
 </html>
+
