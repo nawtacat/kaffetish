@@ -151,6 +151,20 @@
         <p class="text-white mt-4">Adding tracks...</p>
     </div>
 
+    <!-- Error Modal -->
+    <div id="error-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center shadow-xl">
+            <div class="text-red-500 mb-4">
+                <i class="fas fa-exclamation-triangle fa-2x"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">An Error Occurred</h3>
+            <p id="error-message" class="text-gray-400 mb-6 break-words">Something went wrong. Please try again.</p>
+            <div class="flex justify-center">
+                <button id="error-ok-btn" class="px-6 py-2 rounded-md bg-purple-600 hover:bg-purple-500 transition-colors">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Hidden audio element -->
     <audio id="audio-player" class="hidden"></audio>
     <input type="file" id="file-upload" accept="audio/*" multiple>
@@ -262,21 +276,37 @@
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const errorModal = document.getElementById('error-modal');
+        const errorMessageEl = document.getElementById('error-message');
+        const errorOkBtn = document.getElementById('error-ok-btn');
+
 
         let playlist = [];
         let currentTrackIndex = -1;
         let trackIdToDelete = null;
 
+        // --- Error Handling ---
+        function showError(message, error = '') {
+            console.error(message, error);
+            const details = error ? ` Details: ${error.name || 'Error'}: ${error.message || 'Unknown error'}` : '';
+            errorMessageEl.textContent = `${message}${details}`;
+            errorModal.classList.remove('hidden');
+        }
+
         // --- File Handling & DB ---
         async function handleFiles(files) {
+            if (!files || files.length === 0) {
+                console.log("File selection was cancelled or no files were chosen.");
+                return;
+            }
+            console.log(`handleFiles triggered. Number of files selected: ${files.length}`);
             loadingOverlay.classList.remove('hidden');
             try {
                 for (const file of files) {
-                    // More robust check for audio files, including a fallback for file extension
                     const isAudio = file.type.startsWith('audio/') || /\.(mp3|m4a|wav|aac|ogg|flac)$/i.test(file.name);
                     if (isAudio) {
                         const track = {
-                            name: file.name.replace(/\.[^/.]+$/, ""), // remove extension
+                            name: file.name.replace(/\.[^/.]+$/, ""),
                             artist: "Unknown Artist",
                             data: file,
                             added: new Date()
@@ -288,10 +318,9 @@
                 }
                 await loadPlaylist();
             } catch (error) {
-                console.error("Error processing files:", error);
+                showError("Could not save the selected audio files.", error);
             } finally {
                 loadingOverlay.classList.add('hidden');
-                // Clear the file input value to allow re-uploading the same file
                 fileUpload.value = '';
             }
         }
@@ -302,7 +331,7 @@
                 const store = transaction.objectStore("tracks");
                 const request = store.add(track);
                 request.onsuccess = () => resolve();
-                request.onerror = event => reject("Error saving track: " + event.target.error);
+                request.onerror = event => reject(event.target.error);
             });
         }
         
@@ -318,7 +347,7 @@
                 const store = transaction.objectStore("tracks");
                 const request = store.getAll();
                 request.onsuccess = event => resolve(event.target.result);
-                request.onerror = event => reject("Error loading tracks: " + event.target.error);
+                request.onerror = event => reject(event.target.error);
             });
         }
         
@@ -335,7 +364,7 @@
                     }
                     resolve();
                 };
-                request.onerror = event => reject("Error deleting track: " + event.target.error);
+                request.onerror = event => reject(event.target.error);
             });
         }
 
@@ -373,6 +402,11 @@
         // --- Player Logic ---
         function playTrack(index) {
             if (index < 0 || index >= playlist.length) return;
+
+            // Revoke the old object URL to prevent memory leaks
+            if (audioPlayer.src && audioPlayer.src.startsWith('blob:')) {
+                URL.revokeObjectURL(audioPlayer.src);
+            }
             
             currentTrackIndex = index;
             const track = playlist[index];
@@ -494,6 +528,10 @@
             deleteModal.classList.add('hidden');
         });
 
+        errorOkBtn.addEventListener('click', () => {
+            errorModal.classList.add('hidden');
+        });
+
         playPauseBtn.addEventListener('click', togglePlayPause);
         nextBtn.addEventListener('click', playNext);
         prevBtn.addEventListener('click', playPrev);
@@ -514,7 +552,7 @@
                 await initDB();
                 await loadPlaylist();
             } catch (error) {
-                console.error("Could not initialize the database. The app may not work correctly.", error);
+                showError("The app could not start correctly.", "Failed to initialize the offline database.");
             }
         });
     </script>
