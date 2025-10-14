@@ -1,366 +1,485 @@
-
-<!doctype html>
-<html lang="en" class="h-full bg-[#f6fbff]">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Jagger — Audio</title>
-
-  <!-- iOS PWA friendliness -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Jagger" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <meta name="theme-color" content="#62b6ff" />
-
-  <!-- Manifest & SW -->
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js');
-      });
-    }
-  </script>
-
-  <!-- Tailwind CDN (keeps the project single‑file simple) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0f8ff', 100: '#e0f1ff', 200: '#bfe2ff', 300: '#9ed3ff',
-              400: '#7dc4ff', 500: '#62b6ff', 600: '#3ea3ff', 700: '#1f8def',
-              800: '#1971c2', 900: '#145a9a'
-            }
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Offline Audio Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="apple-touch-icon" href="https://placehold.co/180x180/7e22ce/ffffff?text=Audio&font=inter">
+    <style>
+        :root {
+            --primary-color: #8b5cf6;
+            --secondary-color: #1f2937;
+            --background-color: #111827;
+            --text-color: #f3f4f6;
+            --card-color: #1f2937;
         }
-      }
-    }
-  </script>
-
-  <style>
-    /* Subtle frosted player bar */
-    .glass { backdrop-filter: saturate(120%) blur(12px); }
-    .scroll-thin::-webkit-scrollbar { height: 6px; width: 6px; }
-    .scroll-thin::-webkit-scrollbar-thumb { background: #cfe6ff; border-radius: 9999px; }
-  </style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .progress-bar-container {
+            background-color: #374151;
+            height: 6px;
+        }
+        .progress-bar {
+            background-color: var(--primary-color);
+            height: 100%;
+            transition: width 0.1s linear;
+        }
+        /* Style for the file input */
+        input[type="file"] {
+            display: none;
+        }
+        .custom-file-upload {
+            border: 2px dashed #4b5563;
+            display: inline-block;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-file-upload:hover, .custom-file-upload.dragover {
+            background-color: var(--secondary-color);
+            border-color: var(--primary-color);
+        }
+        /* For iOS safe areas */
+        body {
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .player-controls {
+            padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        }
+    </style>
 </head>
-<body class="h-full text-slate-800">
-  <div id="dropzone" class="fixed inset-0 hidden items-center justify-center bg-brand-500/20 z-[60]">
-    <div class="rounded-2xl bg-white p-8 shadow-xl border border-brand-200 text-center">
-      <p class="text-xl font-semibold text-brand-800">Drop audio files to import</p>
-      <p class="text-slate-500 mt-1">MP3 / M4A work best on iPhone</p>
-    </div>
-  </div>
+<body class="flex flex-col h-screen antialiased">
 
-  <div class="mx-auto max-w-6xl min-h-full grid grid-rows-[auto,1fr,auto] gap-4 p-4 pb-28">
-    <!-- Top bar -->
-    <header class="rounded-2xl bg-white/80 glass border border-brand-100 px-4 py-3 flex items-center justify-between shadow-sm">
-      <div class="flex items-center gap-3">
-        <div class="h-9 w-9 rounded-xl bg-brand-500 grid place-content-center text-white font-bold">J</div>
-        <h1 class="text-lg font-semibold">Jagger</h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="relative">
-          <input id="search" type="search" placeholder="Search library…" class="w-56 md:w-72 rounded-xl border border-brand-100 bg-brand-50/60 px-3 py-2 pr-9 outline-none focus:ring-2 focus:ring-brand-300" />
-          <svg class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-brand-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </label>
-        <button id="btn-import" class="rounded-xl bg-brand-600 text-white px-3 py-2 font-medium hover:bg-brand-700 active:bg-brand-800">Import</button>
-        <input id="file" type="file" accept="audio/*" multiple class="hidden" />
-      </div>
+    <!-- Header -->
+    <header class="bg-gray-900/80 backdrop-blur-sm p-4 text-center sticky top-0 z-10 shadow-lg">
+        <h1 class="text-xl font-bold tracking-wider text-purple-400">AudioBox</h1>
+        <p class="text-xs text-gray-400">Your Offline Audio Player</p>
     </header>
 
-    <!-- Main layout -->
-    <main class="grid grid-cols-1 md:grid-cols-[240px,1fr] gap-4">
-      <!-- Sidebar -->
-      <aside class="rounded-2xl bg-white border border-brand-100 p-3 space-y-3 h-fit md:h-[calc(100vh-12rem)] overflow-auto scroll-thin">
-        <section>
-          <h2 class="text-sm font-semibold text-brand-800 mb-2">Playlists</h2>
-          <ul id="playlists" class="space-y-1 text-sm">
-            <!-- dynamic -->
-          </ul>
-          <button id="new-playlist" class="mt-2 w-full rounded-xl border border-brand-200 px-3 py-2 hover:bg-brand-50">+ New playlist</button>
-        </section>
-        <hr class="border-brand-100"/>
-        <section class="text-xs text-slate-500 leading-relaxed">
-          <p class="mb-1">Tip: Tap **Import** to add songs. Jagger works offline after first load.</p>
-          <p>Files are stored locally on your device. You can clear them in Settings.</p>
-          <button id="btn-settings" class="mt-3 w-full rounded-xl border border-brand-200 px-3 py-2 hover:bg-brand-50 text-sm">Settings</button>
-        </section>
-      </aside>
+    <!-- Main Content -->
+    <main class="flex-grow overflow-y-auto p-4 md:p-6" id="main-content">
+        <!-- Playlist -->
+        <div id="playlist-container" class="space-y-3">
+            <!-- Audio items will be injected here -->
+        </div>
 
-      <!-- Library -->
-      <section class="rounded-2xl bg-white border border-brand-100 p-0 overflow-hidden">
-        <div class="p-3 flex items-center justify-between">
-          <h2 class="text-base font-semibold">Library</h2>
-          <div class="flex items-center gap-2 text-sm">
-            <button id="btn-shuffle-all" class="rounded-lg border border-brand-200 px-3 py-1.5 hover:bg-brand-50">Shuffle all</button>
-            <button id="btn-clear-library" class="rounded-lg border border-rose-200 text-rose-600 px-3 py-1.5 hover:bg-rose-50">Clear library</button>
-          </div>
+        <!-- Empty State / Upload Prompt -->
+        <div id="empty-state" class="hidden text-center text-gray-400 mt-12 p-8">
+            <div class="flex justify-center mb-6">
+                <svg class="w-20 h-20 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 6l12-3"></path></svg>
+            </div>
+            <h2 class="text-2xl font-semibold mb-2 text-gray-300">Your AudioBox is Empty</h2>
+            <p class="mb-6">Upload audio files to listen to them anytime, anywhere—even offline.</p>
+            <label for="file-upload" class="custom-file-upload text-purple-400">
+                <i class="fas fa-plus mr-2"></i>
+                <span>Tap to Upload Audio</span>
+            </label>
         </div>
-        <div id="library" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
-          <!-- Cards injected here -->
+        
+        <!-- Add to Home Screen Instruction -->
+        <div id="install-prompt" class="hidden bg-gray-800 p-4 rounded-lg mt-8 text-center text-sm">
+            <p>To install, tap the 'Share' icon in Safari and then 'Add to Home Screen'.</p>
         </div>
-      </section>
     </main>
 
-    <!-- Player Bar -->
-    <footer class="fixed left-0 right-0 bottom-0 z-50">
-      <div class="mx-auto max-w-6xl m-4 rounded-2xl glass bg-white/80 border border-brand-100 shadow-lg">
-        <div class="flex items-center gap-4 px-4 py-3">
-          <img id="art" class="h-12 w-12 rounded-xl object-cover bg-brand-100 border border-brand-200" alt="artwork" />
-          <div class="min-w-0 flex-1">
-            <div class="truncate font-medium" id="now-title">Not playing</div>
-            <div class="truncate text-sm text-slate-500" id="now-artist">—</div>
-            <input id="seek" type="range" min="0" max="100" value="0" class="w-full accent-brand-600" />
-            <div class="flex justify-between text-[11px] text-slate-500 -mt-1">
-              <span id="tcur">0:00</span>
-              <span id="tdur">0:00</span>
+    <!-- Player Controls -->
+    <footer class="player-controls bg-gray-900/80 backdrop-blur-sm p-4 sticky bottom-0 z-10 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.3)]">
+        <div class="max-w-2xl mx-auto">
+            <div id="current-track-info" class="text-center mb-3">
+                <p id="track-title" class="font-bold truncate">No track selected</p>
+                <p id="track-artist" class="text-xs text-gray-400">---</p>
             </div>
-          </div>
-          <div class="flex items-center gap-3">
-            <button id="prev" class="p-2 rounded-xl hover:bg-brand-50" aria-label="Previous">
-              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20L9 12l10-8v16z"/><path d="M5 19V5"/></svg>
-            </button>
-            <button id="play" class="p-3 rounded-2xl bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800" aria-label="Play/Pause">
-              <svg id="play-icon" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-            <button id="next" class="p-2 rounded-xl hover:bg-brand-50" aria-label="Next">
-              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4z"/><path d="M19 5v14"/></svg>
-            </button>
-            <button id="btn-shuffle" class="p-2 rounded-xl hover:bg-brand-50" aria-label="Shuffle">
-              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20l3-3-3-3"/><path d="M3 7h5l4 5 4 5h5"/><path d="M18 4l3 3-3 3"/><path d="M3 17h5"/></svg>
-            </button>
-            <button id="btn-repeat" class="p-2 rounded-xl hover:bg-brand-50" aria-label="Repeat">
-              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a7 7 0 0 1 12-4h-1"/><path d="M21 12a7 7 0 0 1-12 4h1"/><path d="M13 5l-2-2 2-2"/><path d="M11 21l2 2-2 2"/></svg>
-            </button>
-          </div>
+            
+            <!-- Progress Bar -->
+            <div class="mb-3">
+                <div id="progress-container" class="progress-bar-container rounded-full cursor-pointer">
+                    <div id="progress-bar" class="progress-bar rounded-full"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                    <span id="current-time">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+
+            <!-- Player Buttons -->
+            <div class="flex items-center justify-center space-x-6">
+                <button id="prev-btn" class="text-gray-400 hover:text-white transition-colors disabled:opacity-50 text-2xl"><i class="fas fa-backward-step"></i></button>
+                <button id="play-pause-btn" class="bg-purple-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl shadow-lg hover:bg-purple-500 transition-colors disabled:opacity-50"><i class="fas fa-play"></i></button>
+                <button id="next-btn" class="text-gray-400 hover:text-white transition-colors disabled:opacity-50 text-2xl"><i class="fas fa-forward-step"></i></button>
+            </div>
         </div>
-      </div>
     </footer>
 
-    <input id="hidden-audio" type="audio" playsinline class="hidden" />
-  </div>
+    <!-- Hidden audio element -->
+    <audio id="audio-player" class="hidden"></audio>
+    <input type="file" id="file-upload" accept="audio/*" multiple>
 
-  <script type="module">
-    import { idbOpen, idbPutMany, idbGetAll, idbDeleteAll } from './jagger-idb.js';
+    <script>
+        // --- PWA Setup: Manifest & Service Worker ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Dynamically create and inject the manifest
+            const manifest = {
+                "name": "Offline Audio Player",
+                "short_name": "AudioBox",
+                "start_url": ".",
+                "display": "standalone",
+                "background_color": "#111827",
+                "theme_color": "#8b5cf6",
+                "description": "An offline-first audio player PWA.",
+                "icons": [{
+                    "src": "https://placehold.co/192x192/7e22ce/ffffff?text=AB&font=inter",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                }, {
+                    "src": "https://placehold.co/512x512/7e22ce/ffffff?text=AudioBox&font=inter",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(manifestBlob);
+            const linkEl = document.createElement('link');
+            linkEl.rel = 'manifest';
+            linkEl.href = manifestURL;
+            document.head.appendChild(linkEl);
 
-    const $ = (s)=>document.querySelector(s);
-    const $$ = (s)=>document.querySelectorAll(s);
+            // 2. Register the service worker
+            if ('serviceWorker' in navigator) {
+                const swContent = `
+                    const CACHE_NAME = 'audio-player-cache-v1';
+                    const urlsToCache = [
+                        '/',
+                        'https://cdn.tailwindcss.com',
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2'
+                    ];
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME).then(cache => {
+                                console.log('Opened cache');
+                                return cache.addAll(urlsToCache);
+                            })
+                        );
+                    });
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request).then(response => {
+                                return response || fetch(event.request);
+                            })
+                        );
+                    });
+                `;
+                const swBlob = new Blob([swContent], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swURL)
+                    .then(registration => console.log('Service Worker registered with scope:', registration.scope))
+                    .catch(error => console.log('Service Worker registration failed:', error));
+            }
 
-    const audio = $('#hidden-audio');
-    const art = $('#art');
-    const nowTitle = $('#now-title');
-    const nowArtist = $('#now-artist');
-    const tcur = $('#tcur');
-    const tdur = $('#tdur');
-    const seek = $('#seek');
+            // 3. Show install prompt for iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS && !window.navigator.standalone) {
+                document.getElementById('install-prompt').classList.remove('hidden');
+            }
+        });
 
-    const btnImport = $('#btn-import');
-    const fileInput = $('#file');
-    const btnShuffleAll = $('#btn-shuffle-all');
-    const btnClearLib = $('#btn-clear-library');
-    const libraryEl = $('#library');
-    const searchEl = $('#search');
-    const dropzone = $('#dropzone');
+        // --- Application Logic ---
+        const dbName = "AudioPlayerDB";
+        let db;
 
-    const prevBtn = $('#prev');
-    const playBtn = $('#play');
-    const playIcon = $('#play-icon');
-    const nextBtn = $('#next');
-    const shuffleBtn = $('#btn-shuffle');
-    const repeatBtn = $('#btn-repeat');
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onerror = event => reject("Database error: " + event.target.errorCode);
+                request.onsuccess = event => {
+                    db = event.target.result;
+                    resolve();
+                };
+                request.onupgradeneeded = event => {
+                    const db = event.target.result;
+                    db.createObjectStore("tracks", { keyPath: "id", autoIncrement: true });
+                };
+            });
+        }
+        
+        // DOM Elements
+        const fileUpload = document.getElementById('file-upload');
+        const customUploadLabel = document.querySelector('.custom-file-upload');
+        const mainContent = document.getElementById('main-content');
+        const playlistContainer = document.getElementById('playlist-container');
+        const emptyState = document.getElementById('empty-state');
+        const audioPlayer = document.getElementById('audio-player');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const currentTimeEl = document.getElementById('current-time');
+        const durationEl = document.getElementById('duration');
+        const trackTitleEl = document.getElementById('track-title');
+        const trackArtistEl = document.getElementById('track-artist');
 
-    let DB, LIB = [], QUEUE = [], INDEX = -1, SHUFFLE=false, REPEAT='none'; // none|one|all
+        let playlist = [];
+        let currentTrackIndex = -1;
 
-    // ---------- Helpers ----------
-    const fmt = s=> {
-      if (!Number.isFinite(s)) return '0:00';
-      const m = Math.floor(s/60), ss = Math.floor(s%60).toString().padStart(2,'0');
-      return `${m}:${ss}`;
-    };
+        // --- File Handling & DB ---
+        async function handleFiles(files) {
+            for (const file of files) {
+                if (file.type.startsWith('audio/')) {
+                    const track = {
+                        name: file.name.replace(/\.[^/.]+$/, ""), // remove extension
+                        artist: "Unknown Artist", // You could try to parse metadata later
+                        data: file,
+                        added: new Date()
+                    };
+                    await saveTrack(track);
+                }
+            }
+            loadPlaylist();
+        }
 
-    async function loadLibrary() {
-      DB = await idbOpen('jagger', 1);
-      LIB = await idbGetAll(DB, 'tracks');
-      renderLibrary();
-    }
+        function saveTrack(track) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(["tracks"], "readwrite");
+                const store = transaction.objectStore("tracks");
+                const request = store.add(track);
+                request.onsuccess = () => resolve();
+                request.onerror = event => reject("Error saving track: " + event.target.error);
+            });
+        }
+        
+        async function loadPlaylist() {
+            playlist = await getAllTracks();
+            renderPlaylist();
+            updatePlayerState();
+        }
 
-    function renderLibrary(filter='') {
-      libraryEl.innerHTML = '';
-      const q = filter.trim().toLowerCase();
-      const rows = (q ? LIB.filter(t => (t.title+t.artist).toLowerCase().includes(q)) : LIB);
-      for (const t of rows) {
-        const card = document.createElement('button');
-        card.className = 'group text-left p-3 rounded-xl border border-brand-100 hover:border-brand-300 hover:bg-brand-50/50 transition';
-        card.innerHTML = `
-          <div class="aspect-square w-full rounded-lg bg-brand-100 border border-brand-200 overflow-hidden">
-            ${t.artwork ? `<img src="${t.artwork}" class="w-full h-full object-cover">` : ''}
-          </div>
-          <div class="mt-2 truncate font-medium">${t.title || 'Untitled'}</div>
-          <div class="truncate text-sm text-slate-500">${t.artist || 'Unknown'}</div>`;
-        card.onclick = ()=> playFromLibrary(t.id);
-        libraryEl.appendChild(card);
-      }
-    }
+        function getAllTracks() {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(["tracks"], "readonly");
+                const store = transaction.objectStore("tracks");
+                const request = store.getAll();
+                request.onsuccess = event => resolve(event.target.result);
+                request.onerror = event => reject("Error loading tracks: " + event.target.error);
+            });
+        }
+        
+        function deleteTrack(id) {
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(["tracks"], "readwrite");
+                const store = transaction.objectStore("tracks");
+                const request = store.delete(id);
+                request.onsuccess = () => {
+                    // If the deleted track was the currently playing one
+                    if (currentTrackIndex > -1 && playlist[currentTrackIndex].id === id) {
+                        audioPlayer.pause();
+                        currentTrackIndex = -1;
+                        updatePlayerUI();
+                    }
+                    resolve();
+                };
+                request.onerror = event => reject("Error deleting track: " + event.target.error);
+            });
+        }
 
-    function setNowPlaying(meta) {
-      nowTitle.textContent = meta.title || 'Unknown title';
-      nowArtist.textContent = meta.artist || 'Unknown artist';
-      if (meta.artwork) art.src = meta.artwork; else art.removeAttribute('src');
-      if ('mediaSession' in navigator) {
-        try {
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: meta.title || 'Unknown',
-            artist: meta.artist || 'Unknown',
-            album: meta.album || 'Jagger',
-            artwork: meta.artwork ? [{ src: meta.artwork, sizes: '512x512', type: 'image/png' }] : []
-          });
-        } catch {}
-      }
-    }
 
-    function updatePlayIcon() {
-      playIcon.innerHTML = audio.paused
-        ? '<path d="M8 5v14l11-7z"/>'
-        : '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'
-    }
+        // --- UI Rendering ---
+        function renderPlaylist() {
+            playlistContainer.innerHTML = '';
+            if (playlist.length === 0) {
+                emptyState.classList.remove('hidden');
+                playlistContainer.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                playlistContainer.classList.remove('hidden');
+                playlist.forEach((track, index) => {
+                    const isPlaying = index === currentTrackIndex;
+                    const trackElement = document.createElement('div');
+                    trackElement.className = `flex items-center p-3 rounded-lg cursor-pointer transition-colors ${isPlaying ? 'bg-purple-600' : 'bg-gray-800 hover:bg-gray-700'}`;
+                    trackElement.dataset.index = index;
+                    trackElement.innerHTML = `
+                        <div class="mr-4">
+                           <i class="fas ${isPlaying && !audioPlayer.paused ? 'fa-pause text-purple-300' : 'fa-play text-purple-400'} text-lg"></i>
+                        </div>
+                        <div class="flex-grow truncate">
+                            <p class="font-semibold">${track.name}</p>
+                            <p class="text-sm text-gray-400">${track.artist}</p>
+                        </div>
+                        <button class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-2" data-id="${track.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    playlistContainer.appendChild(trackElement);
+                });
+            }
+        }
+        
+        // --- Player Logic ---
+        function playTrack(index) {
+            if (index < 0 || index >= playlist.length) return;
+            
+            currentTrackIndex = index;
+            const track = playlist[index];
+            const objectURL = URL.createObjectURL(track.data);
+            audioPlayer.src = objectURL;
+            audioPlayer.play();
+            
+            trackTitleEl.textContent = track.name;
+            trackArtistEl.textContent = track.artist;
 
-    function buildQueueFromLib(startId) {
-      const base = [...LIB];
-      if (SHUFFLE) base.sort(()=>Math.random()-0.5);
-      INDEX = base.findIndex(t=>t.id===startId);
-      QUEUE = base;
-    }
+            updatePlayerState();
+            renderPlaylist();
+        }
 
-    async function playFromLibrary(id) {
-      buildQueueFromLib(id);
-      await playAt(INDEX);
-    }
+        function togglePlayPause() {
+            if (audioPlayer.paused) {
+                if (currentTrackIndex === -1 && playlist.length > 0) {
+                    playTrack(0);
+                } else {
+                    audioPlayer.play();
+                }
+            } else {
+                audioPlayer.pause();
+            }
+        }
 
-    async function playAt(i) {
-      if (i<0 || i>=QUEUE.length) return;
-      INDEX = i;
-      const tr = QUEUE[INDEX];
-      audio.src = tr.blobUrl || tr.url; // blobUrl for stored IndexedDB blobs
-      await audio.play();
-      setNowPlaying(tr);
-      updatePlayIcon();
-    }
+        function playNext() {
+            let nextIndex = currentTrackIndex + 1;
+            if (nextIndex >= playlist.length) {
+                nextIndex = 0; // Loop back to the start
+            }
+            playTrack(nextIndex);
+        }
 
-    function nextTrack() {
-      if (REPEAT==='one') return playAt(INDEX);
-      let i = INDEX + 1;
-      if (i>=QUEUE.length) {
-        if (REPEAT==='all') i = 0; else return audio.pause();
-      }
-      playAt(i);
-    }
+        function playPrev() {
+            let prevIndex = currentTrackIndex - 1;
+            if (prevIndex < 0) {
+                prevIndex = playlist.length - 1; // Loop to the end
+            }
+            playTrack(prevIndex);
+        }
+        
+        function updatePlayerUI() {
+            const isPlaying = !audioPlayer.paused;
+            playPauseBtn.innerHTML = `<i class="fas ${isPlaying ? 'fa-pause' : 'fa-play'}"></i>`;
+            
+            if (currentTrackIndex === -1) {
+                trackTitleEl.textContent = "No track selected";
+                trackArtistEl.textContent = "---";
+            }
+            renderPlaylist();
+        }
 
-    function prevTrack() {
-      let i = INDEX - 1;
-      if (i<0) i = 0;
-      playAt(i);
-    }
+        function updatePlayerState() {
+            const hasTracks = playlist.length > 0;
+            playPauseBtn.disabled = !hasTracks;
+            prevBtn.disabled = !hasTracks;
+            nextBtn.disabled = !hasTracks;
+        }
+        
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
 
-    // ---------- Events ----------
-    audio.addEventListener('timeupdate', ()=>{
-      seek.max = Math.max(1, Math.floor(audio.duration||0));
-      seek.value = Math.floor(audio.currentTime||0);
-      tcur.textContent = fmt(audio.currentTime);
-      tdur.textContent = fmt(audio.duration);
-    });
-    audio.addEventListener('ended', nextTrack);
-    seek.addEventListener('input', ()=>{ audio.currentTime = Number(seek.value)||0; });
+        function updateProgress() {
+            if (audioPlayer.duration) {
+                const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+                currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+            }
+        }
+        
+        function setProgress(e) {
+            const width = this.clientWidth;
+            const clickX = e.offsetX;
+            const duration = audioPlayer.duration;
+            if (duration) {
+                audioPlayer.currentTime = (clickX / width) * duration;
+            }
+        }
+        
+        // --- Event Listeners ---
+        customUploadLabel.addEventListener('click', () => fileUpload.click());
+        fileUpload.addEventListener('change', e => handleFiles(e.target.files));
 
-    playBtn.onclick = ()=> { audio.paused ? audio.play() : audio.pause(); };
-    audio.addEventListener('play', updatePlayIcon);
-    audio.addEventListener('pause', updatePlayIcon);
-    nextBtn.onclick = nextTrack;
-    prevBtn.onclick = prevTrack;
+        // Drag & Drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            mainContent.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            mainContent.addEventListener(eventName, () => {
+                customUploadLabel.classList.add('dragover');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            mainContent.addEventListener(eventName, () => {
+                customUploadLabel.classList.remove('dragover');
+            }, false);
+        });
+        mainContent.addEventListener('drop', e => {
+            handleFiles(e.dataTransfer.files);
+        }, false);
+        
+        playlistContainer.addEventListener('click', async e => {
+            const trackElement = e.target.closest('div[data-index]');
+            if (e.target.closest('.delete-btn')) {
+                e.stopPropagation();
+                const button = e.target.closest('.delete-btn');
+                const idToDelete = parseInt(button.dataset.id);
+                if (!isNaN(idToDelete) && confirm('Are you sure you want to delete this track?')) {
+                     await deleteTrack(idToDelete);
+                     await loadPlaylist();
+                }
+            } else if (trackElement) {
+                const index = parseInt(trackElement.dataset.index);
+                if (index === currentTrackIndex) {
+                    togglePlayPause();
+                } else {
+                    playTrack(index);
+                }
+            }
+        });
 
-    shuffleBtn.onclick = ()=>{ SHUFFLE = !SHUFFLE; shuffleBtn.classList.toggle('bg-brand-50', SHUFFLE); };
-    repeatBtn.onclick = ()=>{
-      REPEAT = (REPEAT==='none') ? 'one' : (REPEAT==='one' ? 'all' : 'none');
-      repeatBtn.classList.toggle('bg-brand-50', REPEAT!=='none');
-      repeatBtn.title = `Repeat: ${REPEAT}`;
-    };
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        nextBtn.addEventListener('click', playNext);
+        prevBtn.addEventListener('click', playPrev);
+        
+        audioPlayer.addEventListener('play', updatePlayerUI);
+        audioPlayer.addEventListener('pause', updatePlayerUI);
+        audioPlayer.addEventListener('ended', playNext);
+        audioPlayer.addEventListener('timeupdate', updateProgress);
+        audioPlayer.addEventListener('loadedmetadata', () => {
+            durationEl.textContent = formatTime(audioPlayer.duration);
+        });
 
-    // Media Session actions (Lock screen / Control Center)
-    if ('mediaSession' in navigator) {
-      try {
-        navigator.mediaSession.setActionHandler('play', ()=> audio.play());
-        navigator.mediaSession.setActionHandler('pause', ()=> audio.pause());
-        navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
-        navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
-        navigator.mediaSession.setActionHandler('seekto', e=>{ if (e.seekTime!=null) audio.currentTime = e.seekTime; });
-      } catch {}
-    }
+        progressContainer.addEventListener('click', setProgress);
 
-    // Import (button + input)
-    btnImport.onclick = ()=> fileInput.click();
-    fileInput.onchange = async (e)=> handleFiles(e.target.files);
+        // --- Initial Load ---
+        window.addEventListener('load', async () => {
+            try {
+                await initDB();
+                await loadPlaylist();
+            } catch (error) {
+                console.error(error);
+                alert("Could not initialize the database. The app may not work correctly.");
+            }
+        });
+    </script>
 
-    // Drag‑and‑drop overlay
-    ;['dragenter','dragover'].forEach(ev=>document.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.remove('hidden'); dropzone.classList.add('flex'); }, false));
-    ;['dragleave','drop'].forEach(ev=>document.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.add('hidden'); dropzone.classList.remove('flex'); }, false));
-    document.addEventListener('drop', e=>{ handleFiles(e.dataTransfer.files); });
-
-    // Search
-    searchEl.addEventListener('input', ()=> renderLibrary(searchEl.value));
-
-    // Clear library
-    btnClearLib.onclick = async ()=>{
-      if (!confirm('Remove all imported songs from this device?')) return;
-      await idbDeleteAll(DB, 'tracks');
-      LIB = [];
-      renderLibrary();
-      audio.pause(); audio.src=''; INDEX=-1; QUEUE=[];
-    };
-
-    // Shuffle all
-    btnShuffleAll.onclick = ()=>{
-      if (!LIB.length) return;
-      SHUFFLE = true; buildQueueFromLib(LIB[0].id); playAt(0);
-    };
-
-    // File handling → read metadata (basic), artwork (if any), store blob
-    async function handleFiles(fileList) {
-      const arr = Array.from(fileList || []);
-      const rows = [];
-      for (const f of arr) {
-        if (!f.type.startsWith('audio/')) continue;
-        const blobUrl = URL.createObjectURL(f);
-        const title = f.name.replace(/\.[^.]+$/, '');
-        const track = {
-          id: crypto.randomUUID(),
-          title, artist: 'Unknown', album: 'Jagger',
-          artwork: '',
-          size: f.size, type: f.type, blob: f, blobUrl
-        };
-        rows.push(track);
-      }
-      await idbPutMany(DB, 'tracks', rows);
-      // Refresh LIB to get persistent Blob URLs
-      LIB = await idbGetAll(DB, 'tracks');
-      // Recreate blob URLs
-      for (const t of LIB) t.blobUrl = URL.createObjectURL(t.blob);
-      renderLibrary(searchEl.value);
-    }
-
-    // Request persistent storage when available (helps on iOS/iPadOS)
-    if (navigator.storage && navigator.storage.persist) {
-      try { await navigator.storage.persist(); } catch {}
-    }
-
-    // Kick off
-    loadLibrary();
-  </script>
-
-  <!-- Simple IndexedDB helper as an ES module (in a separate file) -->
-  <script type="module" src="/jagger-idb.js"></script>
 </body>
 </html>
