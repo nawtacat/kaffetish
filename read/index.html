@@ -553,21 +553,22 @@
     };
 
     const state = {
-        pdfDoc: null, totalPages: 0, currentPage: 1,
-        pagesHTML: [], isRendering: false,
-        currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-        mode: "light",
-        touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
-        lastSelectionText: "",
-        lastSelectionRange: null,
-        lastSelectionContext: "", // ✅ ADDED: To store the surrounding paragraph context
-        currentSessionId: null,
-        bookTitle: null,
-        bookId: null,
-        bookmark: null,
-        isExplanationViewActive: false,
-        cachedPageHTML: null,
-    };
+        pdfDoc: null, totalPages: 0, currentPage: 1,
+        pagesHTML: [], isRendering: false,
+        currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
+        mode: "light",
+        touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
+        lastSelectionText: "",
+        lastSelectionRange: null,
+        lastSelectionContext: "", // ✅ ADDED: To store the surrounding paragraph context
+        currentSessionId: null,
+        bookTitle: null,
+        bookId: null,
+        bookmark: null,
+        isExplanationViewActive: false,
+        cachedPageHTML: null,
+        lastScrollPosition: 0, // ✅ ADDED: To store scroll position
+    };
     const baseFontRem = 1.15;
 
     async function trackUserActivity() {
@@ -875,8 +876,9 @@
 
     // ✅ UPDATED: Enters the mobile immersive view
     function enterExplanationView(initialContent) {
-        state.isExplanationViewActive = true;
-        state.cachedPageHTML = DOM.pageContent.innerHTML;
+        state.lastScrollPosition = DOM.mainContent.scrollTop; // ✅ ADDED: Save current scroll position
+        state.isExplanationViewActive = true;
+        state.cachedPageHTML = DOM.pageContent.innerHTML;
         
         DOM.mobileActionBtn.classList.add('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
@@ -891,11 +893,13 @@
                     <div class="explanation-text">${initialContent}</div>
                 </div>
             `;
-            DOM.pageContent.innerHTML = explanationHTML;
-            setFontRem(state.currentFontRem); // Re-apply font size
-            DOM.pageContent.classList.remove('content-fading');
-            DOM.mainContent.scrollTop = 0;
-        }, 200);
+           setTimeout(() => {
+            DOM.pageContent.innerHTML = state.cachedPageHTML;
+            state.cachedPageHTML = null;
+            setFontRem(state.currentFontRem);
+            DOM.pageContent.classList.remove('content-fading');
+            DOM.mainContent.scrollTop = state.lastScrollPosition; // ✅ CHANGED: Restore scroll position
+        }, 200);
     }
 
     // ✅ NEW: Helper to update the content of the immersive view once AI responds
