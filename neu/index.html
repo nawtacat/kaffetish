@@ -488,7 +488,7 @@
         <span id="mobile-action-text">Explain</span>
     </button>
 
-    <script type="module">
+   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
@@ -498,7 +498,9 @@
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
     let app, auth, functions, explainBookTextFn, db;
-    let noiseAudio; // <--- ADDED
+    
+    // --- WEB AUDIO VARS ---
+    let noiseAudioContext, noiseBuffer, noiseSource, noiseGainNode;
 
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
@@ -554,8 +556,9 @@
         mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
         mobilePageJumpInput: document.getElementById('mobile-page-jump'),
         mobilePageTotal: document.getElementById('mobile-page-total'),
-        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'), // <--- ADDED
-        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),   // <--- ADDED
+        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'),
+        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),
+        desktopNoiseToggle: document.getElementById('btn-noise-toggle'), // Desktop button
         mobileActionBtn: document.getElementById('mobile-action-btn'),
         mobileActionIcon: document.getElementById('mobile-action-icon'),
         mobileActionText: document.getElementById('mobile-action-text'),
@@ -579,11 +582,12 @@
         isExplanationViewActive: false,
         cachedPageHTML: null,
         lastScrollPosition: 0,
-        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true', // <--- ADDED
-        noiseFadeInterval: null, // <--- ADDED
+        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
     };
     const baseFontRem = 1.15;
 
+    // ... (All functions from trackUserActivity to handleCopy remain the same) ...
+    
     async function trackUserActivity() {
         if (!auth.currentUser || !db) return;
         const userDocRef = doc(db, "users", auth.currentUser.uid);
@@ -979,66 +983,104 @@
         clearSelection();
     }
 
-    // --- NEW AUDIO FUNCTIONS START ---
-    function fadeInNoise(audio) {
-        if (state.noiseFadeInterval) clearInterval(state.noiseFadeInterval);
-        audio.volume = 0;
-        audio.play().catch(e => console.error("Audio play failed:", e));
+    // --- NEW WEB AUDIO API FUNCTIONS ---
+    
+    /**
+     * This function is the "engine" of the gapless loop.
+     * It plays the buffer once, and when it ends, it calls itself to play again.
+     */
+    function playNoise() {
+        // If the state was changed to "off", just stop.
+        if (!state.isNoisePlaying) return; 
 
-        const targetVolume = 1.0;
-        const fadeDuration = 2500; // 2.5 seconds
-        const tickRate = 50; // ms
-        const volumeStep = targetVolume / (fadeDuration / tickRate);
-
-        state.noiseFadeInterval = setInterval(() => {
-            let newVolume = audio.volume + volumeStep;
-            if (newVolume >= targetVolume) {
-                audio.volume = targetVolume;
-                clearInterval(state.noiseFadeInterval);
-                state.noiseFadeInterval = null;
-            } else {
-                audio.volume = newVolume;
-            }
-        }, tickRate);
+        noiseSource = noiseAudioContext.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.loop = false; // We are handling the loop manually
+        noiseSource.connect(noiseGainNode);
+        
+        // When this buffer finishes, call this function again to start the next one.
+        // This is the key to gapless playback.
+        noiseSource.onended = playNoise; 
+        
+        noiseSource.start(0);
     }
 
-    function fadeOutNoise(audio) {
-        if (state.noiseFadeInterval) clearInterval(state.noiseFadeInterval);
-        const startVolume = audio.volume;
-        const fadeDuration = 1000; // 1 second fade-out
-        const tickRate = 50;
-        const volumeStep = startVolume / (fadeDuration / tickRate);
-
-        if (startVolume === 0) {
-            audio.pause();
+    function setNoise(on) {
+        if (!noiseAudioContext || !noiseBuffer) {
+            // Audio isn't ready. Just set the state.
+            // setupAudio() will call setNoise(true) if it loads and state is true.
+            state.isNoisePlaying = on;
+            localStorage.setItem("kaffetishNoise", on);
             return;
         }
 
-        state.noiseFadeInterval = setInterval(() => {
-            let newVolume = audio.volume - volumeStep;
-            if (newVolume <= 0) {
-                audio.volume = 0;
-                audio.pause();
-                clearInterval(state.noiseFadeInterval);
-                state.noiseFadeInterval = null;
-            } else {
-                audio.volume = newVolume;
-            }
-        }, tickRate);
-    }
+        // Resume audio context on user gesture (required by browsers)
+        if (noiseAudioContext.state === 'suspended') {
+            noiseAudioContext.resume();
+        }
 
-    function toggleNoise() {
-        state.isNoisePlaying = !state.isNoisePlaying; // Toggle the state
-        localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
-        DOM.mobileNoiseToggle.classList.toggle('active', state.isNoisePlaying);
+        if (on) {
+            if (state.isNoisePlaying) return; // Already playing or starting
 
-        if (state.isNoisePlaying) {
-            fadeInNoise(noiseAudio);
+            state.isNoisePlaying = true;
+            localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
+
+            // Start the looping playback engine
+            playNoise(); 
+
+            // Ramp up volume
+            noiseGainNode.gain.setValueAtTime(noiseGainNode.gain.value, noiseAudioContext.currentTime);
+            noiseGainNode.gain.linearRampToValueAtTime(1.0, noiseAudioContext.currentTime + 2.5);
+
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
+
         } else {
-            fadeOutNoise(noiseAudio);
+            if (!state.isNoisePlaying) return; // Already stopping
+
+            state.isNoisePlaying = false;
+            localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
+
+            // Ramp down volume
+            noiseGainNode.gain.setValueAtTime(noiseGainNode.gain.value, noiseAudioContext.currentTime);
+            noiseGainNode.gain.linearRampToValueAtTime(0.0, noiseAudioContext.currentTime + 1.0);
+
+            // We don't need to manually stop the source.
+            // The `playNoise` function will check `state.isNoisePlaying` 
+            // when the current track ends and will simply not loop.
+            // The audio will stop naturally and gaplessly after the fade-out.
+
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.remove('active');
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.remove('active');
         }
     }
-    // --- NEW AUDIO FUNCTIONS END ---
+
+    async function setupAudio() {
+        try {
+            noiseAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            noiseGainNode = noiseAudioContext.createGain();
+            noiseGainNode.gain.value = 0; // Start silent
+            noiseGainNode.connect(noiseAudioContext.destination);
+
+            const response = await fetch('https://kaffetish.club/audio/BlackNoise.mp3');
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await noiseAudioContext.decodeAudioData(arrayBuffer);
+            
+            noiseBuffer = audioBuffer; // Save the decoded buffer
+
+            // Now that audio is loaded, check if it *should* be playing
+            if (state.isNoisePlaying) {
+                setNoise(true);
+            }
+        } catch (e) {
+            console.error("Web Audio API setup failed:", e);
+            // Disable the buttons if audio fails
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.style.display = 'none';
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.style.display = 'none';
+        }
+    }
+    // --- END NEW AUDIO FUNCTIONS ---
+
 
     function flashAI(msg, duration = 2000) {
         DOM.aiQuote.classList.add('hidden');
@@ -1075,7 +1117,14 @@
             if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
         });
 
-        DOM.mobileNoiseToggle.addEventListener("click", toggleNoise); // <--- ADDED
+        // --- Noise Listeners ---
+        if (DOM.mobileNoiseToggle) {
+            DOM.mobileNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
+        }
+        if (DOM.desktopNoiseToggle) {
+            DOM.desktopNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
+        }
+        // --- END ---
 
         DOM.mobileActionBtn.addEventListener("click", () => {
             if (state.isExplanationViewActive) {
@@ -1174,14 +1223,15 @@
         setMode(localStorage.getItem("kaffetishMode") || 'light');
         setFontRem(state.currentFontRem);
         
-        // --- NEW AUDIO INIT START ---
-        noiseAudio = new Audio('https://kaffetish.club/audio/BlackNoise.mp3');
-        noiseAudio.loop = true;
-
+        // --- NEW AUDIO INIT ---
+        // Set button visual state based on localStorage *before* audio loads
         if (state.isNoisePlaying) {
-            DOM.mobileNoiseToggle.classList.add('active');
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
         }
-        // --- NEW AUDIO INIT END ---
+        // Asynchronously load and prepare audio
+        setupAudio();
+        // --- END NEW AUDIO INIT ---
 
         setupEventListeners();
 
