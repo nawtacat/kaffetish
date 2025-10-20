@@ -368,12 +368,6 @@
         display: block;
         min-height: 40px;
     }
-       .menu-button.active i {
-        color: var(--accent);
-    }
-       .reader-controls button.active {
-        color: var(--accent);
-    }
 </style>
 </head>
 <body>
@@ -392,14 +386,12 @@
                     <button id="next-page" title="Next Page (→)"><i class="fa-solid fa-arrow-right"></i></button>
                 </div>
                 <div class="control-group settings">
-                    <button id="btn-bookmark-page" title="Bookmark this page" class="hidden"><i class="fa-solid fa-bookmark"></i></button>
-                    <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
-                    <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
-                    
-                                        <button id="btn-noise-toggle" title="Toggle Black Noise"><i class="fa-solid fa-wave-square"></i></button>
-                                        <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
-                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
-                </div>
+                    <button id="btn-bookmark-page" title="Bookmark this page" class="hidden"><i class="fa-solid fa-bookmark"></i></button>
+                    <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
+                    <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
+                    <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
+                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
+                </div>
             </div>
             <button id="mobile-menu-toggle" class="mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
         </div>
@@ -445,10 +437,6 @@
                 <span>Toggle Theme</span>
             </button>
         </div>
-        <button id="mobile-noise-toggle" class="menu-button">
-                <i id="mobile-noise-icon" class="fa-solid fa-wave-square"></i>
-                <span>Black Noise</span>
-            </button>
         <hr class="menu-divider" />
         <div class="menu-section">
             <h4 class="menu-section-title">Go to Page</h4>
@@ -493,7 +481,7 @@
         <span id="mobile-action-text">Explain</span>
     </button>
 
-    <script type="module">
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
@@ -501,11 +489,6 @@
 
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
-
-    let app, auth, functions, explainBookTextFn, db;
-    
-    // --- NEW WEB AUDIO VARS ---
-    let noiseAudioContext, noiseBuffer, noiseSource, noiseGainNode;
 
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
@@ -516,6 +499,7 @@
         appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
     };
 
+    let app, auth, functions, explainBookTextFn, db;
     if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
@@ -561,9 +545,6 @@
         mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
         mobilePageJumpInput: document.getElementById('mobile-page-jump'),
         mobilePageTotal: document.getElementById('mobile-page-total'),
-        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'),
-        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),
-        desktopNoiseToggle: document.getElementById('btn-noise-toggle'), // <--- DESKTOP BUTTON
         mobileActionBtn: document.getElementById('mobile-action-btn'),
         mobileActionIcon: document.getElementById('mobile-action-icon'),
         mobileActionText: document.getElementById('mobile-action-text'),
@@ -579,16 +560,14 @@
         touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
         lastSelectionText: "",
         lastSelectionRange: null,
-        lastSelectionContext: "",
+        lastSelectionContext: "", // ✅ ADDED: To store the surrounding paragraph context
         currentSessionId: null,
         bookTitle: null,
         bookId: null,
         bookmark: null,
         isExplanationViewActive: false,
         cachedPageHTML: null,
-        lastScrollPosition: 0,
-        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
-        // --- REMOVED old noise state ---
+        lastScrollPosition: 0, // Add this line to store the scroll position
     };
     const baseFontRem = 1.15;
 
@@ -833,6 +812,7 @@
         }
     }
 
+    // ✅ UPDATED: Handles both desktop and mobile explanation flows
     async function handleExplain() {
         const textToExplain = state.lastSelectionText;
         const contextText = state.lastSelectionContext;
@@ -845,8 +825,9 @@
         clearSelection();
         await trackExplanationRequest(textToExplain);
 
+        // Show a loading state in the appropriate UI
         if (isTouchDevice) {
-            enterExplanationView('<div class="spinner"></div>');
+            enterExplanationView('<div class="spinner"></div>'); // Show spinner immediately
         } else {
             DOM.aiQuote.textContent = `"${textToExplain}"`;
             DOM.aiQuote.classList.remove('hidden');
@@ -875,6 +856,7 @@
                 formattedExplanation += '</ul>';
             }
 
+            // Update the UI with the final formatted explanation
             if (isTouchDevice) {
                 updateExplanationView(formattedExplanation);
             } else {
@@ -892,10 +874,11 @@
         }
     }
 
+    // ✅ UPDATED: Enters the mobile immersive view
     function enterExplanationView(initialContent) {
-        state.isExplanationViewActive = true;
-        state.lastScrollPosition = DOM.mainContent.scrollTop;
-        state.cachedPageHTML = DOM.pageContent.innerHTML;    
+        state.isExplanationViewActive = true;
+        state.lastScrollPosition = DOM.mainContent.scrollTop; // Save current scroll position
+        state.cachedPageHTML = DOM.pageContent.innerHTML;    
         DOM.mobileActionBtn.classList.add('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
         DOM.mobileActionText.textContent = 'Return';
@@ -910,12 +893,13 @@
                 </div>
             `;
             DOM.pageContent.innerHTML = explanationHTML;
-            setFontRem(state.currentFontRem);
+            setFontRem(state.currentFontRem); // Re-apply font size
             DOM.pageContent.classList.remove('content-fading');
             DOM.mainContent.scrollTop = 0;
         }, 200);
     }
 
+    // ✅ NEW: Helper to update the content of the immersive view once AI responds
     function updateExplanationView(finalContent) {
         const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
         if (explanationTextElement) {
@@ -923,6 +907,7 @@
         }
     }
     
+    // ✅ UPDATED: Returns from the mobile immersive view
     function returnToBookView() {
         if (!state.isExplanationViewActive) return;
         state.isExplanationViewActive = false;
@@ -930,12 +915,12 @@
         DOM.pageContent.classList.add('content-fading');
         
         setTimeout(() => {
-            DOM.pageContent.innerHTML = state.cachedPageHTML;
-            state.cachedPageHTML = null;
-            setFontRem(state.currentFontRem);
-            DOM.pageContent.classList.remove('content-fading');
-            DOM.mainContent.scrollTop = state.lastScrollPosition;
-        }, 200);
+            DOM.pageContent.innerHTML = state.cachedPageHTML;
+            state.cachedPageHTML = null;
+            setFontRem(state.currentFontRem);
+            DOM.pageContent.classList.remove('content-fading');
+            DOM.mainContent.scrollTop = state.lastScrollPosition; // Restore the saved scroll position
+        }, 200);
         
         DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
@@ -987,91 +972,6 @@
         clearSelection();
     }
 
-    // --- NEW WEB AUDIO API FUNCTIONS ---
-
-    function setNoise(on) {
-        if (!noiseAudioContext || !noiseBuffer) {
-            // Audio context or buffer isn't ready,
-            // just set the state and the initApp function will handle it when it loads.
-            state.isNoisePlaying = on;
-            localStorage.setItem("kaffetishNoise", on);
-            return;
-        }
-
-        // Resume audio context on user gesture (required by browsers)
-        if (noiseAudioContext.state === 'suspended') {
-            noiseAudioContext.resume();
-        }
-
-        if (on) {
-            state.isNoisePlaying = true;
-            localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
-
-            // Create a new source node (they are one-time use)
-            noiseSource = noiseAudioContext.createBufferSource();
-            noiseSource.buffer = noiseBuffer;
-            noiseSource.loop = true; // This loop is gapless
-            noiseSource.connect(noiseGainNode);
-            noiseSource.start(0);
-
-            // Set current gain and ramp up to 1 (full volume) over 2.5 seconds
-            noiseGainNode.gain.setValueAtTime(noiseGainNode.gain.value, noiseAudioContext.currentTime);
-            noiseGainNode.gain.linearRampToValueAtTime(1.0, noiseAudioContext.currentTime + 2.5);
-
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
-
-        } else {
-            state.isNoisePlaying = false;
-            localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
-
-            // Set current gain and ramp down to 0 over 1 second
-            noiseGainNode.gain.setValueAtTime(noiseGainNode.gain.value, noiseAudioContext.currentTime);
-            noiseGainNode.gain.linearRampToValueAtTime(0.0, noiseAudioContext.currentTime + 1.0);
-
-            // Stop the source *after* the fade-out is complete
-            if (noiseSource) {
-                // Use a separate `source` variable in the timeout to avoid closure issues
-                // if the user quickly toggles on/off
-                const oldSource = noiseSource;
-                setTimeout(() => {
-                    oldSource.stop(0);
-                }, 1000);
-                noiseSource = null;
-            }
-
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.remove('active');
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.remove('active');
-        }
-    }
-
-    async function setupAudio() {
-        try {
-            noiseAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-            noiseGainNode = noiseAudioContext.createGain();
-            noiseGainNode.gain.value = 0; // Start silent
-            noiseGainNode.connect(noiseAudioContext.destination);
-
-            const response = await fetch('https://kaffetish.club/audio/BlackNoise.mp3');
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await noiseAudioContext.decodeAudioData(arrayBuffer);
-            
-            noiseBuffer = audioBuffer; // Save the decoded buffer
-
-            // Now that audio is loaded, check if it *should* be playing
-            if (state.isNoisePlaying) {
-                setNoise(true);
-            }
-        } catch (e) {
-            console.error("Web Audio API setup failed:", e);
-            // Disable the buttons if audio fails
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.style.display = 'none';
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.style.display = 'none';
-        }
-    }
-    // --- END NEW AUDIO FUNCTIONS ---
-
-
     function flashAI(msg, duration = 2000) {
         DOM.aiQuote.classList.add('hidden');
         DOM.aiPanel.style.display = "flex";
@@ -1107,15 +1007,6 @@
             if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
         });
 
-        // --- MODIFIED: Noise Listeners ---
-        if (DOM.mobileNoiseToggle) {
-            DOM.mobileNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
-        }
-        if (DOM.desktopNoiseToggle) {
-            DOM.desktopNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
-        }
-        // --- END MODIFICATION ---
-
         DOM.mobileActionBtn.addEventListener("click", () => {
             if (state.isExplanationViewActive) {
                 returnToBookView();
@@ -1137,6 +1028,7 @@
         if (isTouchDevice) { setupSwipeNavigation(); }
     }
     
+    // ✅ UPDATED: Handles selection and context gathering
     function setupSelectionHandler() {
         const contentArea = DOM.pageContent;
 
@@ -1212,17 +1104,6 @@
     function initApp() {
         setMode(localStorage.getItem("kaffetishMode") || 'light');
         setFontRem(state.currentFontRem);
-        
-        // --- NEW AUDIO INIT ---
-        // Set button visual state based on localStorage *before* audio loads
-        if (state.isNoisePlaying) {
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
-        }
-        // Asynchronously load and prepare audio
-        setupAudio();
-        // --- END NEW AUDIO INIT ---
-
         setupEventListeners();
 
         const params = new URLSearchParams(window.location.search);
