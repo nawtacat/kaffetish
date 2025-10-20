@@ -589,6 +589,7 @@
         isExplanationViewActive: false,
         cachedPageHTML: null,
         lastScrollPosition: 0,
+        isNoiseFading: false, // <-- ADD THIS LINE
         isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
     };
     const baseFontRem = 1.15;
@@ -1044,62 +1045,93 @@
     }
 
     function setNoise(on) {
-        if (!noiseAudioContext || !noiseBuffer) {
-            // Audio isn't ready. Just set the state.
-            state.isNoisePlaying = on;
-            localStorage.setItem("kaffetishNoise", on);
-            return;
-        }
+        // --- NEW ---
+        // If we are already in the middle of a fade, ignore this request.
+        if (state.isNoiseFading) {
+            console.log("Audio is already fading, request ignored.");
+            return;
+        }
+        // --- END NEW ---
 
-        // Resume audio context on user gesture (required by browsers)
-        if (noiseAudioContext.state === 'suspended') {
-            noiseAudioContext.resume();
-        }
+        if (!noiseAudioContext || !noiseBuffer) {
+            // Audio isn't ready. Just set the state.
+            state.isNoisePlaying = on;
+            localStorage.setItem("kaffetishNoise", on);
+            return;
+        }
 
-        if (on) {
-            if (state.isNoisePlaying) return; // Already playing
-            state.isNoisePlaying = true;
-            localStorage.setItem("kaffetishNoise", true);
+        // Resume audio context on user gesture (required by browsers)
+        if (noiseAudioContext.state === 'suspended') {
+            noiseAudioContext.resume();
+        }
 
-            // Set master gain and ramp up
-            masterGainNode.gain.cancelScheduledValues(noiseAudioContext.currentTime);
-            masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
-            masterGainNode.gain.linearRampToValueAtTime(1.0, noiseAudioContext.currentTime + 2.5);
+        if (on) {
+            if (state.isNoisePlaying) return; // Already playing
 
-            // Start the looping engine
-            nextLoopStartTime = noiseAudioContext.currentTime;
-            loopScheduler();
+            // --- NEW ---
+            state.isNoiseFading = true; // Lock the button
+            // --- END NEW ---
 
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
+            state.isNoisePlaying = true;
+            localStorage.setItem("kaffetishNoise", true);
 
-        } else {
-            if (!state.isNoisePlaying) return; // Already stopped
-            state.isNoisePlaying = false;
-            localStorage.setItem("kaffetishNoise", false);
+            // Set master gain and ramp up
+            masterGainNode.gain.cancelScheduledValues(noiseAudioContext.currentTime);
+            masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
+            masterGainNode.gain.linearRampToValueAtTime(1.0, noiseAudioContext.currentTime + 2.5);
 
-            // Set master gain and ramp down
-            masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
-            masterGainNode.gain.linearRampToValueAtTime(0.0, noiseAudioContext.currentTime + 1.0);
+            // Start the looping engine
+            nextLoopStartTime = noiseAudioContext.currentTime;
+            loopScheduler();
 
-            // Stop the loop scheduler
-            if (loopSchedulerTimer) {
-                clearTimeout(loopSchedulerTimer);
-                loopSchedulerTimer = null;
-            }
-            
-            // Stop any currently playing sources
-            // Stop any currently playing sources
-            if (source1) source1.stop(0);
-            if (source2) source2.stop(0);
-            source1 = null;
-            source2 = null;
+            // --- NEW ---
+            // Set the fading flag to false *after* the fade is complete.
+            setTimeout(() => {
+                state.isNoiseFading = false;
+            }, 2500); // Match the 2.5s fade-in
+            // --- END NEW ---
 
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.remove('active');
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.remove('active');
-        }
-    }
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
 
+        } else {
+            if (!state.isNoisePlaying) return; // Already stopped
+
+            // --- NEW ---
+            state.isNoiseFading = true; // Lock the button
+            // --- END NEW ---
+
+            state.isNoisePlaying = false;
+            localStorage.setItem("kaffetishNoise", false);
+
+            // Set master gain and ramp down
+            masterGainNode.gain.cancelScheduledValues(noiseAudioContext.currentTime);
+            masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
+            masterGainNode.gain.linearRampToValueAtTime(0.0, noiseAudioContext.currentTime + 1.0);
+
+            // Stop the loop scheduler
+            if (loopSchedulerTimer) {
+                clearTimeout(loopSchedulerTimer);
+                loopSchedulerTimer = null;
+            }
+            
+            // Stop any currently playing sources (your original code is now safe!)
+            if (source1) source1.stop(noiseAudioContext.currentTime + 1.0);
+            if (source2) source2.stop(noiseAudioContext.currentTime + 1.0);
+            source1 = null;
+            source2 = null;
+
+            // --- NEW ---
+            // Set the fading flag to false *after* the fade is complete.
+            setTimeout(() => {
+                state.isNoiseFading = false;
+            }, 1000); // Match the 1.0s fade-out
+            // --- END NEW ---
+
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.remove('active');
+           if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.remove('active');
+        }
+    }
     async function setupAudio() {
         try {
             noiseAudioContext = new (window.AudioContext || window.webkitAudioContext)();
