@@ -567,6 +567,7 @@
         bookmark: null,
         isExplanationViewActive: false,
         cachedPageHTML: null,
+        lastScrollPosition: 0, // Add this line to store the scroll position
     };
     const baseFontRem = 1.15;
 
@@ -875,9 +876,9 @@
 
     // ✅ UPDATED: Enters the mobile immersive view
     function enterExplanationView(initialContent) {
-        state.isExplanationViewActive = true;
-        state.cachedPageHTML = DOM.pageContent.innerHTML;
-        
+        state.isExplanationViewActive = true;
+        state.lastScrollPosition = DOM.mainContent.scrollTop; // Save current scroll position
+        state.cachedPageHTML = DOM.pageContent.innerHTML;    
         DOM.mobileActionBtn.classList.add('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
         DOM.mobileActionText.textContent = 'Return';
@@ -914,12 +915,12 @@
         DOM.pageContent.classList.add('content-fading');
         
         setTimeout(() => {
-            DOM.pageContent.innerHTML = state.cachedPageHTML;
-            state.cachedPageHTML = null;
-            setFontRem(state.currentFontRem);
-            DOM.pageContent.classList.remove('content-fading');
-            DOM.mainContent.scrollTop = 0;
-        }, 200);
+            DOM.pageContent.innerHTML = state.cachedPageHTML;
+            state.cachedPageHTML = null;
+            setFontRem(state.currentFontRem);
+            DOM.pageContent.classList.remove('content-fading');
+            DOM.mainContent.scrollTop = state.lastScrollPosition; // Restore the saved scroll position
+        }, 200);
         
         DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
