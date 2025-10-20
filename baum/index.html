@@ -490,6 +490,9 @@
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
+    let app, auth, functions, explainBookTextFn, db;
+    let noiseAudio; // <--- ADDED
+
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
         authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -499,7 +502,6 @@
         appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
     };
 
-    let app, auth, functions, explainBookTextFn, db;
     if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
@@ -545,6 +547,8 @@
         mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
         mobilePageJumpInput: document.getElementById('mobile-page-jump'),
         mobilePageTotal: document.getElementById('mobile-page-total'),
+        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'), // <--- ADDED
+        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),   // <--- ADDED
         mobileActionBtn: document.getElementById('mobile-action-btn'),
         mobileActionIcon: document.getElementById('mobile-action-icon'),
         mobileActionText: document.getElementById('mobile-action-text'),
@@ -560,14 +564,16 @@
         touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
         lastSelectionText: "",
         lastSelectionRange: null,
-        lastSelectionContext: "", // ✅ ADDED: To store the surrounding paragraph context
+        lastSelectionContext: "",
         currentSessionId: null,
         bookTitle: null,
         bookId: null,
         bookmark: null,
         isExplanationViewActive: false,
         cachedPageHTML: null,
-        lastScrollPosition: 0, // Add this line to store the scroll position
+        lastScrollPosition: 0,
+        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true', // <--- ADDED
+        noiseFadeInterval: null, // <--- ADDED
     };
     const baseFontRem = 1.15;
 
@@ -812,7 +818,6 @@
         }
     }
 
-    // ✅ UPDATED: Handles both desktop and mobile explanation flows
     async function handleExplain() {
         const textToExplain = state.lastSelectionText;
         const contextText = state.lastSelectionContext;
@@ -825,9 +830,8 @@
         clearSelection();
         await trackExplanationRequest(textToExplain);
 
-        // Show a loading state in the appropriate UI
         if (isTouchDevice) {
-            enterExplanationView('<div class="spinner"></div>'); // Show spinner immediately
+            enterExplanationView('<div class="spinner"></div>');
         } else {
             DOM.aiQuote.textContent = `"${textToExplain}"`;
             DOM.aiQuote.classList.remove('hidden');
@@ -856,7 +860,6 @@
                 formattedExplanation += '</ul>';
             }
 
-            // Update the UI with the final formatted explanation
             if (isTouchDevice) {
                 updateExplanationView(formattedExplanation);
             } else {
@@ -874,11 +877,10 @@
         }
     }
 
-    // ✅ UPDATED: Enters the mobile immersive view
     function enterExplanationView(initialContent) {
-        state.isExplanationViewActive = true;
-        state.lastScrollPosition = DOM.mainContent.scrollTop; // Save current scroll position
-        state.cachedPageHTML = DOM.pageContent.innerHTML;    
+        state.isExplanationViewActive = true;
+        state.lastScrollPosition = DOM.mainContent.scrollTop;
+        state.cachedPageHTML = DOM.pageContent.innerHTML;    
         DOM.mobileActionBtn.classList.add('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
         DOM.mobileActionText.textContent = 'Return';
@@ -893,13 +895,12 @@
                 </div>
             `;
             DOM.pageContent.innerHTML = explanationHTML;
-            setFontRem(state.currentFontRem); // Re-apply font size
+            setFontRem(state.currentFontRem);
             DOM.pageContent.classList.remove('content-fading');
             DOM.mainContent.scrollTop = 0;
         }, 200);
     }
 
-    // ✅ NEW: Helper to update the content of the immersive view once AI responds
     function updateExplanationView(finalContent) {
         const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
         if (explanationTextElement) {
@@ -907,7 +908,6 @@
         }
     }
     
-    // ✅ UPDATED: Returns from the mobile immersive view
     function returnToBookView() {
         if (!state.isExplanationViewActive) return;
         state.isExplanationViewActive = false;
@@ -915,12 +915,12 @@
         DOM.pageContent.classList.add('content-fading');
         
         setTimeout(() => {
-            DOM.pageContent.innerHTML = state.cachedPageHTML;
-            state.cachedPageHTML = null;
-            setFontRem(state.currentFontRem);
-            DOM.pageContent.classList.remove('content-fading');
-            DOM.mainContent.scrollTop = state.lastScrollPosition; // Restore the saved scroll position
-        }, 200);
+            DOM.pageContent.innerHTML = state.cachedPageHTML;
+            state.cachedPageHTML = null;
+            setFontRem(state.currentFontRem);
+            DOM.pageContent.classList.remove('content-fading');
+            DOM.mainContent.scrollTop = state.lastScrollPosition;
+        }, 200);
         
         DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
         DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
@@ -972,6 +972,67 @@
         clearSelection();
     }
 
+    // --- NEW AUDIO FUNCTIONS START ---
+    function fadeInNoise(audio) {
+        if (state.noiseFadeInterval) clearInterval(state.noiseFadeInterval);
+        audio.volume = 0;
+        audio.play().catch(e => console.error("Audio play failed:", e));
+
+        const targetVolume = 1.0;
+        const fadeDuration = 2500; // 2.5 seconds
+        const tickRate = 50; // ms
+        const volumeStep = targetVolume / (fadeDuration / tickRate);
+
+        state.noiseFadeInterval = setInterval(() => {
+            let newVolume = audio.volume + volumeStep;
+            if (newVolume >= targetVolume) {
+                audio.volume = targetVolume;
+                clearInterval(state.noiseFadeInterval);
+                state.noiseFadeInterval = null;
+            } else {
+                audio.volume = newVolume;
+            }
+        }, tickRate);
+    }
+
+    function fadeOutNoise(audio) {
+        if (state.noiseFadeInterval) clearInterval(state.noiseFadeInterval);
+        const startVolume = audio.volume;
+        const fadeDuration = 1000; // 1 second fade-out
+        const tickRate = 50;
+        const volumeStep = startVolume / (fadeDuration / tickRate);
+
+        if (startVolume === 0) {
+            audio.pause();
+            return;
+        }
+
+        state.noiseFadeInterval = setInterval(() => {
+            let newVolume = audio.volume - volumeStep;
+            if (newVolume <= 0) {
+                audio.volume = 0;
+                audio.pause();
+                clearInterval(state.noiseFadeInterval);
+                state.noiseFadeInterval = null;
+            } else {
+                audio.volume = newVolume;
+            }
+        }, tickRate);
+    }
+
+    function toggleNoise() {
+        state.isNoisePlaying = !state.isNoisePlaying; // Toggle the state
+        localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
+        DOM.mobileNoiseToggle.classList.toggle('active', state.isNoisePlaying);
+
+        if (state.isNoisePlaying) {
+            fadeInNoise(noiseAudio);
+        } else {
+            fadeOutNoise(noiseAudio);
+        }
+    }
+    // --- NEW AUDIO FUNCTIONS END ---
+
     function flashAI(msg, duration = 2000) {
         DOM.aiQuote.classList.add('hidden');
         DOM.aiPanel.style.display = "flex";
@@ -1007,6 +1068,8 @@
             if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
         });
 
+        DOM.mobileNoiseToggle.addEventListener("click", toggleNoise); // <--- ADDED
+
         DOM.mobileActionBtn.addEventListener("click", () => {
             if (state.isExplanationViewActive) {
                 returnToBookView();
@@ -1028,7 +1091,6 @@
         if (isTouchDevice) { setupSwipeNavigation(); }
     }
     
-    // ✅ UPDATED: Handles selection and context gathering
     function setupSelectionHandler() {
         const contentArea = DOM.pageContent;
 
@@ -1104,6 +1166,16 @@
     function initApp() {
         setMode(localStorage.getItem("kaffetishMode") || 'light');
         setFontRem(state.currentFontRem);
+        
+        // --- NEW AUDIO INIT START ---
+        noiseAudio = new Audio('https://kaffetish.club/audio/BlackNoise.mp3');
+        noiseAudio.loop = true;
+
+        if (state.isNoisePlaying) {
+            DOM.mobileNoiseToggle.classList.add('active');
+        }
+        // --- NEW AUDIO INIT END ---
+
         setupEventListeners();
 
         const params = new URLSearchParams(window.location.search);
