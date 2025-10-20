@@ -489,570 +489,575 @@
     </button>
 
    <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
-    import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
+    import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    document.documentElement.classList.toggle('touch-device', isTouchDevice);
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
-    let app, auth, functions, explainBookTextFn, db;
-    
-    // --- NEW WEB AUDIO VARS ---
-    let noiseAudioContext, noiseBuffer;
-    let masterGainNode; // For master fade-in/out
-    let loopGainNode1, loopGainNode2; // For cross-fading
-    let source1, source2;
-    let loopSchedulerTimer = null;
-    let nextLoopStartTime = 0;
-    const crossFadeTime = 0.05; // 50ms cross-fade, you can tune this
-    // --- END NEW VARS ---
+    let app, auth, functions, explainBookTextFn, db;
+    
+    // --- NEW WEB AUDIO VARS ---
+    let noiseAudioContext, noiseBuffer;
+    let masterGainNode; // For master fade-in/out
+    let loopGainNode1, loopGainNode2; // For cross-fading
+    let source1, source2; // Kept for compatibility, but not relied upon for stopping
+    let activeNoiseSources = []; // <-- ADDED: Robust tracking of all sources
+    let loopSchedulerTimer = null;
+    let nextLoopStartTime = 0;
+    const crossFadeTime = 0.05; // 50ms cross-fade, you can tune this
+    // --- END NEW VARS ---
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-        authDomain: "physmathacademy-722b3.firebaseapp.com",
-        projectId: "physmathacademy-722b3",
-        storageBucket: "physmathacademy-722b3.appspot.com",
-        messagingSenderId: "1093640992262",
-        appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
-    };
+    const firebaseConfig = {
+        apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+        authDomain: "physmathacademy-722b3.firebaseapp.com",
+        projectId: "physmathacademy-722b3",
+        storageBucket: "physmathacademy-722b3.appspot.com",
+        messagingSenderId: "1093640992262",
+        appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+    };
 
-    if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        functions = getFunctions(app, "us-central1");
-        db = getFirestore(app);
-        explainBookTextFn = httpsCallable(functions, "explainBookText");
-    } else {
-        console.warn("Firebase config is missing or incomplete. AI and bookmark features will be disabled.");
-    }
+    if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        functions = getFunctions(app, "us-central1");
+        db = getFirestore(app);
+        explainBookTextFn = httpsCallable(functions, "explainBookText");
+    } else {
+        console.warn("Firebase config is missing or incomplete. AI and bookmark features will be disabled.");
+    }
 
-    const DOM = {
-        body: document.body, header: document.getElementById('app-header'),
-        mainContent: document.getElementById('main-content'),
-        readerControls: document.getElementById('reader-controls'),
-        fallbackView: document.getElementById('fallback-view'),
-        fallbackText: document.getElementById('fallback-text'),
-        readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
-        loadingText: document.getElementById('loading-text'),
-        pageContainer: document.getElementById('page-container'),
-        pageContent: document.getElementById('page-content'),
-        pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
-        pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
-        prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
-        modeToggle: document.getElementById('mode-toggle'),
-        modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
-        fontDec: document.getElementById('font-decrease'),
-        tooltip: document.getElementById('selection-tooltip'),
-        tooltipExplain: document.getElementById('btn-explain'),
-        tooltipHighlight: document.getElementById('btn-highlight'),
-        tooltipCopy: document.getElementById('btn-copy'),
-        aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
-        aiQuote: document.getElementById('ai-quote'),
-        aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
-        mobilePageIndicator: document.getElementById('mobile-page-indicator'),
-        mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
-        mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
-        mobileNavMenu: document.getElementById('mobile-nav-menu'),
-        mobileMenuClose: document.getElementById('mobile-menu-close'),
-        mobileModeToggle: document.getElementById('mobile-mode-toggle'),
-        mobileModeIcon: document.getElementById('mobile-mode-icon'),
-        mobileFontInc: document.getElementById('mobile-font-increase'),
-        mobileFontDec: document.getElementById('mobile-font-decrease'),
-        mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
-        mobilePageJumpInput: document.getElementById('mobile-page-jump'),
-        mobilePageTotal: document.getElementById('mobile-page-total'),
-        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'),
-        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),
-        desktopNoiseToggle: document.getElementById('btn-noise-toggle'),
-        mobileActionBtn: document.getElementById('mobile-action-btn'),
-        mobileActionIcon: document.getElementById('mobile-action-icon'),
-        mobileActionText: document.getElementById('mobile-action-text'),
-        bookmarkPageBtn: document.getElementById('btn-bookmark-page'),
-        mobileBookmarkPageBtn: document.getElementById('mobile-btn-bookmark-page'),
-    };
+    const DOM = {
+        body: document.body, header: document.getElementById('app-header'),
+        mainContent: document.getElementById('main-content'),
+        readerControls: document.getElementById('reader-controls'),
+        fallbackView: document.getElementById('fallback-view'),
+        fallbackText: document.getElementById('fallback-text'),
+        readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
+        loadingText: document.getElementById('loading-text'),
+        pageContainer: document.getElementById('page-container'),
+        pageContent: document.getElementById('page-content'),
+        pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
+        pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
+        prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
+        modeToggle: document.getElementById('mode-toggle'),
+        modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
+        fontDec: document.getElementById('font-decrease'),
+        tooltip: document.getElementById('selection-tooltip'),
+        tooltipExplain: document.getElementById('btn-explain'),
+        tooltipHighlight: document.getElementById('btn-highlight'),
+        tooltipCopy: document.getElementById('btn-copy'),
+        aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
+        aiQuote: document.getElementById('ai-quote'),
+        aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
+        mobilePageIndicator: document.getElementById('mobile-page-indicator'),
+        mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+        mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
+        mobileNavMenu: document.getElementById('mobile-nav-menu'),
+        mobileMenuClose: document.getElementById('mobile-menu-close'),
+        mobileModeToggle: document.getElementById('mobile-mode-toggle'),
+        mobileModeIcon: document.getElementById('mobile-mode-icon'),
+        mobileFontInc: document.getElementById('mobile-font-increase'),
+        mobileFontDec: document.getElementById('mobile-font-decrease'),
+        mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
+        mobilePageJumpInput: document.getElementById('mobile-page-jump'),
+        mobilePageTotal: document.getElementById('mobile-page-total'),
+        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'),
+        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),
+        desktopNoiseToggle: document.getElementById('btn-noise-toggle'),
+        mobileActionBtn: document.getElementById('mobile-action-btn'),
+        mobileActionIcon: document.getElementById('mobile-action-icon'),
+        mobileActionText: document.getElementById('mobile-action-text'),
+        bookmarkPageBtn: document.getElementById('btn-bookmark-page'),
+        mobileBookmarkPageBtn: document.getElementById('mobile-btn-bookmark-page'),
+    };
 
-    const state = {
-        pdfDoc: null, totalPages: 0, currentPage: 1,
-        pagesHTML: [], isRendering: false,
-        currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
-        mode: "light",
-        touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
-        lastSelectionText: "",
-        lastSelectionRange: null,
-        lastSelectionContext: "",
-        currentSessionId: null,
-        bookTitle: null,
-        bookId: null,
-        bookmark: null,
-        isExplanationViewActive: false,
-        cachedPageHTML: null,
-        lastScrollPosition: 0,
-        isNoiseFading: false, // <-- ADD THIS LINE
-        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
-    };
-    const baseFontRem = 1.15;
+    const state = {
+        pdfDoc: null, totalPages: 0, currentPage: 1,
+        pagesHTML: [], isRendering: false,
+        currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
+        mode: "light",
+        touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
+        lastSelectionText: "",
+        lastSelectionRange: null,
+        lastSelectionContext: "",
+        currentSessionId: null,
+        bookTitle: null,
+        bookId: null,
+        bookmark: null,
+        isExplanationViewActive: false,
+        cachedPageHTML: null,
+        lastScrollPosition: 0,
+        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
+    };
+    const baseFontRem = 1.15;
 
-    // ... (All functions from trackUserActivity to handleCopy remain the same) ...
-    
-    async function trackUserActivity() {
-        if (!auth.currentUser || !db) return;
-        const userDocRef = doc(db, "users", auth.currentUser.uid);
-        try {
-            await setDoc(userDocRef, { lastSeen: serverTimestamp(), createdAt: serverTimestamp() }, { merge: true });
-        } catch (e) { console.error("Error tracking user activity:", e); }
-    }
+    // ... (All functions from trackUserActivity to handleCopy remain the same) ...
+    
+    async function trackUserActivity() {
+        if (!auth.currentUser || !db) return;
+        const userDocRef = doc(db, "users", auth.currentUser.uid);
+        try {
+            await setDoc(userDocRef, { lastSeen: serverTimestamp(), createdAt: serverTimestamp() }, { merge: true });
+        } catch (e) { console.error("Error tracking user activity:", e); }
+    }
 
-    async function startReadingSession(bookTitle) {
-        if (!auth.currentUser || !db || state.currentSessionId) return;
-        state.bookTitle = bookTitle;
-        const sessionsColRef = collection(db, "reading_sessions");
-        try {
-            const sessionDocRef = await addDoc(sessionsColRef, {
-                userId: auth.currentUser.uid,
-                bookTitle: bookTitle,
-                startTime: serverTimestamp(),
-                endTime: null
-            });
-            state.currentSessionId = sessionDocRef.id;
-        } catch (e) { console.error("Error starting session:", e); }
-    }
+    async function startReadingSession(bookTitle) {
+        if (!auth.currentUser || !db || state.currentSessionId) return;
+        state.bookTitle = bookTitle;
+        const sessionsColRef = collection(db, "reading_sessions");
+        try {
+            const sessionDocRef = await addDoc(sessionsColRef, {
+                userId: auth.currentUser.uid,
+                bookTitle: bookTitle,
+                startTime: serverTimestamp(),
+                endTime: null
+            });
+            state.currentSessionId = sessionDocRef.id;
+        } catch (e) { console.error("Error starting session:", e); }
+    }
 
-    async function endReadingSession() {
-        if (!state.currentSessionId || !db) return;
-        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
-        try {
-            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
-            state.currentSessionId = null;
-        } catch (e) { console.error("Error ending session:", e); }
-    }
+    async function endReadingSession() {
+        if (!state.currentSessionId || !db) return;
+        const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+        try {
+            await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+            state.currentSessionId = null;
+        } catch (e) { console.error("Error ending session:", e); }
+    }
 
-    async function trackExplanationRequest(text) {
-        if (!auth.currentUser || !db) return;
-        const explanationsColRef = collection(db, "explanation_requests");
-        try {
-            await addDoc(explanationsColRef, {
-                userId: auth.currentUser.uid,
-                bookTitle: state.bookTitle,
-                requestedText: text,
-                timestamp: serverTimestamp()
-            });
-        } catch (e) { console.error("Error tracking explanation:", e); }
-    }
+    async function trackExplanationRequest(text) {
+        if (!auth.currentUser || !db) return;
+        const explanationsColRef = collection(db, "explanation_requests");
+        try {
+            await addDoc(explanationsColRef, {
+                userId: auth.currentUser.uid,
+                bookTitle: state.bookTitle,
+                requestedText: text,
+                timestamp: serverTimestamp()
+            });
+        } catch (e) { console.error("Error tracking explanation:", e); }
+    }
 
-    const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+    const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
-    function setMode(mode) {
-        state.mode = mode;
-        DOM.body.classList.toggle("dark-mode", mode === 'dark');
-        const isDark = mode === 'dark';
-        [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
-            if (icon) {
-                icon.classList.toggle('fa-moon', !isDark);
-                icon.classList.toggle('fa-sun', isDark);
-            }
-        });
-        localStorage.setItem("kaffetishMode", mode);
-    }
+    function setMode(mode) {
+        state.mode = mode;
+        DOM.body.classList.toggle("dark-mode", mode === 'dark');
+        const isDark = mode === 'dark';
+        [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
+            if (icon) {
+                icon.classList.toggle('fa-moon', !isDark);
+                icon.classList.toggle('fa-sun', isDark);
+            }
+        });
+        localStorage.setItem("kaffetishMode", mode);
+    }
 
-    function setFontRem(rem) {
-        state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
-        DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
-        localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
-        const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
-        DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
-    }
+    function setFontRem(rem) {
+        state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
+        DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
+        localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
+        const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
+        DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
+    }
 
-    function showView(view) {
-        [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
-        view.classList.remove('hidden');
-        const isReader = view === DOM.readerView;
-        DOM.readerControls.classList.toggle('hidden', !isReader);
-        DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
-        DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
-    }
+    function showView(view) {
+        [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
+        view.classList.remove('hidden');
+        const isReader = view === DOM.readerView;
+        DOM.readerControls.classList.toggle('hidden', !isReader);
+        DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
+        DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
+    }
 
-    async function loadPdfFromUrl(sourceUrl, title) {
-        showView(DOM.loadingView);
-        DOM.loadingText.textContent = `Brewing your document...`;
-        state.bookId = btoa(sourceUrl).replace(/\//g, '_');
-        state.bookTitle = title;
+    async function loadPdfFromUrl(sourceUrl, title) {
+        showView(DOM.loadingView);
+        DOM.loadingText.textContent = `Brewing your document...`;
+        state.bookId = btoa(sourceUrl).replace(/\//g, '_');
+        state.bookTitle = title;
 
-        try {
-            const response = await fetch(sourceUrl);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const pdfData = await response.arrayBuffer();
+        try {
+            const response = await fetch(sourceUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const pdfData = await response.arrayBuffer();
 
-            const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
-            state.pdfDoc = pdfDoc;
-            state.totalPages = pdfDoc.numPages;
-            state.pagesHTML = new Array(state.totalPages).fill(null);
+            const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+            state.pdfDoc = pdfDoc;
+            state.totalPages = pdfDoc.numPages;
+            state.pagesHTML = new Array(state.totalPages).fill(null);
 
-            DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
-            
-            let startingPage = 1;
+            DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+            
+            let startingPage = 1;
 
-            await auth.authStateReady();
-            const user = auth.currentUser;
-            
-            if (user && !user.isAnonymous && state.bookId) {
-                const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
-                const bookmarkSnap = await getDoc(bookmarkDocRef);
+            await auth.authStateReady();
+            const user = auth.currentUser;
+            
+            if (user && !user.isAnonymous && state.bookId) {
+                const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+                const bookmarkSnap = await getDoc(bookmarkDocRef);
 
-                if (bookmarkSnap.exists()) {
-                    state.bookmark = bookmarkSnap.data();
-                    startingPage = state.bookmark.pageNum;
-                }
-            }
-            
-            await renderPage(startingPage);
-            
-            showView(DOM.readerView);
+                if (bookmarkSnap.exists()) {
+                    state.bookmark = bookmarkSnap.data();
+                    startingPage = state.bookmark.pageNum;
+                }
+            }
+            
+            await renderPage(startingPage);
+            
+            showView(DOM.readerView);
 
-            startReadingSession(state.bookTitle);
+            startReadingSession(state.bookTitle);
 
-        } catch (err) {
-            console.error("PDF Loading/Processing Error:", err);
-            DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
-            showView(DOM.fallbackView);
-        }
-    }
-    
-    function paragraphize(textContent) {
-        const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
-        const items = textContent.items.map(it => ({
-            str: it.str, x: it.transform[4], y: it.transform[5],
-            fontSize: it.transform[0], height: it.height
-        }));
-        if (items.length === 0) return "";
-        let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
-        const getStyle = (item) => {
-            const trimmedStr = item.str.trim();
-            const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth / 2) < pageWidth * 0.15;
-            if (item.fontSize > 20) return "h1";
-            if (item.fontSize > 13) return "h2";
-            if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) return "h2";
-            if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) return "h2";
-            if (isCentered) return "center";
-            return "p";
-        };
-        for (const item of items) {
-            if (!item.str.trim()) continue;
-            const newStyle = getStyle(item);
-            const yGap = Math.abs(lastY - item.y);
-            const isStyleBreak = currentStyle && newStyle !== currentStyle && (currentStyle.startsWith('h') || newStyle.startsWith('h'));
-            const isParagraphBreak = yGap > lastHeight * 1.6 || isStyleBreak;
-            if (isParagraphBreak) {
-                if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
-                currentLine = item.str;
-                currentStyle = newStyle;
-            } else {
-                if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) currentLine = currentLine.slice(0, -1);
-                else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) currentLine += " ";
-                currentLine += item.str;
-                currentStyle = newStyle;
-            }
-            lastY = item.y;
-            lastHeight = item.height || lastHeight;
-        }
-        if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
-        return paragraphs.map(p => {
-            const text = escapeHTML(p.text);
-            switch (p.style) {
-                case "h1": return `<h1 style="text-align:center">${text}</h1>`;
-                case "h2": return `<h2 style="text-align:center">${text}</h2>`;
-                case "center": return `<p style="text-align:center">${text}</p>`;
-                default: return `<p>${text}</p>`;
-            }
-        }).join("\n");
-    }
-    
-    async function renderPage(pageNum) {
-        if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
-        if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "" && !state.isExplanationViewActive) return;
-        
-        clearSelection();
-        state.isRendering = true;
-        state.currentPage = pageNum;
+        } catch (err) {
+            console.error("PDF Loading/Processing Error:", err);
+            DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
+            showView(DOM.fallbackView);
+        }
+    }
+    
+    function paragraphize(textContent) {
+        const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
+        const items = textContent.items.map(it => ({
+            str: it.str, x: it.transform[4], y: it.transform[5],
+            fontSize: it.transform[0], height: it.height
+        }));
+        if (items.length === 0) return "";
+        let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
+        const getStyle = (item) => {
+            const trimmedStr = item.str.trim();
+            const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth / 2) < pageWidth * 0.15;
+            if (item.fontSize > 20) return "h1";
+            if (item.fontSize > 13) return "h2";
+            if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) return "h2";
+            if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) return "h2";
+            if (isCentered) return "center";
+            return "p";
+        };
+        for (const item of items) {
+            if (!item.str.trim()) continue;
+            const newStyle = getStyle(item);
+            const yGap = Math.abs(lastY - item.y);
+            const isStyleBreak = currentStyle && newStyle !== currentStyle && (currentStyle.startsWith('h') || newStyle.startsWith('h'));
+            const isParagraphBreak = yGap > lastHeight * 1.6 || isStyleBreak;
+            if (isParagraphBreak) {
+                if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+                currentLine = item.str;
+                currentStyle = newStyle;
+            } else {
+                if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) currentLine = currentLine.slice(0, -1);
+                else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) currentLine += " ";
+                currentLine += item.str;
+                currentStyle = newStyle;
+            }
+            lastY = item.y;
+            lastHeight = item.height || lastHeight;
+        }
+        if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+        return paragraphs.map(p => {
+            const text = escapeHTML(p.text);
+            switch (p.style) {
+                case "h1": return `<h1 style="text-align:center">${text}</h1>`;
+                case "h2": return `<h2 style="text-align:center">${text}</h2>`;
+                case "center": return `<p style="text-align:center">${text}</p>`;
+                default: return `<p>${text}</p>`;
+            }
+        }).join("\n");
+    }
+    
+    async function renderPage(pageNum) {
+        if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
+        if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "" && !state.isExplanationViewActive) return;
+        
+        clearSelection();
+        state.isRendering = true;
+        state.currentPage = pageNum;
 
-        if (!state.pagesHTML[pageNum - 1]) {
-            try {
-                const page = await state.pdfDoc.getPage(pageNum);
-                const textContent = await page.getTextContent({ normalizeWhitespace: true });
-                state.pagesHTML[pageNum - 1] = paragraphize(textContent);
-            } catch (e) {
-                console.error(`Failed to render page ${pageNum}:`, e);
-                state.pagesHTML[pageNum - 1] = "<p>Error loading page.</p>";
-            }
-        }
-        
-        DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
-        
-        DOM.pageContent.classList.add("fade-in");
-        setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
-        
-        DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
-        DOM.pageTotal.textContent = `/ ${state.totalPages}`;
-        DOM.pageJumpInput.value = pageNum;
-        DOM.mobilePageIndicator.textContent = `${pageNum} / ${state.totalPages}`;
-        DOM.mobilePageJumpInput.value = pageNum;
-        DOM.mobilePageJumpInput.max = state.totalPages;
-        DOM.mobilePageTotal.textContent = `/ ${state.totalPages}`;
-        DOM.prevBtn.disabled = pageNum <= 1;
-        DOM.nextBtn.disabled = pageNum >= state.totalPages;
-        setFontRem(state.currentFontRem);
-        
-        setTimeout(() => {
-            DOM.mainContent.scrollTop = 0;
-        }, 0);
+        if (!state.pagesHTML[pageNum - 1]) {
+            try {
+                const page = await state.pdfDoc.getPage(pageNum);
+                const textContent = await page.getTextContent({ normalizeWhitespace: true });
+                state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+            } catch (e) {
+                console.error(`Failed to render page ${pageNum}:`, e);
+                state.pagesHTML[pageNum - 1] = "<p>Error loading page.</p>";
+            }
+        }
+        
+        DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
+        
+        DOM.pageContent.classList.add("fade-in");
+        setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
+        
+        DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
+        DOM.pageTotal.textContent = `/ ${state.totalPages}`;
+        DOM.pageJumpInput.value = pageNum;
+        DOM.mobilePageIndicator.textContent = `${pageNum} / ${state.totalPages}`;
+        DOM.mobilePageJumpInput.value = pageNum;
+        DOM.mobilePageJumpInput.max = state.totalPages;
+        DOM.mobilePageTotal.textContent = `/ ${state.totalPages}`;
+        DOM.prevBtn.disabled = pageNum <= 1;
+        DOM.nextBtn.disabled = pageNum >= state.totalPages;
+        setFontRem(state.currentFontRem);
+        
+        setTimeout(() => {
+            DOM.mainContent.scrollTop = 0;
+        }, 0);
 
-        state.isRendering = false;
-    }
+        state.isRendering = false;
+    }
 
-    function showTooltipAt(rect) {
-        DOM.tooltip.style.display = "flex";
-        const topBoundary = 68;
-        const top = rect.top - DOM.tooltip.offsetHeight - 8;
-        let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
-        left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
-        DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
-        DOM.tooltip.style.left = `${left}px`;
-        requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
-    }
+    function showTooltipAt(rect) {
+        DOM.tooltip.style.display = "flex";
+        const topBoundary = 68;
+        const top = rect.top - DOM.tooltip.offsetHeight - 8;
+        let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
+        DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
+        DOM.tooltip.style.left = `${left}px`;
+        requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
+    }
 
-    function hideTooltip() {
-        DOM.tooltip.classList.remove('visible');
-        setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
-    }
+    function hideTooltip() {
+        DOM.tooltip.classList.remove('visible');
+      .   setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
+    }
 
-    function clearSelection() {
-        hideTooltip();
-        if (!state.isExplanationViewActive) {
-            DOM.mobileActionBtn.classList.remove('visible');
-            DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
-        }
-        if (window.getSelection) {
-            window.getSelection().removeAllRanges();
-        }
-    }
+    function clearSelection() {
+        hideTooltip();
+        if (!state.isExplanationViewActive) {
+            DOM.mobileActionBtn.classList.remove('visible');
+            DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+        }
+        if (window.getSelection) {
+            window.getSelection().removeAllRanges();
+        }
+    }
 
-    async function handleExplain() {
-        const textToExplain = state.lastSelectionText;
-        const contextText = state.lastSelectionContext;
+    async function handleExplain() {
+        const textToExplain = state.lastSelectionText;
+        const contextText = state.lastSelectionContext;
 
-        if (!textToExplain || !explainBookTextFn) {
-            console.warn("handleExplain called with no text or Firebase function not ready.");
-            return;
-        }
-
-        clearSelection();
-        await trackExplanationRequest(textToExplain);
-
-        if (isTouchDevice) {
-            enterExplanationView('<div class="spinner"></div>');
-        } else {
-            DOM.aiQuote.textContent = `"${textToExplain}"`;
-            DOM.aiQuote.classList.remove('hidden');
-            DOM.aiPanel.style.display = "flex";
-            DOM.aiContent.innerHTML = '<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>';
-        }
-
-        try {
-            const { data } = await explainBookTextFn({
-                text: textToExplain,
-                bookTitle: state.bookTitle,
-                contextText: contextText
-            });
-
-            const { simpleExplanation, contextualMeaning, keywords } = data.explanation;
-            
-            let formattedExplanation = `<p>${escapeHTML(simpleExplanation)}</p>`;
-            if (contextualMeaning) {
-                formattedExplanation += `<p><strong>In this context:</strong> ${escapeHTML(contextualMeaning)}</p>`;
-            }
-            if (keywords && keywords.length > 0) {
-                formattedExplanation += '<strong>Key Terms:</strong><ul>';
-                keywords.forEach(kw => {
-                    formattedExplanation += `<li><strong>${escapeHTML(kw.term)}:</strong> ${escapeHTML(kw.definition)}</li>`;
-                });
-                formattedExplanation += '</ul>';
-            }
-
-            if (isTouchDevice) {
-                updateExplanationView(formattedExplanation);
-            } else {
-                DOM.aiContent.innerHTML = formattedExplanation;
-            }
-
-        } catch (err) {
-            console.error("Error fetching explanation:", err);
-            const errorMsg = "Sorry, an error occurred while getting the explanation.";
-            if (isTouchDevice) {
-                updateExplanationView(`<p>${errorMsg}</p>`);
-            } else {
-                DOM.aiContent.textContent = errorMsg;
-            }
-        }
-    }
-
-    function enterExplanationView(initialContent) {
-        state.isExplanationViewActive = true;
-        state.lastScrollPosition = DOM.mainContent.scrollTop;
-        state.cachedPageHTML = DOM.pageContent.innerHTML;    
-        DOM.mobileActionBtn.classList.add('return-mode', 'visible');
-        DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
-        DOM.mobileActionText.textContent = 'Return';
-        
-        DOM.pageContent.classList.add('content-fading');
-        
-        setTimeout(() => {
-            const explanationHTML = `
-                <div class="explanation-view-content">
-                    <h4 class="explanation-title"><i class="fa-solid fa-star"></i>Explanation</h4>
-                    <div class="explanation-text">${initialContent}</div>
-                </div>
-            `;
-            DOM.pageContent.innerHTML = explanationHTML;
-            setFontRem(state.currentFontRem);
-            DOM.pageContent.classList.remove('content-fading');
-            DOM.mainContent.scrollTop = 0;
-        }, 200);
-    }
-
-    function updateExplanationView(finalContent) {
-        const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
-        if (explanationTextElement) {
-            explanationTextElement.innerHTML = finalContent;
-        }
-    }
-    
-    function returnToBookView() {
-        if (!state.isExplanationViewActive) return;
-        state.isExplanationViewActive = false;
-
-        DOM.pageContent.classList.add('content-fading');
-        
-        setTimeout(() => {
-            DOM.pageContent.innerHTML = state.cachedPageHTML;
-            state.cachedPageHTML = null;
-            setFontRem(state.currentFontRem);
-            DOM.pageContent.classList.remove('content-fading');
-            DOM.mainContent.scrollTop = state.lastScrollPosition;
-        }, 200);
-        
-        DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
-        DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
-        DOM.mobileActionText.textContent = 'Explain';
-        DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
-    }
-
-    function handleHighlight() {
-        if (state.lastSelectionRange) {
-            try {
-                const span = document.createElement("span");
-                span.className = "highlighted-text";
-                state.lastSelectionRange.surroundContents(span);
-            } catch (e) { console.error("Highlighting failed:", e); }
-        }
-        state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
-        clearSelection();
-    }
-    
-    async function handleBookmarkPage() {
-        const user = auth.currentUser;
-        if (!user || user.isAnonymous) {
-            flashAI("Please sign in to save bookmarks.", 3000);
-            return;
-        }
-
-        if (!state.bookId) return;
-
-        const bookmarkData = {
-            userId: user.uid,
-            bookId: state.bookId,
-            pageNum: state.currentPage,
-            createdAt: serverTimestamp()
-        };
-
-        try {
-            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
-            await setDoc(bookmarkDocRef, bookmarkData);
-            state.bookmark = bookmarkData;
-            flashAI(`Page ${state.currentPage} bookmarked!`, 2000);
-        } catch (e) {
-            console.error("Error saving bookmark:", e);
-            flashAI("Failed to save bookmark.", 3000);
-        }
-    }
-
-    function handleCopy() {
-        if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
-        clearSelection();
-    }
-
-    // --- NEW WEB AUDIO API FUNCTIONS ---
-    
-    /**
-     * This is the recursive loop scheduler. It creates an endless,
-     * perfectly-timed chain of overlapping audio buffers.
-     */
-    function loopScheduler() {
-        if (!state.isNoisePlaying || !noiseBuffer) return; // Stop the loop
-
-        const now = noiseAudioContext.currentTime;
-        const loopDuration = noiseBuffer.duration - crossFadeTime;
-
-        // Find the next available start time
-        while (nextLoopStartTime < now) {
-            nextLoopStartTime += loopDuration;
-        }
-
-        // --- Create and schedule Player 1 ---
-        source1 = noiseAudioContext.createBufferSource();
-        source1.buffer = noiseBuffer;
-        source1.connect(loopGainNode1);
-        // Start playing
-        source1.start(nextLoopStartTime); 
-        // Schedule fade in
-        loopGainNode1.gain.setValueAtTime(0.0, nextLoopStartTime);
-        loopGainNode1.gain.linearRampToValueAtTime(1.0, nextLoopStartTime + crossFadeTime);
-        // Schedule fade out at the end
-        loopGainNode1.gain.setValueAtTime(1.0, nextLoopStartTime + loopDuration);
-        loopGainNode1.gain.linearRampToValueAtTime(0.0, nextLoopStartTime + loopDuration + crossFadeTime);
-        
-        // --- Create and schedule Player 2 (staggered) ---
-        const nextStartTime = nextLoopStartTime + loopDuration;
-        source2 = noiseAudioContext.createBufferSource();
-        source2.buffer = noiseBuffer;
-        source2.connect(loopGainNode2);
-        // Start playing
-        source2.start(nextStartTime);
-        // Schedule fade in
-        loopGainNode2.gain.setValueAtTime(0.0, nextStartTime);
-        loopGainNode2.gain.linearRampToValueAtTime(1.0, nextStartTime + crossFadeTime);
-        // Schedule fade out at the end
-        loopGainNode2.gain.setValueAtTime(1.0, nextStartTime + loopDuration);
-        loopGainNode2.gain.linearRampToValueAtTime(0.0, nextStartTime + loopDuration + crossFadeTime);
-
-        // Update the next start time for the *next* call to this function
-        nextLoopStartTime += loopDuration;
-
-        // Schedule this function to run again *before* the next loop starts
-        // (duration * 2) to cover both players, * 1000 for ms, minus a safety margin
-        const timeoutDuration = (loopDuration * 2 * 1000) - 1000;
-        loopSchedulerTimer = setTimeout(loopScheduler, timeoutDuration);
-    }
-
-    function setNoise(on) {
-        // --- NEW ---
-        // If we are already in the middle of a fade, ignore this request.
-        if (state.isNoiseFading) {
-            console.log("Audio is already fading, request ignored.");
+        if (!textToExplain || !explainBookTextFn) {
+            console.warn("handleExplain called with no text or Firebase function not ready.");
             return;
         }
-        // --- END NEW ---
 
+        clearSelection();
+        await trackExplanationRequest(textToExplain);
+
+        if (isTouchDevice) {
+            enterExplanationView('<div class="spinner"></div>');
+        } else {
+            DOM.aiQuote.textContent = `"${textToExplain}"`;
+            DOM.aiQuote.classList.remove('hidden');
+            DOM.aiPanel.style.display = "flex";
+            DOM.aiContent.innerHTML = '<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>';
+        }
+
+        try {
+            const { data } = await explainBookTextFn({
+                text: textToExplain,
+                bookTitle: state.bookTitle,
+                contextText: contextText
+            });
+
+            const { simpleExplanation, contextualMeaning, keywords } = data.explanation;
+            
+            let formattedExplanation = `<p>${escapeHTML(simpleExplanation)}</p>`;
+            if (contextualMeaning) {
+                formattedExplanation += `<p><strong>In this context:</strong> ${escapeHTML(contextualMeaning)}</p>`;
+            }
+            if (keywords && keywords.length > 0) {
+                formattedExplanation += '<strong>Key Terms:</strong><ul>';
+                keywords.forEach(kw => {
+                    formattedExplanation += `<li><strong>${escapeHTML(kw.term)}:</strong> ${escapeHTML(kw.definition)}</li>`;
+                });
+                formattedExplanation += '</ul>';
+            }
+
+            if (isTouchDevice) {
+                updateExplanationView(formattedExplanation);
+            } else {
+                DOM.aiContent.innerHTML = formattedExplanation;
+            }
+
+        } catch (err) {
+            console.error("Error fetching explanation:", err);
+            const errorMsg = "Sorry, an error occurred while getting the explanation.";
+            if (isTouchDevice) {
+                updateExplanationView(`<p>${errorMsg}</p>`);
+            } else {
+                DOM.aiContent.textContent = errorMsg;
+            }
+        }
+    }
+
+    function enterExplanationView(initialContent) {
+        state.isExplanationViewActive = true;
+        state.lastScrollPosition = DOM.mainContent.scrollTop;
+        state.cachedPageHTML = DOM.pageContent.innerHTML;    
+        DOM.mobileActionBtn.classList.add('return-mode', 'visible');
+        DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
+        DOM.mobileActionText.textContent = 'Return';
+        
+        DOM.pageContent.classList.add('content-fading');
+        
+        setTimeout(() => {
+            const explanationHTML = `
+                <div class="explanation-view-content">
+                    <h4 class="explanation-title"><i class="fa-solid fa-star"></i>Explanation</h4>
+                    <div class="explanation-text">${initialContent}</div>
+                </div>
+            `;
+            DOM.pageContent.innerHTML = explanationHTML;
+            setFontRem(state.currentFontRem);
+            DOM.pageContent.classList.remove('content-fading');
+            DOM.mainContent.scrollTop = 0;
+        }, 200);
+    }
+
+    function updateExplanationView(finalContent) {
+        const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
+        if (explanationTextElement) {
+            explanationTextElement.innerHTML = finalContent;
+        }
+    }
+    
+    function returnToBookView() {
+        if (!state.isExplanationViewActive) return;
+        state.isExplanationViewActive = false;
+
+        DOM.pageContent.classList.add('content-fading');
+        
+        setTimeout(() => {
+            DOM.pageContent.innerHTML = state.cachedPageHTML;
+            state.cachedPageHTML = null;
+            setFontRem(state.currentFontRem);
+            DOM.pageContent.classList.remove('content-fading');
+            DOM.mainContent.scrollTop = state.lastScrollPosition;
+        }, 200);
+        
+        DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
+        DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
+        DOM.mobileActionText.textContent = 'Explain';
+        DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+    }
+
+    function handleHighlight() {
+        if (state.lastSelectionRange) {
+            try {
+                const span = document.createElement("span");
+                span.className = "highlighted-text";
+                state.lastSelectionRange.surroundContents(span);
+            } catch (e) { console.error("Highlighting failed:", e); }
+        }
+        state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+        clearSelection();
+    }
+    
+    async function handleBookmarkPage() {
+        const user = auth.currentUser;
+        if (!user || user.isAnonymous) {
+            flashAI("Please sign in to save bookmarks.", 3000);
+            return;
+        }
+
+        if (!state.bookId) return;
+
+        const bookmarkData = {
+            userId: user.uid,
+            bookId: state.bookId,
+            pageNum: state.currentPage,
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
+            await setDoc(bookmarkDocRef, bookmarkData);
+            state.bookmark = bookmarkData;
+            flashAI(`Page ${state.currentPage} bookmarked!`, 2000);
+        } catch (e) {
+            console.error("Error saving bookmark:", e);
+            flashAI("Failed to save bookmark.", 3000);
+        }
+    }
+
+    function handleCopy() {
+        if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
+        clearSelection();
+    }
+
+    // --- NEW WEB AUDIO API FUNCTIONS ---
+    
+    /**
+     * This is the recursive loop scheduler. It creates an endless,
+     * perfectly-timed chain of overlapping audio buffers.
+     */
+    function loopScheduler() {
+        if (!state.isNoisePlaying || !noiseBuffer) return; // Stop the loop
+
+        const now = noiseAudioContext.currentTime;
+        const loopDuration = noiseBuffer.duration - crossFadeTime;
+
+        // Find the next available start time
+        while (nextLoopStartTime < now) {
+            nextLoopStartTime += loopDuration;
+        }
+
+        // --- Create and schedule Player 1 ---
+        const localSource1 = noiseAudioContext.createBufferSource(); // Use local var
+        localSource1.buffer = noiseBuffer;
+        localSource1.connect(loopGainNode1);
+        localSource1.start(nextLoopStartTime); 
+        // Schedule fade in
+        loopGainNode1.gain.setValueAtTime(0.0, nextLoopStartTime);
+        loopGainNode1.gain.linearRampToValueAtTime(1.0, nextLoopStartTime + crossFadeTime);
+        // Schedule fade out at the end
+        loopGainNode1.gain.setValueAtTime(1.0, nextLoopStartTime + loopDuration);
+        loopGainNode1.gain.linearRampToValueAtTime(0.0, nextLoopStartTime + loopDuration + crossFadeTime);
+        // --- ADDED cleanup ---
+        localSource1.onended = () => {
+            activeNoiseSources = activeNoiseSources.filter(s => s !== localSource1);
+            try { localSource1.disconnect(); } catch(e) {}
+        };
+        source1 = localSource1; // Assign to global for compatibility
+        
+        // --- Create and schedule Player 2 (staggered) ---
+        const nextStartTime = nextLoopStartTime + loopDuration;
+        const localSource2 = noiseAudioContext.createBufferSource(); // Use local var
+        localSource2.buffer = noiseBuffer;
+        localSource2.connect(loopGainNode2);
+        localSource2.start(nextStartTime);
+        // Schedule fade in
+        loopGainNode2.gain.setValueAtTime(0.0, nextStartTime);
+        loopGainNode2.gain.linearRampToValueAtTime(1.0, nextStartTime + crossFadeTime);
+        // Schedule fade out at the end
+        loopGainNode2.gain.setValueAtTime(1.0, nextStartTime + loopDuration);
+        loopGainNode2.gain.linearRampToValueAtTime(0.0, nextStartTime + loopDuration + crossFadeTime);
+        // --- ADDED cleanup ---
+        localSource2.onended = () => {
+            activeNoiseSources = activeNoiseSources.filter(s => s !== localSource2);
+            try { localSource2.disconnect(); } catch(e) {}
+        };
+        source2 = localSource2; // Assign to global for compatibility
+
+        // --- ADDED tracking ---
+        activeNoiseSources.push(localSource1, localSource2);
+
+        // Update the next start time for the *next* call to this function
+        nextLoopStartTime += loopDuration;
+
+        // Schedule this function to run again *before* the next loop starts
+        // (duration * 2) to cover both players, * 1000 for ms, minus a safety margin
+        const timeoutDuration = (loopDuration * 2 * 1000) - 1000;
+        loopSchedulerTimer = setTimeout(loopScheduler, timeoutDuration);
+    }
+
+    function setNoise(on) {
         if (!noiseAudioContext || !noiseBuffer) {
             // Audio isn't ready. Just set the state.
             state.isNoisePlaying = on;
@@ -1067,16 +1072,10 @@
 
         if (on) {
             if (state.isNoisePlaying) return; // Already playing
-
-            // --- NEW ---
-            state.isNoiseFading = true; // Lock the button
-            // --- END NEW ---
-
             state.isNoisePlaying = true;
             localStorage.setItem("kaffetishNoise", true);
 
             // Set master gain and ramp up
-            masterGainNode.gain.cancelScheduledValues(noiseAudioContext.currentTime);
             masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
             masterGainNode.gain.linearRampToValueAtTime(1.0, noiseAudioContext.currentTime + 2.5);
 
@@ -1084,28 +1083,15 @@
             nextLoopStartTime = noiseAudioContext.currentTime;
             loopScheduler();
 
-            // --- NEW ---
-            // Set the fading flag to false *after* the fade is complete.
-            setTimeout(() => {
-                state.isNoiseFading = false;
-            }, 2500); // Match the 2.5s fade-in
-            // --- END NEW ---
-
             if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
             if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
 
         } else {
             if (!state.isNoisePlaying) return; // Already stopped
-
-            // --- NEW ---
-            state.isNoiseFading = true; // Lock the button
-            // --- END NEW ---
-
             state.isNoisePlaying = false;
             localStorage.setItem("kaffetishNoise", false);
 
             // Set master gain and ramp down
-            masterGainNode.gain.cancelScheduledValues(noiseAudioContext.currentTime);
             masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
             masterGainNode.gain.linearRampToValueAtTime(0.0, noiseAudioContext.currentTime + 1.0);
 
@@ -1115,241 +1101,242 @@
                 loopSchedulerTimer = null;
             }
             
-            // Stop any currently playing sources (your original code is now safe!)
-            if (source1) source1.stop(noiseAudioContext.currentTime + 1.0);
-            if (source2) source2.stop(noiseAudioContext.currentTime + 1.0);
-            source1 = null;
+            // --- MODIFIED: Stop ALL active and scheduled sources ---
+            const stopTime = noiseAudioContext.currentTime + 1.0; // Match fade-out
+            activeNoiseSources.forEach(source => {
+                try {
+                    source.stop(stopTime);
+                } catch (e) { /* Ignore errors, e.g., from stopping a source that hasn't started */ }
+            });
+            activeNoiseSources = []; // Immediately clear the tracking array
+            // --- END MODIFICATION ---
+            
+            source1 = null; // Still good to null these out
             source2 = null;
 
-            // --- NEW ---
-            // Set the fading flag to false *after* the fade is complete.
-            setTimeout(() => {
-                state.isNoiseFading = false;
-            }, 1000); // Match the 1.0s fade-out
-            // --- END NEW ---
-
             if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.remove('active');
-           if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.remove('active');
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.remove('active');
         }
     }
-    async function setupAudio() {
-        try {
-            noiseAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Master gain for overall fade-in/out
-            masterGainNode = noiseAudioContext.createGain();
-            masterGainNode.gain.value = 0; // Start silent
-            masterGainNode.connect(noiseAudioContext.destination);
 
-            // Loop players
-            loopGainNode1 = noiseAudioContext.createGain();
-            loopGainNode2 = noiseAudioContext.createGain();
-            loopGainNode1.connect(masterGainNode);
-            loopGainNode2.connect(masterGainNode);
-            loopGainNode1.gain.value = 0; // Start silent
-            loopGainNode2.gain.value = 0; // Start silent
+    async function setupAudio() {
+        try {
+            noiseAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Master gain for overall fade-in/out
+            masterGainNode = noiseAudioContext.createGain();
+            masterGainNode.gain.value = 0; // Start silent
+            masterGainNode.connect(noiseAudioContext.destination);
 
-            const response = await fetch('https://kaffetish.club/audio/BlackNoise.mp3');
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await noiseAudioContext.decodeAudioData(arrayBuffer);
-            
-            noiseBuffer = audioBuffer; // Save the decoded buffer
+            // Loop players
+            loopGainNode1 = noiseAudioContext.createGain();
+            loopGainNode2 = noiseAudioContext.createGain();
+            loopGainNode1.connect(masterGainNode);
+            loopGainNode2.connect(masterGainNode);
+            loopGainNode1.gain.value = 0; // Start silent
+            loopGainNode2.gain.value = 0; // Start silent
 
-            // Now that audio is loaded, check if it *should* be playing
-            if (state.isNoisePlaying) {
-                setNoise(true);
-            }
-        } catch (e) {
-            console.error("Web Audio API setup failed:", e);
-            // Disable the buttons if audio fails
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.style.display = 'none';
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.style.display = 'none';
-        }
-    }
-    // --- END NEW AUDIO FUNCTIONS ---
+            const response = await fetch('https://kaffetish.club/audio/BlackNoise.mp3');
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await noiseAudioContext.decodeAudioData(arrayBuffer);
+            
+            noiseBuffer = audioBuffer; // Save the decoded buffer
 
-
-    function flashAI(msg, duration = 2000) {
-        DOM.aiQuote.classList.add('hidden');
-        DOM.aiPanel.style.display = "flex";
-        DOM.aiContent.textContent = msg;
-        setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
-    }
-
-    function setupEventListeners() {
-        DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
-        DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
-        DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
-        [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
-        [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
-        [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
-        
-        DOM.tooltipExplain.addEventListener("click", handleExplain);
-        DOM.tooltipHighlight.addEventListener("click", handleHighlight);
-        DOM.tooltipCopy.addEventListener("click", handleCopy);
-
-        DOM.bookmarkPageBtn.addEventListener("click", handleBookmarkPage);
-        DOM.mobileBookmarkPageBtn.addEventListener("click", () => {
-            handleBookmarkPage();
-            DOM.body.classList.remove('menu-open');
-        });
-
-        DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-        DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
-        DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
-        DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-        DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
-        DOM.mobilePageJumpInput.addEventListener("change", () => {
-            const p = parseInt(DOM.mobilePageJumpInput.value, 10);
-            if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
-        });
-
-        // --- Noise Listeners ---
-        if (DOM.mobileNoiseToggle) {
-            DOM.mobileNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
-        }
-        if (DOM.desktopNoiseToggle) {
-            DOM.desktopNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
-        }
-        // --- END ---
-
-        DOM.mobileActionBtn.addEventListener("click", () => {
-            if (state.isExplanationViewActive) {
-                returnToBookView();
-            } else {
-                handleExplain();
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || state.isRendering) return;
-            if (e.key === 'ArrowLeft') DOM.prevBtn.click();
-            else if (e.key === 'ArrowRight') DOM.nextBtn.click();
-        });
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') { endReadingSession(); }
-        });
-        document.addEventListener('pagehide', endReadingSession);
-        setupSelectionHandler();
-        if (isTouchDevice) { setupSwipeNavigation(); }
-    }
-    
-    function setupSelectionHandler() {
-        const contentArea = DOM.pageContent;
-
-        const handleSelection = () => {
-            setTimeout(() => {
-                if (state.isExplanationViewActive) return;
-
-                const sel = window.getSelection();
-                const text = sel ? sel.toString().trim() : '';
-
-                if (text.length >= 1 && !sel.isCollapsed) {
-                    state.lastSelectionText = text;
-                    try {
-                        const range = sel.getRangeAt(0);
-                        state.lastSelectionRange = range;
-                        
-                        let contextNode = range.commonAncestorContainer;
-                        if (contextNode.nodeType === Node.TEXT_NODE) {
-                            contextNode = contextNode.parentNode;
-                        }
-                        
-                        if (contentArea.contains(contextNode)) {
-                            state.lastSelectionContext = contextNode.textContent || '';
-                        } else {
-                            state.lastSelectionContext = text;
-                        }
-                    } catch (e) {
-                        console.error("Could not get selection range or context.", e);
-                        state.lastSelectionContext = text;
-                    }
-                    
-                    if (isTouchDevice) {
-                        DOM.mobileActionBtn.classList.add('visible');
-                        DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
-                    } else {
-                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
-                    }
-                } else {
-                    if (isTouchDevice) {
-                        DOM.mobileActionBtn.classList.remove('visible');
-                        DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
-                    } else {
-                        hideTooltip();
-                    }
-                }
-            }, 100);
-        };
-
-        document.addEventListener('selectionchange', handleSelection);
-        document.addEventListener('mouseup', handleSelection);
-    }
+            // Now that audio is loaded, check if it *should* be playing
+            if (state.isNoisePlaying) {
+                setNoise(true);
+            }
+        } catch (e) {
+            console.error("Web Audio API setup failed:", e);
+            // Disable the buttons if audio fails
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.style.display = 'none';
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.style.display = 'none';
+        }
+    }
+    // --- END NEW AUDIO FUNCTIONS ---
 
 
-    function setupSwipeNavigation() {
-        DOM.mainContent.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1 || state.isExplanationViewActive) return;
-            const touch = e.touches[0];
-            state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
-            state.touch.startTime = Date.Check();
-        }, { passive: true });
-        DOM.mainContent.addEventListener('touchend', (e) => {
-            if (e.touches.length > 0 || state.isExplanationViewActive) return;
-            const touch = e.changedTouches[0];
-            const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
-            const elapsedTime = Date.now() - state.touch.startTime;
-            if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
-                if (deltaX > 0) DOM.prevBtn.click();
-                else DOM.nextBtn.click();
-            }
-        }, { passive: true });
-    }
+    function flashAI(msg, duration = 2000) {
+        DOM.aiQuote.classList.add('hidden');
+        DOM.aiPanel.style.display = "flex";
+        DOM.aiContent.textContent = msg;
+        setTimeout(() => { if (DOM.aiContent.textContent === msg) DOM.aiPanel.style.display = "none"; }, duration);
+    }
 
-    function initApp() {
-        setMode(localStorage.getItem("kaffetishMode") || 'light');
-        setFontRem(state.currentFontRem);
-        
-        // --- NEW AUDIO INIT ---
-        if (state.isNoisePlaying) {
-            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
-            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
-        }
-        setupAudio();
-        // --- END NEW AUDIO INIT ---
+    function setupEventListeners() {
+        DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
+        DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
+        DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
+        [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
+        [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
+        [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+        
+        DOM.tooltipExplain.addEventListener("click", handleExplain);
+        DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+        DOM.tooltipCopy.addEventListener("click", handleCopy);
 
-        setupEventListeners();
+        DOM.bookmarkPageBtn.addEventListener("click", handleBookmarkPage);
+        DOM.mobileBookmarkPageBtn.addEventListener("click", () => {
+            handleBookmarkPage();
+            DOM.body.classList.remove('menu-open');
+        });
 
-        const params = new URLSearchParams(window.location.search);
-        const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
+        DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
+        DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
+        DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+        DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+        DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+        DOM.mobilePageJumpInput.addEventListener("change", () => {
+            const p = parseInt(DOM.mobilePageJumpInput.value, 10);
+            if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
+        });
 
-        if (bookUrl) {
-            loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
-        } else {
-            showView(DOM.fallbackView);
-        }
-        if (!explainBookTextFn) {
-           [DOM.tooltipExplain, DOM.mobileActionBtn].forEach(el => el.style.display = 'none');
-        }
-    }
+        // --- Noise Listeners ---
+        if (DOM.mobileNoiseToggle) {
+            DOM.mobileNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
+        }
+        if (DOM.desktopNoiseToggle) {
+            DOM.desktopNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
+        }
+        // --- END ---
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            const isAnon = user.isAnonymous;
-            DOM.bookmarkPageBtn.classList.toggle('hidden', isAnon);
-            DOM.mobileBookmarkPageBtn.classList.toggle('hidden', isAnon);
-            trackUserActivity();
-        } else {
-            signInAnonymously(auth).catch(err => {
-                console.error("Anonymous sign-in failed:", err);
-            });
-        }
-    });
+        DOM.mobileActionBtn.addEventListener("click", () => {
+             if (state.isExplanationViewActive) {
+                returnToBookView();
+            } else {
+                handleExplain();
+            }
+        });
 
-    // Initialize the app once the first auth state is confirmed
-    auth.onAuthStateChanged(user => {
-        initApp();
-    }, { onlyOnce: true });
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || state.isRendering) return;
+            if (e.key === 'ArrowLeft') DOM.prevBtn.click();
+            else if (e.key === 'ArrowRight') DOM.nextBtn.click();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') { endReadingSession(); }
+        });
+        document.addEventListener('pagehide', endReadingSession);
+        setupSelectionHandler();
+        if (isTouchDevice) { setupSwipeNavigation(); }
+    }
+    
+    function setupSelectionHandler() {
+        const contentArea = DOM.pageContent;
+
+        const handleSelection = () => {
+            setTimeout(() => {
+                if (state.isExplanationViewActive) return;
+
+                const sel = window.getSelection();
+                const text = sel ? sel.toString().trim() : '';
+
+                if (text.length >= 1 && !sel.isCollapsed) {
+                    state.lastSelectionText = text;
+                    try {
+                        const range = sel.getRangeAt(0);
+                        state.lastSelectionRange = range;
+                        
+                        let contextNode = range.commonAncestorContainer;
+                        if (contextNode.nodeType === Node.TEXT_NODE) {
+                            contextNode = contextNode.parentNode;
+                        }
+                        
+                        if (contentArea.contains(contextNode)) {
+                            state.lastSelectionContext = contextNode.textContent || '';
+                        } else {
+                            state.lastSelectionContext = text;
+                        }
+                    } catch (e) {
+                        console.error("Could not get selection range or context.", e);
+                        state.lastSelectionContext = text;
+                    }
+                    
+                    if (isTouchDevice) {
+                      DOM.mobileActionBtn.classList.add('visible');
+                        DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
+                    } else {
+                        showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+                 }
+                } else {
+                    if (isTouchDevice) {
+                        DOM.mobileActionBtn.classList.remove('visible');
+                        DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+                    } else {
+                      H   hideTooltip();
+                    }
+                }
+            }, 100);
+        };
+
+        document.addEventListener('selectionchange', handleSelection);
+        document.addEventListener('mouseup', handleSelection);
+    }
+
+
+    function setupSwipeNavigation() {
+        DOM.mainContent.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1 || state.isExplanationViewActive) return;
+            const touch = e.touches[0];
+            state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
+            state.touch.startTime = Date.now(); // <--- FIXED
+        }, { passive: true });
+        DOM.mainContent.addEventListener('touchend', (e) => {
+            if (e.touches.length > 0 || state.isExplanationViewActive) return;
+            const touch = e.changedTouches[0];
+            const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
+            const elapsedTime = Date.now() - state.touch.startTime;
+            if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX > 0) DOM.prevBtn.click();
+                else DOM.nextBtn.click();
+           }
+        }, { passive: true });
+    }
+
+    function initApp() {
+        setMode(localStorage.getItem("kaffetishMode") || 'light');
+        setFontRem(state.currentFontRem);
+        
+        // --- NEW AUDIO INIT ---
+        if (state.isNoisePlaying) {
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
+        }
+        setupAudio();
+        // --- END NEW AUDIO INIT ---
+
+        setupEventListeners();
+
+        const params = new URLSearchParams(window.location.search);
+        const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
+
+        if (bookUrl) {
+            loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
+        } else {
+            showView(DOM.fallbackView);
+        }
+        if (!explainBookTextFn) {
+           [DOM.tooltipExplain, DOM.mobileActionBtn].forEach(el => el.style.display = 'none');
+        }
+    }
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            const isAnon = user.isAnonymous;
+            DOM.bookmarkPageBtn.classList.toggle('hidden', isAnon);
+            DOM.mobileBookmarkPageBtn.classList.toggle('hidden', isAnon);
+            trackUserActivity();
+        } else {
+            signInAnonymously(auth).catch(err => {
+                console.error("Anonymous sign-in failed:", err);
+            });
+        }
+    });
+
+    // Initialize the app once the first auth state is confirmed
+    auth.onAuthStateChanged(user => {
+        initApp();
+    }, { onlyOnce: true });
 
 </script>
 </body>
