@@ -499,8 +499,15 @@
 
     let app, auth, functions, explainBookTextFn, db;
     
-    // --- WEB AUDIO VARS ---
-    let noiseAudioContext, noiseBuffer, noiseSource, noiseGainNode;
+    // --- NEW WEB AUDIO VARS ---
+    let noiseAudioContext, noiseBuffer;
+    let masterGainNode; // For master fade-in/out
+    let loopGainNode1, loopGainNode2; // For cross-fading
+    let source1, source2;
+    let loopSchedulerTimer = null;
+    let nextLoopStartTime = 0;
+    const crossFadeTime = 0.05; // 50ms cross-fade, you can tune this
+    // --- END NEW VARS ---
 
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
@@ -558,7 +565,7 @@
         mobilePageTotal: document.getElementById('mobile-page-total'),
         mobileNoiseToggle: document.getElementById('mobile-noise-toggle'),
         mobileNoiseIcon: document.getElementById('mobile-noise-icon'),
-        desktopNoiseToggle: document.getElementById('btn-noise-toggle'), // Desktop button
+        desktopNoiseToggle: document.getElementById('btn-noise-toggle'),
         mobileActionBtn: document.getElementById('mobile-action-btn'),
         mobileActionIcon: document.getElementById('mobile-action-icon'),
         mobileActionText: document.getElementById('mobile-action-text'),
@@ -986,29 +993,59 @@
     // --- NEW WEB AUDIO API FUNCTIONS ---
     
     /**
-     * This function is the "engine" of the gapless loop.
-     * It plays the buffer once, and when it ends, it calls itself to play again.
+     * This is the recursive loop scheduler. It creates an endless,
+     * perfectly-timed chain of overlapping audio buffers.
      */
-    function playNoise() {
-        // If the state was changed to "off", just stop.
-        if (!state.isNoisePlaying) return; 
+    function loopScheduler() {
+        if (!state.isNoisePlaying || !noiseBuffer) return; // Stop the loop
 
-        noiseSource = noiseAudioContext.createBufferSource();
-        noiseSource.buffer = noiseBuffer;
-        noiseSource.loop = false; // We are handling the loop manually
-        noiseSource.connect(noiseGainNode);
+        const now = noiseAudioContext.currentTime;
+        const loopDuration = noiseBuffer.duration - crossFadeTime;
+
+        // Find the next available start time
+        while (nextLoopStartTime < now) {
+            nextLoopStartTime += loopDuration;
+        }
+
+        // --- Create and schedule Player 1 ---
+        source1 = noiseAudioContext.createBufferSource();
+        source1.buffer = noiseBuffer;
+        source1.connect(loopGainNode1);
+        // Start playing
+        source1.start(nextLoopStartTime); 
+        // Schedule fade in
+        loopGainNode1.gain.setValueAtTime(0.0, nextLoopStartTime);
+        loopGainNode1.gain.linearRampToValueAtTime(1.0, nextLoopStartTime + crossFadeTime);
+        // Schedule fade out at the end
+        loopGainNode1.gain.setValueAtTime(1.0, nextLoopStartTime + loopDuration);
+        loopGainNode1.gain.linearRampToValueAtTime(0.0, nextLoopStartTime + loopDuration + crossFadeTime);
         
-        // When this buffer finishes, call this function again to start the next one.
-        // This is the key to gapless playback.
-        noiseSource.onended = playNoise; 
-        
-        noiseSource.start(0);
+        // --- Create and schedule Player 2 (staggered) ---
+        const nextStartTime = nextLoopStartTime + loopDuration;
+        source2 = noiseAudioContext.createBufferSource();
+        source2.buffer = noiseBuffer;
+        source2.connect(loopGainNode2);
+        // Start playing
+        source2.start(nextStartTime);
+        // Schedule fade in
+        loopGainNode2.gain.setValueAtTime(0.0, nextStartTime);
+        loopGainNode2.gain.linearRampToValueAtTime(1.0, nextStartTime + crossFadeTime);
+        // Schedule fade out at the end
+        loopGainNode2.gain.setValueAtTime(1.0, nextStartTime + loopDuration);
+        loopGainNode2.gain.linearRampToValueAtTime(0.0, nextStartTime + loopDuration + crossFadeTime);
+
+        // Update the next start time for the *next* call to this function
+        nextLoopStartTime += loopDuration;
+
+        // Schedule this function to run again *before* the next loop starts
+        // (duration * 2) to cover both players, * 1000 for ms, minus a safety margin
+        const timeoutDuration = (loopDuration * 2 * 1000) - 1000;
+        loopSchedulerTimer = setTimeout(loopScheduler, timeoutDuration);
     }
 
     function setNoise(on) {
         if (!noiseAudioContext || !noiseBuffer) {
             // Audio isn't ready. Just set the state.
-            // setupAudio() will call setNoise(true) if it loads and state is true.
             state.isNoisePlaying = on;
             localStorage.setItem("kaffetishNoise", on);
             return;
@@ -1020,35 +1057,41 @@
         }
 
         if (on) {
-            if (state.isNoisePlaying) return; // Already playing or starting
-
+            if (state.isNoisePlaying) return; // Already playing
             state.isNoisePlaying = true;
-            localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
+            localStorage.setItem("kaffetishNoise", true);
 
-            // Start the looping playback engine
-            playNoise(); 
+            // Set master gain and ramp up
+            masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
+            masterGainNode.gain.linearRampToValueAtTime(1.0, noiseAudioContext.currentTime + 2.5);
 
-            // Ramp up volume
-            noiseGainNode.gain.setValueAtTime(noiseGainNode.gain.value, noiseAudioContext.currentTime);
-            noiseGainNode.gain.linearRampToValueAtTime(1.0, noiseAudioContext.currentTime + 2.5);
+            // Start the looping engine
+            nextLoopStartTime = noiseAudioContext.currentTime;
+            loopScheduler();
 
             if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
             if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
 
         } else {
-            if (!state.isNoisePlaying) return; // Already stopping
-
+            if (!state.isNoisePlaying) return; // Already stopped
             state.isNoisePlaying = false;
-            localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
+            localStorage.setItem("kaffetishNoise", false);
 
-            // Ramp down volume
-            noiseGainNode.gain.setValueAtTime(noiseGainNode.gain.value, noiseAudioContext.currentTime);
-            noiseGainNode.gain.linearRampToValueAtTime(0.0, noiseAudioContext.currentTime + 1.0);
+            // Set master gain and ramp down
+            masterGainNode.gain.setValueAtTime(masterGainNode.gain.value, noiseAudioContext.currentTime);
+            masterGainNode.gain.linearRampToValueAtTime(0.0, noiseAudioContext.currentTime + 1.0);
 
-            // We don't need to manually stop the source.
-            // The `playNoise` function will check `state.isNoisePlaying` 
-            // when the current track ends and will simply not loop.
-            // The audio will stop naturally and gaplessly after the fade-out.
+            // Stop the loop scheduler
+            if (loopSchedulerTimer) {
+                clearTimeout(loopSchedulerTimer);
+                loopSchedulerTimer = null;
+            }
+            
+            // Stop any currently playing sources
+            if (source1) source1.stop(noiseAudioContext.currentTime + 1.0);
+            if (source2) source2.stop(noiseAudioContext.currentTime + 1.0);
+            source1 = null;
+            source2 = null;
 
             if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.remove('active');
             if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.remove('active');
@@ -1058,9 +1101,19 @@
     async function setupAudio() {
         try {
             noiseAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-            noiseGainNode = noiseAudioContext.createGain();
-            noiseGainNode.gain.value = 0; // Start silent
-            noiseGainNode.connect(noiseAudioContext.destination);
+            
+            // Master gain for overall fade-in/out
+            masterGainNode = noiseAudioContext.createGain();
+            masterGainNode.gain.value = 0; // Start silent
+            masterGainNode.connect(noiseAudioContext.destination);
+
+            // Loop players
+            loopGainNode1 = noiseAudioContext.createGain();
+            loopGainNode2 = noiseAudioContext.createGain();
+            loopGainNode1.connect(masterGainNode);
+            loopGainNode2.connect(masterGainNode);
+            loopGainNode1.gain.value = 0; // Start silent
+            loopGainNode2.gain.value = 0; // Start silent
 
             const response = await fetch('https://kaffetish.club/audio/BlackNoise.mp3');
             const arrayBuffer = await response.arrayBuffer();
@@ -1205,7 +1258,7 @@
             if (e.touches.length > 1 || state.isExplanationViewActive) return;
             const touch = e.touches[0];
             state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
-            state.touch.startTime = Date.now();
+            state.touch.startTime = Date.Check();
         }, { passive: true });
         DOM.mainContent.addEventListener('touchend', (e) => {
             if (e.touches.length > 0 || state.isExplanationViewActive) return;
@@ -1224,12 +1277,10 @@
         setFontRem(state.currentFontRem);
         
         // --- NEW AUDIO INIT ---
-        // Set button visual state based on localStorage *before* audio loads
         if (state.isNoisePlaying) {
             if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
             if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
         }
-        // Asynchronously load and prepare audio
         setupAudio();
         // --- END NEW AUDIO INIT ---
 
