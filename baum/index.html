@@ -368,6 +368,9 @@
         display: block;
         min-height: 40px;
     }
+       .menu-button.active i {
+        color: var(--accent);
+    }
 </style>
 </head>
 <body>
@@ -437,6 +440,10 @@
                 <span>Toggle Theme</span>
             </button>
         </div>
+        <button id="mobile-noise-toggle" class="menu-button">
+                <i id="mobile-noise-icon" class="fa-solid fa-wave-square"></i>
+                <span>Black Noise</span>
+            </button>
         <hr class="menu-divider" />
         <div class="menu-section">
             <h4 class="menu-section-title">Go to Page</h4>
@@ -481,7 +488,7 @@
         <span id="mobile-action-text">Explain</span>
     </button>
 
-<script type="module">
+    <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
     import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
@@ -491,7 +498,7 @@
     document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
     let app, auth, functions, explainBookTextFn, db;
-    let noiseAudio; // <--- ADDED
+    let noiseAudio1, noiseAudio2; // <--- MODIFIED: We need two for cross-fading
 
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
@@ -547,8 +554,9 @@
         mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
         mobilePageJumpInput: document.getElementById('mobile-page-jump'),
         mobilePageTotal: document.getElementById('mobile-page-total'),
-        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'), // <--- ADDED
-        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),   // <--- ADDED
+        mobileNoiseToggle: document.getElementById('mobile-noise-toggle'),
+        mobileNoiseIcon: document.getElementById('mobile-noise-icon'),
+        desktopNoiseToggle: document.getElementById('btn-noise-toggle'), // <--- ADDED: For desktop
         mobileActionBtn: document.getElementById('mobile-action-btn'),
         mobileActionIcon: document.getElementById('mobile-action-icon'),
         mobileActionText: document.getElementById('mobile-action-text'),
@@ -572,8 +580,10 @@
         isExplanationViewActive: false,
         cachedPageHTML: null,
         lastScrollPosition: 0,
-        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true', // <--- ADDED
-        noiseFadeInterval: null, // <--- ADDED
+        isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
+        noise1FadeInterval: null, // <--- MODIFIED
+        noise2FadeInterval: null, // <--- ADDED
+        activeNoisePlayer: 1,   // <--- ADDED
     };
     const baseFontRem = 1.15;
 
@@ -973,62 +983,114 @@
     }
 
     // --- NEW AUDIO FUNCTIONS START ---
-    function fadeInNoise(audio) {
-        if (state.noiseFadeInterval) clearInterval(state.noiseFadeInterval);
-        audio.volume = 0;
-        audio.play().catch(e => console.error("Audio play failed:", e));
+    
+    // This function will be called on 'timeupdate' to check if we need to cross-fade
+    function handleNoiseLoop(e) {
+        const audio = e.target;
+        const loopTime = 7.0; // 8s track - 1s crossfade
 
-        const targetVolume = 1.0;
-        const fadeDuration = 2500; // 2.5 seconds
-        const tickRate = 50; // ms
-        const volumeStep = targetVolume / (fadeDuration / tickRate);
-
-        state.noiseFadeInterval = setInterval(() => {
-            let newVolume = audio.volume + volumeStep;
-            if (newVolume >= targetVolume) {
-                audio.volume = targetVolume;
-                clearInterval(state.noiseFadeInterval);
-                state.noiseFadeInterval = null;
+        if (audio.currentTime > loopTime) {
+            if (audio === noiseAudio1) {
+                playAndFadeIn(noiseAudio2, 'noise2FadeInterval');
+                noiseAudio2.addEventListener('timeupdate', handleNoiseLoop);
+                fadeOutAndPause(noiseAudio1, 'noise1FadeInterval');
+                noiseAudio1.removeEventListener('timeupdate', handleNoiseLoop);
+                state.activeNoisePlayer = 2;
             } else {
-                audio.volume = newVolume;
+                playAndFadeIn(noiseAudio1, 'noise1FadeInterval');
+                noiseAudio1.addEventListener('timeupdate', handleNoiseLoop);
+                fadeOutAndPause(noiseAudio2, 'noise2FadeInterval');
+                noiseAudio2.removeEventListener('timeupdate', handleNoiseLoop);
+                state.activeNoisePlayer = 1;
             }
-        }, tickRate);
+        }
     }
 
-    function fadeOutNoise(audio) {
-        if (state.noiseFadeInterval) clearInterval(state.noiseFadeInterval);
+    function playAndFadeIn(audio, intervalName) {
+        if (state[intervalName]) clearInterval(state[intervalName]);
+        
+        audio.currentTime = 0;
+        audio.volume = 0;
+        
+        audio.play().then(() => {
+            // Audio is playing, now fade in
+            const targetVolume = 1.0;
+            const fadeDuration = 2500; // 2.5 seconds
+            const tickRate = 50; // ms
+            const volumeStep = targetVolume / (fadeDuration / tickRate);
+
+            state[intervalName] = setInterval(() => {
+                let newVolume = audio.volume + volumeStep;
+                if (newVolume >= targetVolume) {
+                    audio.volume = targetVolume;
+                    clearInterval(state[intervalName]);
+                    state[intervalName] = null;
+                } else {
+                    audio.volume = newVolume;
+                }
+            }, tickRate);
+
+        }).catch(e => {
+            console.warn("Audio play failed (likely autoplay policy). User must interact.", e);
+            // If we couldn't play, force the state to OFF
+            if (state.isNoisePlaying) {
+                setNoise(false);
+            }
+        });
+    }
+
+    function fadeOutAndPause(audio, intervalName) {
+        if (state[intervalName]) clearInterval(state[intervalName]);
         const startVolume = audio.volume;
         const fadeDuration = 1000; // 1 second fade-out
         const tickRate = 50;
-        const volumeStep = startVolume / (fadeDuration / tickRate);
-
+        
         if (startVolume === 0) {
             audio.pause();
+            audio.currentTime = 0;
             return;
         }
 
-        state.noiseFadeInterval = setInterval(() => {
+        const volumeStep = startVolume / (fadeDuration / tickRate);
+
+        state[intervalName] = setInterval(() => {
             let newVolume = audio.volume - volumeStep;
             if (newVolume <= 0) {
                 audio.volume = 0;
                 audio.pause();
-                clearInterval(state.noiseFadeInterval);
-                state.noiseFadeInterval = null;
+                audio.currentTime = 0;
+                clearInterval(state[intervalName]);
+                state[intervalName] = null;
             } else {
                 audio.volume = newVolume;
             }
         }, tickRate);
     }
 
-    function toggleNoise() {
-        state.isNoisePlaying = !state.isNoisePlaying; // Toggle the state
-        localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
-        DOM.mobileNoiseToggle.classList.toggle('active', state.isNoisePlaying);
+    // This is the new master function to control the noise
+    function setNoise(on) {
+        state.isNoisePlaying = on;
+        localStorage.setItem("kaffetishNoise", on);
 
-        if (state.isNoisePlaying) {
-            fadeInNoise(noiseAudio);
+        // Toggle 'active' class on both mobile and desktop buttons
+        if (DOM.mobileNoiseToggle) {
+            DOM.mobileNoiseToggle.classList.toggle('active', on);
+        }
+        if (DOM.desktopNoiseToggle) {
+            DOM.desktopNoiseToggle.classList.toggle('active', on);
+        }
+
+        if (on) {
+            // Start playing
+            const player = (state.activeNoisePlayer === 1) ? noiseAudio1 : noiseAudio2;
+            playAndFadeIn(player, (state.activeNoisePlayer === 1) ? 'noise1FadeInterval' : 'noise2FadeInterval');
+            player.addEventListener('timeupdate', handleNoiseLoop);
         } else {
-            fadeOutNoise(noiseAudio);
+            // Stop playing (fade out both players just in case)
+            fadeOutAndPause(noiseAudio1, 'noise1FadeInterval');
+            fadeOutAndPause(noiseAudio2, 'noise2FadeInterval');
+            noiseAudio1.removeEventListener('timeupdate', handleNoiseLoop);
+            noiseAudio2.removeEventListener('timeupdate', handleNoiseLoop);
         }
     }
     // --- NEW AUDIO FUNCTIONS END ---
@@ -1068,7 +1130,14 @@
             if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
         });
 
-        DOM.mobileNoiseToggle.addEventListener("click", toggleNoise); // <--- ADDED
+        // --- MODIFIED: Noise Listeners ---
+        if (DOM.mobileNoiseToggle) {
+            DOM.mobileNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
+        }
+        if (DOM.desktopNoiseToggle) {
+            DOM.desktopNoiseToggle.addEventListener("click", () => setNoise(!state.isNoisePlaying));
+        }
+        // --- END MODIFICATION ---
 
         DOM.mobileActionBtn.addEventListener("click", () => {
             if (state.isExplanationViewActive) {
@@ -1168,11 +1237,19 @@
         setFontRem(state.currentFontRem);
         
         // --- NEW AUDIO INIT START ---
-        noiseAudio = new Audio('https://kaffetish.club/audio/BlackNoise.mp3');
-        noiseAudio.loop = true;
+        noiseAudio1 = new Audio('https://kaffetish.club/audio/BlackNoise.mp3');
+        noiseAudio2 = new Audio('https://kaffetish.club/audio/BlackNoise.mp3');
+        // We no longer set .loop = true, we handle it manually
 
         if (state.isNoisePlaying) {
-            DOM.mobileNoiseToggle.classList.add('active');
+            // Set button visual state
+            if (DOM.mobileNoiseToggle) DOM.mobileNoiseToggle.classList.add('active');
+            if (DOM.desktopNoiseToggle) DOM.desktopNoiseToggle.classList.add('active');
+            
+            // Try to start playing. This may fail due to autoplay policies.
+            // The catch block in playAndFadeIn will handle the failure and
+            // call setNoise(false) to reset the UI if it does.
+            setNoise(true);
         }
         // --- NEW AUDIO INIT END ---
 
