@@ -1088,6 +1088,7 @@
   function returnToBookView() {
     if (!state.isExplanationViewActive) return;
     state.isExplanationViewActive = false;
+                 clearSelection(); // <-- ADD THIS LINE
 
     DOM.pageContent.classList.add('content-fading');
 
