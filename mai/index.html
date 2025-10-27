@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-R-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple Text Learner (Markov Chain)</title>
     <style>
@@ -34,12 +34,17 @@
             display: block;
             margin-bottom: 5px;
         }
-        input[type="file"], input[type="number"] {
+        input[type="file"], input[type="number"], textarea {
             width: 100%;
             padding: 8px;
             box-sizing: border-box; /* Important for 100% width */
             border: 1px solid #ccc;
             border-radius: 4px;
+            font-family: inherit;
+        }
+        textarea {
+            height: 150px;
+            resize: vertical;
         }
         button {
             background-color: #1a73e8;
@@ -73,12 +78,18 @@
             color: #555;
             margin-top: 10px;
         }
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #777;
+        }
     </style>
 </head>
 <body>
 
     <h1>Simple Text Learner 📚</h1>
-    <p>Upload a plain text (<b>.txt</b>) file of a book. The script will "learn" the statistical patterns in the text. Then, you can generate new text based on those patterns.</p>
+    <p>Upload a plain text (<b>.txt</b>) file or paste a large amount of text below. The script will "learn" the statistical patterns. Then, you can generate new text based on those patterns.</p>
 
     <div id="controls">
         <div class="control-group">
@@ -86,8 +97,15 @@
             <input type="file" id="bookInput" accept=".txt">
         </div>
 
-        <button id="learnButton">2. Learn from Book</button>
-        <p id="status">Waiting for a book...</p>
+        <div class="divider">OR</div>
+
+        <div class="control-group">
+            <label for="textInput">1. Paste text here:</label>
+            <textarea id="textInput" placeholder="Paste a large block of text..."></textarea>
+        </div>
+
+        <button id="learnButton">2. Learn from Text</button>
+        <p id="status">Waiting for text...</p>
         
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
@@ -113,48 +131,78 @@
 
         // Get references to our HTML elements
         const bookInput = document.getElementById('bookInput');
+        const textInput = document.getElementById('textInput');
         const learnButton = document.getElementById('learnButton');
         const generateButton = document.getElementById('generateButton');
         const lengthInput = document.getElementById('lengthInput');
         const statusElement = document.getElementById('status');
         const outputElement = document.getElementById('output');
 
+        // --- Input Handling (to clear one input if the other is used) ---
+
+        bookInput.addEventListener('change', () => {
+            if (bookInput.files.length > 0) {
+                textInput.value = ""; // Clear text area if file is selected
+            }
+        });
+
+        textInput.addEventListener('input', () => {
+            if (textInput.value.trim().length > 0) {
+                bookInput.value = ""; // Clear file input if text is pasted
+            }
+        });
+
+
         // --- Step 1: Learning Process ---
 
         learnButton.addEventListener('click', () => {
             const file = bookInput.files[0];
-            
-            if (!file) {
-                statusElement.textContent = "Please select a .txt file first.";
-                return;
-            }
+            const pastedText = textInput.value;
 
             // Disable buttons during learning
             learnButton.disabled = true;
             generateButton.disabled = true;
-            statusElement.textContent = "Learning... this might take a moment for large books.";
+            statusElement.textContent = "Learning... this might take a moment.";
 
-            const reader = new FileReader();
+            if (pastedText.trim().length > 0) {
+                // Option A: Process the pasted text
+                // Use a small timeout to allow the UI to update (show "Learning...")
+                // before the potentially heavy computation blocks the main thread.
+                setTimeout(() => {
+                    buildModel(pastedText);
+                    statusElement.textContent = `✅ Learning complete! Ready to generate.`;
+                    learnButton.disabled = false;
+                    generateButton.disabled = (markovChain.size === 0);
+                }, 10); // 10ms is enough for the UI to refresh
 
-            // This function runs when the file is finished loading
-            reader.onload = (e) => {
-                const text = e.target.result;
-                buildModel(text); // Call the function to build our "brain"
-                
-                // Re-enable buttons
-                statusElement.textContent = `✅ Learning complete! Ready to generate text.`;
+            } else if (file) {
+                // Option B: Process the uploaded file
+                const reader = new FileReader();
+
+                // This function runs when the file is finished loading
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    buildModel(text); // Call the function to build our "brain"
+                    
+                    statusElement.textContent = `✅ Learning complete! Ready to generate.`;
+                    learnButton.disabled = false;
+                    generateButton.disabled = (markovChain.size === 0);
+                };
+
+                // This function runs if there's an error
+                reader.onerror = () => {
+                    statusElement.textContent = "Error reading file.";
+                    learnButton.disabled = false;
+                };
+
+                // Start reading the file as plain text
+                reader.readAsText(file);
+
+            } else {
+                // No input provided
+                statusElement.textContent = "Please upload a file OR paste text first.";
                 learnButton.disabled = false;
-                generateButton.disabled = false;
-            };
-
-            // This function runs if there's an error
-            reader.onerror = () => {
-                statusElement.textContent = "Error reading file.";
-                learnButton.disabled = false;
-            };
-
-            // Start reading the file as plain text
-            reader.readAsText(file);
+            }
         });
 
         function buildModel(text) {
@@ -166,7 +214,7 @@
             const words = text.split(/\s+/).filter(word => word.length > 0);
 
             if (words.length < 3) {
-                statusElement.textContent = "Error: The text file is too short to learn from.";
+                statusElement.textContent = "Error: The text is too short to learn from.";
                 return;
             }
 
@@ -196,7 +244,7 @@
 
         function generateText(length) {
             if (markovChain.size === 0) {
-                return "The model hasn't learned anything yet. Please upload a book.";
+                return "The model hasn't learned anything yet. Please provide text and click 'Learn'.";
             }
 
             // 1. Get all possible starting points (all the prefixes)
@@ -214,7 +262,7 @@
                 const possibleSuffixes = markovChain.get(currentPrefix);
 
                 // 5. Check if we've hit a "dead end" (a prefix at the very
-                //    end of the book that has no registered suffix)
+                //    end of the text that has no registered suffix)
                 if (!possibleSuffixes) {
                     break; // Stop generating
                 }
