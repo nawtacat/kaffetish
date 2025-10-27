@@ -1,290 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Text Learner (Markov Chain)</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        h1 {
-            color: #1a73e8;
-            text-align: center;
-        }
-        #controls {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-        }
-        .control-group {
-            margin-bottom: 15px;
-        }
-        label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-        input[type="file"], input[type="number"], textarea {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box; /* Important for 100% width */
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-family: inherit;
-        }
-        textarea {
-            height: 150px;
-            resize: vertical;
-        }
-        button {
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        button:hover {
-            background-color: #1558b0;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        #output {
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            min-height: 100px;
-            line-height: 1.6;
-            white-space: pre-wrap; /* Preserves whitespace and wraps text */
-        }
-        #status {
-            text-align: center;
-            font-style: italic;
-            color: #555;
-            margin-top: 10px;
-        }
-        .divider {
-            text-align: center;
-            margin: 20px 0;
-            font-weight: bold;
-            color: #777;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Mini JS Text Learner</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #f5f5f5;
+    color: #222;
+  }
+  h1 { text-align: center; }
+  input[type=file], button, textarea {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    font-size: 16px;
+  }
+  pre {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    height: 200px;
+    overflow: auto;
+  }
+</style>
 </head>
 <body>
 
-    <h1>Simple Text Learner 📚</h1>
-    <p>Upload a plain text (<b>.txt</b>) file or paste a large amount of text below. The script will "learn" the statistical patterns. Then, you can generate new text based on those patterns.</p>
+<h1>🧠 Mini JS Text Learner</h1>
 
-    <div id="controls">
-        <div class="control-group">
-            <label for="bookInput">1. Upload a .txt book:</label>
-            <input type="file" id="bookInput" accept=".txt">
-        </div>
+<input type="file" id="fileInput" accept=".txt" multiple>
+<button id="clearBtn">Clear Memory</button>
 
-        <div class="divider">OR</div>
+<h3>Ask a word:</h3>
+<input type="text" id="queryInput" placeholder="Type a word, e.g., love">
+<button id="queryBtn">Search associations</button>
 
-        <div class="control-group">
-            <label for="textInput">1. Paste text here:</label>
-            <textarea id="textInput" placeholder="Paste a large block of text..."></textarea>
-        </div>
+<h3>Output:</h3>
+<pre id="output"></pre>
 
-        <button id="learnButton">2. Learn from Text</button>
-        <p id="status">Waiting for text...</p>
-        
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+<script>
+const output = document.getElementById("output");
+let memory = JSON.parse(localStorage.getItem("wordMemory") || "{}");
 
-        <div class="control-group">
-            <label for="lengthInput">3. Words to generate:</label>
-            <input type="number" id="lengthInput" value="100" min="10" max="1000">
-        </div>
-        
-        <button id="generateButton" disabled>4. Generate Text</button>
-    </div>
+// Tokenizer (simple)
+function tokenize(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-zA-Z\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
 
-    <h2>Generated Text:</h2>
-    <div id="output">
-        Your generated text will appear here after the model learns.
-    </div>
+// Learn from uploaded text
+function learnFromText(text) {
+  const words = tokenize(text);
+  for (let i = 0; i < words.length - 1; i++) {
+    const w1 = words[i];
+    const w2 = words[i + 1];
+    if (!memory[w1]) memory[w1] = {};
+    memory[w1][w2] = (memory[w1][w2] || 0) + 1;
+  }
+  localStorage.setItem("wordMemory", JSON.stringify(memory));
+}
 
-    <script>
-        // This is our "brain". It will store the learned patterns.
-        // It's a Map where:
-        // Key   = "two words"
-        // Value = ["list", "of", "all", "possible", "next", "words"]
-        let markovChain = new Map();
+// Handle file upload
+document.getElementById("fileInput").addEventListener("change", (e) => {
+  const files = e.target.files;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = event => {
+      learnFromText(event.target.result);
+      output.textContent = `Learned from "${file.name}" (${Object.keys(memory).length} unique words total)`;
+    };
+    reader.readAsText(file);
+  });
+});
 
-        // Get references to our HTML elements
-        const bookInput = document.getElementById('bookInput');
-        const textInput = document.getElementById('textInput');
-        const learnButton = document.getElementById('learnButton');
-        const generateButton = document.getElementById('generateButton');
-        const lengthInput = document.getElementById('lengthInput');
-        const statusElement = document.getElementById('status');
-        const outputElement = document.getElementById('output');
+// Clear memory
+document.getElementById("clearBtn").addEventListener("click", () => {
+  localStorage.removeItem("wordMemory");
+  memory = {};
+  output.textContent = "Memory cleared.";
+});
 
-        // --- Input Handling (to clear one input if the other is used) ---
-
-        bookInput.addEventListener('change', () => {
-            if (bookInput.files.length > 0) {
-                textInput.value = ""; // Clear text area if file is selected
-            }
-        });
-
-        textInput.addEventListener('input', () => {
-            if (textInput.value.trim().length > 0) {
-                bookInput.value = ""; // Clear file input if text is pasted
-            }
-        });
-
-
-        // --- Step 1: Learning Process ---
-
-        learnButton.addEventListener('click', () => {
-            const file = bookInput.files[0];
-            const pastedText = textInput.value;
-
-            // Disable buttons during learning
-            learnButton.disabled = true;
-            generateButton.disabled = true;
-            statusElement.textContent = "Learning... this might take a moment.";
-
-            if (pastedText.trim().length > 0) {
-                // Option A: Process the pasted text
-                // Use a small timeout to allow the UI to update (show "Learning...")
-                // before the potentially heavy computation blocks the main thread.
-                setTimeout(() => {
-                    buildModel(pastedText);
-                    statusElement.textContent = `✅ Learning complete! Ready to generate.`;
-                    learnButton.disabled = false;
-                    generateButton.disabled = (markovChain.size === 0);
-                }, 10); // 10ms is enough for the UI to refresh
-
-            } else if (file) {
-                // Option B: Process the uploaded file
-                const reader = new FileReader();
-
-                // This function runs when the file is finished loading
-                reader.onload = (e) => {
-                    const text = e.target.result;
-                    buildModel(text); // Call the function to build our "brain"
-                    
-                    statusElement.textContent = `✅ Learning complete! Ready to generate.`;
-                    learnButton.disabled = false;
-                    generateButton.disabled = (markovChain.size === 0);
-                };
-
-                // This function runs if there's an error
-                reader.onerror = () => {
-                    statusElement.textContent = "Error reading file.";
-                    learnButton.disabled = false;
-                };
-
-                // Start reading the file as plain text
-                reader.readAsText(file);
-
-            } else {
-                // No input provided
-                statusElement.textContent = "Please upload a file OR paste text first.";
-                learnButton.disabled = false;
-            }
-        });
-
-        function buildModel(text) {
-            // Reset the model
-            markovChain.clear();
-            
-            // 1. Clean and split the text into an array of words
-            // This regex splits by one or more spaces, newlines, or tabs
-            const words = text.split(/\s+/).filter(word => word.length > 0);
-
-            if (words.length < 3) {
-                statusElement.textContent = "Error: The text is too short to learn from.";
-                return;
-            }
-
-            // 2. Loop through the words and build the chain
-            for (let i = 0; i < words.length - 2; i++) {
-                let prefix = words[i] + " " + words[i+1];
-                let suffix = words[i+2];
-
-                // 3. Add the pattern to our "brain" (the Map)
-                if (markovChain.has(prefix)) {
-                    // If we've seen this prefix before, just add the new suffix
-                    markovChain.get(prefix).push(suffix);
-                } else {
-                    // If it's a new prefix, create a new entry with this suffix
-                    markovChain.set(prefix, [suffix]);
-                }
-            }
-        }
-
-        // --- Step 2: Generation Process ---
-
-        generateButton.addEventListener('click', () => {
-            const length = parseInt(lengthInput.value, 10);
-            const generatedText = generateText(length);
-            outputElement.textContent = generatedText;
-        });
-
-        function generateText(length) {
-            if (markovChain.size === 0) {
-                return "The model hasn't learned anything yet. Please provide text and click 'Learn'.";
-            }
-
-            // 1. Get all possible starting points (all the prefixes)
-            const prefixes = Array.from(markovChain.keys());
-            
-            // 2. Pick a random starting prefix
-            let randomStartIndex = Math.floor(Math.random() * prefixes.length);
-            let currentPrefix = prefixes[randomStartIndex];
-            
-            // 3. Initialize our result array with the starting words
-            let result = currentPrefix.split(" ");
-
-            for (let i = 0; i < length - 2; i++) {
-                // 4. Find all possible next words for our current prefix
-                const possibleSuffixes = markovChain.get(currentPrefix);
-
-                // 5. Check if we've hit a "dead end" (a prefix at the very
-                //    end of the text that has no registered suffix)
-                if (!possibleSuffixes) {
-                    break; // Stop generating
-                }
-
-                // 6. Pick a random suffix from the list
-                let randomSuffixIndex = Math.floor(Math.random() * possibleSuffixes.length);
-                let nextWord = possibleSuffixes[randomSuffixIndex];
-
-                // 7. Add the new word to our result
-                result.push(nextWord);
-
-                // 8. Create the *next* prefix for the next loop iteration
-                // e.g., if prefix was "it was" and nextWord was "the",
-                // the new prefix becomes "was the"
-                currentPrefix = result[result.length - 2] + " " + result[result.length - 1];
-            }
-
-            // 9. Join all the words back into a single string
-            return result.join(" ");
-        }
-
-    </script>
-
+// Query associations
+document.getElementById("queryBtn").addEventListener("click", () => {
+  const word = document.getElementById("queryInput").value.toLowerCase();
+  if (!memory[word]) {
+    output.textContent = `No data on "${word}".`;
+    return;
+  }
+  const sorted = Object.entries(memory[word])
+    .sort((a,b) => b[1]-a[1])
+    .slice(0,10)
+    .map(([w,c]) => `${w} (${c})`)
+    .join(", ");
+  output.textContent = `Most common next words after "${word}":\n${sorted}`;
+});
+</script>
 </body>
 </html>
