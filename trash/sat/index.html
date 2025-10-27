@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Test Interface</title>
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Load Google Font "Inter" -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 3. Custom Styles -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1a202c; /* Equivalent to text-gray-900 */
+        }
+        
+        /* Style for the selected answer option */
+        .option-btn.selected {
+            border-color: #2563eb; /* blue-600 */
+            background-color: #eff6ff; /* blue-50 */
+            border-width: 2px;
+            font-weight: 500;
+        }
+
+        /* Base styles for buttons to match the interface */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid #cbd5e1; /* border-gray-300 */
+        }
+        .btn:hover {
+            background-color: #f8fafc; /* gray-50 */
+        }
+        .btn-primary {
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+            border-color: #2563eb;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8; /* blue-700 */
+        }
+        
+        /* Question grid button styles */
+        .q-grid-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1; /* border-gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            font-size: 0.875rem; /* text-sm */
+        }
+        .q-grid-btn:hover {
+            background-color: #f1f5f9; /* gray-100 */
+        }
+        .q-grid-btn.current {
+            border-color: #2563eb; /* blue-600 */
+            border-width: 2px;
+            font-weight: 700;
+            color: #2563eb;
+        }
+        .q-grid-btn.review {
+            /* Add a small flag icon or similar */
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen bg-white">
+
+    <!-- Top Colorful Bar -->
+    <div id="top-bar" class="h-2 flex w-full"></div>
+
+    <!-- Header -->
+    <header class="flex justify-between items-center p-4 border-b border-gray-300">
+        <!-- Left: Title and Directions -->
+        <div class="flex items-center space-x-4">
+            <h1 class="text-lg font-semibold text-gray-800">March 2023 Form A Module 2</h1>
+            <button class="flex items-center text-sm text-blue-600 hover:underline">
+                <span>Directions</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 ml-1">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.29a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Center: Timer -->
+        <div class="flex items-center space-x-3">
+            <div id="timer" class="text-lg font-semibold bg-gray-100 px-3 py-1 rounded-md">31:53</div>
+            <button id="pause-btn" class="btn text-sm">Pause</button>
+        </div>
+
+        <!-- Right: Tools -->
+        <div class="flex items-center space-x-3">
+            <button class="btn text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-1">
+                    <path d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.976-1.138 2.5 2.5 0 01-.142-3.665l3-3z" />
+                    <path d="M8.603 14.603a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.06-1.06l-1.224 1.224a4 4 0 005.656 5.656l3-3a4 4 0 00-.225-5.865.75.75 0 00-.976 1.138 2.5 2.5 0 01.142 3.665l-3 3z" />
+                </svg>
+                Highlights
+            </button>
+            <button class="btn text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 mr-1">
+                    <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9zm5-2.25a.75.75 0 01.75.75v1.5h1.5a.75.75 0 010 1.5h-1.5v1.5a.75.75 0 01-1.5 0v-1.5h-1.5a.75.75 0 010-1.5h1.5v-1.5a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+                </svg>
+                Zoom
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content (Split Screen) -->
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Pane: Context/Passage -->
+        <div class="w-1/2 p-10 border-r border-gray-300 overflow-y-auto">
+            <p class="text-lg leading-relaxed">
+                Few new parents ______ that their baby will someday become an astronaut. Yet if Jerry L. Ross's parents had made this prediction when he was born in 1948, they would have been correct, for NASA selected him for the job in 1980.
+            </p>
+        </div>
+
+        <!-- Right Pane: Question and Options -->
+        <div class="w-1/2 p-10 overflow-y-auto">
+            <!-- Question Header -->
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center space-x-3">
+                    <span class="bg-gray-800 text-white text-sm font-bold w-6 h-6 flex items-center justify-center rounded">1</span>
+                    <label for="mark-review" class="flex items-center space-x-2 text-sm cursor-pointer">
+                        <input type="checkbox" id="mark-review" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span>Mark for Review</span>
+                    </label>
+                </div>
+                <button class="btn p-2">
+                    <!-- Accessibility Icon (ABC) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                        <path d="M4 18h1.34a2 2 0 0 0 1.9-1.3l2.32-5.4A2 2 0 0 1 11.46 10h1.08a2 2 0 0 1 1.9 1.3l2.32 5.4A2 2 0 0 0 18.66 18H20"/>
+                        <path d="M8 10V8c0-1.1.9-2 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <path d="M12 10v8"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Question Text -->
+            <p class="text-base mb-6">
+                Which choice completes the text with the most logical and precise word or phrase?
+            </p>
+
+            <!-- Answer Options -->
+            <div id="options-container" class="space-y-3">
+                <button class="option-btn w-full text-left p-4 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none">
+                    <span class="font-bold mr-3">A</span>
+                    <span>disagree</span>
+                </button>
+                <button class="option-btn w-full text-left p-4 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none">
+                    <span class="font-bold mr-3">B</span>
+                    <span>ignore</span>
+                </button>
+                <button class="option-btn w-full text-left p-4 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none">
+                    <span class="font-bold mr-3">C</span>
+                    <span>require</span>
+                </button>
+                <button class="option-btn w-full text-left p-4 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none">
+                    <span class="font-bold mr-3">D</span>
+                    <span>anticipate</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="flex justify-between items-center p-4 border-t border-gray-300">
+        <!-- Left: Logo (placeholder) -->
+        <div class="font-bold text-gray-700">bluebook.plus</div>
+        
+        <!-- Center: Question Navigator -->
+        <button id="question-nav-btn" class="btn text-sm">
+            <span>Question 1 of 27</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 ml-1">
+                <path fill-rule="evenodd" d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.94l-3.71 3.83a.75.75 0 11-1.08-1.04l4.25-4.25a.75.75 0 011.06 0l4.25 4.25a.75.75 0 01.02 1.06z" clip-rule="evenodd" />
+            </svg>
+        </button>
+
+        <!-- Right: Navigation Buttons -->
+        <div class="flex items-center space-x-2">
+            <button class="btn text-sm">Back</button>
+            <button class="btn btn-primary text-sm">Next</button>
+        </div>
+    </footer>
+
+    <!-- Bottom Colorful Bar -->
+    <div id="bottom-bar" class="h-2 flex w-full"></div>
+
+    <!-- Question Navigator Modal -->
+    <div id="question-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <!-- Modal Content -->
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-2xl" id="modal-content">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center pb-3 mb-4 border-b">
+                <h2 class="text-lg font-semibold">March 2023 Form A Module 2</h2>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Legend -->
+            <div class="flex justify-center items-center space-x-6 mb-6 text-sm">
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 bg-blue-600 rounded-full"></div>
+                    <span>Current</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-4 h-4 border-2 border-gray-400 rounded-full"></div>
+                    <span>Unanswered</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-red-500">
+                        <path fill-rule="evenodd" d="M3 3a2 2 0 00-2 2v10a2 2 0 002 2h1.5a.75.75 0 000-1.5H3V5a.5.5 0 01.5-.5h11a.5.5 0 01.5.5v2.5a.75.75 0 001.5 0V5a2 2 0 00-2-2H3z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M12.5 7.75a.75.75 0 00-1.5 0v5.337l-2.06-1.648a.75.75 0 00-.94.066l-.002.002a.75.75 0 00.066.94l3.25 2.5a.75.75 0 00.94 0l3.25-2.5a.75.75 0 00.066-.94l-.002-.002a.75.75 0 00-.94-.066L14 13.087V7.75z" clip-rule="evenodd" />
+                    </svg>
+                    <span>For Review</span>
+                </div>
+            </div>
+
+            <!-- Question Grid -->
+            <div id="question-grid" class="grid grid-cols-10 gap-2 mb-6">
+                <!-- Grid items will be injected by JS -->
+            </div>
+
+            <!-- Modal Footer Button -->
+            <div class="text-center">
+                <button class="btn btn-primary px-6">Go to Review Page</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const timerEl = document.getElementById('timer');
+            const pauseBtn = document.getElementById('pause-btn');
+            const optionsContainer = document.getElementById('options-container');
+            const questionNavBtn = document.getElementById('question-nav-btn');
+            const questionModal = document.getElementById('question-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const modalContent = document.getElementById('modal-content');
+            const topBar = document.getElementById('top-bar');
+            const bottomBar = document.getElementById('bottom-bar');
+            const questionGrid = document.getElementById('question-grid');
+
+            let totalSeconds = (31 * 60) + 53; // 31 minutes 53 seconds
+            let timerInterval;
+            let isPaused = false;
+            let currentQuestion = 1;
+            const totalQuestions = 27;
+
+            // --- 1. Colorful Bars ---
+            const colors = ['#f87171', '#fbbf24', '#34d399', '#60a5fa', '#c084fc', '#f472b6'];
+            function generateColorfulBar(container) {
+                let segments = '';
+                for (let i = 0; i < 30; i++) {
+                    segments += `<div class="flex-1 h-2" style="background-color: ${colors[i % colors.length]}"></div>`;
+                }
+                container.innerHTML = segments;
+            }
+            generateColorfulBar(topBar);
+            generateColorfulBar(bottomBar);
+
+            // --- 2. Timer Logic ---
+            function startTimer() {
+                timerInterval = setInterval(() => {
+                    if (!isPaused) {
+                        totalSeconds--;
+                        let minutes = Math.floor(totalSeconds / 60);
+                        let seconds = totalSeconds % 60;
+                        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                        if (totalSeconds <= 0) {
+                            clearInterval(timerInterval);
+                            timerEl.textContent = "00:00";
+                        }
+                    }
+                }, 1000);
+            }
+            
+            pauseBtn.addEventListener('click', () => {
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+            });
+
+            startTimer();
+
+            // --- 3. Answer Selection Logic ---
+            optionsContainer.addEventListener('click', (e) => {
+                const clickedOption = e.target.closest('.option-btn');
+                if (!clickedOption) return;
+
+                // Remove 'selected' from all options
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+
+                // Add 'selected' to the clicked option
+                clickedOption.classList.add('selected');
+            });
+
+            // --- 4. Question Grid Generation ---
+            function generateQuestionGrid() {
+                let gridHTML = '';
+                for (let i = 1; i <= totalQuestions; i++) {
+                    let classes = 'q-grid-btn';
+                    if (i === currentQuestion) {
+                        classes += ' current';
+                    }
+                    gridHTML += `<button class="${classes}">${i}</button>`;
+                }
+                questionGrid.innerHTML = gridHTML;
+            }
+            generateQuestionGrid();
+
+            // --- 5. Modal Logic ---
+            function showModal() {
+                questionModal.classList.remove('hidden');
+            }
+            
+            function hideModal() {
+                questionModal.classList.add('hidden');
+            }
+
+            questionNavBtn.addEventListener('click', showModal);
+            closeModalBtn.addEventListener('click', hideModal);
+            
+            // Close modal if overlay (outside content) is clicked
+            questionModal.addEventListener('click', (e) => {
+                if (e.target === questionModal) {
+                    hideModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
