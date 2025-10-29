@@ -3,26 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Paper Bettor</title>
+    <title>EN7</title>
+    <!-- Import Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- 1. Root & Body (Brave/Chiller Theme) --- */
+        /* --- 1. Root & Body (Immersive Gradient Theme) --- */
         :root {
-            --color-bg: #0f0f12; /* Deeper space black */
-            --color-bg-light: #1c1c21; /* Raised panel */
-            --color-bg-lighter: #2a2a30; /* Lighter panel */
+            --color-bg-panel: rgba(20, 20, 25, 0.5); /* Semi-transparent panel */
+            --color-bg-panel-light: rgba(40, 40, 45, 0.4);
+            --color-border: rgba(255, 255, 255, 0.1);
             --color-text: #f0f0f5;
-            --color-text-dim: #707080;
+            --color-text-dim: #a0a0b0;
             --color-accent: #00a0ff; /* Electric Blue */
             --color-accent-dark: #0077cc;
             --color-danger: #ff4141;
             --color-warning: #f0e000;
             --color-win: #00f0a0; /* Neon Mint for 'Win' */
             --font-main: 'Poppins', 'Helvetica', sans-serif;
-            --font-display: 'Oswald', 'Arial', sans-serif; /* Sporty/Brave font */
+            --font-display: 'Oswald', 'Arial', sans-serif;
+            --blur-strong: 12px;
+            --blur-light: 5px;
         }
 
         * {
@@ -37,24 +40,22 @@
 
         body {
             font-family: var(--font-main);
-            background-color: var(--color-bg);
+            /* DYNAMIC BACKGROUND SET BY JS */
+            background-color: #0f0f12; /* Fallback */
+            background-size: 200% 200%; /* For animation */
+            transition: background 1.5s ease;
             color: var(--color-text);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* Align to top for mobile */
             min-height: 100vh;
-            padding: 20px;
         }
 
         /* --- 2. Main App Container --- */
         #app-container {
             width: 100%;
-            max-width: 800px;
-            background-color: var(--color-bg-light);
-            border-radius: 16px;
-            border: 1px solid var(--color-bg-lighter);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
         }
 
         /* --- 3. Header --- */
@@ -63,8 +64,16 @@
             justify-content: space-between;
             align-items: center;
             padding: 20px 25px;
-            background-color: var(--color-bg-lighter);
-            border-bottom: 1px solid var(--color-bg);
+            background: var(--color-bg-panel);
+            backdrop-filter: blur(var(--blur-strong));
+            -webkit-backdrop-filter: blur(var(--blur-strong));
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            
+            /* Sticky header */
+            position: sticky;
+            top: 20px;
+            z-index: 100;
         }
 
         header h1 {
@@ -85,7 +94,7 @@
             font-size: 1.4rem;
             font-weight: 700;
             color: var(--color-win);
-            background-color: var(--color-bg);
+            background-color: rgba(0, 0, 0, 0.3);
             padding: 8px 14px;
             border-radius: 8px;
             letter-spacing: 1px;
@@ -93,7 +102,12 @@
 
         /* --- 4. Main Content Area --- */
         main {
-            padding: 25px;
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .hidden {
@@ -101,38 +115,46 @@
         }
 
         /* --- 5. Betting UI --- */
+        #betting-ui {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
         #betting-ui h2 {
             font-family: var(--font-display);
             font-size: 1.3rem;
             color: var(--color-text-dim);
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            margin-bottom: 25px;
             text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px 15px;
+            border-radius: 8px;
         }
 
         .matchup-container {
-            display: grid;
-            grid-template-columns: 1fr 0.5fr 1fr;
+            display: flex;
+            justify-content: space-around;
             align-items: center;
-            text-align: center;
-            margin-bottom: 30px;
+            width: 100%;
+            padding: 20px 0;
         }
 
         .team {
-            padding: 20px;
-            background-color: var(--color-bg-lighter);
-            border-radius: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
-            min-height: 180px;
-            justify-content: center;
+            gap: 20px;
+            text-align: center;
+            width: 300px;
         }
 
         .team-icon {
-            height: 80px; /* Fixed height container */
+            width: 250px; /* LARGE ICONS */
+            height: 250px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -140,34 +162,54 @@
 
         .team-icon img {
             max-width: 100%;
-            max-height: 80px;
+            max-height: 100%;
             height: auto;
             object-fit: contain;
+            /* Creative shadow */
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
         }
 
         .team-name {
-            font-size: 1.25rem;
-            font-weight: 600;
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
             line-height: 1.3;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .vs {
             font-family: var(--font-display);
-            font-size: 2rem;
+            font-size: 5rem; /* Large VS */
             font-weight: 700;
-            color: var(--color-text-dim);
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        #betting-controls {
+            width: 100%;
+            max-width: 800px;
+            background: var(--color-bg-panel);
+            backdrop-filter: blur(var(--blur-strong));
+            -webkit-backdrop-filter: blur(var(--blur-strong));
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .odds-container {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 15px;
-            margin-bottom: 25px;
         }
 
         .odd-option {
-            background-color: var(--color-bg-lighter);
-            border: 2px solid var(--color-bg-lighter);
+            background-color: var(--color-bg-panel-light);
+            border: 2px solid var(--color-border);
             padding: 15px;
             border-radius: 8px;
             text-align: center;
@@ -177,14 +219,15 @@
 
         .odd-option:hover {
             border-color: var(--color-accent);
+            transform: translateY(-2px);
         }
 
         .odd-option.selected {
             background-color: var(--color-accent);
             border-color: var(--color-accent);
-            color: var(--color-bg-light);
+            color: #0f0f12;
             transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(0, 160, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 160, 255, 0.5);
         }
 
         .odd-option .label {
@@ -197,7 +240,7 @@
         }
         
         .odd-option.selected .label {
-            color: var(--color-bg-light);
+            color: #0f0f12;
             font-weight: 700;
         }
 
@@ -218,8 +261,8 @@
             font-family: var(--font-display);
             font-size: 1.3rem;
             padding: 12px 15px;
-            background-color: var(--color-bg);
-            border: 2px solid var(--color-bg-lighter);
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--color-border);
             color: var(--color-text);
             border-radius: 8px;
             outline: none;
@@ -240,7 +283,7 @@
             font-size: 1.2rem;
             font-weight: 700;
             background-color: var(--color-accent);
-            color: var(--color-bg);
+            color: #0f0f12;
             border: none;
             padding: 12px 20px;
             border-radius: 8px;
@@ -263,20 +306,24 @@
 
         /* --- 6. Game Simulation UI --- */
         #game-ui {
+            width: 100%;
+            max-width: 900px;
             font-family: var(--font-main);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .scoreboard {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            background-color: var(--color-bg-lighter);
-            /* Subtle pitch stripe effect */
-            background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 50%, transparent 50%);
-            background-size: 80px 80px;
+            background: var(--color-bg-panel);
+            backdrop-filter: blur(var(--blur-strong));
+            -webkit-backdrop-filter: blur(var(--blur-strong));
+            border: 1px solid var(--color-border);
             padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            border-radius: 16px;
             text-align: center;
         }
 
@@ -305,19 +352,20 @@
             font-weight: 700;
             color: var(--color-accent);
             text-align: center;
-            margin-bottom: 20px;
         }
 
         #live-feed {
-            height: 350px;
-            background-color: var(--color-bg);
-            border: 1px solid var(--color-bg-lighter);
-            border-radius: 8px;
-            padding: 15px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.4); /* Darker feed */
+            backdrop-filter: blur(var(--blur-light));
+            -webkit-backdrop-filter: blur(var(--blur-light));
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
             overflow-y: auto;
             display: flex;
-            flex-direction: column-reverse; /* Newest events at bottom, scrolls up */
-            font-size: 0.9rem;
+            flex-direction: column-reverse;
+            font-size: 0.95rem;
         }
         
         .event {
@@ -379,7 +427,7 @@
         
         .event.half-time, .event.full-time {
             font-family: var(--font-display);
-            background-color: var(--color-bg-lighter);
+            background-color: var(--color-bg-panel-light);
             color: var(--color-accent);
             font-weight: 700;
             justify-content: center;
@@ -395,20 +443,24 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             padding: 20px;
+            backdrop-filter: blur(var(--blur-light));
+            -webkit-backdrop-filter: blur(var(--blur-light));
         }
         
         #modal {
-            background-color: var(--color-bg-light);
+            background: var(--color-bg-panel);
+            backdrop-filter: blur(var(--blur-strong));
+            -webkit-backdrop-filter: blur(var(--blur-strong));
+            border: 1px solid var(--color-border);
             padding: 30px;
             border-radius: 16px;
             text-align: center;
-            border: 1px solid var(--color-bg-lighter);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             width: 100%;
             max-width: 400px;
@@ -434,42 +486,41 @@
         }
 
         /* --- 8. Mobile Responsive --- */
-        @media (max-width: 600px) {
-            body {
+        @media (max-width: 768px) {
+            #app-container {
                 padding: 10px;
+                gap: 10px;
             }
 
             header {
                 padding: 15px;
+                top: 10px; /* Sticky top with padding */
             }
 
             header h1 { font-size: 1.4rem; }
             #balance-display { font-size: 1.2rem; }
 
-            main {
-                padding: 15px;
-            }
-
             /* Stack the team matchup */
             .matchup-container {
-                grid-template-columns: 1fr;
-                gap: 15px;
+                flex-direction: column;
+                gap: 20px;
             }
 
             .vs {
                 transform: rotate(90deg);
-                font-size: 1.5rem;
-                margin: 5px 0;
+                font-size: 2.5rem;
+                margin: 10px 0;
             }
             
             .team {
-                min-height: auto;
-                padding: 15px;
+                width: 200px;
             }
             
-            .team-icon { height: 60px; }
-            .team-icon img { max-height: 60px; }
-            .team-name { font-size: 1.1rem; }
+            .team-icon {
+                width: 150px;
+                height: 150px;
+            }
+            .team-name { font-size: 1.5rem; }
 
             /* Stack the odds buttons */
             .odds-container {
@@ -497,7 +548,7 @@
             .score-display { font-size: 2rem; padding: 0 10px; }
             .game-timer { font-size: 1.8rem; }
             
-            #live-feed { height: 300px; }
+            #live-feed { height: 350px; padding: 15px; }
 
             #modal h2 { font-size: 2rem; }
             #modal p { font-size: 1rem; }
@@ -508,52 +559,62 @@
 <body>
 
     <div id="app-container">
+        <!-- App Header -->
         <header>
-            <h1>Pro <span>Bettor</span></h1>
+            <h1>EN<span>7</span></h1>
             <div id="balance-display">$1000</div>
         </header>
 
+        <!-- App Main Content -->
         <main>
+            <!-- Betting UI -->
             <div id="betting-ui">
-                <h2>Upcoming Match</h2>
                 
                 <div class="matchup-container">
+                    <!-- Home Team -->
                     <div class="team" id="home-team">
                         <div class="team-icon" id="home-team-icon">
-                            </div>
+                            <!-- Logo will be inserted by JS -->
+                        </div>
                         <div class="team-name" id="home-team-name">Home</div>
                     </div>
                     
                     <div class="vs">VS</div>
                     
+                    <!-- Away Team -->
                     <div class="team" id="away-team">
                         <div class="team-icon" id="away-team-icon">
-                            </div>
+                            <!-- Logo will be inserted by JS -->
+                        </div>
                         <div class="team-name" id="away-team-name">Away</div>
                     </div>
                 </div>
 
-                <div class="odds-container" id="odds-container">
-                    <div class="odd-option" data-bet="home">
-                        <div class="label" id="home-bet-label">Home Win</div>
-                        <div class="value" id="home-odds">1.85</div>
+                <div id="betting-controls">
+                    <h2>Place Your Bet</h2>
+                    <div class="odds-container" id="odds-container">
+                        <div class="odd-option" data-bet="home">
+                            <div class="label" id="home-bet-label">Home Win</div>
+                            <div class="value" id="home-odds">1.85</div>
+                        </div>
+                        <div class="odd-option" data-bet="draw">
+                            <div class="label">Draw</div>
+                            <div class="value" id="draw-odds">3.50</div>
+                        </div>
+                        <div class="odd-option" data-bet="away">
+                            <div class="label" id="away-bet-label">Away Win</div>
+                            <div class="value" id="away-odds">4.20</div>
+                        </div>
                     </div>
-                    <div class="odd-option" data-bet="draw">
-                        <div class="label">Draw</div>
-                        <div class="value" id="draw-odds">3.50</div>
-                    </div>
-                    <div class="odd-option" data-bet="away">
-                        <div class="label" id="away-bet-label">Away Win</div>
-                        <div class="value" id="away-odds">4.20</div>
-                    </div>
-                </div>
 
-                <div class="bet-input-container">
-                    <input type="number" id="bet-amount" placeholder="Enter bet amount..." min="1">
-                    <button class="btn" id="place-bet-btn">Place Bet</button>
+                    <div class="bet-input-container">
+                        <input type="number" id="bet-amount" placeholder="Enter bet amount..." min="1">
+                        <button class="btn" id="place-bet-btn">Place Bet</button>
+                    </div>
                 </div>
             </div>
 
+            <!-- Game Simulation UI -->
             <div id="game-ui" class="hidden">
                 <div class="scoreboard">
                     <div class="score-team home" id="game-home-name">HOME</div>
@@ -568,12 +629,14 @@
                 <div class="game-timer" id="game-timer">00:00</div>
                 
                 <div id="live-feed">
-                    </div>
+                    <!-- Events will be added here by JS -->
+                </div>
             </div>
 
         </main>
     </div>
 
+    <!-- Post-Game Result Modal -->
     <div id="modal-overlay" class="hidden">
         <div id="modal">
             <h2 id="modal-result-text">You Won!</h2>
@@ -587,17 +650,18 @@
         /* --- 1. DATABASE (Clubs, Players) --- */
         
         // --- NOTE ---
-        // The 'icon' URLs below are hotlinked from Wikimedia Commons.
-        // They are not guaranteed to work forever and may be changed or blocked.
-        // For a real project, you would host these assets yourself.
+        // 'icon' URLs are hotlinked. They may break.
+        // 'strength' is the 0-100 rating you requested.
+        // 'color' is for the dynamic gradient background.
         
         const DB = {
             clubs: [
                 {
                     id: 'MAN_RED',
                     name: 'Manchester United',
+                    color: '#DA291C', // United Red
                     icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Manchester_United_FC_crest.svg/1024px-Manchester_United_FC_crest.svg.png',
-                    strength: 88,
+                    strength: 84, // 0-100 Rating
                     players: [
                         { name: 'Marcus Rashford', position: 'FW', rating: 85 },
                         { name: 'Bruno Fernandes', position: 'MF', rating: 88 },
@@ -610,8 +674,9 @@
                 {
                     id: 'MAD_WHITE',
                     name: 'Real Madrid',
+                    color: '#FEBE10', // Real Gold
                     icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/1200px-Real_Madrid_CF.svg.png',
-                    strength: 92,
+                    strength: 92, // 0-100 Rating
                     players: [
                         { name: 'Vinícius Jr.', position: 'FW', rating: 90 },
                         { name: 'Jude Bellingham', position: 'MF', rating: 91 },
@@ -624,8 +689,9 @@
                 {
                     id: 'BAY_MUNICH',
                     name: 'Bayern Munich',
+                    color: '#DC052D', // Bayern Red
                     icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg/1200px-FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg.png',
-                    strength: 90,
+                    strength: 90, // 0-100 Rating
                     players: [
                         { name: 'Harry Kane', position: 'FW', rating: 91 },
                         { name: 'Jamal Musiala', position: 'MF', rating: 88 },
@@ -638,8 +704,9 @@
                 {
                     id: 'FC_CATALONIA',
                     name: 'FC Barcelona',
+                    color: '#A50044', // Barça Garnet
                     icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/1200px-FC_Barcelona_%28crest%29.svg.png',
-                    strength: 87,
+                    strength: 87, // 0-100 Rating
                     players: [
                         { name: 'Robert Lewandowski', position: 'FW', rating: 89 },
                         { name: 'Pedri', position: 'MF', rating: 87 },
@@ -652,8 +719,9 @@
                 {
                     id: 'LIV_REDS',
                     name: 'Liverpool FC',
+                    color: '#C8102E', // Liverpool Red
                     icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Liverpool_FC.svg/1200px-Liverpool_FC.svg.png',
-                    strength: 89,
+                    strength: 89, // 0-100 Rating
                     players: [
                         { name: 'Mohamed Salah', position: 'FW', rating: 90 },
                         { name: 'Virgil van Dijk', position: 'DF', rating: 89 },
@@ -666,8 +734,9 @@
                 {
                     id: 'PARIS_SG',
                     name: 'Paris Saint-Germain',
+                    color: '#004170', // PSG Blue
                     icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Paris_Saint-Germain_F.C..svg/1200px-Paris_Saint-Germain_F.C..svg.png',
-                    strength: 86,
+                    strength: 86, // 0-100 Rating
                     players: [
                         { name: 'Kylian Mbappé', position: 'FW', rating: 92 },
                         { name: 'Ousmane Dembélé', position: 'FW', rating: 86 },
@@ -683,24 +752,24 @@
         /* --- 2. GAME STATE --- */
         let appState = {
             balance: 1000,
-            currentGame: null, // { homeTeam, awayTeam, odds: { home, draw, away } }
-            currentBet: null, // { amount, outcome ('home', 'away', 'draw'), odds }
+            currentGame: null,
+            currentBet: null,
             simulation: {
                 minute: 0,
                 homeScore: 0,
                 awayScore: 0,
                 gameInterval: null,
-                gameSpeedMs: 200 // How fast a "minute" passes. (Was 300)
+                gameSpeedMs: 700 // SLOWED DOWN from 200
             }
         };
 
         /* --- 3. DOM ELEMENTS --- */
         const DOMElements = {
+            body: document.body,
             balanceDisplay: document.getElementById('balance-display'),
             bettingUI: document.getElementById('betting-ui'),
             gameUI: document.getElementById('game-ui'),
             
-            // Betting
             homeTeamIcon: document.getElementById('home-team-icon'),
             homeTeamName: document.getElementById('home-team-name'),
             awayTeamIcon: document.getElementById('away-team-icon'),
@@ -714,7 +783,6 @@
             betAmountInput: document.getElementById('bet-amount'),
             placeBetBtn: document.getElementById('place-bet-btn'),
 
-            // Game
             gameHomeName: document.getElementById('game-home-name'),
             gameAwayName: document.getElementById('game-away-name'),
             gameHomeScore: document.getElementById('game-home-score'),
@@ -722,7 +790,6 @@
             gameTimer: document.getElementById('game-timer'),
             liveFeed: document.getElementById('live-feed'),
 
-            // Modal
             modalOverlay: document.getElementById('modal-overlay'),
             modalResultText: document.getElementById('modal-result-text'),
             modalDetails: document.getElementById('modal-details'),
@@ -731,20 +798,16 @@
 
         /* --- 4. CORE FUNCTIONS --- */
 
-        /**
-         * Initializes the application
-         */
         function init() {
+            // Set initial background gradient
+            DOMElements.body.style.background = `linear-gradient(135deg, ${DB.clubs[0].color} 0%, ${DB.clubs[1].color} 100%)`;
+            
             updateBalanceUI();
             setupNewMatch();
             addEventListeners();
         }
 
-        /**
-         * Sets up all event listeners
-         */
         function addEventListeners() {
-            // Bet selection
             DOMElements.oddsContainer.addEventListener('click', (e) => {
                 const selectedOption = e.target.closest('.odd-option');
                 if (!selectedOption) return;
@@ -763,16 +826,10 @@
                 };
             });
 
-            // Place bet button
             DOMElements.placeBetBtn.addEventListener('click', handlePlaceBet);
-            
-            // Next match button (in modal)
             DOMElements.nextMatchBtn.addEventListener('click', resetForNextMatch);
         }
 
-        /**
-         * Selects two new random teams and calculates odds
-         */
         function setupNewMatch() {
             let clubs = [...DB.clubs];
             let homeIndex = Math.floor(Math.random() * clubs.length);
@@ -784,10 +841,12 @@
             const odds = calculateOdds(homeTeam, awayTeam);
             
             appState.currentGame = { homeTeam, awayTeam, odds };
-            appState.currentBet = null; // Clear previous bet
+            appState.currentBet = null;
             
+            // *** UPDATE DYNAMIC BACKGROUND ***
+            DOMElements.body.style.background = `linear-gradient(135deg, ${homeTeam.color} 0%, ${awayTeam.color} 100%)`;
+
             // Update Betting UI
-            // *** UPDATED to use innerHTML for logos ***
             DOMElements.homeTeamIcon.innerHTML = `<img src="${homeTeam.icon}" alt="${homeTeam.name}">`;
             DOMElements.homeTeamName.textContent = homeTeam.name;
             DOMElements.homeBetLabel.textContent = `${homeTeam.name} Win`;
@@ -802,14 +861,18 @@
         }
 
         /**
-         * Calculates odds based on team strength
+         * Calculates odds based on team strength (0-100 rating)
          */
         function calculateOdds(home, away) {
+            // This logic uses the 0-100 strength rating
             const strengthDiff = home.strength - away.strength;
             
             let homeProb = 0.45, drawProb = 0.25, awayProb = 0.30;
             
-            const advantage = (strengthDiff / 100) * 0.2 + 0.05; // Home advantage + strength
+            // Home advantage + strength diff
+            // A 10-point strength diff (e.g., 90 vs 80) = 0.02 advantage
+            // Total advantage = 0.05 (home) + 0.02 (strength) = 0.07
+            const advantage = (strengthDiff / 100) * 0.2 + 0.05; 
             
             homeProb += advantage;
             awayProb -= advantage;
@@ -829,23 +892,36 @@
             };
         }
 
-        /**
-         * Validates and processes the user's bet
-         */
         function handlePlaceBet() {
             const amount = parseInt(DOMElements.betAmountInput.value, 10);
 
+            // Simple modal alert
+            const showModalAlert = (message) => {
+                const modal = DOMElements.modalOverlay;
+                modal.classList.remove('hidden');
+                DOMElements.modalResultText.textContent = "Invalid Bet";
+                DOMElements.modalResultText.className = 'modal-result-lose';
+                DOMElements.modalDetails.textContent = message;
+                DOMElements.nextMatchBtn.textContent = "Try Again";
+            }
+            
             if (isNaN(amount) || amount <= 0) {
-                alert("Please enter a valid bet amount.");
+                showModalAlert("Please enter a valid bet amount.");
                 return;
             }
             if (amount > appState.balance) {
-                alert("You don't have enough money for that bet.");
+                showModalAlert("You don't have enough money for that bet.");
                 return;
             }
             if (!appState.currentBet || !appState.currentBet.outcome) {
-                alert("Please select an outcome to bet on (Home, Draw, or Away).");
+                showModalAlert("Please select an outcome to bet on (Home, Draw, or Away).");
                 return;
+            }
+            
+            // If validation passed, hide modal if it was open
+            if (!modal.classList.contains('hidden')) {
+                 modal.classList.add('hidden');
+                 DOMElements.nextMatchBtn.textContent = "Next Match";
             }
 
             appState.currentBet.amount = amount;
@@ -855,16 +931,10 @@
             startSimulation();
         }
 
-        /**
-         * Updates the balance in the UI
-         */
         function updateBalanceUI() {
             DOMElements.balanceDisplay.textContent = `$${appState.balance}`;
         }
 
-        /**
-         * Switches from Betting UI to Game UI
-         */
         function startSimulation() {
             DOMElements.bettingUI.classList.add('hidden');
             DOMElements.gameUI.classList.remove('hidden');
@@ -887,9 +957,6 @@
             );
         }
 
-        /**
-         * A single "minute" of the game simulation
-         */
         function gameTick() {
             appState.simulation.minute++;
             DOMElements.gameTimer.textContent = `${String(appState.simulation.minute).padStart(2, '0')}:00`;
@@ -907,6 +974,8 @@
             // Event Generation Engine
             const { homeTeam, awayTeam } = appState.currentGame;
             let eventChance = Math.random();
+            
+            // This logic uses the 0-100 strength rating
             const homeMomentum = (homeTeam.strength / 100) * Math.random();
             const awayMomentum = (awayTeam.strength / 100) * Math.random();
 
@@ -917,10 +986,10 @@
                     generateGameEvent('goal', awayTeam);
                 }
             } else if (eventChance < 0.05) { // Card
-                if (homeMomentum > awayMomentum) { // Home team commits foul
-                    generateGameEvent('card', awayTeam); // Foul committed *by* home, so card *for* away? No, foul *by* home.
+                if (homeMomentum > awayMomentum) {
+                    generateGameEvent('card', homeTeam);
                 } else { 
-                    generateGameEvent('card', homeTeam); // Foul *by* away.
+                    generateGameEvent('card', awayTeam);
                 }
             } else if (eventChance < 0.25) { // Commentary
                 if (homeMomentum > awayMomentum) {
@@ -931,9 +1000,6 @@
             }
         }
 
-        /**
-         * Stops the game loop and resolves the bet
-         */
         function endSimulation() {
             clearInterval(appState.simulation.gameInterval);
             appState.simulation.gameInterval = null;
@@ -944,9 +1010,6 @@
             setTimeout(resolveBet, 1500);
         }
         
-        /**
-         * Generates a random event (goal, card, commentary)
-         */
         function generateGameEvent(type, team) {
             const minute = appState.simulation.minute;
             const timeStr = `${String(minute).padStart(2, '0')}:00`;
@@ -974,7 +1037,7 @@
                     break;
                     
                 case 'card':
-                    const cardType = Math.random() > 0.1 ? 'yellow' : 'red'; // 10% chance of red
+                    const cardType = Math.random() > 0.1 ? 'yellow' : 'red';
                     text = `A bad tackle from ${player.name} (${team.name}). The referee shows a ${cardType} card!`;
                     addEventToFeed(timeStr, text, `card-${cardType}`);
                     break;
@@ -993,9 +1056,6 @@
             }
         }
         
-        /**
-         * Adds an event to the live feed UI
-         */
         function addEventToFeed(time, text, type) {
             const eventEl = document.createElement('div');
             eventEl.classList.add('event', type);
@@ -1005,17 +1065,11 @@
             DOMElements.liveFeed.prepend(eventEl);
         }
         
-        /**
-         * Updates the scoreboard UI with current scores
-         */
         function updateScoreboardUI() {
             DOMElements.gameHomeScore.textContent = appState.simulation.homeScore;
             DOMElements.gameAwayScore.textContent = appState.simulation.awayScore;
         }
 
-        /**
-         * Checks the bet against the result and shows the modal
-         */
         function resolveBet() {
             const { homeScore, awayScore } = appState.simulation;
             const { amount, outcome, odds } = appState.currentBet;
@@ -1029,10 +1083,11 @@
             let winnings = 0;
             
             const modalResult = DOMElements.modalResultText;
-            modalResult.classList.remove('modal-result-win', 'modal-result-lose', 'modal-result-push');
+            modalResult.className = ''; // Clear previous classes
+            DOMElements.nextMatchBtn.textContent = "Next Match";
+
 
             if (gameResult === outcome) {
-                // Bet Won
                 winnings = Math.floor(amount * odds);
                 appState.balance += winnings;
                 
@@ -1041,7 +1096,6 @@
                 modalDetailsText = `Your bet on ${outcome} won! You've earned $${winnings}.`;
                 
             } else {
-                // Bet Lost
                 modalResult.textContent = "You Lost";
                 modalResult.classList.add('modal-result-lose');
                 modalDetailsText = `Your $${amount} bet on ${outcome} lost. Better luck next time.`;
@@ -1052,10 +1106,14 @@
             DOMElements.modalOverlay.classList.remove('hidden');
         }
 
-        /**
-         * Hides modal, resets UI for a new match
-         */
         function resetForNextMatch() {
+            // Check if we're just closing an alert modal
+            if (DOMElements.nextMatchBtn.textContent === "Try Again") {
+                DOMElements.modalOverlay.classList.add('hidden');
+                DOMElements.nextMatchBtn.textContent = "Next Match";
+                return;
+            }
+            
             DOMElements.modalOverlay.classList.add('hidden');
             DOMElements.gameUI.classList.add('hidden');
             DOMElements.bettingUI.classList.remove('hidden');
