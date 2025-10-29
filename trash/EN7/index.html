@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paper Bet Football</title>
+    <title>Pro Paper Bettor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
     <style>
-        /* --- 1. Root & Body (Gamer Minimalist Theme) --- */
+        /* --- 1. Root & Body (Brave/Chiller Theme) --- */
         :root {
-            --color-bg: #121212;
-            --color-bg-light: #1e1e1e;
-            --color-bg-lighter: #2a2a2a;
-            --color-text: #e0e0e0;
-            --color-text-dim: #888;
-            --color-accent: #00f0a0; /* Neon Mint */
-            --color-accent-dark: #00b377;
+            --color-bg: #0f0f12; /* Deeper space black */
+            --color-bg-light: #1c1c21; /* Raised panel */
+            --color-bg-lighter: #2a2a30; /* Lighter panel */
+            --color-text: #f0f0f5;
+            --color-text-dim: #707080;
+            --color-accent: #00a0ff; /* Electric Blue */
+            --color-accent-dark: #0077cc;
             --color-danger: #ff4141;
             --color-warning: #f0e000;
-            --font-main: 'Arial', 'Helvetica', sans-serif;
-            --font-mono: 'Consolas', 'Courier New', monospace;
+            --color-win: #00f0a0; /* Neon Mint for 'Win' */
+            --font-main: 'Poppins', 'Helvetica', sans-serif;
+            --font-display: 'Oswald', 'Arial', sans-serif; /* Sporty/Brave font */
         }
 
         * {
@@ -26,13 +31,17 @@
             padding: 0;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: var(--font-main);
             background-color: var(--color-bg);
             color: var(--color-text);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Align to top for mobile */
             min-height: 100vh;
             padding: 20px;
         }
@@ -42,9 +51,9 @@
             width: 100%;
             max-width: 800px;
             background-color: var(--color-bg-light);
-            border-radius: 12px;
+            border-radius: 16px;
             border: 1px solid var(--color-bg-lighter);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             overflow: hidden;
         }
 
@@ -59,9 +68,11 @@
         }
 
         header h1 {
-            font-size: 1.5rem;
+            font-family: var(--font-display);
+            font-size: 1.8rem;
             color: var(--color-text);
-            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         header h1 span {
@@ -70,13 +81,14 @@
         }
 
         #balance-display {
-            font-size: 1.2rem;
+            font-family: var(--font-display);
+            font-size: 1.4rem;
             font-weight: 700;
-            color: var(--color-accent);
+            color: var(--color-win);
             background-color: var(--color-bg);
-            padding: 8px 12px;
+            padding: 8px 14px;
             border-radius: 8px;
-            font-family: var(--font-mono);
+            letter-spacing: 1px;
         }
 
         /* --- 4. Main Content Area --- */
@@ -90,11 +102,12 @@
 
         /* --- 5. Betting UI --- */
         #betting-ui h2 {
-            font-size: 1.2rem;
+            font-family: var(--font-display);
+            font-size: 1.3rem;
             color: var(--color-text-dim);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
+            letter-spacing: 1.5px;
+            margin-bottom: 25px;
             text-align: center;
         }
 
@@ -103,28 +116,44 @@
             grid-template-columns: 1fr 0.5fr 1fr;
             align-items: center;
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
 
         .team {
             padding: 20px;
             background-color: var(--color-bg-lighter);
-            border-radius: 8px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            min-height: 180px;
+            justify-content: center;
         }
 
         .team-icon {
-            font-size: 3rem;
-            line-height: 1;
+            height: 80px; /* Fixed height container */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .team-icon img {
+            max-width: 100%;
+            max-height: 80px;
+            height: auto;
+            object-fit: contain;
         }
 
         .team-name {
             font-size: 1.25rem;
-            font-weight: 700;
-            margin-top: 10px;
+            font-weight: 600;
+            line-height: 1.3;
         }
 
         .vs {
-            font-size: 1.5rem;
+            font-family: var(--font-display);
+            font-size: 2rem;
             font-weight: 700;
             color: var(--color-text-dim);
         }
@@ -153,24 +182,30 @@
         .odd-option.selected {
             background-color: var(--color-accent);
             border-color: var(--color-accent);
-            color: var(--color-bg);
+            color: var(--color-bg-light);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 160, 255, 0.4);
         }
 
         .odd-option .label {
             font-size: 0.9rem;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             color: var(--color-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .odd-option.selected .label {
-            color: var(--color-bg);
+            color: var(--color-bg-light);
+            font-weight: 700;
         }
 
         .odd-option .value {
-            font-size: 1.2rem;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
             font-weight: 700;
-            font-family: var(--font-mono);
+            letter-spacing: 1px;
         }
 
         .bet-input-container {
@@ -180,34 +215,29 @@
 
         input[type="number"] {
             flex-grow: 1;
-            font-family: var(--font-mono);
-            font-size: 1.1rem;
-            padding: 12px;
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            padding: 12px 15px;
             background-color: var(--color-bg);
             border: 2px solid var(--color-bg-lighter);
             color: var(--color-text);
             border-radius: 8px;
             outline: none;
             transition: border-color 0.2s ease;
+            letter-spacing: 1px;
         }
 
         input[type="number"]:focus {
             border-color: var(--color-accent);
         }
         
-        /* Removing spinners from number input */
         input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
 
         .btn {
-            font-family: var(--font-main);
-            font-size: 1.1rem;
+            font-family: var(--font-display);
+            font-size: 1.2rem;
             font-weight: 700;
             background-color: var(--color-accent);
             color: var(--color-bg);
@@ -215,21 +245,25 @@
             padding: 12px 20px;
             border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .btn:hover {
             background-color: var(--color-accent-dark);
+            box-shadow: 0 0 15px rgba(0, 160, 255, 0.4);
         }
 
         .btn:disabled {
             background-color: var(--color-text-dim);
             cursor: not-allowed;
+            box-shadow: none;
         }
 
         /* --- 6. Game Simulation UI --- */
         #game-ui {
-            font-family: var(--font-mono);
+            font-family: var(--font-main);
         }
 
         .scoreboard {
@@ -237,56 +271,71 @@
             grid-template-columns: 1fr auto 1fr;
             align-items: center;
             background-color: var(--color-bg-lighter);
-            padding: 15px 20px;
-            border-radius: 8px;
+            /* Subtle pitch stripe effect */
+            background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.02) 50%, transparent 50%);
+            background-size: 80px 80px;
+            padding: 20px;
+            border-radius: 12px;
             margin-bottom: 20px;
             text-align: center;
         }
 
         .score-team {
-            font-size: 1.1rem;
-            font-weight: 700;
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .score-team.home { text-align: left; }
         .score-team.away { text-align: right; }
 
         .score-display {
-            font-size: 2rem;
+            font-family: var(--font-display);
+            font-size: 2.8rem;
             font-weight: 700;
-            padding: 0 20px;
+            padding: 0 25px;
+            letter-spacing: 2px;
         }
 
         .game-timer {
-            font-size: 1.5rem;
+            font-family: var(--font-display);
+            font-size: 2rem;
             font-weight: 700;
             color: var(--color-accent);
+            text-align: center;
+            margin-bottom: 20px;
         }
 
         #live-feed {
-            height: 300px;
+            height: 350px;
             background-color: var(--color-bg);
             border: 1px solid var(--color-bg-lighter);
             border-radius: 8px;
             padding: 15px;
             overflow-y: auto;
             display: flex;
-            flex-direction: column-reverse; /* Newest events at the bottom, but auto-scrolls */
+            flex-direction: column-reverse; /* Newest events at bottom, scrolls up */
+            font-size: 0.9rem;
         }
         
         .event {
-            padding: 8px 10px;
-            margin-bottom: 5px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
             border-radius: 4px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
+            line-height: 1.5;
         }
         
         .event .time {
+            font-family: var(--font-display);
             font-weight: 700;
             color: var(--color-text-dim);
-            margin-right: 10px;
+            margin-right: 12px;
             flex-shrink: 0;
+            font-size: 1rem;
         }
         
         .event .text {
@@ -299,18 +348,19 @@
 
         .event.goal {
             background-color: rgba(0, 240, 160, 0.1);
-            color: var(--color-accent);
-            font-weight: 700;
+            color: var(--color-win);
+            font-weight: 600;
         }
         
         .event.goal .text::before {
             content: '⚽ GOAL! ';
+            font-weight: 700;
         }
 
         .event.card-yellow {
             background-color: rgba(240, 224, 0, 0.1);
             color: var(--color-warning);
-            font-weight: 700;
+            font-weight: 600;
         }
         
         .event.card-yellow .text::before {
@@ -320,7 +370,7 @@
         .event.card-red {
             background-color: rgba(255, 65, 65, 0.1);
             color: var(--color-danger);
-            font-weight: 700;
+            font-weight: 600;
         }
         
         .event.card-red .text::before {
@@ -328,11 +378,14 @@
         }
         
         .event.half-time, .event.full-time {
+            font-family: var(--font-display);
             background-color: var(--color-bg-lighter);
             color: var(--color-accent);
             font-weight: 700;
             justify-content: center;
             font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         /* --- 7. Post-Game Modal --- */
@@ -342,37 +395,112 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            padding: 20px;
         }
         
         #modal {
             background-color: var(--color-bg-light);
             padding: 30px;
-            border-radius: 12px;
+            border-radius: 16px;
             text-align: center;
             border: 1px solid var(--color-bg-lighter);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            width: 100%;
             max-width: 400px;
         }
         
         #modal h2 {
-            font-size: 2rem;
+            font-family: var(--font-display);
+            font-size: 2.5rem;
             margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        #modal-result-win { color: var(--color-accent); }
+        #modal-result-win { color: var(--color-win); }
         #modal-result-lose { color: var(--color-danger); }
         #modal-result-push { color: var(--color-text-dim); }
 
         #modal p {
             font-size: 1.1rem;
-            margin-bottom: 25px;
+            line-height: 1.6;
+            margin-bottom: 30px;
             color: var(--color-text);
+        }
+
+        /* --- 8. Mobile Responsive --- */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+
+            header {
+                padding: 15px;
+            }
+
+            header h1 { font-size: 1.4rem; }
+            #balance-display { font-size: 1.2rem; }
+
+            main {
+                padding: 15px;
+            }
+
+            /* Stack the team matchup */
+            .matchup-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .vs {
+                transform: rotate(90deg);
+                font-size: 1.5rem;
+                margin: 5px 0;
+            }
+            
+            .team {
+                min-height: auto;
+                padding: 15px;
+            }
+            
+            .team-icon { height: 60px; }
+            .team-icon img { max-height: 60px; }
+            .team-name { font-size: 1.1rem; }
+
+            /* Stack the odds buttons */
+            .odds-container {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .odd-option .value { font-size: 1.3rem; }
+
+            /* Stack the bet input */
+            .bet-input-container {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            /* Game UI */
+            .scoreboard {
+                padding: 15px;
+                gap: 10px;
+            }
+            .score-team { font-size: 0.9rem; }
+            .score-display { font-size: 2rem; padding: 0 10px; }
+            .game-timer { font-size: 1.8rem; }
+            
+            #live-feed { height: 300px; }
+
+            #modal h2 { font-size: 2rem; }
+            #modal p { font-size: 1rem; }
         }
 
     </style>
@@ -381,7 +509,7 @@
 
     <div id="app-container">
         <header>
-            <h1>Paper <span>Bet</span></h1>
+            <h1>Pro <span>Bettor</span></h1>
             <div id="balance-display">$1000</div>
         </header>
 
@@ -391,14 +519,16 @@
                 
                 <div class="matchup-container">
                     <div class="team" id="home-team">
-                        <div class="team-icon" id="home-team-icon">🔴</div>
+                        <div class="team-icon" id="home-team-icon">
+                            </div>
                         <div class="team-name" id="home-team-name">Home</div>
                     </div>
                     
                     <div class="vs">VS</div>
                     
                     <div class="team" id="away-team">
-                        <div class="team-icon" id="away-team-icon">🔵</div>
+                        <div class="team-icon" id="away-team-icon">
+                            </div>
                         <div class="team-name" id="away-team-name">Away</div>
                     </div>
                 </div>
@@ -455,13 +585,19 @@
 
     <script>
         /* --- 1. DATABASE (Clubs, Players) --- */
+        
+        // --- NOTE ---
+        // The 'icon' URLs below are hotlinked from Wikimedia Commons.
+        // They are not guaranteed to work forever and may be changed or blocked.
+        // For a real project, you would host these assets yourself.
+        
         const DB = {
             clubs: [
                 {
                     id: 'MAN_RED',
-                    name: 'Manchester Reds',
-                    icon: '🔴',
-                    strength: 88, // Overall team strength (affects odds & simulation)
+                    name: 'Manchester United',
+                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Manchester_United_FC_crest.svg/1024px-Manchester_United_FC_crest.svg.png',
+                    strength: 88,
                     players: [
                         { name: 'Marcus Rashford', position: 'FW', rating: 85 },
                         { name: 'Bruno Fernandes', position: 'MF', rating: 88 },
@@ -473,8 +609,8 @@
                 },
                 {
                     id: 'MAD_WHITE',
-                    name: 'Madrid Kings',
-                    icon: '⚪',
+                    name: 'Real Madrid',
+                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/1200px-Real_Madrid_CF.svg.png',
                     strength: 92,
                     players: [
                         { name: 'Vinícius Jr.', position: 'FW', rating: 90 },
@@ -487,8 +623,8 @@
                 },
                 {
                     id: 'BAY_MUNICH',
-                    name: 'Munich Titans',
-                    icon: '🟥',
+                    name: 'Bayern Munich',
+                    icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg/1200px-FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg.png',
                     strength: 90,
                     players: [
                         { name: 'Harry Kane', position: 'FW', rating: 91 },
@@ -501,8 +637,8 @@
                 },
                 {
                     id: 'FC_CATALONIA',
-                    name: 'FC Catalonia',
-                    icon: '🔵',
+                    name: 'FC Barcelona',
+                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/1200px-FC_Barcelona_%28crest%29.svg.png',
                     strength: 87,
                     players: [
                         { name: 'Robert Lewandowski', position: 'FW', rating: 89 },
@@ -515,8 +651,8 @@
                 },
                 {
                     id: 'LIV_REDS',
-                    name: 'Liverpool Eagles',
-                    icon: '🦅',
+                    name: 'Liverpool FC',
+                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Liverpool_FC.svg/1200px-Liverpool_FC.svg.png',
                     strength: 89,
                     players: [
                         { name: 'Mohamed Salah', position: 'FW', rating: 90 },
@@ -529,8 +665,8 @@
                 },
                 {
                     id: 'PARIS_SG',
-                    name: 'Paris Strikers',
-                    icon: '🗼',
+                    name: 'Paris Saint-Germain',
+                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Paris_Saint-Germain_F.C..svg/1200px-Paris_Saint-Germain_F.C..svg.png',
                     strength: 86,
                     players: [
                         { name: 'Kylian Mbappé', position: 'FW', rating: 92 },
@@ -554,7 +690,7 @@
                 homeScore: 0,
                 awayScore: 0,
                 gameInterval: null,
-                gameSpeedMs: 300 // How fast a "minute" passes. 1000 = 1 second.
+                gameSpeedMs: 200 // How fast a "minute" passes. (Was 300)
             }
         };
 
@@ -613,12 +749,10 @@
                 const selectedOption = e.target.closest('.odd-option');
                 if (!selectedOption) return;
 
-                // Remove 'selected' from all
                 DOMElements.oddsContainer.querySelectorAll('.odd-option').forEach(opt => {
                     opt.classList.remove('selected');
                 });
                 
-                // Add 'selected' to clicked
                 selectedOption.classList.add('selected');
                 
                 const betType = selectedOption.dataset.bet;
@@ -640,7 +774,6 @@
          * Selects two new random teams and calculates odds
          */
         function setupNewMatch() {
-            // Get two different random clubs
             let clubs = [...DB.clubs];
             let homeIndex = Math.floor(Math.random() * clubs.length);
             let homeTeam = clubs.splice(homeIndex, 1)[0];
@@ -654,12 +787,13 @@
             appState.currentBet = null; // Clear previous bet
             
             // Update Betting UI
-            DOMElements.homeTeamIcon.textContent = homeTeam.icon;
+            // *** UPDATED to use innerHTML for logos ***
+            DOMElements.homeTeamIcon.innerHTML = `<img src="${homeTeam.icon}" alt="${homeTeam.name}">`;
             DOMElements.homeTeamName.textContent = homeTeam.name;
             DOMElements.homeBetLabel.textContent = `${homeTeam.name} Win`;
             DOMElements.homeOdds.textContent = odds.home.toFixed(2);
             
-            DOMElements.awayTeamIcon.textContent = awayTeam.icon;
+            DOMElements.awayTeamIcon.innerHTML = `<img src="${awayTeam.icon}" alt="${awayTeam.name}">`;
             DOMElements.awayTeamName.textContent = awayTeam.name;
             DOMElements.awayBetLabel.textContent = `${awayTeam.name} Win`;
             DOMElements.awayOdds.textContent = odds.away.toFixed(2);
@@ -673,29 +807,25 @@
         function calculateOdds(home, away) {
             const strengthDiff = home.strength - away.strength;
             
-            // Base probabilities
-            let homeProb = 0.45;
-            let drawProb = 0.25;
-            let awayProb = 0.30;
+            let homeProb = 0.45, drawProb = 0.25, awayProb = 0.30;
             
-            // Adjust probs based on strength difference (with a home-field advantage)
             const advantage = (strengthDiff / 100) * 0.2 + 0.05; // Home advantage + strength
             
             homeProb += advantage;
             awayProb -= advantage;
             
-            // Normalize (ensure probs add to 1)
+            // Normalize
             const totalProb = homeProb + drawProb + awayProb;
             homeProb /= totalProb;
             drawProb /= totalProb;
             awayProb /= totalProb;
 
-            // Convert probability to decimal odds (with a small "house edge")
+            // Convert to odds with a house edge
             const margin = 0.05; // 5% house edge
             return {
-                home: (1 / homeProb) * (1 - margin),
-                draw: (1 / drawProb) * (1 - margin),
-                away: (1 / awayProb) * (1 - margin),
+                home: Math.max(1.01, (1 / homeProb) * (1 - margin)),
+                draw: Math.max(1.01, (1 / drawProb) * (1 - margin)),
+                away: Math.max(1.01, (1 / awayProb) * (1 - margin)),
             };
         }
 
@@ -705,7 +835,6 @@
         function handlePlaceBet() {
             const amount = parseInt(DOMElements.betAmountInput.value, 10);
 
-            // Validation
             if (isNaN(amount) || amount <= 0) {
                 alert("Please enter a valid bet amount.");
                 return;
@@ -719,12 +848,10 @@
                 return;
             }
 
-            // Lock in the bet
             appState.currentBet.amount = amount;
             appState.balance -= amount;
             updateBalanceUI();
 
-            // Start the game
             startSimulation();
         }
 
@@ -742,22 +869,18 @@
             DOMElements.bettingUI.classList.add('hidden');
             DOMElements.gameUI.classList.remove('hidden');
 
-            // Clear old game
             DOMElements.liveFeed.innerHTML = '';
             appState.simulation.minute = 0;
             appState.simulation.homeScore = 0;
             appState.simulation.awayScore = 0;
 
-            // Setup scoreboard
             const { homeTeam, awayTeam } = appState.currentGame;
             DOMElements.gameHomeName.textContent = homeTeam.name;
             DOMElements.gameAwayName.textContent = awayTeam.name;
             updateScoreboardUI();
             
-            // Add kick-off event
             addEventToFeed("00:00", "The match has kicked off!", "commentary");
             
-            // Start the game loop
             appState.simulation.gameInterval = setInterval(
                 gameTick, 
                 appState.simulation.gameSpeedMs
@@ -771,48 +894,41 @@
             appState.simulation.minute++;
             DOMElements.gameTimer.textContent = `${String(appState.simulation.minute).padStart(2, '0')}:00`;
 
-            // Check for half-time
             if (appState.simulation.minute === 45) {
                 addEventToFeed("45:00", "Half-Time! The players head to the tunnel.", "half-time");
                 return;
             }
             
-            // Check for full-time
             if (appState.simulation.minute >= 90) {
                 endSimulation();
                 return;
             }
 
-            // --- Event Generation Engine ---
+            // Event Generation Engine
             const { homeTeam, awayTeam } = appState.currentGame;
-            
-            // Base chance for an "event" to happen this minute
             let eventChance = Math.random();
-            
-            // Adjust chance based on team strengths
             const homeMomentum = (homeTeam.strength / 100) * Math.random();
             const awayMomentum = (awayTeam.strength / 100) * Math.random();
 
-            if (eventChance < 0.025) { // 2.5% chance of a Goal
+            if (eventChance < 0.025) { // Goal
                 if (homeMomentum > awayMomentum) {
                     generateGameEvent('goal', homeTeam);
                 } else {
                     generateGameEvent('goal', awayTeam);
                 }
-            } else if (eventChance < 0.05) { // 2.5% chance of a Card
+            } else if (eventChance < 0.05) { // Card
                 if (homeMomentum > awayMomentum) { // Home team commits foul
-                    generateGameEvent('card', homeTeam);
-                } else { // Away team commits foul
-                    generateGameEvent('card', awayTeam);
+                    generateGameEvent('card', awayTeam); // Foul committed *by* home, so card *for* away? No, foul *by* home.
+                } else { 
+                    generateGameEvent('card', homeTeam); // Foul *by* away.
                 }
-            } else if (eventChance < 0.25) { // 20% chance of commentary
+            } else if (eventChance < 0.25) { // Commentary
                 if (homeMomentum > awayMomentum) {
                     generateGameEvent('commentary', homeTeam);
                 } else {
                     generateGameEvent('commentary', awayTeam);
                 }
             }
-            // Else (75% of the time), nothing noteworthy happens
         }
 
         /**
@@ -825,7 +941,6 @@
             DOMElements.gameTimer.textContent = "90:00+";
             addEventToFeed("90:00+", "Full Time! The whistle has blown.", "full-time");
             
-            // Wait a moment before showing results
             setTimeout(resolveBet, 1500);
         }
         
@@ -836,14 +951,12 @@
             const minute = appState.simulation.minute;
             const timeStr = `${String(minute).padStart(2, '0')}:00`;
             
-            // Get a random player from the team
             const player = team.players[Math.floor(Math.random() * team.players.length)];
             let text = '';
             
             switch (type) {
                 case 'goal':
                     const scorer = player;
-                    // Find an assist
                     let assister = team.players[Math.floor(Math.random() * team.players.length)];
                     while (assister.name === scorer.name) {
                          assister = team.players[Math.floor(Math.random() * team.players.length)];
@@ -872,7 +985,7 @@
                         `${player.name} takes a shot from distance... just wide!`,
                         `What a save! The keeper denies ${player.name} from close range.`,
                         `${team.name} are controlling possession well here.`,
-                        `A dangerous cross into the box by ${team.name}, but it's cleared away.`
+                        `A dangerous cross into the box by ${player.name}, but it's cleared away.`
                     ];
                     text = commentaryTemplates[Math.floor(Math.random() * commentaryTemplates.length)];
                     addEventToFeed(timeStr, text, 'commentary');
@@ -889,7 +1002,6 @@
             
             eventEl.innerHTML = `<span class="time">${time}</span><span class="text">${text}</span>`;
             
-            // Add to top and scroll
             DOMElements.liveFeed.prepend(eventEl);
         }
         
@@ -913,7 +1025,6 @@
             else if (homeScore < awayScore) gameResult = 'away';
             else gameResult = 'draw';
             
-            let modalText = '';
             let modalDetailsText = '';
             let winnings = 0;
             
@@ -949,13 +1060,11 @@
             DOMElements.gameUI.classList.add('hidden');
             DOMElements.bettingUI.classList.remove('hidden');
             
-            // Clear bet selection
             DOMElements.oddsContainer.querySelectorAll('.odd-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
             DOMElements.betAmountInput.value = '';
             
-            // Setup next match
             setupNewMatch();
         }
 
