@@ -203,6 +203,15 @@
         line-height: 1.7;
         font-family: var(--font-ui);
     }
+    .explanation-view-content .explanation-actions {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+    }
+    .explanation-view-content .explanation-actions button {
+        background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+        /* Re-use menu-button styles for consistency */
+    }
 
     .ai-panel {
         position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -468,6 +477,7 @@
     
     <div id="selection-tooltip" class="selection-tooltip">
         <button id="btn-explain"><i class="fa-solid fa-wand-magic-sparkles"></i> Explain</button>
+        <button id="btn-speak"><i class="fa-solid fa-volume-high"></i> Speak</button>
         <button id="btn-highlight"><i class="fa-solid fa-marker"></i> Highlight</button>
         <button id="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
     </div>
@@ -707,6 +717,7 @@
     tooltip: document.getElementById('selection-tooltip'),
     tooltipExplain: document.getElementById('btn-explain'),
     tooltipHighlight: document.getElementById('btn-highlight'),
+    tooltipSpeak: document.getElementById('btn-speak'),
     tooltipCopy: document.getElementById('btn-copy'),
     aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
     aiQuote: document.getElementById('ai-quote'),
@@ -750,6 +761,7 @@
     cachedPageHTML: null,
     lastScrollPosition: 0,
     isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
+    speechSynthesis: window.speechSynthesis,
   };
   const baseFontRem = 1.15;
 
@@ -1054,6 +1066,43 @@
     }
   }
 
+  /**
+   * Uses the browser's Speech Synthesis API to speak the explanation text.
+   * Fetches the explanation if it's not already available.
+   */
+  async function handleSpeak() {
+    const textToExplain = state.lastSelectionText;
+    if (!textToExplain || !explainBookTextFn) return;
+
+    // If speech is already happening, stop it.
+    if (state.speechSynthesis.speaking) {
+      state.speechSynthesis.cancel();
+      return; // User likely wants to stop the audio.
+    }
+
+    clearSelection();
+    await trackExplanationRequest(textToExplain);
+    flashAI("Getting explanation to speak...");
+
+    try {
+      const { data } = await explainBookTextFn({
+        text: textToExplain,
+        bookTitle: state.bookTitle,
+        contextText: state.lastSelectionContext
+      });
+
+      const { simpleExplanation, contextualMeaning } = data.explanation;
+      const fullText = [simpleExplanation, contextualMeaning].filter(Boolean).join('. In this context: ');
+
+      const utterance = new SpeechSynthesisUtterance(fullText);
+      state.speechSynthesis.speak(utterance);
+      flashAI("Speaking explanation...");
+    } catch (err) {
+      console.error("Error fetching explanation for speech:", err);
+      flashAI("Sorry, I couldn't get the explanation to speak.", 3000);
+    }
+  }
+
   function enterExplanationView(initialContent) {
     state.isExplanationViewActive = true;
     state.lastScrollPosition = DOM.mainContent.scrollTop;
@@ -1069,6 +1118,10 @@
         <div class="explanation-view-content">
           <h4 class="explanation-title"><i class="fa-solid fa-star"></i>Explanation</h4>
           <div class="explanation-text">${initialContent}</div>
+          <div class="explanation-actions">
+             <button id="mobile-speak-btn" class="menu-button"><i class="fa-solid fa-volume-high"></i> Speak</button>
+             <button id="mobile-copy-btn" class="menu-button"><i class="fa-regular fa-copy"></i> Copy</button>
+          </div>
         </div>
       `;
       DOM.pageContent.innerHTML = explanationHTML;
@@ -1076,18 +1129,44 @@
       DOM.pageContent.classList.remove('content-fading');
       DOM.mainContent.scrollTop = 0;
     }, 200);
+
+    // Use event delegation for buttons inside the new view
+    DOM.pageContent.addEventListener('click', explanationViewClickHandler);
   }
 
   function updateExplanationView(finalContent) {
     const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
     if (explanationTextElement) {
       explanationTextElement.innerHTML = finalContent;
+      // Make speak button active
+      const speakBtn = document.getElementById('mobile-speak-btn');
+      if(speakBtn) speakBtn.disabled = false;
     }
+  }
+
+  function explanationViewClickHandler(event) {
+      const speakBtn = event.target.closest('#mobile-speak-btn');
+      const copyBtn = event.target.closest('#mobile-copy-btn');
+
+      if (speakBtn) {
+          const explanationText = DOM.pageContent.querySelector('.explanation-text')?.innerText;
+          if (explanationText && !state.speechSynthesis.speaking) {
+              const utterance = new SpeechSynthesisUtterance(explanationText);
+              state.speechSynthesis.speak(utterance);
+          } else if (state.speechSynthesis.speaking) {
+              state.speechSynthesis.cancel();
+          }
+      } else if (copyBtn) {
+          const explanationText = DOM.pageContent.querySelector('.explanation-text')?.innerText;
+          if (explanationText) navigator.clipboard.writeText(explanationText).catch(console.error);
+      }
   }
 
   function returnToBookView() {
     if (!state.isExplanationViewActive) return;
+    if (state.speechSynthesis.speaking) state.speechSynthesis.cancel();
     state.isExplanationViewActive = false;
+                 clearSelection(); // <-- ADD THIS LINE
 
     DOM.pageContent.classList.add('content-fading');
 
@@ -1097,6 +1176,7 @@
       setFontRem(state.currentFontRem);
       DOM.pageContent.classList.remove('content-fading');
       DOM.mainContent.scrollTop = state.lastScrollPosition;
+      DOM.pageContent.removeEventListener('click', explanationViewClickHandler);
     }, 200);
 
     DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
@@ -1166,6 +1246,7 @@
 
     DOM.tooltipExplain.addEventListener("click", handleExplain);
     DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+    DOM.tooltipSpeak.addEventListener("click", handleSpeak);
     DOM.tooltipCopy.addEventListener("click", handleCopy);
 
     DOM.bookmarkPageBtn.addEventListener("click", handleBookmarkPage);
@@ -1237,6 +1318,9 @@
       if (e.target.tagName === 'INPUT' || state.isRendering) return;
       if (e.key === 'ArrowLeft') DOM.prevBtn.click();
       else if (e.key === 'ArrowRight') DOM.nextBtn.click();
+      else if (e.key === 'Escape') {
+          if (state.speechSynthesis.speaking) state.speechSynthesis.cancel();
+      }
     });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') { endReadingSession(); }
@@ -1281,6 +1365,89 @@
             DOM.mobileActionBtn.classList.add('visible');
             DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
           } else {
+            showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+          }
+        } else {
+          if (isTouchDevice) {
+            DOM.mobileActionBtn.classList.remove('visible');
+            DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+          } else {
+            hideTooltip();
+          }
+        }
+      }, 100);
+    };
+
+    document.addEventListener('selectionchange', handleSelection);
+    document.addEventListener('mouseup', handleSelection);
+  }
+
+  function setupSwipeNavigation() {
+    DOM.mainContent.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 1 || state.isExplanationViewActive) return;
+      const touch = e.touches[0];
+      state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
+      state.touch.startTime = Date.now(); // FIXED: was Date.Check()
+    }, { passive: true });
+    DOM.mainContent.addEventListener('touchend', (e) => {
+      if (e.touches.length > 0 || state.isExplanationViewActive) return;
+      const touch = e.changedTouches[0];
+      const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
+      const elapsedTime = Date.now() - state.touch.startTime;
+      if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 0) DOM.prevBtn.click();
+        else DOM.nextBtn.click();
+      }
+    }, { passive: true });
+  }
+
+  function initApp() {
+    setMode(localStorage.getItem("kaffetishMode") || 'light');
+    setFontRem(state.currentFontRem);
+
+    // Restore noise state
+    if (state.isNoisePlaying) {
+      noiseEngine.start();
+      DOM.mobileNoiseToggle?.classList.add('active');
+      DOM.desktopNoiseToggle?.classList.add('active');
+    }
+
+    setupEventListeners();
+
+    const params = new URLSearchParams(window.location.search);
+    const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
+
+    if (bookUrl) {
+      loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
+    } else {
+      showView(DOM.fallbackView);
+    }
+    if (!explainBookTextFn) {
+      [DOM.tooltipExplain, DOM.mobileActionBtn].forEach(el => { if (el) el.style.display = 'none'; });
+    }
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      const isAnon = user.isAnonymous;
+      DOM.bookmarkPageBtn.classList.toggle('hidden', isAnon);
+      DOM.mobileBookmarkPageBtn.classList.toggle('hidden', isAnon);
+      trackUserActivity();
+    } else {
+      signInAnonymously(auth).catch(err => {
+        console.error("Anonymous sign-in failed:", err);
+      });
+    }
+  });
+
+  // Initialize the app once the first auth state is confirmed
+  auth.onAuthStateChanged(user => {
+    initApp();
+  }, { onlyOnce: true });
+</script>
+
+</body>
+</html>   } else {
             showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
           }
         } else {
