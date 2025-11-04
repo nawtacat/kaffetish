@@ -281,6 +281,7 @@
     body.menu-open .menu-section > *:nth-child(3) { transition-delay: 0.1s; }
     body.menu-open .menu-section > *:nth-child(4) { transition-delay: 0.15s; }
     .page-jump-control { display: flex; align-items: center; justify-content: center; gap: 8px; background-color: color-mix(in srgb, var(--border-color) 60%, transparent); border-radius: 8px; padding: 12px; }
+
     .page-jump-control input { width: 60px; text-align: center; font-size: 1rem; font-family: var(--font-ui); padding: 8px; border: 1px solid var(--border-color); background-color: var(--bg); color: var(--ink); border-radius: 6px; -moz-appearance: textfield; }
     .page-jump-control input::-webkit-outer-spin-button, .page-jump-control input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .page-jump-control span { font-size: 1rem; color: var(--subtle); }
@@ -1109,6 +1110,7 @@
     const selectedVoice = state.speechVoices.find(v => v.name === state.speechVoice);
     
     utterance.voice = selectedVoice || state.speechVoices[0]; // Fallback to the first voice
+    utterance.voice = selectedVoice || state.speechVoices[0];
     utterance.rate = state.speechRate;
     state.speechSynthesis.speak(utterance);
   }
@@ -1270,6 +1272,7 @@
     if (!voiceSelect) return;
 
     voiceSelect.innerHTML = '';
+    voiceSelect.innerHTML = ''; // Clear existing options
     let bestVoiceIndex = 0;
 
     state.speechVoices.forEach((voice, index) => {
@@ -1302,6 +1305,7 @@
         localStorage.setItem("kaffetishVoice", e.target.value);
         // Optional: speak a sample
         speakText("This is the selected voice.");
+    });
     });
   }
 
