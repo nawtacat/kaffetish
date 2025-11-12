@@ -370,6 +370,15 @@
         .page { border: none; padding: 0; border-radius: 0; background-color: transparent; }
         body.dark-mode .page { background-color: transparent; }
    }
+
+   @media (max-width: 860px) {
+       /* Hide scrollbars on mobile for a cleaner look */
+       main, .mobile-nav-menu {
+           -ms-overflow-style: none;  /* IE and Edge */
+           scrollbar-width: none;  /* Firefox */
+       }
+       main::-webkit-scrollbar, .mobile-nav-menu::-webkit-scrollbar { display: none; } /* Chrome, Safari, Opera */
+   }
    
    html:not(.touch-device) main::-webkit-scrollbar { width: 12px; }
    html:not(.touch-device) main::-webkit-scrollbar-track { background: var(--bg); }
@@ -1589,6 +1598,15 @@
      });
    }
  });
+
+ // Initialize the app once the first auth state is confirmed
+ auth.onAuthStateChanged(user => {
+   initApp();
+ }, { onlyOnce: true });
+</script>
+
+</body>
+</html>
 
  // Initialize the app once the first auth state is confirmed
  auth.onAuthStateChanged(user => {
