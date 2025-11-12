@@ -18,61 +18,61 @@
     
    <style>
    :root {
-       --bg: #FDFBF7;
-       --ink: #2C2B2A;
-       --accent: #FF3A44;
-       --subtle: #8A8886;
-       --border-color: #EAE8E4;
-       --shadow-color: rgba(44, 43, 42, 0.1);
-       --font-main: 'Lora', serif;
-       --font-ui: 'Poppins', sans-serif;
+        --bg: #FDFBF7;
+        --ink: #2C2B2A;
+        --accent: #FF3A44;
+        --subtle: #8A8886;
+        --border-color: #EAE8E4;
+        --shadow-color: rgba(44, 43, 42, 0.1);
+        --font-main: 'Lora', serif;
+        --font-ui: 'Poppins', sans-serif;
    }
 
    body.dark-mode {
-       --bg: #21201F;
-       --ink: #EAE8E4;
-       --subtle: #999591;
-       --border-color: #3A3837;
-       --shadow-color: rgba(0, 0, 0, 0.25);
+        --bg: #21201F;
+        --ink: #EAE8E4;
+        --subtle: #999591;
+        --border-color: #3A3837;
+        --shadow-color: rgba(0, 0, 0, 0.25);
    }
 
    * { -webkit-tap-highlight-color: transparent; }
    ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
 
    html, body {
-       height: 100%;
-       overflow: hidden;
+        height: 100%;
+        overflow: hidden;
    }
 
    body {
-       font-family: var(--font-ui);
-       background-color: var(--bg);
-       color: var(--ink);
-       transition: background-color 0.3s ease, color 0.3s ease;
-       margin: 0;
-       padding-top: 60px;
-       display: flex;
-       flex-direction: column;
+        font-family: var(--font-ui);
+        background-color: var(--bg);
+        color: var(--ink);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        margin: 0;
+        padding-top: 60px; /* This will be overridden on mobile */
+        display: flex;
+        flex-direction: column;
    }
 
    .hidden { display: none !important; }
 
    .app-header {
-       position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-       background-color: color-mix(in srgb, var(--bg) 85%, transparent);
-       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-       border-bottom: 1px solid var(--border-color); z-index: 1000;
-       transition: background-color 0.3s ease, border-color 0.3s ease;
-       flex-shrink: 0;
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-color); z-index: 1000;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+        flex-shrink: 0;
    }
    .header-content {
-       max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
-       display: flex; justify-content: space-between; align-items: center;
-       position: relative;
+        max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+        display: flex; justify-content: space-between; align-items: center;
+        position: relative;
    }
    .logo {
-       font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
-       color: var(--accent); font-family: var(--font-main); user-select: none;
+        font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
+        color: var(--accent); font-family: var(--font-main); user-select: none;
    }
    body.dark-mode .logo { color: var(--ink); }
 
@@ -81,65 +81,65 @@
    .control-group { display: flex; align-items: center; gap: 8px; }
    .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
    .page-indicator input {
-       width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
-       padding: 6px; border: 1px solid var(--border-color); background-color: var(--bg);
-       color: var(--ink); border-radius: 6px; -moz-appearance: textfield;
-       transition: border-color 0.2s, box-shadow 0.2s;
+        width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
+        padding: 6px; border: 1px solid var(--border-color); background-color: var(--bg);
+        color: var(--ink); border-radius: 6px; -moz-appearance: textfield;
+        transition: border-color 0.2s, box-shadow 0.2s;
    }
    .page-indicator input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
    .page-indicator input::-webkit-outer-spin-button, .page-indicator input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
    .page-indicator span { color: var(--subtle); user-select: none; }
 
    .reader-controls button, .reader-controls a.button, .mobile-menu-toggle {
-       background: transparent; border: none; color: var(--subtle); border-radius: 6px;
-       padding: 8px 10px; cursor: pointer; font-size: 1rem;
-       transition: color 0.2s ease, background-color 0.2s ease;
-       text-decoration: none; display: inline-flex;
-       align-items: center; justify-content: center; user-select: none;
+        background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+        padding: 8px 10px; cursor: pointer; font-size: 1rem;
+        transition: color 0.2s ease, background-color 0.2s ease;
+        text-decoration: none; display: inline-flex;
+        align-items: center; justify-content: center; user-select: none;
    }
    .reader-controls button:hover, .reader-controls button:active,
    .reader-controls a.button:hover, .reader-controls a.button:active,
    .mobile-menu-toggle:hover, .mobile-menu-toggle:active {
-       color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+        color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
    }
    .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
    
    main {
-       flex-grow: 1;
-       overflow-y: auto;
-       -webkit-overflow-scrolling: touch;
-       padding: 24px 24px 80px; /* Top, Left/Right, Bottom */
+        flex-grow: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 24px 24px 80px; /* Top, Left/Right, Bottom */
    }
    
    .fallback-view, .loading-view {
-       display: flex; flex-direction: column; justify-content: center; align-items: center;
-       text-align: center; height: 100%;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; height: 100%;
    }
    .fallback-content { max-width: 500px; }
    .fallback-icon { font-size: 3.5rem; color: var(--accent); margin-bottom: 24px; }
    .fallback-title { font-size: 1.75rem; font-family: var(--font-main); margin: 0 0 8px 0; }
    .fallback-text { color: var(--subtle); margin-bottom: 24px; line-height: 1.7; }
    .library-link {
-       display: inline-block; background-color: var(--accent); color: white;
-       padding: 12px 24px; border-radius: 24px; text-decoration: none;
-       font-weight: 500; transition: background-color 0.2s, transform 0.2s;
+        display: inline-block; background-color: var(--accent); color: white;
+        padding: 12px 24px; border-radius: 24px; text-decoration: none;
+        font-weight: 500; transition: background-color 0.2s, transform 0.2s;
    }
    .library-link:hover, .library-link:active { background-color: color-mix(in srgb, var(--accent) 85%, black); transform: scale(1.03); }
    .library-link i { margin-right: 8px; }
    .spinner {
-       width: 48px; height: 48px; border-radius: 50%;
-       border: 5px solid var(--border-color); border-top-color: var(--accent);
-       animation: spin 1s linear infinite; margin-bottom: 16px;
+        width: 48px; height: 48px; border-radius: 50%;
+        border: 5px solid var(--border-color); border-top-color: var(--accent);
+        animation: spin 1s linear infinite; margin-bottom: 16px;
    }
    @keyframes spin { to { transform: rotate(360deg); } }
 
    .page-container { filter: drop-shadow(0 10px 25px var(--shadow-color)); }
    html:not(.touch-device) .page-container { cursor: pointer; }
    .page {
-       max-width: 75ch; margin: 0 auto;
-       background-color: var(--bg); border: 1px solid var(--border-color);
-       border-radius: 8px; padding: 4rem 5rem; position: relative;
-       transition: border-color 0.3s ease, background-color 0.3s ease;
+        max-width: 75ch; margin: 0 auto;
+        background-color: var(--bg); border: 1px solid var(--border-color);
+        border-radius: 8px; padding: 4rem 5rem; position: relative;
+        transition: border-color 0.3s ease, background-color 0.3s ease;
    }
    body.dark-mode .page { background-color: #2D2C2B; }
    .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; transition: opacity 200ms ease-out; }
@@ -149,77 +149,77 @@
    .fade-in { animation: fadeIn 250ms ease-out both; }
    @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
    .page-number {
-       position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-       color: var(--subtle); font-size: 0.9rem; user-select: none;
+        position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+        color: var(--subtle); font-size: 0.9rem; user-select: none;
    }
 
    .highlighted-text {
-       background-color: color-mix(in srgb, var(--accent) 25%, transparent);
-       border-radius: 3px;
+        background-color: color-mix(in srgb, var(--accent) 25%, transparent);
+        border-radius: 3px;
    }
    body.dark-mode .highlighted-text { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
 
    .selection-tooltip {
-       position: absolute; z-index: 2000; display: none; gap: 6px; padding: 6px;
-       background-color: var(--ink); color: var(--bg); border-radius: 8px;
-       box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-       opacity: 0; transform: translateY(10px);
-       transition: opacity 150ms ease-out, transform 150ms ease-out;
-       will-change: opacity, transform;
+        position: absolute; z-index: 2000; display: none; gap: 6px; padding: 6px;
+        background-color: var(--ink); color: var(--bg); border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        opacity: 0; transform: translateY(10px);
+        transition: opacity 150ms ease-out, transform 150ms ease-out;
+        will-change: opacity, transform;
    }
    .selection-tooltip.visible { opacity: 1; transform: translateY(0); }
    .selection-tooltip button {
-       background: transparent; border: 0; color: var(--bg); padding: 8px 12px;
-       border-radius: 6px; cursor: pointer; font-size: 0.9rem;
-       font-family: var(--font-ui); transition: background-color 0.2s ease;
+        background: transparent; border: 0; color: var(--bg); padding: 8px 12px;
+        border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+        font-family: var(--font-ui); transition: background-color 0.2s ease;
    }
    .selection-tooltip button:hover, .selection-tooltip button:active { background-color: rgba(255,255,255,0.15); }
    .selection-tooltip i { margin-right: 6px; }
 
    /* New styles for immersive explanation view */
    .explanation-view-content .explanation-quote {
-       display: block;
-       border-left: 3px solid var(--accent);
-       padding-left: 16px;
-       margin: 0 0 24px 0;
-       font-style: italic;
-       color: var(--subtle);
-       font-size: 1.05rem;
+        display: block;
+        border-left: 3px solid var(--accent);
+        padding-left: 16px;
+        margin: 0 0 24px 0;
+        font-style: italic;
+        color: var(--subtle);
+        font-size: 1.05rem;
    }
    .explanation-view-content .explanation-title {
-       font-size: 1.3rem;
-       font-weight: 500;
-       margin: 0 0 16px;
-       display: flex;
-       align-items: center;
-       gap: 10px;
-       font-family: var(--font-ui);
+        font-size: 1.3rem;
+        font-weight: 500;
+        margin: 0 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-ui);
    }
    .explanation-view-content .explanation-title i {
-       color: var(--accent);
+        color: var(--accent);
    }
    .explanation-view-content .explanation-text {
-       font-size: 1rem;
-       line-height: 1.7;
-       font-family: var(--font-ui);
+        font-size: 1rem;
+        line-height: 1.7;
+        font-family: var(--font-ui);
    }
    .explanation-view-content .explanation-actions {
-       margin-top: 24px;
-       display: flex;
-       gap: 12px;
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
    }
    .explanation-view-content .explanation-actions button {
-       background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
-       /* Re-use menu-button styles for consistency */
+        background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+        /* Re-use menu-button styles for consistency */
    }
 
    .ai-panel {
-       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-       width: min(800px, 95vw); background-color: color-mix(in srgb, var(--bg) 92%, transparent);
-       backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-       border: 1px solid var(--border-color); border-radius: 12px;
-       box-shadow: 0 20px 60px var(--shadow-color); z-index: 2100; padding: 20px 24px;
-       display: none; flex-direction: column; animation: slideUp 0.3s ease-out;
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        width: min(800px, 95vw); background-color: color-mix(in srgb, var(--bg) 92%, transparent);
+        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color); border-radius: 12px;
+        box-shadow: 0 20px 60px var(--shadow-color); z-index: 2100; padding: 20px 24px;
+        display: none; flex-direction: column; animation: slideUp 0.3s ease-out;
    }
    @keyframes slideUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
    .ai-panel-content { flex-grow: 1; }
@@ -233,25 +233,27 @@
 
    .mobile-page-indicator, .mobile-menu-toggle { display: none; }
    .mobile-menu-overlay {
-       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-       background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
-       z-index: 1500; opacity: 0; transition: opacity 0.3s ease;
-       pointer-events: none;
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        z-index: 1500; opacity: 0; transition: opacity 0.3s ease;
+        pointer-events: none;
    }
-  .mobile-nav-menu {
-       position: fixed; top: 0; right: 0; width: 300px; height: 100%;
-       background-color: color-mix(in srgb, var(--bg) 90%, transparent);
-       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-       z-index: 1600;
-       transform: translateX(100%); transition: transform 0.35s ease-out;
-       padding: 16px; display: flex; flex-direction: column; gap: 24px;
-       box-shadow: -10px 0 30px rgba(0,0,0,0.1);
-       border-left: 1px solid var(--border-color);
-       overflow-y: auto;
-       overflow-x: hidden;
+ .mobile-nav-menu {
+        position: fixed; top: 0; left: 0; /* <-- MODIFIED */
+        width: 300px; height: 100%;
+        background-color: color-mix(in srgb, var(--bg) 90%, transparent);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        z-index: 1600;
+        transform: translateX(-100%); /* <-- MODIFIED */
+        transition: transform 0.35s ease-out;
+        padding: 16px; display: flex; flex-direction: column; gap: 24px;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.1); /* <-- MODIFIED */
+        border-right: 1px solid var(--border-color); /* <-- MODIFIED */
+        overflow-y: auto;
+        overflow-x: hidden;
    }
    body.menu-open .mobile-menu-overlay { opacity: 1; pointer-events: auto; }
-   body.menu-open .mobile-nav-menu { transform: translateX(0); }
+   body.menu-open .mobile-nav-menu { transform: translateX(0); } /* <-- MODIFIED */
    .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; padding: 8px; }
    .mobile-menu-header h3 { margin: 0; font-size: 1.2rem; font-weight: 500; }
    #mobile-menu-close { background: none; border: 0; font-size: 1.5rem; color: var(--subtle); cursor: pointer; transition: color 0.2s; padding: 4px 8px; }
@@ -273,105 +275,113 @@
    .page-jump-control span { font-size: 1rem; color: var(--subtle); }
 
    .mobile-action-btn {
-       position: fixed;
-       bottom: calc(24px + env(safe-area-inset-bottom));
-       left: 50%;
-       z-index: 2000;
-       background-color: var(--ink);
-       color: var(--bg);
-       border: 1px solid var(--border-color);
-       border-radius: 30px;
-       padding: 12px 24px;
-       font-family: var(--font-ui);
-       font-weight: 500;
-       font-size: 1rem;
-       display: flex;
-       align-items: center;
-       gap: 10px;
-       cursor: pointer;
-       box-shadow: 0 10px 30px var(--shadow-color);
-     opacity: 0; /* MODIFIED: Start hidden */
-     transform: translate(-50%, 20px); /* MODIFIED: Start off-screen */
-     transition: opacity 0.3s ease-out, transform 0.3s ease-out; /* MODIFIED: Smooth animation */
-     pointer-events: none; /* MODIFIED: Not clickable when hidden */
+        position: fixed;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        left: 50%;
+        z-index: 2000;
+        background-color: var(--ink);
+        color: var(--bg);
+        border: 1px solid var(--border-color);
+        border-radius: 30px;
+        padding: 12px 24px;
+        font-family: var(--font-ui);
+        font-weight: 500;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        box-shadow: 0 10px 30px var(--shadow-color);
+       opacity: 0; /* MODIFIED: Start hidden */
+       transform: translate(-50%, 20px); /* MODIFIED: Start off-screen */
+       transition: opacity 0.3s ease-out, transform 0.3s ease-out; /* MODIFIED: Smooth animation */
+       pointer-events: none; /* MODIFIED: Not clickable when hidden */
    }
    .mobile-action-btn.visible {
-     opacity: 1; /* MODIFIED: Make visible */
-       transform: translate(-50%, 0);
-       pointer-events: auto;
+       opacity: 1; /* MODIFIED: Make visible */
+        transform: translate(-50%, 0);
+        pointer-events: auto;
    }
    .mobile-action-btn i {
-       color: var(--accent);
-       transition: transform 0.3s ease;
+        color: var(--accent);
+        transition: transform 0.3s ease;
    }
    .mobile-action-btn.return-mode i {
-       transform: rotate(180deg);
+        transform: rotate(180deg);
    }
    body.dark-mode .mobile-action-btn i {
-       color: var(--bg);
-   }
-
-   .mobile-nav-menu {
-       position: fixed; top: 0; left: 0; /* <-- MODIFIED */
-       width: 300px; height: 100%;
-       background-color: color-mix(in srgb, var(--bg) 90%, transparent);
-       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-       z-index: 1600;
-       transform: translateX(-100%); /* <-- MODIFIED */
-       transition: transform 0.35s ease-out;
-       padding: 16px; display: flex; flex-direction: column; gap: 24px;
-       box-shadow: 10px 0 30px rgba(0,0,0,0.1); /* <-- MODIFIED */
-       border-right: 1px solid var(--border-color); /* <-- MODIFIED */
-       overflow-y: auto;
-       overflow-x: hidden;
+        color: var(--bg);
    }
    
    @media (max-width: 860px) {
-       /* Hide desktop AI panel on mobile, replaced by immersive view */
-       .ai-panel { display: none !important; }
+        /* *** MODIFIED FOR IMMERSIVE UI *** */
+        .app-header {
+            display: none;
+        }
+        body {
+            padding-top: 0;
+        }
+        /* *** END MODIFICATIONS *** */
 
-       .font-control button {
+        /* Hide desktop AI panel on mobile, replaced by immersive view */
+        .ai-panel { display: none !important; }
+
+        .font-control button {
            border: none;
            border-radius: 6px;
            width: auto;
            height: auto;
            padding: 8px 12px;
            background-color: transparent;
-       }
-       .content {
+        }
+        .content {
            padding-bottom: 5rem;
-       }
-       .mobile-nav-menu {
+        }
+        .mobile-nav-menu {
            padding-bottom: 80px;
-       }
-       .font-control button:hover,
-       .font-control button:active {
+        }
+        .font-control button:hover,
+        .font-control button:active {
            background-color: color-mix(in srgb, var(--subtle) 20%, transparent);
-       }
+        }
    
-       .header-content {
+        .header-content {
            display: grid;
            grid-template-columns: 1fr auto 1fr;
            padding: 0 16px;
            align-items: center;
-       }
-       .logo { grid-column: 1 / 2; justify-self: start; }
-       .reader-controls { display: none; }
-       .mobile-page-indicator { display: block; grid-column: 2 / 3; justify-self: center; color: var(--subtle); font-size: 0.9rem; user-select: none; }
-       .mobile-menu-toggle { display: inline-flex; grid-column: 3 / 4; justify-self: end; }
-       main { padding: 16px; }
-       .page-number { display: none; }
-       .app-header, .mobile-nav-menu, .mobile-menu-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: color-mix(in srgb, var(--bg) 95%, transparent); }
-       
-       .page-container { filter: none; box-shadow: none; }
-       .page { border: none; padding: 0; border-radius: 0; background-color: transparent; }
-       body.dark-mode .page { background-color: transparent; }
+        }
+        .logo { grid-column: 1 / 2; justify-self: start; }
+        .reader-controls { display: none; }
+        .mobile-page-indicator { display: block; grid-column: 2 / 3; justify-self: center; color: var(--subtle); font-size: 0.9rem; user-select: none; }
+        .mobile-menu-toggle { display: inline-flex; grid-column: 3 / 4; justify-self: end; }
+        main { padding: 16px; }
+        .page-number { display: none; }
+        .app-header, .mobile-nav-menu, .mobile-menu-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: color-mix(in srgb, var(--bg) 95%, transparent); }
+        
+        .font-control,
+        .page-jump-control {
+           width: 100%;
+           box-sizing: border-box;
+           padding: 12px;
+        }
+        
+        .page-container { filter: none; box-shadow: none; }
+        .page { border: none; padding: 0; border-radius: 0; background-color: transparent; }
+        body.dark-mode .page { background-color: transparent; }
    }
    
    html:not(.touch-device) main::-webkit-scrollbar { width: 12px; }
+   html:not(.touch-device) main::-webkit-scrollbar-track { background: var(--bg); }
+   html:not(.touch-device) main::-webkit-scrollbar-thumb {
+        background-color: var(--ink);
+        border-radius: 6px;
+        border: 3px solid var(--bg);
+   }
+   html:not(.touch-device) main::-webkit-scrollbar-thumb:hover { background-color: var(--subtle); }
        .logo a {
-     color: inherit;
-     text-decoration: none;
+      color: inherit;
+      text-decoration: none;
    }
        .mobile-nav-menu::after {
        content: '';
@@ -417,7 +427,7 @@
                 <h2 class="fallback-title">No Book Loaded</h2>
                 <p class="fallback-text" id="fallback-text">It looks like there was an issue loading your book. Please return to the library to choose a title.</p>
                 <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
-            </div>
+           </div>
         </section>
         <section id="loading-view" class="loading-view">
             <div class="spinner"></div>
@@ -435,7 +445,7 @@
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
     <nav id="mobile-nav-menu" class="mobile-nav-menu">
         <div class="mobile-menu-header">
-            <h3>Settings</h3>
+            <h1 class="logo" style="font-size: 1.6rem; margin: 0;"><a href="https://kaffetish.club">Kaffetish</a></h1>
             <button id="mobile-menu-close" aria-label="Close Menu">&times;</button>
         </div>
         <div class="menu-section">
@@ -451,9 +461,9 @@
             </button>
         </div>
         <button id="mobile-noise-toggle" class="menu-button">
-                <i id="mobile-noise-icon" class="fa-solid fa-wave-square"></i>
-                <span>Black Noise</span>
-            </button>
+                 <i id="mobile-noise-icon" class="fa-solid fa-wave-square"></i>
+                 <span>Black Noise</span>
+           </button>
         <hr class="menu-divider" />
         <div class="menu-section">
             <h4 class="menu-section-title">Go to Page</h4>
@@ -509,7 +519,7 @@
  document.documentElement.classList.toggle('touch-device', isTouchDevice);
 
  let app, auth, functions, explainBookTextFn, db;
- let getSpokenExplanationFn; // 👈 *** MODIFIED ***
+ let getSpokenExplanationFn;
 
  // ─────────────────────────────────────────────────────────────
  // Robust background noise engine for Kaffetish
@@ -696,7 +706,7 @@
    functions = getFunctions(app, "us-central1");
    db = getFirestore(app);
    explainBookTextFn = httpsCallable(functions, "explainBookText");
-   getSpokenExplanationFn = httpsCallable(functions, "getSpokenExplanation"); // 👈 *** MODIFIED ***
+   getSpokenExplanationFn = httpsCallable(functions, "getSpokenExplanation");
  } else {
    console.warn("Firebase config is missing or incomplete. AI and bookmark features will be disabled.");
  }
@@ -752,7 +762,7 @@
    pagesHTML: [], isRendering: false,
    currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
    mode: "light",
-   touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false },
+   touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false, lastTapTime: 0 }, // <-- MODIFIED
    lastSelectionText: "",
    lastSelectionRange: null,
    lastSelectionContext: "",
@@ -765,8 +775,9 @@
    lastScrollPosition: 0,
    isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
    speechSynthesis: window.speechSynthesis,
-   audioCtx: null, // 👈 *** MODIFIED ***
-   currentAudioSource: null // 👈 *** MODIFIED ***
+   audioCtx: null,
+   currentAudioSource: null,
+   currentSpokenHighlight: null // <-- MODIFIED: To track the "Speak" highlight
  };
  const baseFontRem = 1.15;
 
@@ -843,8 +854,9 @@
    view.classList.remove('hidden');
    const isReader = view === DOM.readerView;
    DOM.readerControls.classList.toggle('hidden', !isReader);
-   DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
-   DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
+   // *** MODIFIED: Don't show these on mobile anymore ***
+   // DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
+   // DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
  }
 
  async function loadPdfFromUrl(sourceUrl, title) {
@@ -1071,80 +1083,105 @@
    }
  }
 
+ // *** MODIFIED: Logic to unwrap the "Speak" highlight ***
+ function unwrapSpokenHighlight() {
+    if (state.currentSpokenHighlight) {
+        const el = state.currentSpokenHighlight;
+        if (el.parentNode) {
+            // Replace the span with its inner text
+            el.parentNode.replaceChild(document.createTextNode(el.textContent), el);
+        }
+        state.currentSpokenHighlight = null;
+    }
+ }
+
  /**
-  * 👈 *** REPLACED FUNCTION ***
-  * Calls a dedicated backend function to get a high-quality audio
-  * explanation and plays it using the Web Audio API.
+  * 👈 *** MODIFIED FUNCTION ***
+  * Now highlights the text while speaking and un-highlights when done.
   */
  async function handleSpeak() {
-     const textToExplain = state.lastSelectionText;
-     if (!textToExplain || !getSpokenExplanationFn) return;
+       const textToExplain = state.lastSelectionText;
+       if (!textToExplain || !getSpokenExplanationFn) return;
  
-     // 1. Stop any audio that is currently playing
-     if (state.speechSynthesis.speaking) {
-         state.speechSynthesis.cancel();
-     }
-     if (state.currentAudioSource) {
-         try { state.currentAudioSource.stop(); } catch (e) {}
-         state.currentAudioSource = null;
-     }
+       // 1. Stop any audio that is currently playing
+       if (state.speechSynthesis.speaking) {
+           state.speechSynthesis.cancel();
+       }
+       if (state.currentAudioSource) {
+           try { state.currentAudioSource.stop(); } catch (e) {}
+           state.currentAudioSource = null;
+           unwrapSpokenHighlight(); // Stop and unwrap previous
+       }
  
-     clearSelection();
-     await trackExplanationRequest(textToExplain);
-     
-     // 2. UX FIX: Show a persistent loading message.
-     // We set a super long duration that will be cancelled manually.
-     flashAI("Brewing your audio...", 999999); 
+       await trackExplanationRequest(textToExplain);
+       
+       // 2. *** NEW: Programmatically highlight the text ***
+       if (state.lastSelectionRange) {
+           try {
+               const span = document.createElement("span");
+               span.className = "highlighted-text"; // Use existing highlight class
+               state.lastSelectionRange.surroundContents(span);
+               state.currentSpokenHighlight = span; // Store the reference
+           } catch (e) {
+               console.error("Highlighting for speak failed:", e);
+           }
+       }
+       
+       // 3. Clear the user's blue selection (our highlight remains)
+       clearSelection();
+       
+       // 4. UX FIX: Show a persistent loading message.
+       flashAI("Brewing your audio...", 999999); 
  
-     try {
-         // 3. Call the new backend function
-         const { data } = await getSpokenExplanationFn({
-             text: textToExplain,
-             bookTitle: state.bookTitle,
-             contextText: state.lastSelectionContext
-         });
+       try {
+           // 5. Call the new backend function
+           const { data } = await getSpokenExplanationFn({
+               text: textToExplain,
+               bookTitle: state.bookTitle,
+               contextText: state.lastSelectionContext
+           });
  
-         if (!data.audioBase64) {
-             throw new Error("No audio data received from server.");
-         }
+           if (!data.audioBase64) {
+               throw new Error("No audio data received from server.");
+           }
  
-         // 4. Initialize the Web Audio context (if not already)
-         if (!state.audioCtx) {
-             state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-         }
-         
-         // 5. Decode the Base64 MP3 data
-         const audioData = atob(data.audioBase64); // Decode base64
-         const audioBuffer = new Uint8Array(audioData.length);
-         for (let i = 0; i < audioData.length; i++) {
-             audioBuffer[i] = audioData.charCodeAt(i);
-         }
-         
-         const decodedBuffer = await state.audioCtx.decodeAudioData(audioBuffer.buffer);
+           // 6. Initialize the Web Audio context (if not already)
+           if (!state.audioCtx) {
+               state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+           }
+           
+           // 7. Decode the Base64 MP3 data
+           const audioData = atob(data.audioBase64); // Decode base64
+           const audioBuffer = new Uint8Array(audioData.length);
+           for (let i = 0; i < audioData.length; i++) {
+               audioBuffer[i] = audioData.charCodeAt(i);
+           }
+           
+           const decodedBuffer = await state.audioCtx.decodeAudioData(audioBuffer.buffer);
  
-         // 6. Play the audio
-         const source = state.audioCtx.createBufferSource();
-         source.buffer = decodedBuffer;
-         source.connect(state.audioCtx.destination);
-         source.start(0);
-         
-         // 7. UX FIX: Update the UI now that speech has started
-         flashAI("Speaking...", 4000); // Show "Speaking" briefly
+           // 8. Play the audio
+           const source = state.audioCtx.createBufferSource();
+           source.buffer = decodedBuffer;
+           source.connect(state.audioCtx.destination);
+           source.start(0);
+           
+           // 9. UX FIX: Update the UI now that speech has started
+           flashAI("Speaking...", 4000); // Show "Speaking" briefly
  
-         state.currentAudioSource = source; // Store for stopping
-         
-         source.onended = () => {
-             state.currentAudioSource = null;
-             // Optionally, hide the flashAI panel when done
-             // DOM.aiPanel.style.display = "none";
-         clearSelection(); // Deselect text only after speaking is done
-         };
+           state.currentAudioSource = source; // Store for stopping
+           
+           source.onended = () => {
+               state.currentAudioSource = null;
+               unwrapSpokenHighlight(); // *** NEW: Remove highlight when done ***
+               // Don't call clearSelection() here, unwrap handles it
+           };
  
-     } catch (err) {
-         console.error("Error fetching/playing spoken explanation:", err);
-         // 8. UX FIX: Show an error in the persistent panel
-         flashAI("Sorry, I couldn't get that explanation.", 3000);
-     }
+       } catch (err) {
+           console.error("Error fetching/playing spoken explanation:", err);
+           // 10. UX FIX: Show an error in the persistent panel
+           flashAI("Sorry, I couldn't get that explanation.", 3000);
+           unwrapSpokenHighlight(); // *** NEW: Remove highlight on error ***
+       }
  }
 
 
@@ -1164,8 +1201,8 @@
          <h4 class="explanation-title"><i class="fa-solid fa-star"></i>Explanation</h4>
          <div class="explanation-text">${initialContent}</div>
          <div class="explanation-actions">
-             <button id="mobile-speak-btn" class="menu-button"><i class="fa-solid fa-volume-high"></i> Speak</button>
-             <button id="mobile-copy-btn" class="menu-button"><i class="fa-regular fa-copy"></i> Copy</button>
+           <button id="mobile-speak-btn" class="menu-button"><i class="fa-solid fa-volume-high"></i> Speak</button>
+           <button id="mobile-copy-btn" class="menu-button"><i class="fa-regular fa-copy"></i> Copy</button>
          </div>
        </div>
      `;
@@ -1213,14 +1250,15 @@
    if (!state.isExplanationViewActive) return;
    if (state.speechSynthesis.speaking) state.speechSynthesis.cancel();
    
-   // 👈 *** MODIFIED ***
    if (state.currentAudioSource) {
        state.currentAudioSource.stop();
        state.currentAudioSource = null;
    }
+   
+   unwrapSpokenHighlight(); // <-- *** MODIFIED: Ensure highlight is removed ***
 
    state.isExplanationViewActive = false;
-                 clearSelection(); // <-- ADD THIS LINE
+   clearSelection(); // This is already here, perfect.
 
    DOM.pageContent.classList.add('content-fading');
 
@@ -1284,18 +1322,14 @@
  }
 
  function flashAI(msg, duration = 2000) {
-   // 👈 *** MODIFIED *** (logic is now inside handleSpeak)
-   // This function is now used to show persistent messages too.
    DOM.aiQuote.classList.add('hidden');
    DOM.aiPanel.style.display = "flex";
    DOM.aiContent.textContent = msg;
    
-   // Clear any existing timer
    if (DOM.aiPanel.flashTimer) {
      clearTimeout(DOM.aiPanel.flashTimer);
    }
 
-   // Set a new timer
    DOM.aiPanel.flashTimer = setTimeout(() => { 
      if (DOM.aiContent.textContent === msg) {
          DOM.aiPanel.style.display = "none"; 
@@ -1324,7 +1358,10 @@
 
    DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
    DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
-   DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+   
+   // *** MODIFIED: Toggle is no longer in the header ***
+   // DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+   
    DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
    DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
    DOM.mobilePageJumpInput.addEventListener("change", () => {
@@ -1363,7 +1400,6 @@
        }
      });
    }
-   // Optional: pause noise when tab hidden (doesn't change user's preference)
    document.addEventListener('visibilitychange', () => {
      if (document.visibilityState === 'hidden') {
        noiseEngine.stop();
@@ -1374,7 +1410,13 @@
    // --- End noise ---
 
    DOM.mobileActionBtn.addEventListener("click", () => {
-     handleSpeak();
+        // *** MODIFIED: Button logic is now more complex ***
+        if (state.isExplanationViewActive) {
+            returnToBookView();
+        } else if (state.lastSelectionText) {
+            // "Speak" is the default action for a selection
+            handleSpeak(); 
+        }
    });
 
    document.addEventListener('keydown', (e) => {
@@ -1383,11 +1425,11 @@
      else if (e.key === 'ArrowRight') DOM.nextBtn.click();
      else if (e.key === 'Escape') {
          if (state.speechSynthesis.speaking) state.speechSynthesis.cancel();
-         // 👈 *** MODIFIED ***
          if (state.currentAudioSource) { 
              state.currentAudioSource.stop();
              state.currentAudioSource = null;
          }
+         unwrapSpokenHighlight(); // <-- *** MODIFIED: Unwrap on escape ***
      }
    });
    document.addEventListener('visibilitychange', () => {
@@ -1430,6 +1472,10 @@
          }
 
          if (isTouchDevice) {
+           // *** MODIFIED: Set up button for "Speak" ***
+           DOM.mobileActionBtn.classList.remove('return-mode');
+           DOM.mobileActionIcon.className = 'fa-solid fa-volume-high';
+           DOM.mobileActionText.textContent = 'Speak';
            DOM.mobileActionBtn.classList.add('visible');
            DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
          } else {
@@ -1450,23 +1496,46 @@
    document.addEventListener('mouseup', handleSelection);
  }
 
+ // *** MODIFIED: Replaced function to handle swipes AND double-taps ***
  function setupSwipeNavigation() {
-   DOM.mainContent.addEventListener('touchstart', (e) => {
-     if (e.touches.length > 1 || state.isExplanationViewActive) return;
-     const touch = e.touches[0];
-     state.touch.startX = touch.screenX; state.touch.startY = touch.screenY;
-     state.touch.startTime = Date.now(); // FIXED: was Date.Check()
-   }, { passive: true });
-   DOM.mainContent.addEventListener('touchend', (e) => {
-     if (e.touches.length > 0 || state.isExplanationViewActive) return;
-     const touch = e.changedTouches[0];
-     const deltaX = touch.screenX - state.touch.startX, deltaY = touch.screenY - state.touch.startY;
-     const elapsedTime = Date.now() - state.touch.startTime;
-     if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
-       if (deltaX > 0) DOM.prevBtn.click();
-       else DOM.nextBtn.click();
-     }
-   }, { passive: true });
+    // This listener is now on `touchstart` to manage swipe AND tap logic
+    DOM.mainContent.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1 || state.isExplanationViewActive) return;
+        const touch = e.touches[0];
+        state.touch.startX = touch.screenX;
+        state.touch.startY = touch.screenY;
+        state.touch.startTime = Date.now();
+    }, { passive: true });
+
+    DOM.mainContent.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length === 0 || state.isExplanationViewActive) return;
+
+        const touch = e.changedTouches[0];
+        const deltaX = touch.screenX - state.touch.startX;
+        const deltaY = touch.screenY - state.touch.startY; // Corrected: was screenX
+        const elapsedTime = Date.now() - state.touch.startTime;
+
+        // 1. Swipe Logic (existing)
+        if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > 0) DOM.prevBtn.click();
+            else DOM.nextBtn.click();
+            state.touch.lastTapTime = 0; // Reset tap on a successful swipe
+        }
+        // 2. Double-Tap Logic (New)
+        else if (elapsedTime < 250 && Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) {
+            // This was a tap, not a swipe
+            const now = Date.now();
+            if (now - state.touch.lastTapTime < 300) { // 300ms threshold for double-tap
+                // Check if the tap is on our programmatic highlight
+                if (!state.currentSpokenHighlight || !state.currentSpokenHighlight.contains(e.target)) {
+                    DOM.body.classList.add('menu-open');
+                }
+                state.touch.lastTapTime = 0; // Reset
+            } else {
+                state.touch.lastTapTime = now;
+            }
+        }
+    }, { passive: true });
  }
 
  function initApp() {
