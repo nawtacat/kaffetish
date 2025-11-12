@@ -1099,9 +1099,28 @@
   * 👈 *** MODIFIED FUNCTION ***
   * Now highlights the text while speaking and un-highlights when done.
   */
+ /**
+  * 👈 *** UPDATED FUNCTION (with Mobile Audio Fix) ***
+  * Now highlights the text, unlocks audio on tap, and un-highlights when done.
+  */
  async function handleSpeak() {
        const textToExplain = state.lastSelectionText;
        if (!textToExplain || !getSpokenExplanationFn) return;
+ 
+       // *** FIX: UNLOCK AUDIO CONTEXT ***
+       // This must happen immediately on user tap for mobile to work.
+       if (!state.audioCtx) {
+           state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+       }
+       // Asynchronously resume, but don't await and block the rest of the UI
+       if (state.audioCtx.state === 'suspended') {
+           state.audioCtx.resume().then(() => {
+               console.log("AudioContext resumed by user gesture.");
+           }).catch(e => {
+               console.error("AudioContext resume failed", e);
+           });
+       }
+       // *** END FIX ***
  
        // 1. Stop any audio that is currently playing
        if (state.speechSynthesis.speaking) {
@@ -1115,7 +1134,7 @@
  
        await trackExplanationRequest(textToExplain);
        
-       // 2. *** NEW: Programmatically highlight the text ***
+       // 2. Programmatically highlight the text
        if (state.lastSelectionRange) {
            try {
                const span = document.createElement("span");
@@ -1134,7 +1153,7 @@
        flashAI("Brewing your audio...", 999999); 
  
        try {
-           // 5. Call the new backend function
+           // 5. Call the backend function
            const { data } = await getSpokenExplanationFn({
                text: textToExplain,
                bookTitle: state.bookTitle,
@@ -1145,12 +1164,8 @@
                throw new Error("No audio data received from server.");
            }
  
-           // 6. Initialize the Web Audio context (if not already)
-           if (!state.audioCtx) {
-               state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-           }
-           
-           // 7. Decode the Base64 MP3 data
+           // 6. Decode the Base64 MP3 data
+           // (The AudioContext was already created/resumed at the start)
            const audioData = atob(data.audioBase64); // Decode base64
            const audioBuffer = new Uint8Array(audioData.length);
            for (let i = 0; i < audioData.length; i++) {
@@ -1159,31 +1174,29 @@
            
            const decodedBuffer = await state.audioCtx.decodeAudioData(audioBuffer.buffer);
  
-           // 8. Play the audio
+           // 7. Play the audio
            const source = state.audioCtx.createBufferSource();
            source.buffer = decodedBuffer;
            source.connect(state.audioCtx.destination);
            source.start(0);
            
-           // 9. UX FIX: Update the UI now that speech has started
+           // 8. UX FIX: Update the UI now that speech has started
            flashAI("Speaking...", 4000); // Show "Speaking" briefly
  
            state.currentAudioSource = source; // Store for stopping
            
            source.onended = () => {
                state.currentAudioSource = null;
-               unwrapSpokenHighlight(); // *** NEW: Remove highlight when done ***
-               // Don't call clearSelection() here, unwrap handles it
+               unwrapSpokenHighlight(); // Remove highlight when done
            };
  
        } catch (err) {
            console.error("Error fetching/playing spoken explanation:", err);
-           // 10. UX FIX: Show an error in the persistent panel
+           // 9. UX FIX: Show an error in the persistent panel
            flashAI("Sorry, I couldn't get that explanation.", 3000);
-           unwrapSpokenHighlight(); // *** NEW: Remove highlight on error ***
+           unwrapSpokenHighlight(); // Remove highlight on error
        }
  }
-
 
  function enterExplanationView(initialContent) {
    state.isExplanationViewActive = true;
