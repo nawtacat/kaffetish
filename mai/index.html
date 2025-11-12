@@ -1029,10 +1029,12 @@
  }
 
  /**
-  * 👈 *** REPLACED FUNCTION ***
-  * Renders a page using either 'library' (paragraphize) or 'raw' (canvas) mode.
-  */
- async function renderPage(pageNum) {
+ * 👈 *** REPLACED FUNCTION ***
+ * Renders a page using either 'library' (paragraphize) or 'raw' (canvas) mode.
+ * * This version includes a fix for high-DPI (Retina) displays to
+ * render the canvas at full resolution, preventing blurriness.
+ */
+async function renderPage(pageNum) {
     if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
     
     // For 'library' mode, check if page is already rendered
@@ -1068,34 +1070,57 @@
             const textLayerDiv = document.getElementById('pdf-text-layer');
             const context = canvas.getContext('2d');
 
-            // Calculate scale to fit the container width
-            // Use clientWidth of the container for accurate scaling
+            
+            // --- FIX FOR HIGH-DPI/RETINA DISPLAYS ---
+
+            // 1. Get the device's pixel ratio
+            const pixelRatio = window.devicePixelRatio || 1;
+
+            // 2. Get container width in CSS pixels
             const containerWidth = document.getElementById('raw-page-view').clientWidth;
-            const viewport = page.getViewport({ scale: 1.0 }); // Get default viewport
+            
+            // 3. Get viewport at scale 1 to find default width
+            const viewport = page.getViewport({ scale: 1.0 });
+            
+            // 4. Calculate the scale to fit the container
             const scale = containerWidth / viewport.width;
-            const scaledViewport = page.getViewport({ scale: scale });
+            
+            // 5. Create a viewport scaled for CSS pixels (for text layer)
+            const cssViewport = page.getViewport({ scale: scale });
 
-            // Set canvas and text layer dimensions
-            canvas.height = scaledViewport.height;
-            canvas.width = scaledViewport.width;
-            textLayerDiv.style.width = `${scaledViewport.width}px`;
-            textLayerDiv.style.height = `${scaledViewport.height}px`;
+            // 6. Create a viewport scaled for *physical* pixels (for canvas)
+            const physicalViewport = page.getViewport({ scale: scale * pixelRatio });
 
-            // A. Render the PDF page to the canvas
+            // 7. Set the canvas bitmap size to physical pixels
+            canvas.height = physicalViewport.height;
+            canvas.width = physicalViewport.width;
+
+            // 8. Set the canvas *display* size using CSS
+            // (Our CSS `width: 100%` on #pdf-canvas already handles width, but we must set height)
+            canvas.style.height = `${cssViewport.height}px`;
+
+            // 9. Size the text layer using CSS pixels
+            textLayerDiv.style.width = `${cssViewport.width}px`;
+            textLayerDiv.style.height = `${cssViewport.height}px`;
+
+            // 10. Render the PDF at high resolution
             await page.render({
                 canvasContext: context,
-                viewport: scaledViewport
+                viewport: physicalViewport // <-- Use the high-res viewport
             }).promise;
 
-            // B. Render the invisible text layer for selection
+            // 11. Render the text layer using the CSS-sized viewport
             const textContent = await page.getTextContent();
             textLayerDiv.innerHTML = ''; // Clear previous
             pdfjsLib.renderTextLayer({
                 textContent: textContent,
                 container: textLayerDiv,
-                viewport: scaledViewport,
+                viewport: cssViewport, // <-- Use the CSS-sized viewport
                 textDivs: [] // pdf.js 2.11+ requires this
             });
+
+            // --- END HIGH-DPI FIX ---
+
 
         } catch (e) {
             console.error(`Failed to render raw page ${pageNum}:`, e);
@@ -1121,7 +1146,7 @@
     }, 0);
 
     state.isRendering = false;
- }
+}
 
  function showTooltipAt(rect) {
    const topBoundary = 68;
