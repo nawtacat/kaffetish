@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Coffetable - The Kaffetish Magazine</title>
+
+    <link rel="manifest" href="/manifest.json">
+
+    <link rel="apple-touch-icon" href="https://kaffetish.club/img/kaffetishicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://kaffetish.club/img/kaffetishicon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://kaffetish.club/img/kaffetishicon.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="https://kaffetish.club/img/kaffetishicon.png">
+
+    <link rel="icon" type="image/png" href="https://kaffetish.club/img/kaffetishrounded.png">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kaffetish">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    
+    
+    <style>
+        :root {
+            --bg: #FDFBF7;
+            --ink: #2C2B2A;
+            --accent: #FF3A44;
+            --subtle: #8A8886;
+            --border-color: #EAE8E4;
+            --shadow-color: rgba(44, 43, 42, 0.1);
+            --font-main: 'Lora', serif;
+            --font-ui: 'Poppins', sans-serif;
+        }
+
+        body.dark-mode {
+            --bg: #21201F;
+            --ink: #EAE8E4;
+            --subtle: #999591;
+            --border-color: #3A3837;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+        }
+
+        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+
+        body {
+    /* --- Keep your existing styles --- */
+    font-family: var(--font-ui);
+    background-color: var(--bg);
+    color: var(--ink);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    margin: 0;
+    
+    /* Update body padding to account for the new, taller header */
+    padding-top: calc(60px + env(safe-area-inset-top));
+}
+
+        /* --- Header --- */
+        .app-header {
+    position: fixed; top: 0; left: 0; width: 100%;
+    
+    /* Adjust height and add padding for the safe area */
+    height: calc(60px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+
+    /* --- Keep the rest of your styles --- */
+    background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color); z-index: 1000;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    
+    /* Add this for better layout calculations */
+    box-sizing: border-box; 
+}
+        .header-content {
+            max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: baseline;
+            font-size: 1.6rem;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+            color: var(--accent);
+            font-family: var(--font-main);
+        }
+        .logo .tagline {
+            font-size: 0.6em;
+            font-style: italic;
+            font-weight: 400;
+            color: var(--subtle);
+            letter-spacing: normal;
+            margin-left: 8px;
+        }
+        body.dark-mode .logo { color: var(--ink); }
+
+        .header-actions { display: flex; align-items: center; gap: 16px; }
+        .header-actions button, .header-actions a {
+            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+            padding: 8px 10px; cursor: pointer; font-size: 1rem;
+            transition: color 0.2s ease, background-color 0.2s ease;
+            text-decoration: none;
+        }
+        .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        
+        /* --- Main Content --- */
+        main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
+        
+        /* --- Footer --- */
+.app-footer {
+    text-align: center;
+    padding: 32px 24px;
+    margin-top: 48px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap; /* Allows items to wrap if needed */
+    gap: 0.5em; /* The space between items */
+    color: var(--subtle);
+}
+
+/* This adds the bullet point separator after each item, except the last one */
+.footer-content > *:not(:last-child)::after {
+    content: "•";
+    margin-left: 0.5em;
+}
+
+.app-footer a {
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.app-footer a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+        
+        /* --- Book Grid Styles (Re-used) --- */
+         .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 32px 24px;
+        }
+        .book-card {
+            text-decoration: none; cursor: pointer; text-align: center;
+            transition: transform 0.2s ease-out; display: block;
+        }
+        .book-card:hover { transform: translateY(-5px); }
+        .book-cover {
+            width: 100%; aspect-ratio: 2 / 3; border-radius: 8px;
+            overflow: hidden; box-shadow: 0 8px 20px var(--shadow-color);
+            margin-bottom: 12px; background-color: var(--border-color);
+        }
+        .book-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .book-card-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); }
+        .book-card-author { font-size: 0.8rem; color: var(--subtle); }
+
+
+        /* --- NEW: Coffetable Magazine Styles --- */
+
+        .magazine-header {
+            text-align: center;
+            margin-bottom: 64px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .magazine-header h2 {
+            font-family: var(--font-main);
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            color: var(--accent);
+        }
+        body.dark-mode .magazine-header h2 {
+             color: var(--ink);
+        }
+        .magazine-header .issue-date {
+            font-family: var(--font-ui);
+            font-size: 1.1rem;
+            color: var(--subtle);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .magazine-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 48px;
+            margin-bottom: 64px;
+        }
+
+        .featured-article h3 {
+            font-family: var(--font-main);
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin: 0 0 12px 0;
+        }
+        .article-byline {
+            color: var(--subtle);
+            font-style: italic;
+            font-family: var(--font-main);
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 24px;
+        }
+        .article-banner {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            background-color: var(--border-color);
+            border: 1px solid var(--border-color);
+        }
+        .article-content p {
+            font-family: var(--font-main); /* Lora font for article text */
+            font-size: 1.15rem;
+            line-height: 1.8;
+            margin-bottom: 1.5em;
+        }
+        .article-content blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 24px;
+            margin: 32px 0 32px 16px;
+            font-family: var(--font-main);
+            font-style: italic;
+            font-size: 1.3rem;
+            color: var(--subtle);
+            line-height: 1.6;
+        }
+
+        /* --- Re-usable Button Styles --- */
+        .btn {
+            display: inline-block;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-family: var(--font-ui);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+            box-sizing: border-box;
+        }
+        .btn-primary {
+            background-color: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+        .btn-full-width {
+            display: block;
+            text-align: center;
+        }
+
+
+        /* --- Sidebar Widget (Repurposed from Featured Author) --- */
+        .sidebar-widget {
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
+            position: sticky; /* Makes sidebar follow scroll */
+            top: 100px; /* (60px header + 24px padding + 16px margin) */
+        }
+        .sidebar-widget-header h3 {
+            font-family: var(--font-main);
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin: 0 0 24px 0;
+            text-align: left;
+            position: relative;
+        }
+        .sidebar-widget-header h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 50px;
+            height: 2px;
+            background-color: var(--accent);
+        }
+        .sidebar-widget .book-card {
+            margin-bottom: 24px;
+        }
+        .widget-description {
+            font-size: 0.95rem;
+            color: var(--subtle);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            font-family: var(--font-ui);
+        }
+
+        /* --- Curated Grid Section --- */
+        .curated-grid-section h2 {
+            font-family: var(--font-main);
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .curated-grid-section .book-grid {
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        }
+
+
+        /* --- Responsive Styles --- */
+        @media (max-width: 992px) {
+            main { 
+                padding: 24px 16px; 
+            }
+            .magazine-layout {
+                grid-template-columns: 1fr;
+            }
+            .sidebar-widget {
+                position: static; /* Un-stick sidebar on mobile */
+                top: auto;
+            }
+            .logo .tagline {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .footer-content {
+                flex-direction: column; /* Stack items vertically */
+                gap: 0.4em; /* Adjust spacing for vertical layout */
+            }
+            .footer-content > *:not(:last-child)::after {
+                content: "";
+                margin-left: 0;
+            }
+            .magazine-header h2 {
+                font-size: 2.5rem;
+            }
+            .featured-article h3 {
+                font-size: 1.8rem;
+            }
+            .article-content p {
+                font-size: 1.05rem;
+            }
+            .article-content blockquote {
+                font-size: 1.15rem;
+            }
+            .curated-grid-section .book-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <h1 class="logo">
+                Kaffetish
+                <span class="tagline">explained by the librarian</span>
+            </h1>
+            <div class="header-actions">
+                <a href="https://kaffetish.club/register" title="Profile"><i class="fa-solid fa-user"></i></a>
+                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="magazine-header">
+            <h2>Coffetable</h2>
+            <p class="issue-date">The Kaffetish Magazine - November 2025 Issue</p>
+        </section>
+
+        <div class="magazine-layout">
+            <article class="featured-article">
+                <img class="article-banner" src="https://kaffetish.club/img/frankenstein.jpg" alt="A depiction of Frankenstein's monster">
+                <h3>Why 'Frankenstein' is More Than a Monster Story</h3>
+                <p class="article-byline">By The Librarian</p>
+                
+                <div class="article-content">
+                    <p>Mary Shelley's <strong>"Frankenstein; or, The Modern Prometheus"</strong> is a titan of literature, often reduced in popular culture to a simple tale of a lumbering monster and a mad scientist. But to dismiss it as such is to miss the profound, aching heart of the novel—a story that is more relevant today than it was 200 years ago.</p>
+                    
+                    <p>The novel explores timeless themes of creation, abandonment, the nature of humanity, and the dangers of unchecked ambition. Victor Frankenstein is not just a scientist; he is a negligent creator, a "father" who recoils in horror from his own "child" simply because of its appearance. This initial act of rejection is the catalyst for all the tragedy that follows.</p>
+                    
+                    <blockquote>
+                        "I ought to be thy Adam, but I am rather the fallen angel, whom thou drivest from joy for no misdeed."
+                    </blockquote>
+                    
+                    <p>This quote from the Creature himself encapsulates the tragedy. He is intelligent, articulate, and longs for companionship. He learns to read, to understand human emotion, and to appreciate beauty, only to be met with fear and violence at every turn. His monstrosity is not inherent; it is forged by the cruelty of a society that refuses to see past his appearance.</p>
+                    
+                    <p>Shelley masterfully forces us to ask: <strong>who is the real monster?</strong> Is it the "wretch" pieced together from corpses, or the brilliant, celebrated scientist who, in his arrogance, unleashes misery upon the world and refuses to take responsibility for it?</p>
+                    
+                    <a href="https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" target="_blank" class="btn btn-primary">
+                        Read 'Frankenstein' Now <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </article>
+
+            <aside class="magazine-sidebar">
+                <section class="sidebar-widget">
+                    <div class="sidebar-widget-header">
+                        <h3>Librarian's Pick</h3>
+                    </div>
+                    
+                    <a class="book-card" href="https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" target="_blank">
+                         <div class="book-cover">
+                            <img src="https://images.penguinrandomhouse.com/cover/9780593230343" alt="Cover of The Yellow Wallpaper">
+                         </div>
+                         <div class="book-card-title">The Yellow Wallpaper</div>
+                         <div class="book-card-author">Charlotte Perkins Gilman</div>
+                    </a>
+
+                    <p class="widget-description">
+                        A chilling and essential short story. This powerful descent into madness is a foundational work of early feminist literature, exploring the devastating effects of the "rest cure" and the oppression of women in the 19th century. A haunting, necessary read.
+                    </p>
+                    <a href="https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" target="_blank" class="btn btn-secondary btn-full-width">Read Now</a>
+                </section>
+            </aside>
+        </div>
+
+        <section class="curated-grid-section">
+            <h2>Also In This Issue</h2>
+            <div id="magazine-book-grid" class="book-grid">
+                </div>
+        </section>
+    </main>
+    
+    <footer class="app-footer">
+        <div class="footer-content">
+            <span>Curated by Aram A.</span>
+            <span>Goris, Armenia</span>
+            <a href="mailto:aramasatryan290@gmail.com">Get in touch</a>
+        </div>
+    </footer>
+    
+    <script>
+        const DOM = {
+            body: document.body,
+            modeToggle: document.getElementById('mode-toggle'),
+            magazineBookGrid: document.getElementById('magazine-book-grid')
+        };
+
+        const state = {
+            mode: localStorage.getItem("kaffetishMode") || "light",
+        };
+
+        // Complete list of books available
+        const libraryBooks = [
+            { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.harryhartog.com.au/cdn/shop/products/9781435159631.jpg?v=1662072834&width=480", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
+            { 
+                title: "Capital, Volume I", 
+                author: "Karl Marx", 
+                cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg",
+                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af" 
+            },
+            { 
+                title: "The Communist Manifesto", 
+                author: "Karl Marx", 
+                cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg",
+                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2" 
+            },
+            { title: "Frankenstein", author: "Mary Shelley", cover: "https://kaffetish.club/img/frankenstein.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
+            { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
+            { title: "Beyond Good and Evil", author: "Friedrich Nietzsche", cover: "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781625586100/beyond-good-and-evil-9781625586100_hr.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
+            { title: "The Antichrist", author: "Friedrich Nietzsche", cover: "https://cdn.kobo.com/book-images/4bc3d45d-3de4-482f-95a4-759fb593d11e/353/569/90/False/the-anti-christ.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/antichrist.pdf?alt=media&token=6ed7b8ac-4fc7-481c-94fc-3522bb3791a7" },
+            { title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman", cover: "https://images.penguinrandomhouse.com/cover/9780593230343", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" },
+            { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" },
+            { title: "The Gift of The Magi", author: "O. Henry", cover: "https://cdn2.penguin.com.au/covers/original/9789888240579.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-gift-of-the-magi.pdf?alt=media&token=7670ff06-e08c-49dc-b5c9-02523cc1310e" },
+            { title: "To Build a Fire", author: "Jack London", cover: "https://m.media-amazon.com/images/I/81jd8E6yypL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/to-build-a-fire.pdf?alt=media&token=730b2ce4-5aec-437e-82b2-2f5ace5b6e57" },
+            { title: "Memoirs of a Yellow Dog", author: "O. Henry", cover: "httpsf://m.media-amazon.com/images/I/81ZpEjxuU9L._UF1000,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/memoirs_of_a_yellow_dog.pdf?alt=media&token=9255a8e2-3189-4c9e-8686-9a7c1668ba27" },
+            { title: "Man About Town", author: "O. Henry", cover: "https://m.media-amazon.com/images/I/91ufZ+SB25L._UF1000,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/man_about_town.pdf?alt=media&token=4776a1de-28ca-473e-8a72-abfac7031a72" }
+        ];
+
+        // Books featured in this magazine issue
+        const magazineBooks = [
+            libraryBooks[4], // Thus Spoke Zarathustra
+            libraryBooks[1], // Capital, Vol I
+            libraryBooks[9], // The Gift of The Magi
+            libraryBooks[10], // To Build a Fire
+            libraryBooks[0], // Pride and Prejudice
+            libraryBooks[8]  // The Blackest Page
+        ];
+
+
+        function setMode(mode) {
+            state.mode = mode;
+            DOM.body.classList.toggle("dark-mode", mode === 'dark');
+            const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
+            DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
+            localStorage.setItem("kaffetishMode", mode);
+        }
+
+        function createBookCard(book) {
+            const card = document.createElement('a');
+            card.className = 'book-card';
+            
+            const readerBaseUrl = 'https://kaffetish.club/read/';
+            const readerUrl = `${readerBaseUrl}?url=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`;
+            
+            card.href = readerUrl;
+            card.target = "_blank";
+            card.setAttribute('aria-label', `Read ${book.title} by ${book.author}`);
+            
+            card.innerHTML = `
+                <div class="book-cover">
+                    <img src="${book.cover}" alt="Cover of ${book.title}" loading="lazy" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x600/EAE8E4/2C2B2A?text=Cover';">
+                </div>
+                <div class="book-card-title">${book.title}</div>
+                <div class="book-card-author">${book.author}</div>
+            `;
+            return card;
+        }
+        
+        function renderMagazinePage() {
+            DOM.magazineBookGrid.innerHTML = '';
+            magazineBooks.forEach(book => {
+                DOM.magazineBookGrid.appendChild(createBookCard(book));
+            });
+        }
+
+        function setupEventListeners() {
+            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
+        }
+
+        function init() {
+            const savedMode = localStorage.getItem("kaffetishMode") || 'light';
+            setMode(savedMode);
+            
+            renderMagazinePage();
+            setupEventListeners();
+        }
+
+        init();
+    </script>
+</body>
+</html>
