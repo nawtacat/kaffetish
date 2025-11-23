@@ -15,18 +15,17 @@
       height: 100vh;
       width: 100vw; 
       overflow: hidden; 
-      touch-action: none; /* Crucial for full screen body input to prevent scrolling/zooming */
+      touch-action: none;
     }
 
-    #zones { /* This container is for visual button placement */
-      position: relative; /* Establishes a positioning context for the absolute .zone buttons */
+    #zones {
+      position: relative;
       width: 600px; 
       height: 600px; 
-      margin-bottom: 20px; /* Space between visual buttons area and log */
-      /* No touch-action needed here as body handles all touches now */
+      margin-bottom: 20px;
     }
 
-    .zone { /* Visual style for each button */
+    .zone {
       position: absolute;
       width: 120px; 
       height: 120px; 
@@ -42,7 +41,7 @@
       color: #0f0; 
     }
 
-    .zone.active { /* Style when a button's field is activated */
+    .zone.active {
       background: #0f0; 
       color: #111; 
     }
@@ -59,30 +58,27 @@
   </style>
 </head>
 <body>
-  <div id="zones">
-    </div>
-  <div id="log">
-    </div>
-  
+  <div id="zones"></div>
+  <div id="log"></div>
+
   <audio id="wrongSound" src="https://kaffetish.club/trash/wronguserorpass.mp3" preload="auto"></audio>
   <audio id="userCorrect" src="https://kaffetish.club/trash/usercorrect.mp3" preload="auto"></audio>
   <audio id="passCorrect" src="https://kaffetish.club/trash/passcorrect.mp3" preload="auto"></audio>
-  
+
   <script>
-    // Constants for visual button positioning within the #zones container
+    // Constants for visual button positioning
     const ZONES_CONTAINER_WIDTH = 600;
     const ZONES_CONTAINER_HEIGHT = 600;
     const BUTTON_PLACEMENT_RADIUS = 250;
-    const VISUAL_BUTTON_CENTER_X = ZONES_CONTAINER_WIDTH / 2; // Center *within* #zones
-    const VISUAL_BUTTON_CENTER_Y = ZONES_CONTAINER_HEIGHT / 2; // Center *within* #zones
+    const VISUAL_BUTTON_CENTER_X = ZONES_CONTAINER_WIDTH / 2; 
+    const VISUAL_BUTTON_CENTER_Y = ZONES_CONTAINER_HEIGHT / 2; 
     const ZONE_BUTTON_SIZE = 120;
-    // Angles for placing visual buttons (for fingers 1, 2, 3, 4, 5 respectively)
     const BUTTON_ANGLES_DEGREES = [180, 100, 67, 34, 1]; 
 
-    const zonesContainer = document.getElementById('zones'); // Container for visual buttons
+    const zonesContainer = document.getElementById('zones'); 
     const logDisplay = document.getElementById('log');
 
-    // Combo definitions and game state
+    // Combo definitions
     const userCombo = ['23', '1', '1'];
     const passCombo = ['14', '14', '245'];
     let currentInput = [];
@@ -93,47 +89,41 @@
     const userCorrectSound = document.getElementById('userCorrect');
     const passCorrectSound = document.getElementById('passCorrect');
 
-    // Data structures for managing visual buttons and touch state
-    const ZONES_ELEMENTS_BY_FINGER = {}; // Stores visual button DOM elements: { "1": elem1, ... }
-    const touchesCurrentlyDown = new Set(); // Stores touch.identifier of active touches on screen
-    const fingersInCurrentPotentialChord = new Set(); // Stores finger numbers (strings '1'-'5') for the chord
-    const keysCurrentlyDown = new Set(); // Stores which of the keys '1'-'5' are currently pressed
-    const activeTouchEventToButtonElement = new Map(); // Maps touch.identifier -> visual buttonElement
+    const ZONES_ELEMENTS_BY_FINGER = {}; 
+    const touchesCurrentlyDown = new Set(); 
+    const fingersInCurrentPotentialChord = new Set(); 
+    const keysCurrentlyDown = new Set(); 
+    const activeTouchEventToButtonElement = new Map(); 
 
-    // Defines the angular sectors for each finger's "field" based on screen center
     const fieldAngleRanges = {
-      finger_1_min: 140.0, finger_1_max: 270.5, // Zone for finger '1'
-      finger_2_min: 83.5,  finger_2_max: 140.0,  // Zone for finger '2'
-      finger_3_min: 50.5,  finger_3_max: 83.5,   // Zone for finger '3'
-      finger_4_min: 17.5,  finger_4_max: 50.5,   // Zone for finger '4'
-      finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 // Zone for finger '5' (wraps around)
+      finger_1_min: 140.0, finger_1_max: 270.5, 
+      finger_2_min: 83.5,  finger_2_max: 140.0,  
+      finger_3_min: 50.5,  finger_3_max: 83.5,   
+      finger_4_min: 17.5,  finger_4_max: 50.5,   
+      finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 
     };
 
     function getFingerNumberForTouchPoint(touchClientX, touchClientY) {
         const screenCenterX = window.innerWidth / 2;
         const screenCenterY = window.innerHeight / 2;
-
-        // Avoid issues if touch is exactly at the screen center
         if (touchClientX === screenCenterX && touchClientY === screenCenterY) return null;
 
         let angleRad = Math.atan2(screenCenterY - touchClientY, touchClientX - screenCenterX);
         let angleDeg = angleRad * (180 / Math.PI);
-        if (angleDeg < 0) angleDeg += 360; // Normalize angle to 0-360 degrees
+        if (angleDeg < 0) angleDeg += 360; 
 
         if (angleDeg >= fieldAngleRanges.finger_1_min && angleDeg <= fieldAngleRanges.finger_1_max) return '1';
         if (angleDeg >= fieldAngleRanges.finger_2_min && angleDeg <  fieldAngleRanges.finger_2_max) return '2';
         if (angleDeg >= fieldAngleRanges.finger_3_min && angleDeg <  fieldAngleRanges.finger_3_max) return '3';
         if (angleDeg >= fieldAngleRanges.finger_4_min && angleDeg <  fieldAngleRanges.finger_4_max) return '4';
         if (angleDeg <  fieldAngleRanges.finger_5_lower_max || angleDeg > fieldAngleRanges.finger_5_upper_min) return '5';
-        
-        return null; // Touch didn't fall into any defined angular zone
+        return null; 
     }
 
     function setupVisualButtons() {
         BUTTON_ANGLES_DEGREES.forEach((deg, i) => {
             const fingerNumber = String(i + 1);
             const rad = (deg * Math.PI) / 180;
-            // Calculate position relative to the #zones container's top-left
             const x = VISUAL_BUTTON_CENTER_X + BUTTON_PLACEMENT_RADIUS * Math.cos(rad) - ZONE_BUTTON_SIZE / 2;
             const y = VISUAL_BUTTON_CENTER_Y - BUTTON_PLACEMENT_RADIUS * Math.sin(rad) - ZONE_BUTTON_SIZE / 2;
 
@@ -143,18 +133,34 @@
             zoneElement.style.top = `${y}px`;
             zoneElement.style.width = `${ZONE_BUTTON_SIZE}px`;
             zoneElement.style.height = `${ZONE_BUTTON_SIZE}px`;
-            zoneElement.dataset.finger = fingerNumber; // Store finger number for reference
-            zoneElement.textContent = fingerNumber;    // Display finger number on the button
+            zoneElement.dataset.finger = fingerNumber; 
+            zoneElement.textContent = fingerNumber;    
             
             zonesContainer.appendChild(zoneElement);
             ZONES_ELEMENTS_BY_FINGER[fingerNumber] = zoneElement;
         });
     }
 
+    // --- FIXED AUDIO FUNCTION ---
     function playAudio(audioElement) {
-      audioElement.pause();
+      if (!audioElement) {
+        logToScreen("Error: Audio element not found");
+        return;
+      }
+      
+      // Force volume to 100%
+      audioElement.volume = 1.0;
       audioElement.currentTime = 0;
-      audioElement.play().catch(err => console.error('Audio play error:', err));
+      
+      const playPromise = audioElement.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          // This will print to the screen if the sound fails
+          console.error('Audio play error:', err);
+          logToScreen(`Audio Error: ${err.message}`);
+        });
+      }
     }
 
     function logToScreen(message) {
@@ -166,10 +172,11 @@
     
     function checkAndProcessStage() {
         const targetComboArray = stage === 'user' ? userCombo : passCombo;
-        if (currentInput.length === targetComboArray.length) { // User entered full sequence for the stage
+        if (currentInput.length === targetComboArray.length) { 
             const enteredFullSequence = JSON.stringify(currentInput);
             const targetFullSequence = JSON.stringify(targetComboArray);
-            if (enteredFullSequence === targetFullSequence) { // Sequence is correct
+            
+            if (enteredFullSequence === targetFullSequence) { 
                 if (stage === 'user') {
                     logToScreen('User combo CORRECT!');
                     playAudio(userCorrectSound);
@@ -177,69 +184,56 @@
                     logToScreen('Now enter PASS combo.');
                 } else if (stage === 'pass') {
                     logToScreen('Pass combo CORRECT!');
-                    playAudio(passCorrectSound);
+                    playAudio(passCorrectSound); // This triggers the pass sound
                     stage = 'user';
                     logToScreen('Authenticated! Enter USER combo again.');
                 }
-            } else { // Sequence is incorrect
+            } else { 
                 logToScreen(`${stage.toUpperCase()} sequence incorrect. Try again.`);
                 playAudio(wrongSound);
             }
-            currentInput = []; // Reset for next attempt or next stage
-        } else if (currentInput.length < targetComboArray.length) { // Waiting for more parts of the sequence
+            currentInput = []; 
+        } else if (currentInput.length < targetComboArray.length) { 
             logToScreen(`${stage.toUpperCase()} sequence: ${currentInput.join(' -> ')} ... (${currentInput.length}/${targetComboArray.length})`);
         }
     }
 
-    // Attach touch listeners to the entire screen (document.body)
+    // --- Touch Event Listeners ---
     document.body.addEventListener('touchstart', (e) => {
         e.preventDefault(); 
         for (let touch of e.changedTouches) {
             const fingerNumber = getFingerNumberForTouchPoint(touch.clientX, touch.clientY);
             if (fingerNumber) {
                 const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
-                if (buttonElement) { // Activate the visual button
-                    buttonElement.classList.add('active');
-                }
+                if (buttonElement) buttonElement.classList.add('active');
                 fingersInCurrentPotentialChord.add(fingerNumber); 
                 touchesCurrentlyDown.add(touch.identifier);
-                if (buttonElement) { // Map this touch to its visual button for deactivation later
-                    activeTouchEventToButtonElement.set(touch.identifier, buttonElement);
-                }
+                if (buttonElement) activeTouchEventToButtonElement.set(touch.identifier, buttonElement);
             }
         }
     }, { passive: false });
 
     document.body.addEventListener('touchend', (e) => {
         e.preventDefault();
-        const liftedButtonsThatWereActive = new Set(); // Track which visual buttons might need deactivation
+        const liftedButtonsThatWereActive = new Set();
 
         for (let touch of e.changedTouches) {
             if (touchesCurrentlyDown.has(touch.identifier)) {
                 const buttonElement = activeTouchEventToButtonElement.get(touch.identifier);
-                if (buttonElement) { 
-                    liftedButtonsThatWereActive.add(buttonElement);
-                }
+                if (buttonElement) liftedButtonsThatWereActive.add(buttonElement);
                 activeTouchEventToButtonElement.delete(touch.identifier);
                 touchesCurrentlyDown.delete(touch.identifier);
             }
         }
 
-        // Deactivate visual buttons if no other active touches are mapped to them
         liftedButtonsThatWereActive.forEach(buttonElement => {
-            let stillActiveByAnotherTrackedTouch = false;
+            let stillActive = false;
             for (const btn of activeTouchEventToButtonElement.values()) {
-                if (btn === buttonElement) {
-                    stillActiveByAnotherTrackedTouch = true;
-                    break;
-                }
+                if (btn === buttonElement) { stillActive = true; break; }
             }
-            if (!stillActiveByAnotherTrackedTouch) {
-                buttonElement.classList.remove('active');
-            }
+            if (!stillActive) buttonElement.classList.remove('active');
         });
 
-        // Process combo if all touches that formed the chord are up
         if (touchesCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
             const combo = [...fingersInCurrentPotentialChord].sort().join('');
             currentInput.push(combo);
@@ -247,30 +241,23 @@
             checkAndProcessStage();
             fingersInCurrentPotentialChord.clear();
             
-            // Safeguard: If no touches are down and no chord is forming, ensure all buttons are inactive
-            if(activeTouchEventToButtonElement.size === 0) { // Should be true if touchesCurrentlyDown is 0
+            if(activeTouchEventToButtonElement.size === 0) { 
                  Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
             }
-        } else if (touchesCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size === 0) {
-            // All touches are up, no chord was pending (or just cleared). Ensure all buttons are visually off.
+        } else if (touchesCurrentlyDown.size === 0) {
             Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
         }
     }, { passive: false });
 
     // --- Keyboard Event Listeners ---
-
     document.body.addEventListener('keydown', (e) => {
         const fingerNumber = e.key;
-        // Only process keys '1' through '5' and ignore repeats from holding the key down
         if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
-            e.preventDefault(); // Prevent default browser action
+            e.preventDefault(); 
             keysCurrentlyDown.add(fingerNumber);
             fingersInCurrentPotentialChord.add(fingerNumber);
-
             const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
-            if (buttonElement) {
-                buttonElement.classList.add('active');
-            }
+            if (buttonElement) buttonElement.classList.add('active');
         }
     });
 
@@ -279,22 +266,17 @@
         if (['1', '2', '3', '4', '5'].includes(fingerNumber)) {
             e.preventDefault();
             keysCurrentlyDown.delete(fingerNumber);
-
-            // If all keys that were part of the chord are lifted, process the combo
             if (keysCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
                 const combo = [...fingersInCurrentPotentialChord].sort().join('');
                 currentInput.push(combo);
                 logToScreen(`Input: ${combo}`);
                 checkAndProcessStage();
                 fingersInCurrentPotentialChord.clear();
-
-                // Deactivate all visual buttons
                 Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
             }
         }
     });
 
-    // Initialize after the DOM is fully loaded
     window.addEventListener('DOMContentLoaded', () => {
         setupVisualButtons();
         logToScreen(`Enter ${stage.toUpperCase()} combo.`);
