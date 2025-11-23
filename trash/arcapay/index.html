@@ -66,7 +66,7 @@
   <audio id="passCorrect" src="https://kaffetish.club/trash/passcorrect.mp3" preload="auto"></audio>
 
   <script>
-    // Constants for visual button positioning
+    // Constants
     const ZONES_CONTAINER_WIDTH = 600;
     const ZONES_CONTAINER_HEIGHT = 600;
     const BUTTON_PLACEMENT_RADIUS = 250;
@@ -78,17 +78,20 @@
     const zonesContainer = document.getElementById('zones'); 
     const logDisplay = document.getElementById('log');
 
-    // Combo definitions
+    // State
     const userCombo = ['23', '1', '1'];
     const passCombo = ['14', '14', '245'];
     let currentInput = [];
     let stage = 'user';
 
-    // Audio elements
+    // Audio
     const wrongSound = document.getElementById('wrongSound');
     const userCorrectSound = document.getElementById('userCorrect');
     const passCorrectSound = document.getElementById('passCorrect');
+    const allAudio = [wrongSound, userCorrectSound, passCorrectSound];
+    let audioUnlocked = false;
 
+    // Elements & Tracking
     const ZONES_ELEMENTS_BY_FINGER = {}; 
     const touchesCurrentlyDown = new Set(); 
     const fingersInCurrentPotentialChord = new Set(); 
@@ -102,6 +105,45 @@
       finger_4_min: 17.5,  finger_4_max: 50.5,   
       finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 
     };
+
+    // --- NEW: Audio Unlocking Strategy ---
+    // This runs on the very first touch/key to "approve" sound playback
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        
+        allAudio.forEach(audio => {
+            // Mute, play, pause immediately
+            audio.muted = true; 
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.muted = false; // Unmute so it's ready for real use
+                }).catch(error => {
+                    console.log("Auto-unlock failed (normal on some browsers): " + error);
+                });
+            }
+        });
+        
+        audioUnlocked = true;
+        logToScreen("Audio System Active.");
+        
+        // Remove the unlock listeners so this only runs once
+        document.body.removeEventListener('touchstart', unlockAudio);
+        document.body.removeEventListener('keydown', unlockAudio);
+    }
+
+    function playAudio(audioElement) {
+      if (!audioElement) return;
+      audioElement.currentTime = 0;
+      const p = audioElement.play();
+      if (p !== undefined) {
+          p.catch(e => {
+              logToScreen("Err: " + e.message);
+          });
+      }
+    }
 
     function getFingerNumberForTouchPoint(touchClientX, touchClientY) {
         const screenCenterX = window.innerWidth / 2;
@@ -141,28 +183,6 @@
         });
     }
 
-    // --- FIXED AUDIO FUNCTION ---
-    function playAudio(audioElement) {
-      if (!audioElement) {
-        logToScreen("Error: Audio element not found");
-        return;
-      }
-      
-      // Force volume to 100%
-      audioElement.volume = 1.0;
-      audioElement.currentTime = 0;
-      
-      const playPromise = audioElement.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          // This will print to the screen if the sound fails
-          console.error('Audio play error:', err);
-          logToScreen(`Audio Error: ${err.message}`);
-        });
-      }
-    }
-
     function logToScreen(message) {
         const div = document.createElement('div');
         div.textContent = message;
@@ -184,7 +204,7 @@
                     logToScreen('Now enter PASS combo.');
                 } else if (stage === 'pass') {
                     logToScreen('Pass combo CORRECT!');
-                    playAudio(passCorrectSound); // This triggers the pass sound
+                    playAudio(passCorrectSound);
                     stage = 'user';
                     logToScreen('Authenticated! Enter USER combo again.');
                 }
@@ -198,9 +218,17 @@
         }
     }
 
-    // --- Touch Event Listeners ---
+    // --- Events ---
+
+    // Attach Unlocker to first interaction
+    document.body.addEventListener('touchstart', unlockAudio, { passive: false, once: true });
+    document.body.addEventListener('keydown', unlockAudio, { once: true });
+
     document.body.addEventListener('touchstart', (e) => {
         e.preventDefault(); 
+        // Ensure unlock runs if 'once' didn't catch it for some reason
+        if(!audioUnlocked) unlockAudio();
+
         for (let touch of e.changedTouches) {
             const fingerNumber = getFingerNumberForTouchPoint(touch.clientX, touch.clientY);
             if (fingerNumber) {
@@ -249,8 +277,10 @@
         }
     }, { passive: false });
 
-    // --- Keyboard Event Listeners ---
     document.body.addEventListener('keydown', (e) => {
+        // Ensure unlock runs
+        if(!audioUnlocked) unlockAudio();
+
         const fingerNumber = e.key;
         if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
             e.preventDefault(); 
@@ -279,7 +309,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         setupVisualButtons();
-        logToScreen(`Enter ${stage.toUpperCase()} combo.`);
+        logToScreen(`Tap anywhere to initialize Audio.`);
     });
   </script>
 </body>
