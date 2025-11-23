@@ -1,499 +1,304 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel People Sandbox</title>
-    <style>
-        /* Basic styles to make it look nice */
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-            font-family: 'Courier New', Courier, monospace;
-        }
+  <title>Full Screen Field Input with Visual Buttons</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center; 
+      height: 100vh;
+      width: 100vw; 
+      overflow: hidden; 
+      touch-action: none; /* Crucial for full screen body input to prevent scrolling/zooming */
+    }
 
-        /* The main game canvas */
-        #gameCanvas {
-            display: block;
-            background-color: #2a2a2a;
-            cursor: grab;
-        }
+    #zones { /* This container is for visual button placement */
+      position: relative; /* Establishes a positioning context for the absolute .zone buttons */
+      width: 600px; 
+      height: 600px; 
+      margin-bottom: 20px; /* Space between visual buttons area and log */
+      /* No touch-action needed here as body handles all touches now */
+    }
 
-        #gameCanvas:active {
-            cursor: grabbing;
-        }
+    .zone { /* Visual style for each button */
+      position: absolute;
+      width: 120px; 
+      height: 120px; 
+      border-radius: 50%;
+      background: #222;
+      border: 2px solid #333;
+      transition: background 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      user-select: none; 
+      color: #0f0; 
+    }
 
-        /* UI Panel for controls and info */
-        #ui-panel {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+    .zone.active { /* Style when a button's field is activated */
+      background: #0f0; 
+      color: #111; 
+    }
 
-        .info-stat {
-            font-size: 14px;
-        }
-
-        /* Buttons with a retro feel */
-        .action-button {
-            background-color: #4CAF50; /* A nice green */
-            color: white;
-            border: 1px solid #388E3C;
-            padding: 10px 15px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 14px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .action-button:hover {
-            background-color: #45a049;
-        }
-        
-        .action-button:active {
-            background-color: #3e8e41;
-            transform: translateY(1px);
-        }
-        
-        .action-button.active {
-            background-color: #f44336; /* Red when active */
-            border-color: #d32f2f;
-        }
-
-        .action-button.active:hover {
-            background-color: #e53935;
-        }
-        
-        /* Instructions panel */
-        #instructions {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #444;
-            max-width: 250px;
-            font-size: 12px;
-        }
-        #instructions h3 {
-            margin-top: 0;
-            color: #4CAF50;
-        }
-        #instructions ul {
-            padding-left: 20px;
-            margin-bottom: 0;
-        }
-    </style>
+    #log {
+      width: 90vw;
+      max-width: 600px;
+      height: 150px;
+      background: #000;
+      border: 1px solid #444;
+      padding: 10px;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
-
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- UI Panel for game controls and information -->
-    <div id="ui-panel">
-        <div class="info-stat" id="population-stat">Population: 0</div>
-        <div class="info-stat" id="wood-stat">Total Wood: 0</div>
-        <button class="action-button" id="add-person-btn">Add Person</button>
-        <button class="action-button" id="chop-tree-btn">Chop Tree</button>
+  <div id="zones">
     </div>
+  <div id="log">
+    </div>
+
+  <audio id="wrongSound" src="https://pha.am/signpay/wronguserorpass.mp3"></audio>
+  <audio id="userCorrect" src="https://pha.am/signpay/usercorrect.mp3"></audio>
+  <audio id="passCorrect" src="https://pha.am/signpay/passcorrect.mp3"></audio>
+
+  <script>
+    // Constants for visual button positioning within the #zones container
+    const ZONES_CONTAINER_WIDTH = 600;
+    const ZONES_CONTAINER_HEIGHT = 600;
+    const BUTTON_PLACEMENT_RADIUS = 250;
+    const VISUAL_BUTTON_CENTER_X = ZONES_CONTAINER_WIDTH / 2; // Center *within* #zones
+    const VISUAL_BUTTON_CENTER_Y = ZONES_CONTAINER_HEIGHT / 2; // Center *within* #zones
+    const ZONE_BUTTON_SIZE = 120;
+    // Angles for placing visual buttons (for fingers 1, 2, 3, 4, 5 respectively)
+    const BUTTON_ANGLES_DEGREES = [180, 100, 67, 34, 1]; 
+
+    const zonesContainer = document.getElementById('zones'); // Container for visual buttons
+    const logDisplay = document.getElementById('log');
+
+    // Combo definitions and game state
+    const userCombo = ['23', '1', '1'];
+    const passCombo = ['14', '14', '245'];
+    let currentInput = [];
+    let stage = 'user';
+
+    // Audio elements
+    const wrongSound = document.getElementById('wrongSound');
+    const userCorrectSound = document.getElementById('userCorrect');
+    const passCorrectSound = document.getElementById('passCorrect');
+
+    // Data structures for managing visual buttons and touch state
+    const ZONES_ELEMENTS_BY_FINGER = {}; // Stores visual button DOM elements: { "1": elem1, ... }
+    const touchesCurrentlyDown = new Set(); // Stores touch.identifier of active touches on screen
+    const fingersInCurrentPotentialChord = new Set(); // Stores finger numbers (strings '1'-'5') for the chord
+    const keysCurrentlyDown = new Set(); // Stores which of the keys '1'-'5' are currently pressed
+    const activeTouchEventToButtonElement = new Map(); // Maps touch.identifier -> visual buttonElement
+
+    // Defines the angular sectors for each finger's "field" based on screen center
+    const fieldAngleRanges = {
+      finger_1_min: 140.0, finger_1_max: 270.5, // Zone for finger '1'
+      finger_2_min: 83.5,  finger_2_max: 140.0,  // Zone for finger '2'
+      finger_3_min: 50.5,  finger_3_max: 83.5,   // Zone for finger '3'
+      finger_4_min: 17.5,  finger_4_max: 50.5,   // Zone for finger '4'
+      finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 // Zone for finger '5' (wraps around)
+    };
+
+    function getFingerNumberForTouchPoint(touchClientX, touchClientY) {
+        const screenCenterX = window.innerWidth / 2;
+        const screenCenterY = window.innerHeight / 2;
+
+        // Avoid issues if touch is exactly at the screen center
+        if (touchClientX === screenCenterX && touchClientY === screenCenterY) return null;
+
+        let angleRad = Math.atan2(screenCenterY - touchClientY, touchClientX - screenCenterX);
+        let angleDeg = angleRad * (180 / Math.PI);
+        if (angleDeg < 0) angleDeg += 360; // Normalize angle to 0-360 degrees
+
+        if (angleDeg >= fieldAngleRanges.finger_1_min && angleDeg <= fieldAngleRanges.finger_1_max) return '1';
+        if (angleDeg >= fieldAngleRanges.finger_2_min && angleDeg <  fieldAngleRanges.finger_2_max) return '2';
+        if (angleDeg >= fieldAngleRanges.finger_3_min && angleDeg <  fieldAngleRanges.finger_3_max) return '3';
+        if (angleDeg >= fieldAngleRanges.finger_4_min && angleDeg <  fieldAngleRanges.finger_4_max) return '4';
+        if (angleDeg <  fieldAngleRanges.finger_5_lower_max || angleDeg > fieldAngleRanges.finger_5_upper_min) return '5';
+        
+        return null; // Touch didn't fall into any defined angular zone
+    }
+
+    function setupVisualButtons() {
+        BUTTON_ANGLES_DEGREES.forEach((deg, i) => {
+            const fingerNumber = String(i + 1);
+            const rad = (deg * Math.PI) / 180;
+            // Calculate position relative to the #zones container's top-left
+            const x = VISUAL_BUTTON_CENTER_X + BUTTON_PLACEMENT_RADIUS * Math.cos(rad) - ZONE_BUTTON_SIZE / 2;
+            const y = VISUAL_BUTTON_CENTER_Y - BUTTON_PLACEMENT_RADIUS * Math.sin(rad) - ZONE_BUTTON_SIZE / 2;
+
+            const zoneElement = document.createElement('div');
+            zoneElement.className = 'zone';
+            zoneElement.style.left = `${x}px`;
+            zoneElement.style.top = `${y}px`;
+            zoneElement.style.width = `${ZONE_BUTTON_SIZE}px`;
+            zoneElement.style.height = `${ZONE_BUTTON_SIZE}px`;
+            zoneElement.dataset.finger = fingerNumber; // Store finger number for reference
+            zoneElement.textContent = fingerNumber;    // Display finger number on the button
+            
+            zonesContainer.appendChild(zoneElement);
+            ZONES_ELEMENTS_BY_FINGER[fingerNumber] = zoneElement;
+        });
+    }
+
+    function playAudio(audioElement) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+      audioElement.play().catch(err => console.error('Audio play error:', err));
+    }
+
+    function logToScreen(message) {
+        const div = document.createElement('div');
+        div.textContent = message;
+        logDisplay.appendChild(div);
+        logDisplay.scrollTop = logDisplay.scrollHeight;
+    }
     
-    <!-- Instructions for the player -->
-    <div id="instructions">
-        <h3>How to Play</h3>
-        <ul>
-            <li><b>Pan Map:</b> Click and drag the mouse.</li>
-            <li><b>Zoom:</b> Use the mouse scroll wheel.</li>
-            <li><b>Add Person:</b> Click the button to spawn a new person.</li>
-            <li><b>Chop Tree:</b> Click the 'Chop Tree' button, then click on a tree to create a task.</li>
-        </ul>
-    </div>
+    function checkAndProcessStage() {
+        const targetComboArray = stage === 'user' ? userCombo : passCombo;
+        if (currentInput.length === targetComboArray.length) { // User entered full sequence for the stage
+            const enteredFullSequence = JSON.stringify(currentInput);
+            const targetFullSequence = JSON.stringify(targetComboArray);
+            if (enteredFullSequence === targetFullSequence) { // Sequence is correct
+                if (stage === 'user') {
+                    logToScreen('User combo CORRECT!');
+                    playAudio(userCorrectSound);
+                    stage = 'pass';
+                    logToScreen('Now enter PASS combo.');
+                } else if (stage === 'pass') {
+                    logToScreen('Pass combo CORRECT!');
+                    playAudio(passCorrectSound);
+                    stage = 'user';
+                    logToScreen('Authenticated! Enter USER combo again.');
+                }
+            } else { // Sequence is incorrect
+                logToScreen(`${stage.toUpperCase()} sequence incorrect. Try again.`);
+                playAudio(wrongSound);
+            }
+            currentInput = []; // Reset for next attempt or next stage
+        } else if (currentInput.length < targetComboArray.length) { // Waiting for more parts of the sequence
+            logToScreen(`${stage.toUpperCase()} sequence: ${currentInput.join(' -> ')} ... (${currentInput.length}/${targetComboArray.length})`);
+        }
+    }
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false; // Essential for pixel art
-
-        // --- Game Configuration ---
-        const TILE_SIZE = 16;
-        const WORLD_WIDTH_TILES = 100;
-        const WORLD_HEIGHT_TILES = 100;
-
-        const TERRAIN_TYPES = {
-            GRASS: 0,
-            WATER: 1,
-        };
-        const OBJECT_TYPES = {
-            NONE: 0,
-            TREE: 1,
-            ROCK: 2,
-        };
-        const RESOURCE_TYPES = {
-            WOOD: 'wood',
-        };
-
-        // --- Game State ---
-        let world = [];
-        let people = [];
-        let tasks = [];
-        let totalResources = { [RESOURCE_TYPES.WOOD]: 0 };
-
-        let camera = {
-            x: 0,
-            y: 0,
-            zoom: 1.0,
-        };
-        
-        let mouse = {
-            x: 0,
-            y: 0,
-            worldX: 0,
-            worldY: 0,
-            isDown: false,
-            dragStartX: 0,
-            dragStartY: 0,
-        };
-        
-        let buildMode = null; // Can be 'chop-tree', 'build-wall', etc.
-
-        // --- UI Elements ---
-        const populationStat = document.getElementById('population-stat');
-        const woodStat = document.getElementById('wood-stat');
-        const addPersonBtn = document.getElementById('add-person-btn');
-        const chopTreeBtn = document.getElementById('chop-tree-btn');
-        
-        // --- World Generation ---
-        function generateWorld() {
-            world = new Array(WORLD_WIDTH_TILES).fill(null).map(() => new Array(WORLD_HEIGHT_TILES).fill(null));
-            for (let x = 0; x < WORLD_WIDTH_TILES; x++) {
-                for (let y = 0; y < WORLD_HEIGHT_TILES; y++) {
-                    world[x][y] = {
-                        terrain: TERRAIN_TYPES.GRASS,
-                        object: OBJECT_TYPES.NONE,
-                    };
-
-                    // Simple procedural generation
-                    if (Math.random() < 0.15) {
-                        world[x][y].object = OBJECT_TYPES.TREE;
-                    } else if (Math.random() < 0.02) {
-                        world[x][y].object = OBJECT_TYPES.ROCK;
-                    }
+    // Attach touch listeners to the entire screen (document.body)
+    document.body.addEventListener('touchstart', (e) => {
+        e.preventDefault(); 
+        for (let touch of e.changedTouches) {
+            const fingerNumber = getFingerNumberForTouchPoint(touch.clientX, touch.clientY);
+            if (fingerNumber) {
+                const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
+                if (buttonElement) { // Activate the visual button
+                    buttonElement.classList.add('active');
+                }
+                fingersInCurrentPotentialChord.add(fingerNumber); 
+                touchesCurrentlyDown.add(touch.identifier);
+                if (buttonElement) { // Map this touch to its visual button for deactivation later
+                    activeTouchEventToButtonElement.set(touch.identifier, buttonElement);
                 }
             }
         }
+    }, { passive: false });
 
-        // --- Person (Agent) Logic ---
-        class Person {
-            constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.size = TILE_SIZE * 0.7;
-                this.speed = 0.5 + Math.random() * 0.5;
-                this.state = 'idle'; // idle, moving, working
-                this.task = null;
-                this.inventory = {};
-                this.color = `hsl(${Math.random() * 360}, 70%, 70%)`;
-                this.workTimer = 0;
-            }
+    document.body.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const liftedButtonsThatWereActive = new Set(); // Track which visual buttons might need deactivation
 
-            findTask() {
-                if (this.state !== 'idle') return;
-                // Find the closest unassigned task
-                let closestTask = null;
-                let minDistance = Infinity;
-                for (const task of tasks) {
-                    if (task.assignee) continue;
-                    const dist = Math.hypot(task.x - this.x, task.y - this.y);
-                    if (dist < minDistance) {
-                        minDistance = dist;
-                        closestTask = task;
-                    }
+        for (let touch of e.changedTouches) {
+            if (touchesCurrentlyDown.has(touch.identifier)) {
+                const buttonElement = activeTouchEventToButtonElement.get(touch.identifier);
+                if (buttonElement) { 
+                    liftedButtonsThatWereActive.add(buttonElement);
                 }
-
-                if (closestTask) {
-                    this.task = closestTask;
-                    this.task.assignee = this;
-                    this.state = 'moving';
-                }
-            }
-
-            update() {
-                this.findTask();
-
-                if (this.state === 'moving' && this.task) {
-                    const targetX = this.task.x + TILE_SIZE / 2;
-                    const targetY = this.task.y + TILE_SIZE / 2;
-                    const dx = targetX - this.x;
-                    const dy = targetY - this.y;
-                    const dist = Math.hypot(dx, dy);
-
-                    if (dist < this.speed) {
-                        this.x = targetX;
-                        this.y = targetY;
-                        this.state = 'working';
-                        this.workTimer = this.task.workRequired;
-                    } else {
-                        this.x += (dx / dist) * this.speed;
-                        this.y += (dy / dist) * this.speed;
-                    }
-                }
-                
-                if (this.state === 'working') {
-                    this.workTimer--;
-                    if (this.workTimer <= 0) {
-                        // Complete the task
-                        if (this.task.type === 'gather') {
-                            totalResources[this.task.resource]++;
-                            const tileX = Math.floor(this.task.x / TILE_SIZE);
-                            const tileY = Math.floor(this.task.y / TILE_SIZE);
-                            if (world[tileX] && world[tileX][tileY]) {
-                                world[tileX][tileY].object = OBJECT_TYPES.NONE;
-                            }
-                        }
-                        
-                        // Remove task from global list
-                        tasks = tasks.filter(t => t !== this.task);
-                        this.task = null;
-                        this.state = 'idle';
-                    }
-                }
-            }
-
-            draw(ctx) {
-                ctx.fillStyle = this.color;
-                const screenX = (this.x - camera.x) * camera.zoom;
-                const screenY = (this.y - camera.y) * camera.zoom;
-                const size = this.size * camera.zoom;
-                ctx.fillRect(screenX - size/2, screenY - size/2, size, size);
-
-                // Draw a small tool if working
-                if (this.state === 'working') {
-                    ctx.fillStyle = '#999';
-                    ctx.fillRect(screenX, screenY - size * 0.7, size/2, size/2);
-                }
+                activeTouchEventToButtonElement.delete(touch.identifier);
+                touchesCurrentlyDown.delete(touch.identifier);
             }
         }
-        
-        // --- Input Handling ---
-        function setupInputHandlers() {
-            canvas.addEventListener('mousedown', (e) => {
-                mouse.isDown = true;
-                mouse.dragStartX = e.clientX;
-                mouse.dragStartY = e.clientY;
-                canvas.style.cursor = 'grabbing';
-                
-                // If in a build mode, perform action
-                if (buildMode) {
-                    handleBuildClick();
-                }
-            });
 
-            canvas.addEventListener('mouseup', (e) => {
-                mouse.isDown = false;
-                canvas.style.cursor = 'grab';
-            });
-
-            canvas.addEventListener('mouseleave', (e) => {
-                mouse.isDown = false;
-                canvas.style.cursor = 'grab';
-            });
-
-            canvas.addEventListener('mousemove', (e) => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
-                if (mouse.isDown) {
-                    const dx = e.clientX - mouse.dragStartX;
-                    const dy = e.clientY - mouse.dragStartY;
-                    camera.x -= dx / camera.zoom;
-                    camera.y -= dy / camera.zoom;
-                    mouse.dragStartX = e.clientX;
-                    mouse.dragStartY = e.clientY;
-                }
-                // Calculate world coordinates of the mouse
-                const rect = canvas.getBoundingClientRect();
-                mouse.worldX = (mouse.x - rect.left) / camera.zoom + camera.x;
-                mouse.worldY = (mouse.y - rect.top) / camera.zoom + camera.y;
-            });
-
-            canvas.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const zoomFactor = 1.1;
-                const oldZoom = camera.zoom;
-
-                if (e.deltaY < 0) { // Zoom in
-                    camera.zoom *= zoomFactor;
-                } else { // Zoom out
-                    camera.zoom /= zoomFactor;
-                }
-                camera.zoom = Math.max(0.2, Math.min(camera.zoom, 5)); // Clamp zoom
-
-                // Zoom towards the mouse cursor
-                camera.x += mouse.worldX * (1/oldZoom - 1/camera.zoom);
-                camera.y += mouse.worldY * (1/oldZoom - 1/camera.zoom);
-            });
-            
-            addPersonBtn.addEventListener('click', () => {
-                const spawnX = camera.x + canvas.width / (2 * camera.zoom);
-                const spawnY = camera.y + canvas.height / (2 * camera.zoom);
-                people.push(new Person(spawnX, spawnY));
-            });
-            
-            chopTreeBtn.addEventListener('click', () => {
-                buildMode = (buildMode === 'chop-tree') ? null : 'chop-tree';
-                chopTreeBtn.classList.toggle('active', buildMode === 'chop-tree');
-            });
-        }
-        
-        function handleBuildClick() {
-            const tileX = Math.floor(mouse.worldX / TILE_SIZE);
-            const tileY = Math.floor(mouse.worldY / TILE_SIZE);
-            
-            if (tileX < 0 || tileX >= WORLD_WIDTH_TILES || tileY < 0 || tileY >= WORLD_HEIGHT_TILES) {
-                return;
-            }
-
-            if (buildMode === 'chop-tree') {
-                if (world[tileX][tileY].object === OBJECT_TYPES.TREE) {
-                    // Check if a task already exists here
-                    const existingTask = tasks.some(t => t.tileX === tileX && t.tileY === tileY);
-                    if (!existingTask) {
-                        tasks.push({
-                            type: 'gather',
-                            resource: RESOURCE_TYPES.WOOD,
-                            x: tileX * TILE_SIZE,
-                            y: tileY * TILE_SIZE,
-                            tileX: tileX,
-                            tileY: tileY,
-                            workRequired: 100, // frames
-                            assignee: null,
-                        });
-                    }
+        // Deactivate visual buttons if no other active touches are mapped to them
+        liftedButtonsThatWereActive.forEach(buttonElement => {
+            let stillActiveByAnotherTrackedTouch = false;
+            for (const btn of activeTouchEventToButtonElement.values()) {
+                if (btn === buttonElement) {
+                    stillActiveByAnotherTrackedTouch = true;
+                    break;
                 }
             }
-            // Deactivate build mode after one click
-            buildMode = null;
-            chopTreeBtn.classList.remove('active');
-        }
-
-        // --- Rendering ---
-        function draw() {
-            // Resize canvas to fill window
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            
-            // Clear screen
-            ctx.fillStyle = '#5b944d'; // A grassy green
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Apply camera transformations
-            ctx.save();
-            ctx.translate(canvas.width/2, canvas.height/2);
-            ctx.scale(camera.zoom, camera.zoom);
-            ctx.translate(-camera.x - canvas.width/(2*camera.zoom) + canvas.width/2, -camera.y - canvas.height/(2*camera.zoom) + canvas.height/2);
-
-
-            // Determine visible tile range
-            const startCol = Math.floor(camera.x / TILE_SIZE);
-            const endCol = Math.ceil((camera.x + canvas.width / camera.zoom) / TILE_SIZE);
-            const startRow = Math.floor(camera.y / TILE_SIZE);
-            const endRow = Math.ceil((camera.y + canvas.height / camera.zoom) / TILE_SIZE);
-            
-            // Draw world tiles
-            for (let x = Math.max(0, startCol); x < Math.min(WORLD_WIDTH_TILES, endCol); x++) {
-                for (let y = Math.max(0, startRow); y < Math.min(WORLD_HEIGHT_TILES, endRow); y++) {
-                    const tileX = x * TILE_SIZE;
-                    const tileY = y * TILE_SIZE;
-                    
-                    const obj = world[x][y].object;
-                    if (obj === OBJECT_TYPES.TREE) {
-                        ctx.fillStyle = '#2d572c'; // Dark green for trunk
-                        ctx.fillRect(tileX + TILE_SIZE * 0.4, tileY + TILE_SIZE * 0.4, TILE_SIZE * 0.2, TILE_SIZE * 0.6);
-                        ctx.fillStyle = '#3a7d44'; // Lighter green for leaves
-                        ctx.beginPath();
-                        ctx.arc(tileX + TILE_SIZE / 2, tileY + TILE_SIZE / 2, TILE_SIZE / 2, 0, Math.PI * 2);
-                        ctx.fill();
-                    } else if (obj === OBJECT_TYPES.ROCK) {
-                        ctx.fillStyle = '#8a8a8a';
-                        ctx.fillRect(tileX + 2, tileY + 2, TILE_SIZE - 4, TILE_SIZE - 4);
-                    }
-                }
+            if (!stillActiveByAnotherTrackedTouch) {
+                buttonElement.classList.remove('active');
             }
-            
-            // Draw tasks
-            ctx.strokeStyle = '#FFFF00';
-            ctx.lineWidth = 1;
-            tasks.forEach(task => {
-                ctx.strokeRect(task.x, task.y, TILE_SIZE, TILE_SIZE);
-            });
-            
-            // Draw people
-            people.forEach(p => p.draw(ctx));
+        });
 
-            // Draw build mode cursor preview
-            if (buildMode) {
-                const tileX = Math.floor(mouse.worldX / TILE_SIZE);
-                const tileY = Math.floor(mouse.worldY / TILE_SIZE);
-                ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
-                ctx.fillRect(tileX * TILE_SIZE, tileY * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        // Process combo if all touches that formed the chord are up
+        if (touchesCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
+            const combo = [...fingersInCurrentPotentialChord].sort().join('');
+            currentInput.push(combo);
+            logToScreen(`Input: ${combo}`);
+            checkAndProcessStage();
+            fingersInCurrentPotentialChord.clear();
+            
+            // Safeguard: If no touches are down and no chord is forming, ensure all buttons are inactive
+            if(activeTouchEventToButtonElement.size === 0) { // Should be true if touchesCurrentlyDown is 0
+                 Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
             }
-
-            ctx.restore();
+        } else if (touchesCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size === 0) {
+            // All touches are up, no chord was pending (or just cleared). Ensure all buttons are visually off.
+            Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
         }
+    }, { passive: false });
 
-        // --- Game Loop ---
-        function updateUI() {
-            populationStat.textContent = `Population: ${people.length}`;
-            woodStat.textContent = `Total Wood: ${totalResources.wood}`;
-        }
-        
-        function gameLoop() {
-            // Logic updates
-            people.forEach(p => p.update());
-            updateUI();
+    // --- Keyboard Event Listeners ---
 
-            // Drawing
-            draw();
+    document.body.addEventListener('keydown', (e) => {
+        const fingerNumber = e.key;
+        // Only process keys '1' through '5' and ignore repeats from holding the key down
+        if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
+            e.preventDefault(); // Prevent default browser action
+            keysCurrentlyDown.add(fingerNumber);
+            fingersInCurrentPotentialChord.add(fingerNumber);
 
-            requestAnimationFrame(gameLoop);
-        }
-
-        // --- Initialization ---
-        function init() {
-            generateWorld();
-            setupInputHandlers();
-            
-            // Spawn initial people
-            for(let i=0; i<5; i++) {
-                const x = WORLD_WIDTH_TILES * TILE_SIZE / 2 + (Math.random() - 0.5) * 100;
-                const y = WORLD_HEIGHT_TILES * TILE_SIZE / 2 + (Math.random() - 0.5) * 100;
-                people.push(new Person(x, y));
+            const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
+            if (buttonElement) {
+                buttonElement.classList.add('active');
             }
-
-            // Center camera on spawn
-            camera.x = WORLD_WIDTH_TILES * TILE_SIZE / 2 - canvas.width/2;
-            camera.y = WORLD_HEIGHT_TILES * TILE_SIZE / 2 - canvas.height/2;
-
-            gameLoop();
         }
+    });
 
-        init();
-    </script>
+    document.body.addEventListener('keyup', (e) => {
+        const fingerNumber = e.key;
+        if (['1', '2', '3', '4', '5'].includes(fingerNumber)) {
+            e.preventDefault();
+            keysCurrentlyDown.delete(fingerNumber);
+
+            // If all keys that were part of the chord are lifted, process the combo
+            if (keysCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
+                const combo = [...fingersInCurrentPotentialChord].sort().join('');
+                currentInput.push(combo);
+                logToScreen(`Input: ${combo}`);
+                checkAndProcessStage();
+                fingersInCurrentPotentialChord.clear();
+
+                // Deactivate all visual buttons
+                Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
+            }
+        }
+    });
+
+    // Initialize after the DOM is fully loaded
+    window.addEventListener('DOMContentLoaded', () => {
+        setupVisualButtons();
+        logToScreen(`Enter ${stage.toUpperCase()} combo.`);
+    });
+  </script>
 </body>
 </html>
