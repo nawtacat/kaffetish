@@ -1,1135 +1,454 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EN7</title>
-    <!-- Import Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* --- 1. Root & Body (Immersive Gradient Theme) --- */
-        :root {
-            --color-bg-panel: rgba(20, 20, 25, 0.5); /* Semi-transparent panel */
-            --color-bg-panel-light: rgba(40, 40, 45, 0.4);
-            --color-border: rgba(255, 255, 255, 0.1);
-            --color-text: #f0f0f5;
-            --color-text-dim: #a0a0b0;
-            --color-accent: #00a0ff; /* Electric Blue */
-            --color-accent-dark: #0077cc;
-            --color-danger: #ff4141;
-            --color-warning: #f0e000;
-            --color-win: #00f0a0; /* Neon Mint for 'Win' */
-            --font-main: 'Poppins', 'Helvetica', sans-serif;
-            --font-display: 'Oswald', 'Arial', sans-serif;
-            --blur-strong: 12px;
-            --blur-light: 5px;
-        }
+  <title>Full Screen Field Input with Calibration</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center; 
+      height: 100vh;
+      width: 100vw; 
+      overflow: hidden; 
+      touch-action: none;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    /* Overlays */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      transition: opacity 0.3s;
+    }
 
-        html {
-            scroll-behavior: smooth;
-        }
+    .btn-group {
+        display: flex;
+        gap: 20px;
+    }
 
-        body {
-            font-family: var(--font-main);
-            /* DYNAMIC BACKGROUND SET BY JS */
-            background-color: #0f0f12; /* Fallback */
-            background-size: 200% 200%; /* For animation */
-            transition: background 1.5s ease;
-            color: var(--color-text);
-            min-height: 100vh;
-        }
+    button {
+      padding: 20px 40px;
+      font-size: 24px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
 
-        /* --- 2. Main App Container --- */
-        #app-container {
-            width: 100%;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            gap: 20px;
-        }
+    #start-btn { background: #0f0; color: #000; }
+    #calib-btn { background: #333; color: #fff; border: 2px solid #555; }
+    #calib-btn:active { background: #fff; color: #000; }
 
-        /* --- 3. Header --- */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 25px;
-            background: var(--color-bg-panel);
-            backdrop-filter: blur(var(--blur-strong));
-            -webkit-backdrop-filter: blur(var(--blur-strong));
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            
-            /* Sticky header */
-            position: sticky;
-            top: 20px;
-            z-index: 100;
-        }
+    #calibration-msg {
+        font-size: 20px;
+        color: #fff;
+        text-align: center;
+        max-width: 80%;
+        line-height: 1.5;
+    }
 
-        header h1 {
-            font-family: var(--font-display);
-            font-size: 1.8rem;
-            color: var(--color-text);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+    #zones {
+      position: relative;
+      width: 600px; 
+      height: 600px; 
+      margin-bottom: 20px;
+    }
 
-        header h1 span {
-            color: var(--color-accent);
-            font-weight: 700;
-        }
+    .zone {
+      position: absolute;
+      width: 120px; 
+      height: 120px; 
+      border-radius: 50%;
+      background: #222;
+      border: 2px solid #333;
+      transition: background 0.1s, top 0.5s, left 0.5s; /* Smooth movement for calibration */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      user-select: none; 
+      color: #0f0; 
+    }
 
-        #balance-display {
-            font-family: var(--font-display);
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--color-win);
-            background-color: rgba(0, 0, 0, 0.3);
-            padding: 8px 14px;
-            border-radius: 8px;
-            letter-spacing: 1px;
-        }
+    .zone.active {
+      background: #0f0; 
+      color: #111; 
+    }
 
-        /* --- 4. Main Content Area --- */
-        main {
-            width: 100%;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* --- 5. Betting UI --- */
-        #betting-ui {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 30px;
-        }
-
-        #betting-ui h2 {
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            color: var(--color-text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 5px 15px;
-            border-radius: 8px;
-        }
-
-        .matchup-container {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            width: 100%;
-            padding: 20px 0;
-        }
-
-        .team {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            text-align: center;
-            width: 300px;
-        }
-
-        .team-icon {
-            width: 250px; /* LARGE ICONS */
-            height: 250px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .team-icon img {
-            max-width: 100%;
-            max-height: 100%;
-            height: auto;
-            object-fit: contain;
-            /* Creative shadow */
-            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.4));
-        }
-
-        .team-name {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 700;
-            line-height: 1.3;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .vs {
-            font-family: var(--font-display);
-            font-size: 5rem; /* Large VS */
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.8);
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-        
-        #betting-controls {
-            width: 100%;
-            max-width: 800px;
-            background: var(--color-bg-panel);
-            backdrop-filter: blur(var(--blur-strong));
-            -webkit-backdrop-filter: blur(var(--blur-strong));
-            border: 1px solid var(--color-border);
-            border-radius: 16px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .odds-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
-        }
-
-        .odd-option {
-            background-color: var(--color-bg-panel-light);
-            border: 2px solid var(--color-border);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .odd-option:hover {
-            border-color: var(--color-accent);
-            transform: translateY(-2px);
-        }
-
-        .odd-option.selected {
-            background-color: var(--color-accent);
-            border-color: var(--color-accent);
-            color: #0f0f12;
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(0, 160, 255, 0.5);
-        }
-
-        .odd-option .label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--color-text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .odd-option.selected .label {
-            color: #0f0f12;
-            font-weight: 700;
-        }
-
-        .odd-option .value {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-
-        .bet-input-container {
-            display: flex;
-            gap: 15px;
-        }
-
-        input[type="number"] {
-            flex-grow: 1;
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            padding: 12px 15px;
-            background-color: rgba(0, 0, 0, 0.3);
-            border: 2px solid var(--color-border);
-            color: var(--color-text);
-            border-radius: 8px;
-            outline: none;
-            transition: border-color 0.2s ease;
-            letter-spacing: 1px;
-        }
-
-        input[type="number"]:focus {
-            border-color: var(--color-accent);
-        }
-        
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
-
-        .btn {
-            font-family: var(--font-display);
-            font-size: 1.2rem;
-            font-weight: 700;
-            background-color: var(--color-accent);
-            color: #0f0f12;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn:hover {
-            background-color: var(--color-accent-dark);
-            box-shadow: 0 0 15px rgba(0, 160, 255, 0.4);
-        }
-
-        .btn:disabled {
-            background-color: var(--color-text-dim);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        /* --- 6. Game Simulation UI --- */
-        #game-ui {
-            width: 100%;
-            max-width: 900px;
-            font-family: var(--font-main);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .scoreboard {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            align-items: center;
-            background: var(--color-bg-panel);
-            backdrop-filter: blur(var(--blur-strong));
-            -webkit-backdrop-filter: blur(var(--blur-strong));
-            border: 1px solid var(--color-border);
-            padding: 20px;
-            border-radius: 16px;
-            text-align: center;
-        }
-
-        .score-team {
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .score-team.home { text-align: left; }
-        .score-team.away { text-align: right; }
-
-        .score-display {
-            font-family: var(--font-display);
-            font-size: 2.8rem;
-            font-weight: 700;
-            padding: 0 25px;
-            letter-spacing: 2px;
-        }
-
-        .game-timer {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--color-accent);
-            text-align: center;
-        }
-
-        #live-feed {
-            height: 400px;
-            background: rgba(0, 0, 0, 0.4); /* Darker feed */
-            backdrop-filter: blur(var(--blur-light));
-            -webkit-backdrop-filter: blur(var(--blur-light));
-            border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column-reverse;
-            font-size: 0.95rem;
-        }
-        
-        .event {
-            padding: 10px 12px;
-            margin-bottom: 6px;
-            border-radius: 4px;
-            display: flex;
-            align-items: flex-start;
-            line-height: 1.5;
-        }
-        
-        .event .time {
-            font-family: var(--font-display);
-            font-weight: 700;
-            color: var(--color-text-dim);
-            margin-right: 12px;
-            flex-shrink: 0;
-            font-size: 1rem;
-        }
-        
-        .event .text {
-            word-break: break-word;
-        }
-
-        .event.commentary {
-            color: var(--color-text-dim);
-        }
-
-        .event.goal {
-            background-color: rgba(0, 240, 160, 0.1);
-            color: var(--color-win);
-            font-weight: 600;
-        }
-        
-        .event.goal .text::before {
-            content: '⚽ GOAL! ';
-            font-weight: 700;
-        }
-
-        .event.card-yellow {
-            background-color: rgba(240, 224, 0, 0.1);
-            color: var(--color-warning);
-            font-weight: 600;
-        }
-        
-        .event.card-yellow .text::before {
-            content: '🟨 ';
-        }
-        
-        .event.card-red {
-            background-color: rgba(255, 65, 65, 0.1);
-            color: var(--color-danger);
-            font-weight: 600;
-        }
-        
-        .event.card-red .text::before {
-            content: '🟥 ';
-        }
-        
-        .event.half-time, .event.full-time {
-            font-family: var(--font-display);
-            background-color: var(--color-bg-panel-light);
-            color: var(--color-accent);
-            font-weight: 700;
-            justify-content: center;
-            font-size: 1.1rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* --- 7. Post-Game Modal --- */
-        #modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-            backdrop-filter: blur(var(--blur-light));
-            -webkit-backdrop-filter: blur(var(--blur-light));
-        }
-        
-        #modal {
-            background: var(--color-bg-panel);
-            backdrop-filter: blur(var(--blur-strong));
-            -webkit-backdrop-filter: blur(var(--blur-strong));
-            border: 1px solid var(--color-border);
-            padding: 30px;
-            border-radius: 16px;
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-            width: 100%;
-            max-width: 400px;
-        }
-        
-        #modal h2 {
-            font-family: var(--font-display);
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        #modal-result-win { color: var(--color-win); }
-        #modal-result-lose { color: var(--color-danger); }
-        #modal-result-push { color: var(--color-text-dim); }
-
-        #modal p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            color: var(--color-text);
-        }
-
-        /* --- 8. Mobile Responsive --- */
-        @media (max-width: 768px) {
-            #app-container {
-                padding: 10px;
-                gap: 10px;
-            }
-
-            header {
-                padding: 15px;
-                top: 10px; /* Sticky top with padding */
-            }
-
-            header h1 { font-size: 1.4rem; }
-            #balance-display { font-size: 1.2rem; }
-
-            /* Stack the team matchup */
-            .matchup-container {
-                flex-direction: column;
-                gap: 20px;
-            }
-
-            .vs {
-                transform: rotate(90deg);
-                font-size: 2.5rem;
-                margin: 10px 0;
-            }
-            
-            .team {
-                width: 200px;
-            }
-            
-            .team-icon {
-                width: 150px;
-                height: 150px;
-            }
-            .team-name { font-size: 1.5rem; }
-
-            /* Stack the odds buttons */
-            .odds-container {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            
-            .odd-option .value { font-size: 1.3rem; }
-
-            /* Stack the bet input */
-            .bet-input-container {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            /* Game UI */
-            .scoreboard {
-                padding: 15px;
-                gap: 10px;
-            }
-            .score-team { font-size: 0.9rem; }
-            .score-display { font-size: 2rem; padding: 0 10px; }
-            .game-timer { font-size: 1.8rem; }
-            
-            #live-feed { height: 350px; padding: 15px; }
-
-            #modal h2 { font-size: 2rem; }
-            #modal p { font-size: 1rem; }
-        }
-
-    </style>
+    #log {
+      width: 90vw;
+      max-width: 600px;
+      height: 150px;
+      background: #000;
+      border: 1px solid #444;
+      padding: 10px;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <!-- App Header -->
-        <header>
-            <h1>EN<span>7</span></h1>
-            <div id="balance-display">$1000</div>
-        </header>
-
-        <!-- App Main Content -->
-        <main>
-            <!-- Betting UI -->
-            <div id="betting-ui">
-                
-                <div class="matchup-container">
-                    <!-- Home Team -->
-                    <div class="team" id="home-team">
-                        <div class="team-icon" id="home-team-icon">
-                            <!-- Logo will be inserted by JS -->
-                        </div>
-                        <div class="team-name" id="home-team-name">Home</div>
-                    </div>
-                    
-                    <div class="vs">VS</div>
-                    
-                    <!-- Away Team -->
-                    <div class="team" id="away-team">
-                        <div class="team-icon" id="away-team-icon">
-                            <!-- Logo will be inserted by JS -->
-                        </div>
-                        <div class="team-name" id="away-team-name">Away</div>
-                    </div>
-                </div>
-
-                <div id="betting-controls">
-                    <h2>Place Your Bet</h2>
-                    <div class="odds-container" id="odds-container">
-                        <div class="odd-option" data-bet="home">
-                            <div class="label" id="home-bet-label">Home Win</div>
-                            <div class="value" id="home-odds">1.85</div>
-                        </div>
-                        <div class="odd-option" data-bet="draw">
-                            <div class="label">Draw</div>
-                            <div class="value" id="draw-odds">3.50</div>
-                        </div>
-                        <div class="odd-option" data-bet="away">
-                            <div class="label" id="away-bet-label">Away Win</div>
-                            <div class="value" id="away-odds">4.20</div>
-                        </div>
-                    </div>
-
-                    <div class="bet-input-container">
-                        <input type="number" id="bet-amount" placeholder="Enter bet amount..." min="1">
-                        <button class="btn" id="place-bet-btn">Place Bet</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Game Simulation UI -->
-            <div id="game-ui" class="hidden">
-                <div class="scoreboard">
-                    <div class="score-team home" id="game-home-name">HOME</div>
-                    <div class="score-display">
-                        <span id="game-home-score">0</span>
-                        -
-                        <span id="game-away-score">0</span>
-                    </div>
-                    <div class="score-team away" id="game-away-name">AWAY</div>
-                </div>
-                
-                <div class="game-timer" id="game-timer">00:00</div>
-                
-                <div id="live-feed">
-                    <!-- Events will be added here by JS -->
-                </div>
-            </div>
-
-        </main>
+  <div id="start-overlay" class="overlay">
+    <div class="btn-group">
+        <button id="start-btn">START GAME</button>
+        <button id="calib-btn">CALIBRATE</button>
     </div>
+    <p style="margin-top:20px; color:#666;">(Enables Audio)</p>
+  </div>
 
-    <!-- Post-Game Result Modal -->
-    <div id="modal-overlay" class="hidden">
-        <div id="modal">
-            <h2 id="modal-result-text">You Won!</h2>
-            <p id="modal-details">Your bet on Manchester Reds won. You earned $185!</p>
-            <button class="btn" id="next-match-btn">Next Match</button>
-        </div>
-    </div>
+  <div id="calib-overlay" class="overlay" style="display:none; background:rgba(0,0,0,0.85);">
+      <h1 style="color:#0ff; font-size:40px;">CALIBRATION</h1>
+      <p id="calibration-msg">Place all 5 fingers comfortably on the screen.</p>
+      <div id="calib-visuals" style="margin-top:20px; height: 50px;">
+          </div>
+  </div>
 
+  <div id="zones"></div>
+  <div id="log"></div>
 
-    <script>
-        /* --- 1. DATABASE (Clubs, Players) --- */
-        
-        // --- NOTE ---
-        // 'icon' URLs are hotlinked. They may break.
-        // 'strength' is the 0-100 rating you requested.
-        // 'color' is for the dynamic gradient background.
-        
-        const DB = {
-            clubs: [
-                {
-                    id: 'MAN_RED',
-                    name: 'Manchester United',
-                    color: '#DA291C', // United Red
-                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Manchester_United_FC_crest.svg/1024px-Manchester_United_FC_crest.svg.png',
-                    strength: 84, // 0-100 Rating
-                    players: [
-                        { name: 'Marcus Rashford', position: 'FW', rating: 85 },
-                        { name: 'Bruno Fernandes', position: 'MF', rating: 88 },
-                        { name: 'Lisandro Martínez', position: 'DF', rating: 86 },
-                        { name: 'Casemiro', position: 'MF', rating: 89 },
-                        { name: 'André Onana', position: 'GK', rating: 85 },
-                        { name: 'Rasmus Højlund', position: 'FW', rating: 79 },
-                    ]
-                },
-                {
-                    id: 'MAD_WHITE',
-                    name: 'Real Madrid',
-                    color: '#FEBE10', // Real Gold
-                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/1200px-Real_Madrid_CF.svg.png',
-                    strength: 92, // 0-100 Rating
-                    players: [
-                        { name: 'Vinícius Jr.', position: 'FW', rating: 90 },
-                        { name: 'Jude Bellingham', position: 'MF', rating: 91 },
-                        { name: 'Luka Modrić', position: 'MF', rating: 87 },
-                        { name: 'Antonio Rüdiger', position: 'DF', rating: 86 },
-                        { name: 'Thibaut Courtois', position: 'GK', rating: 90 },
-                        { name: 'Rodrygo', position: 'FW', rating: 86 },
-                    ]
-                },
-                {
-                    id: 'BAY_MUNICH',
-                    name: 'Bayern Munich',
-                    color: '#DC052D', // Bayern Red
-                    icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg/1200px-FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg.png',
-                    strength: 90, // 0-100 Rating
-                    players: [
-                        { name: 'Harry Kane', position: 'FW', rating: 91 },
-                        { name: 'Jamal Musiala', position: 'MF', rating: 88 },
-                        { name: 'Joshua Kimmich', position: 'MF', rating: 89 },
-                        { name: 'Matthijs de Ligt', position: 'DF', rating: 87 },
-                        { name: 'Manuel Neuer', position: 'GK', rating: 88 },
-                        { name: 'Leroy Sané', position: 'FW', rating: 86 },
-                    ]
-                },
-                {
-                    id: 'FC_CATALONIA',
-                    name: 'FC Barcelona',
-                    color: '#A50044', // Barça Garnet
-                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/1200px-FC_Barcelona_%28crest%29.svg.png',
-                    strength: 87, // 0-100 Rating
-                    players: [
-                        { name: 'Robert Lewandowski', position: 'FW', rating: 89 },
-                        { name: 'Pedri', position: 'MF', rating: 87 },
-                        { name: 'Gavi', position: 'MF', rating: 85 },
-                        { name: 'Ronald Araújo', position: 'DF', rating: 86 },
-                        { name: 'Marc-André ter Stegen', position: 'GK', rating: 89 },
-                        { name: 'Lamine Yamal', position: 'FW', rating: 80 },
-                    ]
-                },
-                {
-                    id: 'LIV_REDS',
-                    name: 'Liverpool FC',
-                    color: '#C8102E', // Liverpool Red
-                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/Liverpool_FC.svg/1200px-Liverpool_FC.svg.png',
-                    strength: 89, // 0-100 Rating
-                    players: [
-                        { name: 'Mohamed Salah', position: 'FW', rating: 90 },
-                        { name: 'Virgil van Dijk', position: 'DF', rating: 89 },
-                        { name: 'Alisson Becker', position: 'GK', rating: 89 },
-                        { name: 'Trent Alexander-Arnold', position: 'DF', rating: 87 },
-                        { name: 'Dominik Szoboszlai', position: 'MF', rating: 85 },
-                        { name: 'Darwin Núñez', position: 'FW', rating: 83 },
-                    ]
-                },
-                {
-                    id: 'PARIS_SG',
-                    name: 'Paris Saint-Germain',
-                    color: '#004170', // PSG Blue
-                    icon: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Paris_Saint-Germain_F.C..svg/1200px-Paris_Saint-Germain_F.C..svg.png',
-                    strength: 86, // 0-100 Rating
-                    players: [
-                        { name: 'Kylian Mbappé', position: 'FW', rating: 92 },
-                        { name: 'Ousmane Dembélé', position: 'FW', rating: 86 },
-                        { name: 'Achraf Hakimi', position: 'DF', rating: 85 },
-                        { name: 'Marquinhos', position: 'DF', rating: 87 },
-                        { name: 'Gianluigi Donnarumma', position: 'GK', rating: 88 },
-                        { name: 'Warren Zaïre-Emery', position: 'MF', rating: 83 },
-                    ]
-                }
-            ]
+  <audio id="wrongSound" src="https://kaffetish.club/trash/wronguserorpass.mp3" preload="auto"></audio>
+  <audio id="userCorrect" src="https://kaffetish.club/trash/usercorrect.mp3" preload="auto"></audio>
+  <audio id="passCorrect" src="https://kaffetish.club/trash/passcorrect.mp3" preload="auto"></audio>
+
+  <script>
+    // Constants
+    const ZONES_CONTAINER_WIDTH = 600;
+    const ZONES_CONTAINER_HEIGHT = 600;
+    const BUTTON_PLACEMENT_RADIUS = 250;
+    const VISUAL_BUTTON_CENTER_X = ZONES_CONTAINER_WIDTH / 2; 
+    const VISUAL_BUTTON_CENTER_Y = ZONES_CONTAINER_HEIGHT / 2; 
+    const ZONE_BUTTON_SIZE = 120;
+    
+    // Default angles (Standard Arc)
+    let buttonAnglesDegrees = [180, 100, 67, 34, 1]; 
+
+    const zonesContainer = document.getElementById('zones'); 
+    const logDisplay = document.getElementById('log');
+
+    // State
+    const userCombo = ['23', '1', '1'];
+    const passCombo = ['14', '14', '245'];
+    let currentInput = [];
+    let stage = 'user';
+    let isCalibrating = false;
+
+    // Audio
+    const wrongSound = document.getElementById('wrongSound');
+    const userCorrectSound = document.getElementById('userCorrect');
+    const passCorrectSound = document.getElementById('passCorrect');
+    const allAudio = [wrongSound, userCorrectSound, passCorrectSound];
+
+    // Elements & Tracking
+    const ZONES_ELEMENTS_BY_FINGER = {}; 
+    const touchesCurrentlyDown = new Set(); 
+    const fingersInCurrentPotentialChord = new Set(); 
+    const keysCurrentlyDown = new Set(); 
+    const activeTouchEventToButtonElement = new Map(); 
+
+    // Default Ranges
+    let fieldAngleRanges = {
+      finger_1_min: 140.0, finger_1_max: 270.5, 
+      finger_2_min: 83.5,  finger_2_max: 140.0,  
+      finger_3_min: 50.5,  finger_3_max: 83.5,   
+      finger_4_min: 17.5,  finger_4_max: 50.5,   
+      finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 
+    };
+
+    // --- UTILS ---
+    function logToScreen(message) {
+        const div = document.createElement('div');
+        div.textContent = message;
+        logDisplay.appendChild(div);
+        logDisplay.scrollTop = logDisplay.scrollHeight;
+    }
+
+    function calculateAngle(touchX, touchY) {
+        const screenCenterX = window.innerWidth / 2;
+        const screenCenterY = window.innerHeight / 2;
+        let angleRad = Math.atan2(screenCenterY - touchY, touchX - screenCenterX);
+        let angleDeg = angleRad * (180 / Math.PI);
+        if (angleDeg < 0) angleDeg += 360;
+        return angleDeg;
+    }
+
+    // --- SETUP & AUDIO ---
+    function initAudio() {
+        allAudio.forEach(audio => {
+            audio.muted = true;
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.muted = false;
+            }).catch(e => console.error("Unlock error:", e));
+        });
+    }
+
+    document.getElementById('start-btn').addEventListener('click', function() {
+        initAudio();
+        document.getElementById('start-overlay').style.display = 'none';
+        logToScreen("System Ready.");
+    });
+
+    // --- CALIBRATION LOGIC ---
+    document.getElementById('calib-btn').addEventListener('click', function() {
+        initAudio();
+        isCalibrating = true;
+        document.getElementById('start-overlay').style.display = 'none';
+        document.getElementById('calib-overlay').style.display = 'flex';
+        logToScreen("Mode: CALIBRATION");
+    });
+
+    function performCalibration(touches) {
+        if (touches.length !== 5) return;
+
+        // 1. Get all angles
+        let angles = [];
+        for (let i = 0; i < touches.length; i++) {
+            angles.push(calculateAngle(touches[i].clientX, touches[i].clientY));
+        }
+
+        // 2. Sort angles descending (Leftmost/180 -> Rightmost/0)
+        // Note: 270-360 range is ignored or treated as > 270 in standard logic,
+        // but sorting simply descending handles the arc correctly usually.
+        angles.sort((a, b) => b - a);
+
+        // 3. Update Visual Button Angles to match user hand
+        buttonAnglesDegrees = angles;
+        updateVisualButtons(); // Move the dots to where the fingers are
+
+        // 4. Calculate Split Points (Midpoints between fingers)
+        // F1 is angles[0], F2 is angles[1], etc.
+        const mid1_2 = (angles[0] + angles[1]) / 2;
+        const mid2_3 = (angles[1] + angles[2]) / 2;
+        const mid3_4 = (angles[2] + angles[3]) / 2;
+        const mid4_5 = (angles[3] + angles[4]) / 2;
+
+        // 5. Update Ranges
+        // We keep the "Bottom" split at 270.5 to distinct left vs right wrap-around
+        fieldAngleRanges = {
+            finger_1_min: mid1_2,             finger_1_max: 270.5,
+            finger_2_min: mid2_3,             finger_2_max: mid1_2,
+            finger_3_min: mid3_4,             finger_3_max: mid2_3,
+            finger_4_min: mid4_5,             finger_4_max: mid3_4,
+            finger_5_lower_max: mid4_5,       finger_5_upper_min: 270.5
         };
 
-        /* --- 2. GAME STATE --- */
-        let appState = {
-            balance: 1000,
-            currentGame: null,
-            currentBet: null,
-            simulation: {
-                minute: 0,
-                homeScore: 0,
-                awayScore: 0,
-                gameInterval: null,
-                gameSpeedMs: 700 // SLOWED DOWN from 200
+        // 6. Finish
+        const msg = document.getElementById('calibration-msg');
+        msg.textContent = "CALIBRATION COMPLETE!";
+        msg.style.color = "#0f0";
+        
+        playAudio(userCorrectSound);
+
+        setTimeout(() => {
+            isCalibrating = false;
+            document.getElementById('calib-overlay').style.display = 'none';
+            logToScreen("Ranges updated based on your hand.");
+        }, 1500);
+    }
+
+    // --- GAME LOGIC ---
+
+    function playAudio(audioElement) {
+      if (!audioElement) return;
+      audioElement.currentTime = 0;
+      audioElement.volume = 1.0;
+      const p = audioElement.play();
+      if (p !== undefined) {
+          p.catch(e => { logToScreen("Audio Fail: " + e.message); });
+      }
+    }
+
+    function getFingerNumberForTouchPoint(angleDeg) {
+        if (angleDeg >= fieldAngleRanges.finger_1_min && angleDeg <= fieldAngleRanges.finger_1_max) return '1';
+        if (angleDeg >= fieldAngleRanges.finger_2_min && angleDeg <  fieldAngleRanges.finger_2_max) return '2';
+        if (angleDeg >= fieldAngleRanges.finger_3_min && angleDeg <  fieldAngleRanges.finger_3_max) return '3';
+        if (angleDeg >= fieldAngleRanges.finger_4_min && angleDeg <  fieldAngleRanges.finger_4_max) return '4';
+        if (angleDeg <  fieldAngleRanges.finger_5_lower_max || angleDeg > fieldAngleRanges.finger_5_upper_min) return '5';
+        return null; 
+    }
+
+    function setupVisualButtons() {
+        // Initial creation
+        buttonAnglesDegrees.forEach((deg, i) => {
+            const fingerNumber = String(i + 1);
+            const zoneElement = document.createElement('div');
+            zoneElement.className = 'zone';
+            zoneElement.id = `zone-${fingerNumber}`;
+            zoneElement.dataset.finger = fingerNumber; 
+            zoneElement.textContent = fingerNumber;    
+            zonesContainer.appendChild(zoneElement);
+            ZONES_ELEMENTS_BY_FINGER[fingerNumber] = zoneElement;
+        });
+        updateVisualButtons();
+    }
+
+    function updateVisualButtons() {
+        // Updates positions based on current buttonAnglesDegrees
+        buttonAnglesDegrees.forEach((deg, i) => {
+            const fingerNumber = String(i + 1);
+            const zoneElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
+            
+            const rad = (deg * Math.PI) / 180;
+            const x = VISUAL_BUTTON_CENTER_X + BUTTON_PLACEMENT_RADIUS * Math.cos(rad) - ZONE_BUTTON_SIZE / 2;
+            const y = VISUAL_BUTTON_CENTER_Y - BUTTON_PLACEMENT_RADIUS * Math.sin(rad) - ZONE_BUTTON_SIZE / 2;
+
+            if (zoneElement) {
+                zoneElement.style.left = `${x}px`;
+                zoneElement.style.top = `${y}px`;
             }
-        };
-
-        /* --- 3. DOM ELEMENTS --- */
-        const DOMElements = {
-            body: document.body,
-            balanceDisplay: document.getElementById('balance-display'),
-            bettingUI: document.getElementById('betting-ui'),
-            gameUI: document.getElementById('game-ui'),
+        });
+    }
+    
+    function checkAndProcessStage() {
+        const targetComboArray = stage === 'user' ? userCombo : passCombo;
+        if (currentInput.length === targetComboArray.length) { 
+            const enteredFullSequence = JSON.stringify(currentInput);
+            const targetFullSequence = JSON.stringify(targetComboArray);
             
-            homeTeamIcon: document.getElementById('home-team-icon'),
-            homeTeamName: document.getElementById('home-team-name'),
-            awayTeamIcon: document.getElementById('away-team-icon'),
-            awayTeamName: document.getElementById('away-team-name'),
-            homeBetLabel: document.getElementById('home-bet-label'),
-            awayBetLabel: document.getElementById('away-bet-label'),
-            homeOdds: document.getElementById('home-odds'),
-            drawOdds: document.getElementById('draw-odds'),
-            awayOdds: document.getElementById('away-odds'),
-            oddsContainer: document.getElementById('odds-container'),
-            betAmountInput: document.getElementById('bet-amount'),
-            placeBetBtn: document.getElementById('place-bet-btn'),
-
-            gameHomeName: document.getElementById('game-home-name'),
-            gameAwayName: document.getElementById('game-away-name'),
-            gameHomeScore: document.getElementById('game-home-score'),
-            gameAwayScore: document.getElementById('game-away-score'),
-            gameTimer: document.getElementById('game-timer'),
-            liveFeed: document.getElementById('live-feed'),
-
-            modalOverlay: document.getElementById('modal-overlay'),
-            modalResultText: document.getElementById('modal-result-text'),
-            modalDetails: document.getElementById('modal-details'),
-            nextMatchBtn: document.getElementById('next-match-btn'),
-        };
-
-        /* --- 4. CORE FUNCTIONS --- */
-
-        function init() {
-            // Set initial background gradient
-            DOMElements.body.style.background = `linear-gradient(135deg, ${DB.clubs[0].color} 0%, ${DB.clubs[1].color} 100%)`;
-            
-            updateBalanceUI();
-            setupNewMatch();
-            addEventListeners();
-        }
-
-        function addEventListeners() {
-            DOMElements.oddsContainer.addEventListener('click', (e) => {
-                const selectedOption = e.target.closest('.odd-option');
-                if (!selectedOption) return;
-
-                DOMElements.oddsContainer.querySelectorAll('.odd-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                
-                selectedOption.classList.add('selected');
-                
-                const betType = selectedOption.dataset.bet;
-                appState.currentBet = {
-                    ...appState.currentBet,
-                    outcome: betType,
-                    odds: appState.currentGame.odds[betType]
-                };
-            });
-
-            DOMElements.placeBetBtn.addEventListener('click', handlePlaceBet);
-            DOMElements.nextMatchBtn.addEventListener('click', resetForNextMatch);
-        }
-
-        function setupNewMatch() {
-            let clubs = [...DB.clubs];
-            let homeIndex = Math.floor(Math.random() * clubs.length);
-            let homeTeam = clubs.splice(homeIndex, 1)[0];
-            
-            let awayIndex = Math.floor(Math.random() * clubs.length);
-            let awayTeam = clubs.splice(awayIndex, 1)[0];
-
-            const odds = calculateOdds(homeTeam, awayTeam);
-            
-            appState.currentGame = { homeTeam, awayTeam, odds };
-            appState.currentBet = null;
-            
-            // *** UPDATE DYNAMIC BACKGROUND ***
-            DOMElements.body.style.background = `linear-gradient(135deg, ${homeTeam.color} 0%, ${awayTeam.color} 100%)`;
-
-            // Update Betting UI
-            DOMElements.homeTeamIcon.innerHTML = `<img src="${homeTeam.icon}" alt="${homeTeam.name}">`;
-            DOMElements.homeTeamName.textContent = homeTeam.name;
-            DOMElements.homeBetLabel.textContent = `${homeTeam.name} Win`;
-            DOMElements.homeOdds.textContent = odds.home.toFixed(2);
-            
-            DOMElements.awayTeamIcon.innerHTML = `<img src="${awayTeam.icon}" alt="${awayTeam.name}">`;
-            DOMElements.awayTeamName.textContent = awayTeam.name;
-            DOMElements.awayBetLabel.textContent = `${awayTeam.name} Win`;
-            DOMElements.awayOdds.textContent = odds.away.toFixed(2);
-            
-            DOMElements.drawOdds.textContent = odds.draw.toFixed(2);
-        }
-
-        /**
-         * Calculates odds based on team strength (0-100 rating)
-         */
-        function calculateOdds(home, away) {
-            // This logic uses the 0-100 strength rating
-            const strengthDiff = home.strength - away.strength;
-            
-            let homeProb = 0.45, drawProb = 0.25, awayProb = 0.30;
-            
-            // Home advantage + strength diff
-            // A 10-point strength diff (e.g., 90 vs 80) = 0.02 advantage
-            // Total advantage = 0.05 (home) + 0.02 (strength) = 0.07
-            const advantage = (strengthDiff / 100) * 0.2 + 0.05; 
-            
-            homeProb += advantage;
-            awayProb -= advantage;
-            
-            // Normalize
-            const totalProb = homeProb + drawProb + awayProb;
-            homeProb /= totalProb;
-            drawProb /= totalProb;
-            awayProb /= totalProb;
-
-            // Convert to odds with a house edge
-            const margin = 0.05; // 5% house edge
-            return {
-                home: Math.max(1.01, (1 / homeProb) * (1 - margin)),
-                draw: Math.max(1.01, (1 / drawProb) * (1 - margin)),
-                away: Math.max(1.01, (1 / awayProb) * (1 - margin)),
-            };
-        }
-
-        function handlePlaceBet() {
-            const amount = parseInt(DOMElements.betAmountInput.value, 10);
-
-            // Simple modal alert
-            const showModalAlert = (message) => {
-                const modal = DOMElements.modalOverlay;
-                modal.classList.remove('hidden');
-                DOMElements.modalResultText.textContent = "Invalid Bet";
-                DOMElements.modalResultText.className = 'modal-result-lose';
-                DOMElements.modalDetails.textContent = message;
-                DOMElements.nextMatchBtn.textContent = "Try Again";
-            }
-            
-            if (isNaN(amount) || amount <= 0) {
-                showModalAlert("Please enter a valid bet amount.");
-                return;
-            }
-            if (amount > appState.balance) {
-                showModalAlert("You don't have enough money for that bet.");
-                return;
-            }
-            if (!appState.currentBet || !appState.currentBet.outcome) {
-                showModalAlert("Please select an outcome to bet on (Home, Draw, or Away).");
-                return;
-            }
-            
-            // If validation passed, hide modal if it was open
-            if (!modal.classList.contains('hidden')) {
-                 modal.classList.add('hidden');
-                 DOMElements.nextMatchBtn.textContent = "Next Match";
-            }
-
-            appState.currentBet.amount = amount;
-            appState.balance -= amount;
-            updateBalanceUI();
-
-            startSimulation();
-        }
-
-        function updateBalanceUI() {
-            DOMElements.balanceDisplay.textContent = `$${appState.balance}`;
-        }
-
-        function startSimulation() {
-            DOMElements.bettingUI.classList.add('hidden');
-            DOMElements.gameUI.classList.remove('hidden');
-
-            DOMElements.liveFeed.innerHTML = '';
-            appState.simulation.minute = 0;
-            appState.simulation.homeScore = 0;
-            appState.simulation.awayScore = 0;
-
-            const { homeTeam, awayTeam } = appState.currentGame;
-            DOMElements.gameHomeName.textContent = homeTeam.name;
-            DOMElements.gameAwayName.textContent = awayTeam.name;
-            updateScoreboardUI();
-            
-            addEventToFeed("00:00", "The match has kicked off!", "commentary");
-            
-            appState.simulation.gameInterval = setInterval(
-                gameTick, 
-                appState.simulation.gameSpeedMs
-            );
-        }
-
-        function gameTick() {
-            appState.simulation.minute++;
-            DOMElements.gameTimer.textContent = `${String(appState.simulation.minute).padStart(2, '0')}:00`;
-
-            if (appState.simulation.minute === 45) {
-                addEventToFeed("45:00", "Half-Time! The players head to the tunnel.", "half-time");
-                return;
-            }
-            
-            if (appState.simulation.minute >= 90) {
-                endSimulation();
-                return;
-            }
-
-            // Event Generation Engine
-            const { homeTeam, awayTeam } = appState.currentGame;
-            let eventChance = Math.random();
-            
-            // This logic uses the 0-100 strength rating
-            const homeMomentum = (homeTeam.strength / 100) * Math.random();
-            const awayMomentum = (awayTeam.strength / 100) * Math.random();
-
-            if (eventChance < 0.025) { // Goal
-                if (homeMomentum > awayMomentum) {
-                    generateGameEvent('goal', homeTeam);
-                } else {
-                    generateGameEvent('goal', awayTeam);
+            if (enteredFullSequence === targetFullSequence) { 
+                if (stage === 'user') {
+                    logToScreen('User combo CORRECT!');
+                    playAudio(userCorrectSound);
+                    stage = 'pass';
+                    logToScreen('Now enter PASS combo.');
+                } else if (stage === 'pass') {
+                    logToScreen('Pass combo CORRECT!');
+                    playAudio(passCorrectSound);
+                    stage = 'user';
+                    logToScreen('Authenticated! Enter USER combo again.');
                 }
-            } else if (eventChance < 0.05) { // Card
-                if (homeMomentum > awayMomentum) {
-                    generateGameEvent('card', homeTeam);
-                } else { 
-                    generateGameEvent('card', awayTeam);
-                }
-            } else if (eventChance < 0.25) { // Commentary
-                if (homeMomentum > awayMomentum) {
-                    generateGameEvent('commentary', homeTeam);
-                } else {
-                    generateGameEvent('commentary', awayTeam);
-                }
+            } else { 
+                logToScreen(`${stage.toUpperCase()} sequence incorrect. Try again.`);
+                playAudio(wrongSound);
             }
+            currentInput = []; 
+        } else if (currentInput.length < targetComboArray.length) { 
+            logToScreen(`${stage.toUpperCase()} sequence: ${currentInput.join(' -> ')} ... (${currentInput.length}/${targetComboArray.length})`);
+        }
+    }
+
+    // --- Touch Event Listeners ---
+    document.body.addEventListener('touchstart', (e) => {
+        if(e.target.tagName !== 'BUTTON') e.preventDefault(); 
+
+        if (isCalibrating) {
+            // Update calibration text with count
+            const count = e.touches.length;
+            document.getElementById('calibration-msg').textContent = `Hold 5 fingers... (${count}/5)`;
+            
+            if (e.touches.length === 5) {
+                performCalibration(e.touches);
+            }
+            return; // Don't process game input during calibration
         }
 
-        function endSimulation() {
-            clearInterval(appState.simulation.gameInterval);
-            appState.simulation.gameInterval = null;
+        // Standard Game Input
+        for (let touch of e.changedTouches) {
+            const angle = calculateAngle(touch.clientX, touch.clientY);
+            const fingerNumber = getFingerNumberForTouchPoint(angle);
             
-            DOMElements.gameTimer.textContent = "90:00+";
-            addEventToFeed("90:00+", "Full Time! The whistle has blown.", "full-time");
-            
-            setTimeout(resolveBet, 1500);
+            if (fingerNumber) {
+                const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
+                if (buttonElement) buttonElement.classList.add('active');
+                fingersInCurrentPotentialChord.add(fingerNumber); 
+                touchesCurrentlyDown.add(touch.identifier);
+                if (buttonElement) activeTouchEventToButtonElement.set(touch.identifier, buttonElement);
+            }
+        }
+    }, { passive: false });
+
+    document.body.addEventListener('touchend', (e) => {
+        if(e.target.tagName !== 'BUTTON') e.preventDefault(); 
+
+        if (isCalibrating) {
+             document.getElementById('calibration-msg').textContent = `Place 5 fingers comfortably... (${e.touches.length}/5)`;
+             return;
         }
         
-        function generateGameEvent(type, team) {
-            const minute = appState.simulation.minute;
-            const timeStr = `${String(minute).padStart(2, '0')}:00`;
-            
-            const player = team.players[Math.floor(Math.random() * team.players.length)];
-            let text = '';
-            
-            switch (type) {
-                case 'goal':
-                    const scorer = player;
-                    let assister = team.players[Math.floor(Math.random() * team.players.length)];
-                    while (assister.name === scorer.name) {
-                         assister = team.players[Math.floor(Math.random() * team.players.length)];
-                    }
-                    
-                    text = `${scorer.name} (${team.name}) scores! A brilliant finish, assisted by ${assister.name}.`;
-                    
-                    if (team.id === appState.currentGame.homeTeam.id) {
-                        appState.simulation.homeScore++;
-                    } else {
-                        appState.simulation.awayScore++;
-                    }
-                    updateScoreboardUI();
-                    addEventToFeed(timeStr, text, 'goal');
-                    break;
-                    
-                case 'card':
-                    const cardType = Math.random() > 0.1 ? 'yellow' : 'red';
-                    text = `A bad tackle from ${player.name} (${team.name}). The referee shows a ${cardType} card!`;
-                    addEventToFeed(timeStr, text, `card-${cardType}`);
-                    break;
-                    
-                case 'commentary':
-                    const commentaryTemplates = [
-                        `Great build-up play from ${team.name}.`,
-                        `${player.name} takes a shot from distance... just wide!`,
-                        `What a save! The keeper denies ${player.name} from close range.`,
-                        `${team.name} are controlling possession well here.`,
-                        `A dangerous cross into the box by ${player.name}, but it's cleared away.`
-                    ];
-                    text = commentaryTemplates[Math.floor(Math.random() * commentaryTemplates.length)];
-                    addEventToFeed(timeStr, text, 'commentary');
-                    break;
+        const liftedButtonsThatWereActive = new Set();
+
+        for (let touch of e.changedTouches) {
+            if (touchesCurrentlyDown.has(touch.identifier)) {
+                const buttonElement = activeTouchEventToButtonElement.get(touch.identifier);
+                if (buttonElement) liftedButtonsThatWereActive.add(buttonElement);
+                activeTouchEventToButtonElement.delete(touch.identifier);
+                touchesCurrentlyDown.delete(touch.identifier);
             }
         }
-        
-        function addEventToFeed(time, text, type) {
-            const eventEl = document.createElement('div');
-            eventEl.classList.add('event', type);
-            
-            eventEl.innerHTML = `<span class="time">${time}</span><span class="text">${text}</span>`;
-            
-            DOMElements.liveFeed.prepend(eventEl);
-        }
-        
-        function updateScoreboardUI() {
-            DOMElements.gameHomeScore.textContent = appState.simulation.homeScore;
-            DOMElements.gameAwayScore.textContent = appState.simulation.awayScore;
-        }
 
-        function resolveBet() {
-            const { homeScore, awayScore } = appState.simulation;
-            const { amount, outcome, odds } = appState.currentBet;
-            
-            let gameResult;
-            if (homeScore > awayScore) gameResult = 'home';
-            else if (homeScore < awayScore) gameResult = 'away';
-            else gameResult = 'draw';
-            
-            let modalDetailsText = '';
-            let winnings = 0;
-            
-            const modalResult = DOMElements.modalResultText;
-            modalResult.className = ''; // Clear previous classes
-            DOMElements.nextMatchBtn.textContent = "Next Match";
-
-
-            if (gameResult === outcome) {
-                winnings = Math.floor(amount * odds);
-                appState.balance += winnings;
-                
-                modalResult.textContent = "You Won!";
-                modalResult.classList.add('modal-result-win');
-                modalDetailsText = `Your bet on ${outcome} won! You've earned $${winnings}.`;
-                
-            } else {
-                modalResult.textContent = "You Lost";
-                modalResult.classList.add('modal-result-lose');
-                modalDetailsText = `Your $${amount} bet on ${outcome} lost. Better luck next time.`;
+        liftedButtonsThatWereActive.forEach(buttonElement => {
+            let stillActive = false;
+            for (const btn of activeTouchEventToButtonElement.values()) {
+                if (btn === buttonElement) { stillActive = true; break; }
             }
-            
-            DOMElements.modalDetails.textContent = modalDetailsText;
-            updateBalanceUI();
-            DOMElements.modalOverlay.classList.remove('hidden');
-        }
+            if (!stillActive) buttonElement.classList.remove('active');
+        });
 
-        function resetForNextMatch() {
-            // Check if we're just closing an alert modal
-            if (DOMElements.nextMatchBtn.textContent === "Try Again") {
-                DOMElements.modalOverlay.classList.add('hidden');
-                DOMElements.nextMatchBtn.textContent = "Next Match";
-                return;
+        if (touchesCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
+            const combo = [...fingersInCurrentPotentialChord].sort().join('');
+            currentInput.push(combo);
+            logToScreen(`Input: ${combo}`);
+            checkAndProcessStage();
+            fingersInCurrentPotentialChord.clear();
+            
+            if(activeTouchEventToButtonElement.size === 0) { 
+                 Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
             }
-            
-            DOMElements.modalOverlay.classList.add('hidden');
-            DOMElements.gameUI.classList.add('hidden');
-            DOMElements.bettingUI.classList.remove('hidden');
-            
-            DOMElements.oddsContainer.querySelectorAll('.odd-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            DOMElements.betAmountInput.value = '';
-            
-            setupNewMatch();
+        } else if (touchesCurrentlyDown.size === 0) {
+            Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
         }
+    }, { passive: false });
 
+    // --- Keyboard Event Listeners (Debug) ---
+    document.body.addEventListener('keydown', (e) => {
+        if (isCalibrating) return;
+        const fingerNumber = e.key;
+        if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
+            e.preventDefault(); 
+            keysCurrentlyDown.add(fingerNumber);
+            fingersInCurrentPotentialChord.add(fingerNumber);
+            const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
+            if (buttonElement) buttonElement.classList.add('active');
+        }
+    });
 
-        /* --- 5. START THE APP --- */
-        document.addEventListener('DOMContentLoaded', init);
+    document.body.addEventListener('keyup', (e) => {
+        if (isCalibrating) return;
+        const fingerNumber = e.key;
+        if (['1', '2', '3', '4', '5'].includes(fingerNumber)) {
+            e.preventDefault();
+            keysCurrentlyDown.delete(fingerNumber);
+            if (keysCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
+                const combo = [...fingersInCurrentPotentialChord].sort().join('');
+                currentInput.push(combo);
+                logToScreen(`Input: ${combo}`);
+                checkAndProcessStage();
+                fingersInCurrentPotentialChord.clear();
+                Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
+            }
+        }
+    });
 
-    </script>
+    window.addEventListener('DOMContentLoaded', () => {
+        setupVisualButtons();
+        logToScreen(`Waiting...`);
+    });
+  </script>
 </body>
 </html>
