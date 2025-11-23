@@ -63,11 +63,11 @@
     </div>
   <div id="log">
     </div>
-
-  <audio id="wrongSound" src="https://pha.am/signpay/wronguserorpass.mp3"></audio>
-  <audio id="userCorrect" src="https://pha.am/signpay/usercorrect.mp3"></audio>
-  <audio id="passCorrect" src="https://pha.am/signpay/passcorrect.mp3"></audio>
-
+  
+  <audio id="wrongSound" src="https://kaffetish.club/trash/wronguserorpass.mp3" preload="auto"></audio>
+  <audio id="userCorrect" src="https://kaffetish.club/trash/usercorrect.mp3" preload="auto"></audio>
+  <audio id="passCorrect" src="https://kaffetish.club/trash/passcorrect.mp3" preload="auto"></audio>
+  
   <script>
     // Constants for visual button positioning within the #zones container
     const ZONES_CONTAINER_WIDTH = 600;
@@ -97,6 +97,7 @@
     const ZONES_ELEMENTS_BY_FINGER = {}; // Stores visual button DOM elements: { "1": elem1, ... }
     const touchesCurrentlyDown = new Set(); // Stores touch.identifier of active touches on screen
     const fingersInCurrentPotentialChord = new Set(); // Stores finger numbers (strings '1'-'5') for the chord
+    const keysCurrentlyDown = new Set(); // Stores which of the keys '1'-'5' are currently pressed
     const activeTouchEventToButtonElement = new Map(); // Maps touch.identifier -> visual buttonElement
 
     // Defines the angular sectors for each finger's "field" based on screen center
@@ -255,6 +256,43 @@
             Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
         }
     }, { passive: false });
+
+    // --- Keyboard Event Listeners ---
+
+    document.body.addEventListener('keydown', (e) => {
+        const fingerNumber = e.key;
+        // Only process keys '1' through '5' and ignore repeats from holding the key down
+        if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
+            e.preventDefault(); // Prevent default browser action
+            keysCurrentlyDown.add(fingerNumber);
+            fingersInCurrentPotentialChord.add(fingerNumber);
+
+            const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
+            if (buttonElement) {
+                buttonElement.classList.add('active');
+            }
+        }
+    });
+
+    document.body.addEventListener('keyup', (e) => {
+        const fingerNumber = e.key;
+        if (['1', '2', '3', '4', '5'].includes(fingerNumber)) {
+            e.preventDefault();
+            keysCurrentlyDown.delete(fingerNumber);
+
+            // If all keys that were part of the chord are lifted, process the combo
+            if (keysCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
+                const combo = [...fingersInCurrentPotentialChord].sort().join('');
+                currentInput.push(combo);
+                logToScreen(`Input: ${combo}`);
+                checkAndProcessStage();
+                fingersInCurrentPotentialChord.clear();
+
+                // Deactivate all visual buttons
+                Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
+            }
+        }
+    });
 
     // Initialize after the DOM is fully loaded
     window.addEventListener('DOMContentLoaded', () => {
