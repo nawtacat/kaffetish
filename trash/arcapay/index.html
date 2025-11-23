@@ -18,6 +18,33 @@
       touch-action: none;
     }
 
+    /* Start Button Overlay */
+    #start-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    #start-btn {
+      padding: 20px 40px;
+      font-size: 30px;
+      background: #0f0;
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: bold;
+    }
+
     #zones {
       position: relative;
       width: 600px; 
@@ -58,6 +85,12 @@
   </style>
 </head>
 <body>
+
+  <div id="start-overlay">
+    <button id="start-btn">TAP TO START</button>
+    <p style="margin-top:20px; color:#666;">(Enables Audio)</p>
+  </div>
+
   <div id="zones"></div>
   <div id="log"></div>
 
@@ -89,7 +122,6 @@
     const userCorrectSound = document.getElementById('userCorrect');
     const passCorrectSound = document.getElementById('passCorrect');
     const allAudio = [wrongSound, userCorrectSound, passCorrectSound];
-    let audioUnlocked = false;
 
     // Elements & Tracking
     const ZONES_ELEMENTS_BY_FINGER = {}; 
@@ -106,41 +138,31 @@
       finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 
     };
 
-    // --- NEW: Audio Unlocking Strategy ---
-    // This runs on the very first touch/key to "approve" sound playback
-    function unlockAudio() {
-        if (audioUnlocked) return;
-        
+    // --- AUDIO UNLOCKER ---
+    document.getElementById('start-btn').addEventListener('click', function() {
+        // 1. Play all sounds muted to unlock them
         allAudio.forEach(audio => {
-            // Mute, play, pause immediately
-            audio.muted = true; 
-            const playPromise = audio.play();
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    audio.pause();
-                    audio.currentTime = 0;
-                    audio.muted = false; // Unmute so it's ready for real use
-                }).catch(error => {
-                    console.log("Auto-unlock failed (normal on some browsers): " + error);
-                });
-            }
+            audio.muted = true;
+            audio.play().then(() => {
+                audio.pause();
+                audio.currentTime = 0;
+                audio.muted = false; // Reset to audible
+            }).catch(e => console.error("Unlock error:", e));
         });
-        
-        audioUnlocked = true;
-        logToScreen("Audio System Active.");
-        
-        // Remove the unlock listeners so this only runs once
-        document.body.removeEventListener('touchstart', unlockAudio);
-        document.body.removeEventListener('keydown', unlockAudio);
-    }
+
+        // 2. Hide the overlay
+        document.getElementById('start-overlay').style.display = 'none';
+        logToScreen("Audio Unlocked. System Ready.");
+    });
 
     function playAudio(audioElement) {
       if (!audioElement) return;
       audioElement.currentTime = 0;
+      audioElement.volume = 1.0;
       const p = audioElement.play();
       if (p !== undefined) {
           p.catch(e => {
-              logToScreen("Err: " + e.message);
+              logToScreen("Audio Fail: " + e.message);
           });
       }
     }
@@ -218,16 +240,12 @@
         }
     }
 
-    // --- Events ---
-
-    // Attach Unlocker to first interaction
-    document.body.addEventListener('touchstart', unlockAudio, { passive: false, once: true });
-    document.body.addEventListener('keydown', unlockAudio, { once: true });
-
+    // --- Touch Event Listeners ---
     document.body.addEventListener('touchstart', (e) => {
-        e.preventDefault(); 
-        // Ensure unlock runs if 'once' didn't catch it for some reason
-        if(!audioUnlocked) unlockAudio();
+        // Prevent default only if NOT clicking the start button
+        if(e.target.id !== 'start-btn') {
+            e.preventDefault(); 
+        }
 
         for (let touch of e.changedTouches) {
             const fingerNumber = getFingerNumberForTouchPoint(touch.clientX, touch.clientY);
@@ -242,7 +260,10 @@
     }, { passive: false });
 
     document.body.addEventListener('touchend', (e) => {
-        e.preventDefault();
+         if(e.target.id !== 'start-btn') {
+            e.preventDefault(); 
+        }
+        
         const liftedButtonsThatWereActive = new Set();
 
         for (let touch of e.changedTouches) {
@@ -277,10 +298,8 @@
         }
     }, { passive: false });
 
+    // --- Keyboard Event Listeners ---
     document.body.addEventListener('keydown', (e) => {
-        // Ensure unlock runs
-        if(!audioUnlocked) unlockAudio();
-
         const fingerNumber = e.key;
         if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
             e.preventDefault(); 
@@ -309,7 +328,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         setupVisualButtons();
-        logToScreen(`Tap anywhere to initialize Audio.`);
+        logToScreen(`Waiting for Start...`);
     });
   </script>
 </body>
