@@ -1,454 +1,198 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Full Screen Field Input with Calibration</title>
-  <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: #0f0;
-      font-family: monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center; 
-      height: 100vh;
-      width: 100vw; 
-      overflow: hidden; 
-      touch-action: none;
-    }
-
-    /* Overlays */
-    .overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.95);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      transition: opacity 0.3s;
-    }
-
-    .btn-group {
-        display: flex;
-        gap: 20px;
-    }
-
-    button {
-      padding: 20px 40px;
-      font-size: 24px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      font-family: monospace;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-
-    #start-btn { background: #0f0; color: #000; }
-    #calib-btn { background: #333; color: #fff; border: 2px solid #555; }
-    #calib-btn:active { background: #fff; color: #000; }
-
-    #calibration-msg {
-        font-size: 20px;
-        color: #fff;
-        text-align: center;
-        max-width: 80%;
-        line-height: 1.5;
-    }
-
-    #zones {
-      position: relative;
-      width: 600px; 
-      height: 600px; 
-      margin-bottom: 20px;
-    }
-
-    .zone {
-      position: absolute;
-      width: 120px; 
-      height: 120px; 
-      border-radius: 50%;
-      background: #222;
-      border: 2px solid #333;
-      transition: background 0.1s, top 0.5s, left 0.5s; /* Smooth movement for calibration */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      user-select: none; 
-      color: #0f0; 
-    }
-
-    .zone.active {
-      background: #0f0; 
-      color: #111; 
-    }
-
-    #log {
-      width: 90vw;
-      max-width: 600px;
-      height: 150px;
-      background: #000;
-      border: 1px solid #444;
-      padding: 10px;
-      overflow-y: auto;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAuthn Biometric Passkey Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+    </style>
 </head>
-<body>
+<body class="p-4">
 
-  <div id="start-overlay" class="overlay">
-    <div class="btn-group">
-        <button id="start-btn">START GAME</button>
-        <button id="calib-btn">CALIBRATE</button>
+    <div id="app" class="bg-white p-6 md:p-10 rounded-xl shadow-2xl w-full max-w-lg space-y-6">
+        <h1 class="text-3xl font-bold text-gray-900 text-center">WebAuthn Passkey Demo</h1>
+        <p class="text-center text-gray-600">
+            This demonstrates the secure, passwordless authentication flow using your device's biometrics (like fingerprint or face scan) via the WebAuthn API.
+        </p>
+        
+        <!-- Status and Check Section -->
+        <div id="status-box" class="p-4 rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-800 text-sm">
+            <p id="webauthn-status" class="font-medium"></p>
+        </div>
+        
+        <!-- Main Form -->
+        <div class="space-y-4 pt-4 border-t border-gray-100">
+            <input type="text" id="username" value="user_123" placeholder="Enter Username" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" />
+            
+            <button id="registerButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+                1. Register Passkey (Biometrics)
+            </button>
+            
+            <button id="authButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50" disabled>
+                2. Authenticate (Log In)
+            </button>
+        </div>
+
+        <!-- Message Log -->
+        <div class="space-y-2 pt-4">
+            <p class="text-lg font-semibold text-gray-800">Activity Log:</p>
+            <div id="messageLog" class="h-40 overflow-y-auto p-3 text-sm bg-gray-100 rounded-lg border border-gray-300 space-y-1">
+                <p class="text-gray-500">Awaiting user action...</p>
+            </div>
+        </div>
+
     </div>
-    <p style="margin-top:20px; color:#666;">(Enables Audio)</p>
-  </div>
 
-  <div id="calib-overlay" class="overlay" style="display:none; background:rgba(0,0,0,0.85);">
-      <h1 style="color:#0ff; font-size:40px;">CALIBRATION</h1>
-      <p id="calibration-msg">Place all 5 fingers comfortably on the screen.</p>
-      <div id="calib-visuals" style="margin-top:20px; height: 50px;">
-          </div>
-  </div>
+    <script>
+        const usernameInput = document.getElementById('username');
+        const registerButton = document.getElementById('registerButton');
+        const authButton = document.getElementById('authButton');
+        const messageLog = document.getElementById('messageLog');
+        const webauthnStatus = document.getElementById('webauthn-status');
 
-  <div id="zones"></div>
-  <div id="log"></div>
-
-  <audio id="wrongSound" src="https://kaffetish.club/trash/wronguserorpass.mp3" preload="auto"></audio>
-  <audio id="userCorrect" src="https://kaffetish.club/trash/usercorrect.mp3" preload="auto"></audio>
-  <audio id="passCorrect" src="https://kaffetish.club/trash/passcorrect.mp3" preload="auto"></audio>
-
-  <script>
-    // Constants
-    const ZONES_CONTAINER_WIDTH = 600;
-    const ZONES_CONTAINER_HEIGHT = 600;
-    const BUTTON_PLACEMENT_RADIUS = 250;
-    const VISUAL_BUTTON_CENTER_X = ZONES_CONTAINER_WIDTH / 2; 
-    const VISUAL_BUTTON_CENTER_Y = ZONES_CONTAINER_HEIGHT / 2; 
-    const ZONE_BUTTON_SIZE = 120;
-    
-    // Default angles (Standard Arc)
-    let buttonAnglesDegrees = [180, 100, 67, 34, 1]; 
-
-    const zonesContainer = document.getElementById('zones'); 
-    const logDisplay = document.getElementById('log');
-
-    // State
-    const userCombo = ['23', '1', '1'];
-    const passCombo = ['14', '14', '245'];
-    let currentInput = [];
-    let stage = 'user';
-    let isCalibrating = false;
-
-    // Audio
-    const wrongSound = document.getElementById('wrongSound');
-    const userCorrectSound = document.getElementById('userCorrect');
-    const passCorrectSound = document.getElementById('passCorrect');
-    const allAudio = [wrongSound, userCorrectSound, passCorrectSound];
-
-    // Elements & Tracking
-    const ZONES_ELEMENTS_BY_FINGER = {}; 
-    const touchesCurrentlyDown = new Set(); 
-    const fingersInCurrentPotentialChord = new Set(); 
-    const keysCurrentlyDown = new Set(); 
-    const activeTouchEventToButtonElement = new Map(); 
-
-    // Default Ranges
-    let fieldAngleRanges = {
-      finger_1_min: 140.0, finger_1_max: 270.5, 
-      finger_2_min: 83.5,  finger_2_max: 140.0,  
-      finger_3_min: 50.5,  finger_3_max: 83.5,   
-      finger_4_min: 17.5,  finger_4_max: 50.5,   
-      finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 
-    };
-
-    // --- UTILS ---
-    function logToScreen(message) {
-        const div = document.createElement('div');
-        div.textContent = message;
-        logDisplay.appendChild(div);
-        logDisplay.scrollTop = logDisplay.scrollHeight;
-    }
-
-    function calculateAngle(touchX, touchY) {
-        const screenCenterX = window.innerWidth / 2;
-        const screenCenterY = window.innerHeight / 2;
-        let angleRad = Math.atan2(screenCenterY - touchY, touchX - screenCenterX);
-        let angleDeg = angleRad * (180 / Math.PI);
-        if (angleDeg < 0) angleDeg += 360;
-        return angleDeg;
-    }
-
-    // --- SETUP & AUDIO ---
-    function initAudio() {
-        allAudio.forEach(audio => {
-            audio.muted = true;
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-                audio.muted = false;
-            }).catch(e => console.error("Unlock error:", e));
-        });
-    }
-
-    document.getElementById('start-btn').addEventListener('click', function() {
-        initAudio();
-        document.getElementById('start-overlay').style.display = 'none';
-        logToScreen("System Ready.");
-    });
-
-    // --- CALIBRATION LOGIC ---
-    document.getElementById('calib-btn').addEventListener('click', function() {
-        initAudio();
-        isCalibrating = true;
-        document.getElementById('start-overlay').style.display = 'none';
-        document.getElementById('calib-overlay').style.display = 'flex';
-        logToScreen("Mode: CALIBRATION");
-    });
-
-    function performCalibration(touches) {
-        if (touches.length !== 5) return;
-
-        // 1. Get all angles
-        let angles = [];
-        for (let i = 0; i < touches.length; i++) {
-            angles.push(calculateAngle(touches[i].clientX, touches[i].clientY));
-        }
-
-        // 2. Sort angles descending (Leftmost/180 -> Rightmost/0)
-        // Note: 270-360 range is ignored or treated as > 270 in standard logic,
-        // but sorting simply descending handles the arc correctly usually.
-        angles.sort((a, b) => b - a);
-
-        // 3. Update Visual Button Angles to match user hand
-        buttonAnglesDegrees = angles;
-        updateVisualButtons(); // Move the dots to where the fingers are
-
-        // 4. Calculate Split Points (Midpoints between fingers)
-        // F1 is angles[0], F2 is angles[1], etc.
-        const mid1_2 = (angles[0] + angles[1]) / 2;
-        const mid2_3 = (angles[1] + angles[2]) / 2;
-        const mid3_4 = (angles[2] + angles[3]) / 2;
-        const mid4_5 = (angles[3] + angles[4]) / 2;
-
-        // 5. Update Ranges
-        // We keep the "Bottom" split at 270.5 to distinct left vs right wrap-around
-        fieldAngleRanges = {
-            finger_1_min: mid1_2,             finger_1_max: 270.5,
-            finger_2_min: mid2_3,             finger_2_max: mid1_2,
-            finger_3_min: mid3_4,             finger_3_max: mid2_3,
-            finger_4_min: mid4_5,             finger_4_max: mid3_4,
-            finger_5_lower_max: mid4_5,       finger_5_upper_min: 270.5
+        // --- MOCK SERVER/DATABASE (In a real app, this is your backend server) ---
+        // Stores the registered Passkey credential ID for the user
+        let registeredCredentialId = null; 
+        
+        // Base64Url helper functions (Required for WebAuthn)
+        const arrayBufferToBase64Url = (buffer) => btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        const base64UrlToArrayBuffer = (base64Url) => {
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64.length % 4) {
+                base64 += '=';
+            }
+            return Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
         };
-
-        // 6. Finish
-        const msg = document.getElementById('calibration-msg');
-        msg.textContent = "CALIBRATION COMPLETE!";
-        msg.style.color = "#0f0";
+        // ------------------------------------------------------------------------
         
-        playAudio(userCorrectSound);
+        // Utility to log messages
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            p.className = `text-gray-700 ${type === 'error' ? 'text-red-600 font-bold' : ''}`;
+            messageLog.prepend(p);
+        }
 
-        setTimeout(() => {
-            isCalibrating = false;
-            document.getElementById('calib-overlay').style.display = 'none';
-            logToScreen("Ranges updated based on your hand.");
-        }, 1500);
-    }
+        // 1. Initial Check for WebAuthn support
+        if (window.isSecureContext && navigator.credentials) {
+            webauthnStatus.textContent = "WebAuthn API is supported in this browser.";
+            document.getElementById('status-box').className = 'p-4 rounded-lg border border-green-300 bg-green-50 text-green-800 text-sm';
+        } else {
+            webauthnStatus.textContent = "WebAuthn API is NOT supported (or running in an insecure context like HTTP). Biometric login will not work.";
+            registerButton.disabled = true;
+            authButton.disabled = true;
+            document.getElementById('status-box').className = 'p-4 rounded-lg border border-red-300 bg-red-50 text-red-800 text-sm';
+        }
 
-    // --- GAME LOGIC ---
-
-    function playAudio(audioElement) {
-      if (!audioElement) return;
-      audioElement.currentTime = 0;
-      audioElement.volume = 1.0;
-      const p = audioElement.play();
-      if (p !== undefined) {
-          p.catch(e => { logToScreen("Audio Fail: " + e.message); });
-      }
-    }
-
-    function getFingerNumberForTouchPoint(angleDeg) {
-        if (angleDeg >= fieldAngleRanges.finger_1_min && angleDeg <= fieldAngleRanges.finger_1_max) return '1';
-        if (angleDeg >= fieldAngleRanges.finger_2_min && angleDeg <  fieldAngleRanges.finger_2_max) return '2';
-        if (angleDeg >= fieldAngleRanges.finger_3_min && angleDeg <  fieldAngleRanges.finger_3_max) return '3';
-        if (angleDeg >= fieldAngleRanges.finger_4_min && angleDeg <  fieldAngleRanges.finger_4_max) return '4';
-        if (angleDeg <  fieldAngleRanges.finger_5_lower_max || angleDeg > fieldAngleRanges.finger_5_upper_min) return '5';
-        return null; 
-    }
-
-    function setupVisualButtons() {
-        // Initial creation
-        buttonAnglesDegrees.forEach((deg, i) => {
-            const fingerNumber = String(i + 1);
-            const zoneElement = document.createElement('div');
-            zoneElement.className = 'zone';
-            zoneElement.id = `zone-${fingerNumber}`;
-            zoneElement.dataset.finger = fingerNumber; 
-            zoneElement.textContent = fingerNumber;    
-            zonesContainer.appendChild(zoneElement);
-            ZONES_ELEMENTS_BY_FINGER[fingerNumber] = zoneElement;
-        });
-        updateVisualButtons();
-    }
-
-    function updateVisualButtons() {
-        // Updates positions based on current buttonAnglesDegrees
-        buttonAnglesDegrees.forEach((deg, i) => {
-            const fingerNumber = String(i + 1);
-            const zoneElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
+        // 2. Register a Passkey
+        registerButton.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            if (!username) {
+                log("Please enter a username.", 'error');
+                return;
+            }
+            log(`Attempting to register Passkey for: ${username}...`);
             
-            const rad = (deg * Math.PI) / 180;
-            const x = VISUAL_BUTTON_CENTER_X + BUTTON_PLACEMENT_RADIUS * Math.cos(rad) - ZONE_BUTTON_SIZE / 2;
-            const y = VISUAL_BUTTON_CENTER_Y - BUTTON_PLACEMENT_RADIUS * Math.sin(rad) - ZONE_BUTTON_SIZE / 2;
+            // Generate a unique challenge (real world: generated by server)
+            const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+            const userId = base64UrlToArrayBuffer(btoa(username)); // Mock ID
 
-            if (zoneElement) {
-                zoneElement.style.left = `${x}px`;
-                zoneElement.style.top = `${y}px`;
+            const publicKeyCredentialCreationOptions = {
+                // Relying Party (Your website/app) Info
+                rp: { id: window.location.hostname, name: "WebAuthn Demo" },
+                // User Info
+                user: {
+                    id: userId,
+                    name: username,
+                    displayName: username,
+                },
+                // Cryptographic Challenge (Must be securely generated by server)
+                challenge: challenge,
+                // Credential Parameters (Require public key algorithm)
+                pubKeyCredParams: [{ type: 'public-key', alg: -7 }], // ES256
+                // Timeout and other optional settings
+                timeout: 60000, 
+                attestation: 'none'
+            };
+
+            try {
+                // This triggers the native OS/device prompt (fingerprint/face scan)
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyCredentialCreationOptions
+                });
+                
+                // --- SERVER STEP 1 (Mock) ---
+                // The server receives the credential object and stores the ID and public key.
+                registeredCredentialId = arrayBufferToBase64Url(credential.rawId);
+                authButton.disabled = false;
+                log(`✅ Registration Successful! Credential ID stored (Mock DB): ${registeredCredentialId}`);
+                log("You can now click 'Authenticate'.");
+
+            } catch (err) {
+                log(`❌ Registration Failed: ${err.message}. User likely cancelled the biometric prompt.`, 'error');
+                console.error(err);
             }
         });
-    }
-    
-    function checkAndProcessStage() {
-        const targetComboArray = stage === 'user' ? userCombo : passCombo;
-        if (currentInput.length === targetComboArray.length) { 
-            const enteredFullSequence = JSON.stringify(currentInput);
-            const targetFullSequence = JSON.stringify(targetComboArray);
-            
-            if (enteredFullSequence === targetFullSequence) { 
-                if (stage === 'user') {
-                    logToScreen('User combo CORRECT!');
-                    playAudio(userCorrectSound);
-                    stage = 'pass';
-                    logToScreen('Now enter PASS combo.');
-                } else if (stage === 'pass') {
-                    logToScreen('Pass combo CORRECT!');
-                    playAudio(passCorrectSound);
-                    stage = 'user';
-                    logToScreen('Authenticated! Enter USER combo again.');
+
+        // 3. Authenticate (Log In)
+        authButton.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            if (!username || !registeredCredentialId) {
+                log("Please register a Passkey first.", 'error');
+                return;
+            }
+            log(`Attempting to authenticate Passkey for: ${username}...`);
+
+            // Generate a fresh challenge (real world: generated by server)
+            const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+
+            const publicKeyCredentialRequestOptions = {
+                // Cryptographic Challenge (Must be securely generated by server)
+                challenge: challenge,
+                // List of credentials the user might have (to speed up auth)
+                allowCredentials: [{
+                    type: 'public-key',
+                    id: base64UrlToArrayBuffer(registeredCredentialId) 
+                }],
+                timeout: 60000,
+            };
+
+            try {
+                // This triggers the native OS/device prompt (fingerprint/face scan)
+                const assertion = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+
+                // --- SERVER STEP 2 (Mock) ---
+                // The server receives the assertion, verifies the signature using the stored public key,
+                // and confirms the authentication was successful.
+                const credentialIdReturned = arrayBufferToBase64Url(assertion.rawId);
+
+                if (credentialIdReturned === registeredCredentialId) {
+                    log(`🎉 Authentication Successful! Logged in as: ${username}.`, 'info');
+                    // In a real app, you would issue a session token here.
+                } else {
+                    log(`Authentication failed: Credential ID mismatch.`, 'error');
                 }
-            } else { 
-                logToScreen(`${stage.toUpperCase()} sequence incorrect. Try again.`);
-                playAudio(wrongSound);
+
+            } catch (err) {
+                log(`❌ Authentication Failed: ${err.message}. User likely cancelled the biometric prompt or tried the wrong finger.`, 'error');
+                console.error(err);
             }
-            currentInput = []; 
-        } else if (currentInput.length < targetComboArray.length) { 
-            logToScreen(`${stage.toUpperCase()} sequence: ${currentInput.join(' -> ')} ... (${currentInput.length}/${targetComboArray.length})`);
-        }
-    }
-
-    // --- Touch Event Listeners ---
-    document.body.addEventListener('touchstart', (e) => {
-        if(e.target.tagName !== 'BUTTON') e.preventDefault(); 
-
-        if (isCalibrating) {
-            // Update calibration text with count
-            const count = e.touches.length;
-            document.getElementById('calibration-msg').textContent = `Hold 5 fingers... (${count}/5)`;
-            
-            if (e.touches.length === 5) {
-                performCalibration(e.touches);
-            }
-            return; // Don't process game input during calibration
-        }
-
-        // Standard Game Input
-        for (let touch of e.changedTouches) {
-            const angle = calculateAngle(touch.clientX, touch.clientY);
-            const fingerNumber = getFingerNumberForTouchPoint(angle);
-            
-            if (fingerNumber) {
-                const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
-                if (buttonElement) buttonElement.classList.add('active');
-                fingersInCurrentPotentialChord.add(fingerNumber); 
-                touchesCurrentlyDown.add(touch.identifier);
-                if (buttonElement) activeTouchEventToButtonElement.set(touch.identifier, buttonElement);
-            }
-        }
-    }, { passive: false });
-
-    document.body.addEventListener('touchend', (e) => {
-        if(e.target.tagName !== 'BUTTON') e.preventDefault(); 
-
-        if (isCalibrating) {
-             document.getElementById('calibration-msg').textContent = `Place 5 fingers comfortably... (${e.touches.length}/5)`;
-             return;
-        }
-        
-        const liftedButtonsThatWereActive = new Set();
-
-        for (let touch of e.changedTouches) {
-            if (touchesCurrentlyDown.has(touch.identifier)) {
-                const buttonElement = activeTouchEventToButtonElement.get(touch.identifier);
-                if (buttonElement) liftedButtonsThatWereActive.add(buttonElement);
-                activeTouchEventToButtonElement.delete(touch.identifier);
-                touchesCurrentlyDown.delete(touch.identifier);
-            }
-        }
-
-        liftedButtonsThatWereActive.forEach(buttonElement => {
-            let stillActive = false;
-            for (const btn of activeTouchEventToButtonElement.values()) {
-                if (btn === buttonElement) { stillActive = true; break; }
-            }
-            if (!stillActive) buttonElement.classList.remove('active');
         });
 
-        if (touchesCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
-            const combo = [...fingersInCurrentPotentialChord].sort().join('');
-            currentInput.push(combo);
-            logToScreen(`Input: ${combo}`);
-            checkAndProcessStage();
-            fingersInCurrentPotentialChord.clear();
-            
-            if(activeTouchEventToButtonElement.size === 0) { 
-                 Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
-            }
-        } else if (touchesCurrentlyDown.size === 0) {
-            Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
-        }
-    }, { passive: false });
-
-    // --- Keyboard Event Listeners (Debug) ---
-    document.body.addEventListener('keydown', (e) => {
-        if (isCalibrating) return;
-        const fingerNumber = e.key;
-        if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
-            e.preventDefault(); 
-            keysCurrentlyDown.add(fingerNumber);
-            fingersInCurrentPotentialChord.add(fingerNumber);
-            const buttonElement = ZONES_ELEMENTS_BY_FINGER[fingerNumber];
-            if (buttonElement) buttonElement.classList.add('active');
-        }
-    });
-
-    document.body.addEventListener('keyup', (e) => {
-        if (isCalibrating) return;
-        const fingerNumber = e.key;
-        if (['1', '2', '3', '4', '5'].includes(fingerNumber)) {
-            e.preventDefault();
-            keysCurrentlyDown.delete(fingerNumber);
-            if (keysCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
-                const combo = [...fingersInCurrentPotentialChord].sort().join('');
-                currentInput.push(combo);
-                logToScreen(`Input: ${combo}`);
-                checkAndProcessStage();
-                fingersInCurrentPotentialChord.clear();
-                Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
-            }
-        }
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-        setupVisualButtons();
-        logToScreen(`Waiting...`);
-    });
-  </script>
+    </script>
 </body>
 </html>
