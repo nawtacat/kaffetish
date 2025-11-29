@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Full Screen Field Input with Visual Buttons</title>
+  <title>Full Screen Field Input - Login Only</title>
   <style>
     body {
       margin: 0;
@@ -113,9 +113,10 @@
 
     // State
     const userCombo = ['23', '1', '1'];
-    const passCombo = ['14', '14', '245'];
+    // REMOVED: const passCombo = ['14', '14', '245'];
+    
     let currentInput = [];
-    let stage = 'user';
+    // REMOVED: let stage = 'user';
 
     // Audio
     const wrongSound = document.getElementById('wrongSound');
@@ -212,31 +213,26 @@
         logDisplay.scrollTop = logDisplay.scrollHeight;
     }
     
+    // --- UPDATED LOGIC FOR SINGLE STAGE ---
     function checkAndProcessStage() {
-        const targetComboArray = stage === 'user' ? userCombo : passCombo;
+        const targetComboArray = userCombo; // Target is always userCombo
+
         if (currentInput.length === targetComboArray.length) { 
             const enteredFullSequence = JSON.stringify(currentInput);
             const targetFullSequence = JSON.stringify(targetComboArray);
             
             if (enteredFullSequence === targetFullSequence) { 
-                if (stage === 'user') {
-                    logToScreen('User combo CORRECT!');
-                    playAudio(userCorrectSound);
-                    stage = 'pass';
-                    logToScreen('Now enter PASS combo.');
-                } else if (stage === 'pass') {
-                    logToScreen('Pass combo CORRECT!');
-                    playAudio(passCorrectSound);
-                    stage = 'user';
-                    logToScreen('Authenticated! Enter USER combo again.');
-                }
+                // SUCCESS - Single stage
+                logToScreen('ACCESS GRANTED: User Identified.');
+                playAudio(passCorrectSound); // Playing "pass" sound for final success feeling
             } else { 
-                logToScreen(`${stage.toUpperCase()} sequence incorrect. Try again.`);
+                // FAIL
+                logToScreen(`Incorrect sequence. Try again.`);
                 playAudio(wrongSound);
             }
             currentInput = []; 
         } else if (currentInput.length < targetComboArray.length) { 
-            logToScreen(`${stage.toUpperCase()} sequence: ${currentInput.join(' -> ')} ... (${currentInput.length}/${targetComboArray.length})`);
+            logToScreen(`Sequence: ${currentInput.join(' -> ')} ... (${currentInput.length}/${targetComboArray.length})`);
         }
     }
 
