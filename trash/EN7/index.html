@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Radial Input - Multi-Sequence Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Full Screen Field Input - Login Only</title>
   <style>
     body {
       margin: 0;
@@ -16,7 +15,7 @@
       height: 100vh;
       width: 100vw; 
       overflow: hidden; 
-      touch-action: none; /* Prevents scroll/zoom on mobile */
+      touch-action: none;
     }
 
     /* Start Button Overlay */
@@ -26,7 +25,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.95);
+      background: rgba(0, 0, 0, 0.9);
       z-index: 9999;
       display: flex;
       align-items: center;
@@ -36,22 +35,14 @@
 
     #start-btn {
       padding: 20px 40px;
-      font-size: 24px;
+      font-size: 30px;
       background: #0f0;
       color: #000;
-      border: 2px solid #0f0;
-      border-radius: 4px;
+      border: none;
+      border-radius: 10px;
       cursor: pointer;
       font-family: monospace;
       font-weight: bold;
-      text-transform: uppercase;
-      box-shadow: 0 0 15px #0f0;
-      transition: all 0.2s;
-    }
-
-    #start-btn:active {
-      transform: scale(0.95);
-      box-shadow: 0 0 5px #0f0;
     }
 
     #zones {
@@ -59,7 +50,6 @@
       width: 600px; 
       height: 600px; 
       margin-bottom: 20px;
-      border-radius: 50%;
     }
 
     .zone {
@@ -69,22 +59,18 @@
       border-radius: 50%;
       background: #222;
       border: 2px solid #333;
-      transition: background 0.05s, transform 0.1s, box-shadow 0.1s;
+      transition: background 0.1s;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 24px;
       user-select: none; 
       color: #0f0; 
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
 
     .zone.active {
       background: #0f0; 
       color: #111; 
-      box-shadow: 0 0 20px #0f0;
-      transform: scale(1.1);
-      border-color: #fff;
     }
 
     #log {
@@ -92,83 +78,59 @@
       max-width: 600px;
       height: 150px;
       background: #000;
-      border: 1px solid #0f0;
+      border: 1px solid #444;
       padding: 10px;
       overflow-y: auto;
-      box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
-      font-size: 14px;
-      line-height: 1.4;
     }
-
-    /* Scrollbar styling */
-    #log::-webkit-scrollbar { width: 8px; }
-    #log::-webkit-scrollbar-track { background: #111; }
-    #log::-webkit-scrollbar-thumb { background: #0f0; border-radius: 4px; }
   </style>
 </head>
 <body>
 
   <div id="start-overlay">
-    <button id="start-btn">Initialize System</button>
-    <p style="margin-top:20px; color:#444; font-size: 12px;">(Required for Audio Context)</p>
+    <button id="start-btn">TAP TO START</button>
+    <p style="margin-top:20px; color:#666;">(Enables Audio)</p>
   </div>
 
   <div id="zones"></div>
   <div id="log"></div>
 
-  <!-- Audio Assets -->
   <audio id="wrongSound" src="https://kaffetish.club/trash/wronguserorpass.mp3" preload="auto"></audio>
-  <audio id="accessGranted" src="https://kaffetish.club/trash/passcorrect.mp3" preload="auto"></audio>
-  <audio id="inputTick" src="https://kaffetish.club/trash/usercorrect.mp3" preload="auto"></audio> 
+  <audio id="userCorrect" src="https://kaffetish.club/trash/usercorrect.mp3" preload="auto"></audio>
+  <audio id="passCorrect" src="https://kaffetish.club/trash/passcorrect.mp3" preload="auto"></audio>
 
   <script>
-    // --- CONFIGURATION ---
+    // Constants
     const ZONES_CONTAINER_WIDTH = 600;
     const ZONES_CONTAINER_HEIGHT = 600;
     const BUTTON_PLACEMENT_RADIUS = 250;
     const VISUAL_BUTTON_CENTER_X = ZONES_CONTAINER_WIDTH / 2; 
     const VISUAL_BUTTON_CENTER_Y = ZONES_CONTAINER_HEIGHT / 2; 
     const ZONE_BUTTON_SIZE = 120;
-    // 5 Fingers placed visually
     const BUTTON_ANGLES_DEGREES = [180, 100, 67, 34, 1]; 
-
-    // --- 10 VALID 4-STEP SEQUENCES ---
-    // '12' means pressing finger 1 & 2 at the same time.
-    const VALID_SEQUENCES = [
-        ['1', '2', '3', '4'],          // 1. Simple Run
-        ['4', '3', '2', '1'],          // 2. Reverse Run
-        ['1', '1', '1', '1'],          // 3. The Repeater
-        ['12', '12', '34', '34'],      // 4. Double Chord
-        ['1', '5', '1', '5'],          // 5. Ping Pong
-        ['123', '45', '1', '1'],       // 6. Big Chord Start
-        ['5', '23', '23', '5'],        // 7. Symmetry
-        ['14', '23', '23', '14'],      // 8. Inward Outward
-        ['1', '12', '123', '1234'],    // 9. Accumulator
-        ['3', '3', '1', '5']           // 10. Random
-    ];
-
-    const REQUIRED_LENGTH = 4;
 
     const zonesContainer = document.getElementById('zones'); 
     const logDisplay = document.getElementById('log');
 
-    // --- STATE ---
-    let currentInput = [];
+    // State
+    const userCombo = ['23', '1', '1'];
+    // REMOVED: const passCombo = ['14', '14', '245'];
     
-    // Audio Elements
-    const wrongSound = document.getElementById('wrongSound');
-    const accessGrantedSound = document.getElementById('accessGranted');
-    const inputTickSound = document.getElementById('inputTick');
-    const allAudio = [wrongSound, accessGrantedSound, inputTickSound];
+    let currentInput = [];
+    // REMOVED: let stage = 'user';
 
-    // Input Tracking
+    // Audio
+    const wrongSound = document.getElementById('wrongSound');
+    const userCorrectSound = document.getElementById('userCorrect');
+    const passCorrectSound = document.getElementById('passCorrect');
+    const allAudio = [wrongSound, userCorrectSound, passCorrectSound];
+
+    // Elements & Tracking
     const ZONES_ELEMENTS_BY_FINGER = {}; 
     const touchesCurrentlyDown = new Set(); 
     const fingersInCurrentPotentialChord = new Set(); 
     const keysCurrentlyDown = new Set(); 
     const activeTouchEventToButtonElement = new Map(); 
 
-    // Touch Zone Calibration (Angles)
     const fieldAngleRanges = {
       finger_1_min: 140.0, finger_1_max: 270.5, 
       finger_2_min: 83.5,  finger_2_max: 140.0,  
@@ -177,59 +139,44 @@
       finger_5_lower_max: 17.5, finger_5_upper_min: 270.5 
     };
 
-    // --- INITIALIZATION ---
-    
-    function logToScreen(message, color = '#0f0') {
-        const div = document.createElement('div');
-        div.innerHTML = `<span style="color:${color}">></span> ${message}`;
-        logDisplay.appendChild(div);
-        logDisplay.scrollTop = logDisplay.scrollHeight;
-    }
-
+    // --- AUDIO UNLOCKER ---
     document.getElementById('start-btn').addEventListener('click', function() {
-        // Unlock Audio Context
+        // 1. Play all sounds muted to unlock them
         allAudio.forEach(audio => {
             audio.muted = true;
             audio.play().then(() => {
                 audio.pause();
                 audio.currentTime = 0;
-                audio.muted = false;
-            }).catch(e => console.error("Audio unlock failed", e));
+                audio.muted = false; // Reset to audible
+            }).catch(e => console.error("Unlock error:", e));
         });
 
+        // 2. Hide the overlay
         document.getElementById('start-overlay').style.display = 'none';
-        logToScreen("SYSTEM ONLINE.");
-        logToScreen("SECURE LOGIN REQUIRED.");
-        logToScreen("--------------------------------");
-        logToScreen("TRY THESE CODES:");
-        
-        // Display a few valid codes for the user to try
-        VALID_SEQUENCES.slice(0, 4).forEach((seq, i) => {
-            logToScreen(`Code ${i+1}: [ ${seq.join(' -> ')} ]`, '#888');
-        });
-        logToScreen("... (6 more hidden protocols active) ...");
-        logToScreen("--------------------------------");
+        logToScreen("Audio Unlocked. System Ready.");
     });
 
     function playAudio(audioElement) {
       if (!audioElement) return;
       audioElement.currentTime = 0;
       audioElement.volume = 1.0;
-      audioElement.play().catch(e => console.log(e));
+      const p = audioElement.play();
+      if (p !== undefined) {
+          p.catch(e => {
+              logToScreen("Audio Fail: " + e.message);
+          });
+      }
     }
-
-    // --- GEOMETRY & SETUP ---
 
     function getFingerNumberForTouchPoint(touchClientX, touchClientY) {
         const screenCenterX = window.innerWidth / 2;
         const screenCenterY = window.innerHeight / 2;
-        
-        // Calculate angle
+        if (touchClientX === screenCenterX && touchClientY === screenCenterY) return null;
+
         let angleRad = Math.atan2(screenCenterY - touchClientY, touchClientX - screenCenterX);
         let angleDeg = angleRad * (180 / Math.PI);
         if (angleDeg < 0) angleDeg += 360; 
 
-        // Map angle to zone
         if (angleDeg >= fieldAngleRanges.finger_1_min && angleDeg <= fieldAngleRanges.finger_1_max) return '1';
         if (angleDeg >= fieldAngleRanges.finger_2_min && angleDeg <  fieldAngleRanges.finger_2_max) return '2';
         if (angleDeg >= fieldAngleRanges.finger_3_min && angleDeg <  fieldAngleRanges.finger_3_max) return '3';
@@ -249,6 +196,8 @@
             zoneElement.className = 'zone';
             zoneElement.style.left = `${x}px`;
             zoneElement.style.top = `${y}px`;
+            zoneElement.style.width = `${ZONE_BUTTON_SIZE}px`;
+            zoneElement.style.height = `${ZONE_BUTTON_SIZE}px`;
             zoneElement.dataset.finger = fingerNumber; 
             zoneElement.textContent = fingerNumber;    
             
@@ -257,62 +206,42 @@
         });
     }
 
-    // --- CORE LOGIC ---
+    function logToScreen(message) {
+        const div = document.createElement('div');
+        div.textContent = message;
+        logDisplay.appendChild(div);
+        logDisplay.scrollTop = logDisplay.scrollHeight;
+    }
+    
+    // --- UPDATED LOGIC FOR SINGLE STAGE ---
+    function checkAndProcessStage() {
+        const targetComboArray = userCombo; // Target is always userCombo
 
-    function checkSequence() {
-        if (currentInput.length === REQUIRED_LENGTH) { 
-            const inputJSON = JSON.stringify(currentInput);
+        if (currentInput.length === targetComboArray.length) { 
+            const enteredFullSequence = JSON.stringify(currentInput);
+            const targetFullSequence = JSON.stringify(targetComboArray);
             
-            // Check if input matches ANY valid sequence
-            let matchFound = false;
-            for (let seq of VALID_SEQUENCES) {
-                if (JSON.stringify(seq) === inputJSON) {
-                    matchFound = true;
-                    break;
-                }
-            }
-
-            if (matchFound) { 
-                logToScreen('IDENTITY CONFIRMED.', '#0f0');
-                logToScreen('ACCESS GRANTED.');
-                playAudio(accessGrantedSound);
-                // Visual flourish
-                Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(el => {
-                    el.style.borderColor = '#fff';
-                    el.style.boxShadow = '0 0 30px #fff';
-                    setTimeout(() => {
-                        el.style.borderColor = '#333';
-                        el.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
-                    }, 500);
-                });
+            if (enteredFullSequence === targetFullSequence) { 
+                // SUCCESS - Single stage
+                logToScreen('ACCESS GRANTED: User Identified.');
+                playAudio(passCorrectSound); // Playing "pass" sound for final success feeling
             } else { 
-                logToScreen('ACCESS DENIED.', 'red');
+                // FAIL
+                logToScreen(`Incorrect sequence. Try again.`);
                 playAudio(wrongSound);
-                // Visual error shake
-                zonesContainer.style.transform = "translateX(10px)";
-                setTimeout(() => zonesContainer.style.transform = "translateX(-10px)", 50);
-                setTimeout(() => zonesContainer.style.transform = "translateX(5px)", 100);
-                setTimeout(() => zonesContainer.style.transform = "translateX(0)", 150);
             }
-            // Reset
             currentInput = []; 
-        } else if (currentInput.length < REQUIRED_LENGTH) { 
-            // Play tick sound for progress
-            playAudio(inputTickSound);
-            logToScreen(`Input: ${currentInput[currentInput.length-1]} ... (${currentInput.length}/${REQUIRED_LENGTH})`, '#666');
+        } else if (currentInput.length < targetComboArray.length) { 
+            logToScreen(`Sequence: ${currentInput.join(' -> ')} ... (${currentInput.length}/${targetComboArray.length})`);
         }
     }
 
-    function processChordInput(chordSet) {
-        const combo = [...chordSet].sort().join('');
-        currentInput.push(combo);
-        checkSequence();
-    }
-
-    // --- INPUT HANDLERS (TOUCH) ---
-
+    // --- Touch Event Listeners ---
     document.body.addEventListener('touchstart', (e) => {
-        if(e.target.id !== 'start-btn') e.preventDefault(); 
+        // Prevent default only if NOT clicking the start button
+        if(e.target.id !== 'start-btn') {
+            e.preventDefault(); 
+        }
 
         for (let touch of e.changedTouches) {
             const fingerNumber = getFingerNumberForTouchPoint(touch.clientX, touch.clientY);
@@ -327,7 +256,9 @@
     }, { passive: false });
 
     document.body.addEventListener('touchend', (e) => {
-        if(e.target.id !== 'start-btn') e.preventDefault(); 
+         if(e.target.id !== 'start-btn') {
+            e.preventDefault(); 
+        }
         
         const liftedButtonsThatWereActive = new Set();
 
@@ -340,7 +271,6 @@
             }
         }
 
-        // Only remove active visual class if no other finger is currently holding it
         liftedButtonsThatWereActive.forEach(buttonElement => {
             let stillActive = false;
             for (const btn of activeTouchEventToButtonElement.values()) {
@@ -349,21 +279,22 @@
             if (!stillActive) buttonElement.classList.remove('active');
         });
 
-        // CHORD COMMIT LOGIC
         if (touchesCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
-            processChordInput(fingersInCurrentPotentialChord);
+            const combo = [...fingersInCurrentPotentialChord].sort().join('');
+            currentInput.push(combo);
+            logToScreen(`Input: ${combo}`);
+            checkAndProcessStage();
             fingersInCurrentPotentialChord.clear();
             
             if(activeTouchEventToButtonElement.size === 0) { 
                  Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
             }
         } else if (touchesCurrentlyDown.size === 0) {
-             Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
+            Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
         }
     }, { passive: false });
 
-    // --- KEYBOARD LISTENERS ---
-
+    // --- Keyboard Event Listeners ---
     document.body.addEventListener('keydown', (e) => {
         const fingerNumber = e.key;
         if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
@@ -380,9 +311,11 @@
         if (['1', '2', '3', '4', '5'].includes(fingerNumber)) {
             e.preventDefault();
             keysCurrentlyDown.delete(fingerNumber);
-            
             if (keysCurrentlyDown.size === 0 && fingersInCurrentPotentialChord.size > 0) {
-                processChordInput(fingersInCurrentPotentialChord);
+                const combo = [...fingersInCurrentPotentialChord].sort().join('');
+                currentInput.push(combo);
+                logToScreen(`Input: ${combo}`);
+                checkAndProcessStage();
                 fingersInCurrentPotentialChord.clear();
                 Object.values(ZONES_ELEMENTS_BY_FINGER).forEach(btn => btn.classList.remove('active'));
             }
@@ -391,7 +324,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         setupVisualButtons();
-        logToScreen("Initializing...", '#666');
+        logToScreen(`Waiting for Start...`);
     });
   </script>
 </body>
