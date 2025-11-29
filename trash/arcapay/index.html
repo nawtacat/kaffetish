@@ -113,10 +113,11 @@
 
     // State
     const userCombo = ['23', '1', '1'];
-    // REMOVED: const passCombo = ['14', '14', '245'];
     
     let currentInput = [];
-    // REMOVED: let stage = 'user';
+    
+    // --- FIX PART 1: ADD GAME STATE FLAG ---
+    let isGameActive = false; 
 
     // Audio
     const wrongSound = document.getElementById('wrongSound');
@@ -154,6 +155,13 @@
         // 2. Hide the overlay
         document.getElementById('start-overlay').style.display = 'none';
         logToScreen("Audio Unlocked. System Ready.");
+
+        // --- FIX PART 2: ACTIVATE GAME ---
+        // We set this to true AFTER the click, ensuring the initial tap 
+        // doesn't register as game input.
+        setTimeout(() => {
+            isGameActive = true;
+        }, 100);
     });
 
     function playAudio(audioElement) {
@@ -224,7 +232,7 @@
             if (enteredFullSequence === targetFullSequence) { 
                 // SUCCESS - Single stage
                 logToScreen('ACCESS GRANTED: User Identified.');
-                playAudio(passCorrectSound); // Playing "pass" sound for final success feeling
+                playAudio(passCorrectSound); 
             } else { 
                 // FAIL
                 logToScreen(`Incorrect sequence. Try again.`);
@@ -238,7 +246,10 @@
 
     // --- Touch Event Listeners ---
     document.body.addEventListener('touchstart', (e) => {
-        // Prevent default only if NOT clicking the start button
+        // --- FIX PART 3: GUARD CLAUSE ---
+        // If the game hasn't started, stop immediately.
+        if (!isGameActive) return;
+
         if(e.target.id !== 'start-btn') {
             e.preventDefault(); 
         }
@@ -256,6 +267,9 @@
     }, { passive: false });
 
     document.body.addEventListener('touchend', (e) => {
+         // --- FIX PART 4: GUARD CLAUSE ---
+         if (!isGameActive) return;
+
          if(e.target.id !== 'start-btn') {
             e.preventDefault(); 
         }
@@ -296,6 +310,9 @@
 
     // --- Keyboard Event Listeners ---
     document.body.addEventListener('keydown', (e) => {
+        // Guard clause for keyboard too
+        if (!isGameActive) return;
+
         const fingerNumber = e.key;
         if (['1', '2', '3', '4', '5'].includes(fingerNumber) && !e.repeat) {
             e.preventDefault(); 
@@ -307,6 +324,8 @@
     });
 
     document.body.addEventListener('keyup', (e) => {
+        if (!isGameActive) return;
+
         const fingerNumber = e.key;
         if (['1', '2', '3', '4', '5'].includes(fingerNumber)) {
             e.preventDefault();
