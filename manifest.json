@@ -3,6 +3,7 @@
   "short_name": "Kaffetish",
   "start_url": ".",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#FF3A44",
   "theme_color": "#FF3A44",
   "description": "Explained by the librarian.",
