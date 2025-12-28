@@ -2,142 +2,111 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Block Arena 3D</title>
+    <title>Block Arena 3D - Fixed</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #111; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); color: white; z-index: 100; text-align: center; }
-        .menu-card { background: #222; padding: 40px; border-radius: 15px; border: 2px solid #3498db; box-shadow: 0 0 20px rgba(52, 152, 219, 0.5); }
-        input { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; margin: 10px; width: 200px; text-align: center; }
-        button { padding: 12px 25px; font-size: 1rem; font-weight: bold; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #2980b9; transform: scale(1.05); }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; border: 2px solid rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; }
-        #hud { position: absolute; bottom: 20px; left: 20px; color: white; font-size: 1.5rem; text-shadow: 2px 2px 4px #000; pointer-events: none; }
+        body { margin: 0; overflow: hidden; font-family: 'Courier New', Courier, monospace; background: #000; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); color: #0f0; z-index: 100; text-align: center; }
+        .menu-card { border: 2px solid #0f0; padding: 50px; background: #111; box-shadow: 0 0 15px #0f0; }
+        button { background: #0f0; color: #000; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; margin-top: 20px; font-size: 1.2rem; }
+        button:hover { background: #fff; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; border: 1px solid #0f0; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; }
+        #roomInput { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; text-align: center; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
         <div class="menu-card" id="main-menu">
-            <h1>BLOCK ARENA 3D</h1>
-            <button id="createBtn">CREATE NEW ROOM</button>
-            <p>— OR —</p>
-            <input type="text" id="roomInput" placeholder="4-CHAR CODE" maxlength="4">
+            <h1>BLOCK_ARENA.EXE</h1>
+            <button id="createBtn">CREATE ROOM</button>
+            <p>OR</p>
+            <input type="text" id="roomInput" placeholder="CODE" maxlength="4"><br>
             <button id="joinBtn">JOIN ROOM</button>
         </div>
         <div class="menu-card" id="lobby-menu" style="display:none;">
             <h2 id="roomDisplay">ROOM: ----</h2>
-            <p>Waiting for players...</p>
-            <button id="startBtn">START MATCH</button>
+            <p>SYNCING SATELLITES...</p>
+            <button id="startBtn">ENTER ARENA</button>
         </div>
     </div>
 
     <div id="crosshair"></div>
-    <div id="hud">HP: 100 | Ammo: 30/&infin;</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 
     <script>
-        // --- Game Constants & State ---
-        let scene, camera, renderer, controls, raycaster;
+        let scene, camera, renderer, controls;
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         let velocity = new THREE.Vector3();
         let direction = new THREE.Vector3();
         let prevTime = performance.now();
-        let projectiles = [];
 
-        // --- 1. Map Generation (Better Maps) ---
-        function createMap() {
-            // Ground
-            const floorGeo = new THREE.PlaneGeometry(100, 100);
-            const floorMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
-
-            // Random Blocky Obstacles (Arena Style)
-            for (let i = 0; i < 40; i++) {
-                const h = Math.random() * 5 + 1;
-                const boxGeo = new THREE.BoxGeometry(4, h, 4);
-                const boxMat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
-                const box = new THREE.Mesh(boxGeo, boxMat);
-                box.position.set(Math.random() * 80 - 40, h/2, Math.random() * 80 - 40);
-                scene.add(box);
-            }
-        }
-
-        // --- 2. Weapon Logic ---
-        function shoot() {
-            const bulletGeo = new THREE.SphereGeometry(0.1, 8, 8);
-            const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            const bullet = new THREE.Mesh(bulletGeo, bulletMat);
-            
-            // Set bullet position to camera position
-            bullet.position.copy(camera.position);
-            
-            // Get camera direction
-            const vector = new THREE.Vector3(0, 0, -1);
-            vector.applyQuaternion(camera.quaternion);
-            
-            bullet.userData.velocity = vector.multiplyScalar(2.0); // Speed
-            projectiles.push(bullet);
-            scene.add(bullet);
-            
-            // Simple sound/visual feedback
-            camera.position.y += 0.05; // Muzzle flip effect
-        }
-
-        // --- 3. Initialization ---
-        function init() {
+        // --- 1. THE GAME ENGINE ---
+        function initGame() {
+            // Scene Setup
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
-            scene.fog = new THREE.Fog(0x050505, 0, 50);
+            scene.background = new THREE.Color(0x111122); // Dark Blue Night
+            scene.fog = new THREE.Fog(0x111122, 0, 100);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.y = 1.6; // Human height
-
-            const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-            scene.add(light);
-
+            
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            controls = new THREE.PointerLockControls(camera, document.body);
+            // Lighting (Crucial so it's not black!)
+            const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+            scene.add(ambientLight);
             
-            createMap();
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+            sunLight.position.set(10, 20, 10);
+            scene.add(sunLight);
 
-            // Input Handlers
+            // Floor
+            const grid = new THREE.GridHelper(200, 50, 0x00ff00, 0x222222);
+            scene.add(grid);
+
+            // Generate Obstacles
+            for (let i = 0; i < 50; i++) {
+                const h = Math.random() * 8 + 2;
+                const geometry = new THREE.BoxGeometry(4, h, 4);
+                const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, wireframe: Math.random() > 0.8 });
+                const box = new THREE.Mesh(geometry, material);
+                box.position.set(Math.random() * 100 - 50, h/2, Math.random() * 100 - 50);
+                scene.add(box);
+            }
+
+            // Controls
+            controls = new THREE.PointerLockControls(camera, document.body);
+            scene.add(controls.getObject());
+
+            // Key Events
             const onKeyDown = (e) => {
-                switch (e.code) {
-                    case 'KeyW': moveForward = true; break;
-                    case 'KeyS': moveBackward = true; break;
-                    case 'KeyA': moveLeft = true; break;
-                    case 'KeyD': moveRight = true; break;
-                }
+                if (e.code === 'KeyW') moveForward = true;
+                if (e.code === 'KeyS') moveBackward = true;
+                if (e.code === 'KeyA') moveLeft = true;
+                if (e.code === 'KeyD') moveRight = true;
             };
             const onKeyUp = (e) => {
-                switch (e.code) {
-                    case 'KeyW': moveForward = false; break;
-                    case 'KeyS': moveBackward = false; break;
-                    case 'KeyA': moveLeft = false; break;
-                    case 'KeyD': moveRight = false; break;
-                }
+                if (e.code === 'KeyW') moveForward = false;
+                if (e.code === 'KeyS') moveBackward = false;
+                if (e.code === 'KeyA') moveLeft = false;
+                if (e.code === 'KeyD') moveRight = false;
             };
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
-            window.addEventListener('mousedown', () => { if(controls.isLocked) shoot(); });
 
+            // Start Loop
             animate();
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = performance.now();
-            const delta = (time - prevTime) / 1000;
-
             if (controls.isLocked) {
+                const time = performance.now();
+                const delta = (time - prevTime) / 1000;
+
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
 
@@ -150,22 +119,13 @@
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
+
+                prevTime = time;
             }
-
-            // Update Bullets
-            projectiles.forEach((b, index) => {
-                b.position.add(b.userData.velocity);
-                if (b.position.distanceTo(camera.position) > 100) {
-                    scene.remove(b);
-                    projectiles.splice(index, 1);
-                }
-            });
-
             renderer.render(scene, camera);
-            prevTime = time;
         }
 
-        // --- 4. Room Management UI ---
+        // --- 2. MENU LOGIC ---
         document.getElementById('createBtn').onclick = () => {
             const code = Math.random().toString(36).substring(2, 6).toUpperCase();
             document.getElementById('main-menu').style.display = 'none';
@@ -175,20 +135,26 @@
 
         document.getElementById('startBtn').onclick = () => {
             document.getElementById('ui-layer').style.display = 'none';
+            document.getElementById('crosshair').style.display = 'block';
+            initGame();
             controls.lock();
-            init();
         };
 
         document.getElementById('joinBtn').onclick = () => {
-            const input = document.getElementById('roomInput').value;
-            if(input.length === 4) {
+            if(document.getElementById('roomInput').value.length === 4) {
                 document.getElementById('ui-layer').style.display = 'none';
-                controls.lock();
-                init();
-            } else {
-                alert("Enter 4-digit code");
+                document.getElementById('crosshair').style.display = 'block';
+                initGame();
+                setTimeout(() => controls.lock(), 100);
             }
         };
+
+        // Re-lock mouse if user clicks screen
+        document.body.addEventListener('click', () => {
+            if (controls && !controls.isLocked && document.getElementById('ui-layer').style.display === 'none') {
+                controls.lock();
+            }
+        });
     </script>
 </body>
 </html>
