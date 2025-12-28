@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blue Fable - Celeste Style</title>
+    <style>
+        body { margin: 0; background: #050a14; overflow: hidden; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; }
+        #ui {
+            position: absolute; top: 20px; left: 20px; color: #88aaff;
+            pointer-events: none; text-shadow: 0 0 10px #0044ff;
+        }
+        #start-screen {
+            position: absolute; inset: 0; background: rgba(5, 10, 20, 0.9);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #aaddff; z-index: 100;
+        }
+        button {
+            padding: 10px 20px; background: transparent; border: 1px solid #4466aa;
+            color: #aaddff; cursor: pointer; font-family: inherit; margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="fable.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="ui">
+        <div>DASHES: <span id="dash-count">1</span></div>
+        <div style="font-size: 12px; margin-top: 10px;">ARROWS: Move | Z: Jump | X: Dash</div>
+    </div>
+
+    <div id="start-screen" id="overlay">
+        <h1 style="letter-spacing: 8px; font-weight: 200;">FABLE</h1>
+        <p style="opacity: 0.6;">A tribute to Antent movement.</p>
+        <button onclick="startGame()">ENTER THE COLD</button>
+    </div>
+
+    <canvas id="game"></canvas>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const audio = document.getElementById('bgMusic');
+
+let width, height;
+let gameActive = false;
+
+// Movement Constants
+const GRAVITY = 0.5;
+const FRICTION = 0.8;
+const ACCEL = 1.0;
+const MAX_SPEED = 6;
+const JUMP_FORCE = -10;
+const DASH_SPEED = 16;
+const DASH_DURATION = 10;
+
+const player = {
+    x: 100, y: 300,
+    vx: 0, vy: 0,
+    w: 20, h: 20,
+    grounded: false,
+    canDash: true,
+    isDashing: false,
+    dashTimer: 0,
+    dashDir: {x: 0, y: 0},
+    color: '#aaddff',
+    trail: []
+};
+
+const keys = {};
+const platforms = [
+    {x: 0, y: 500, w: 2000, h: 100}, // Ground
+    {x: 400, y: 400, w: 150, h: 20},
+    {x: 600, y: 300, w: 150, h: 20},
+    {x: 200, y: 250, w: 100, h: 20},
+    {x: 800, y: 450, w: 20, h: 100}, // Wall
+    {x: 950, y: 350, w: 20, h: 200}, // Wall
+];
+
+function startGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    gameActive = true;
+    audio.play();
+    init();
+}
+
+function init() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    requestAnimationFrame(update);
+}
+
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+// Physics Helpers
+function collide(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function update() {
+    if (!gameActive) return;
+
+    // --- DASH LOGIC ---
+    if ((keys['KeyX'] || keys['KeyK']) && player.canDash && !player.isDashing) {
+        player.isDashing = true;
+        player.canDash = false;
+        player.dashTimer = DASH_DURATION;
+        // Determine dash direction
+        let dx = 0; if (keys['ArrowLeft']) dx = -1; if (keys['ArrowRight']) dx = 1;
+        let dy = 0; if (keys['ArrowUp']) dy = -1; if (keys['ArrowDown']) dy = 1;
+        if (dx === 0 && dy === 0) dx = player.vx >= 0 ? 1 : -1;
+        player.dashDir = {x: dx, y: dy};
+    }
+
+    if (player.isDashing) {
+        player.vx = player.dashDir.x * DASH_SPEED;
+        player.vy = player.dashDir.y * DASH_SPEED;
+        player.dashTimer--;
+        if (player.dashTimer <= 0) player.isDashing = false;
+        // Trail effect
+        player.trail.push({x: player.x, y: player.y, o: 1});
+    } else {
+        // --- NORMAL MOVEMENT ---
+        if (keys['ArrowLeft']) player.vx -= ACCEL;
+        if (keys['ArrowRight']) player.vx += ACCEL;
+        player.vx *= FRICTION;
+
+        player.vy += GRAVITY;
+
+        if ((keys['KeyZ'] || keys['Space']) && player.grounded) {
+            player.vy = JUMP_FORCE;
+            player.grounded = false;
+        }
+    }
+
+    // Apply movement
+    player.x += player.vx;
+    player.y += player.vy;
+
+    // Simple Collision
+    player.grounded = false;
+    platforms.forEach(p => {
+        if (collide(player, p)) {
+            // Check bottom of player
+            if (player.vy > 0 && player.y + player.h - player.vy <= p.y) {
+                player.y = p.y - player.h;
+                player.vy = 0;
+                player.grounded = true;
+                player.canDash = true; // Refresh dash on ground
+            } 
+            // Check top
+            else if (player.vy < 0 && player.y - player.vy >= p.y + p.h) {
+                player.y = p.h + p.y;
+                player.vy = 0;
+            }
+            // Check sides
+            else if (player.vx > 0) { player.x = p.x - player.w; player.vx = 0; }
+            else if (player.vx < 0) { player.x = p.x + p.w; player.vx = 0; }
+        }
+    });
+
+    draw();
+    requestAnimationFrame(update);
+}
+
+function draw() {
+    // Clear with a blue fade
+    ctx.fillStyle = '#050a14';
+    ctx.fillRect(0, 0, width, height);
+
+    // Draw Parallax Mountains (Atmosphere)
+    ctx.fillStyle = '#0a152a';
+    for(let i=0; i<5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i*400 - (player.x*0.1), height);
+        ctx.lineTo(i*400 + 200 - (player.x*0.1), height-200);
+        ctx.lineTo(i*400 + 400 - (player.x*0.1), height);
+        ctx.fill();
+    }
+
+    // Draw Platforms
+    ctx.fillStyle = '#1a2a4a';
+    platforms.forEach(p => {
+        ctx.fillRect(p.x - (player.x - 400), p.y, p.w, p.h);
+        // Subtle glow on top edge
+        ctx.fillStyle = '#2a4a8a';
+        ctx.fillRect(p.x - (player.x - 400), p.y, p.w, 2);
+        ctx.fillStyle = '#1a2a4a';
+    });
+
+    // Draw Trail
+    player.trail.forEach((t, i) => {
+        ctx.fillStyle = `rgba(136, 170, 255, ${t.o})`;
+        ctx.fillRect(400, t.y, player.w, player.h); // Player stays at x=400 in camera
+        t.o -= 0.05;
+        if (t.o <= 0) player.trail.splice(i, 1);
+    });
+
+    // Draw Player (Camera follows X)
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = player.canDash ? '#0088ff' : '#ff4444';
+    ctx.fillStyle = player.canDash ? '#aaddff' : '#ffaaaa';
+    ctx.fillRect(400, player.y, player.w, player.h);
+    ctx.shadowBlur = 0;
+
+    // UI Dash color
+    document.getElementById('dash-count').innerText = player.canDash ? "1" : "0";
+    document.getElementById('dash-count').style.color = player.canDash ? "#88aaff" : "#ff4444";
+}
+</script>
+</body>
+</html>
