@@ -43,6 +43,9 @@
         .status { margin-top: 10px; font-size: 12px; color: #666; word-break: break-all; }
         
         #controls-hint { position: absolute; top: 10px; left: 10px; color: rgba(255,255,255,0.7); font-size: 12px; }
+        
+        .copy-btn { margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #6c757d; }
+        .copy-btn:hover { background: #5a6268; }
     </style>
 </head>
 <body>
@@ -64,7 +67,7 @@
     <div id="menu-overlay">
         <div id="menu-box">
             <h1>Voxel FPS</h1>
-            <p>Your ID: <span id="my-id">Generating...</span></p>
+            <p>Your ID: <span id="my-id">Generating...</span> <button id="copy-btn" class="copy-btn">Copy</button></p>
             <hr>
             <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
             <button id="connect-btn">Connect</button>
@@ -109,6 +112,7 @@
         // Game State
         let health = 100;
         const obstacles = []; // Array of meshes for collision
+        const bullets = []; // Active projectiles
         const peers = {}; // Connection objects
         const remotePlayers = {}; // Meshes for remote players
         let myPeerId = null;
@@ -116,6 +120,7 @@
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
         const playBtn = document.getElementById('play-btn');
+        const copyBtn = document.getElementById('copy-btn');
         const connectBtn = document.getElementById('connect-btn');
         const peerInput = document.getElementById('peer-id-input');
         const statusMsg = document.getElementById('status-msg');
@@ -185,6 +190,13 @@
             window.addEventListener('resize', onWindowResize);
             
             playBtn.addEventListener('click', () => controls.lock());
+            copyBtn.addEventListener('click', () => {
+                if (myPeerId) {
+                    navigator.clipboard.writeText(myPeerId);
+                    copyBtn.innerText = "Copied!";
+                    setTimeout(() => copyBtn.innerText = "Copy", 2000);
+                }
+            });
             connectBtn.addEventListener('click', () => {
                 const id = peerInput.value;
                 if(id) connectToPeer(id);
@@ -335,7 +347,24 @@
         }
 
         function visualizeShot(peerId) {
-            // Visual effect for remote player shooting (optional, simplified)
+            const p = remotePlayers[peerId];
+            if (p) {
+                const pos = p.position.clone();
+                pos.y += 1.5; // Approximate eye level
+                
+                const dir = new THREE.Vector3(0, 0, -1);
+                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), p.rotation.y);
+                
+                spawnBullet(pos, dir);
+            }
+        }
+
+        function spawnBullet(position, direction) {
+            const bullet = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
+            bullet.position.copy(position);
+            bullet.userData = { velocity: direction.multiplyScalar(50), life: 2.0 }; // 50 units/sec, 2 sec life
+            scene.add(bullet);
+            bullets.push(bullet);
         }
 
         // --- Input & Physics ---
@@ -362,8 +391,10 @@
             if (!controls.isLocked) return;
             
             // Shoot
-            // 1. Visual Recoil
-            camera.rotation.x += 0.02;
+            // 1. Spawn Bullet
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            spawnBullet(camera.position.clone().add(dir), dir.clone());
 
             // 2. Raycast
             raycaster.setFromCamera(new THREE.Vector2(), camera);
@@ -409,6 +440,17 @@
 
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
+
+            // Update Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.position.addScaledVector(b.userData.velocity, delta);
+                b.userData.life -= delta;
+                if (b.userData.life <= 0) {
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                }
+            }
 
             if (controls.isLocked) {
                 // Friction
