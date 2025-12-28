@@ -2,20 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Block Arena - Polished P2P</title>
+    <title>Block Arena - Stable P2P</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #87CEEB; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; z-index: 100; text-align: center; }
         .menu { background: #222; padding: 40px; border: 4px solid #55aa55; border-radius: 10px; }
-        
-        /* HUD & Chat */
         #crosshair { position: absolute; top: 50%; left: 50%; width: 15px; height: 15px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; }
         #chat-area { position: absolute; bottom: 20px; left: 20px; width: 350px; z-index: 50; pointer-events: none; }
-        #chat-log { height: 150px; overflow-y: auto; background: rgba(0,0,0,0.4); color: #0f0; padding: 10px; font-size: 14px; margin-bottom: 5px; border-radius: 5px; }
+        #chat-log { height: 120px; overflow-y: auto; background: rgba(0,0,0,0.4); color: #0f0; padding: 8px; font-size: 14px; margin-bottom: 5px; border-radius: 5px; text-align: left; }
         #chat-input { width: 100%; background: rgba(0,0,0,0.8); border: 2px solid #55aa55; color: white; padding: 12px; display: none; pointer-events: auto; outline: none; box-sizing: border-box; }
-        
         button { padding: 12px 24px; font-size: 1rem; background: #55aa55; color: white; font-weight: bold; cursor: pointer; border: none; margin: 5px; border-radius: 5px; }
-        input[type="text"] { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; margin: 5px; width: 250px; }
         #id-tag { color: #f1c40f; font-weight: bold; font-family: monospace; }
     </style>
 </head>
@@ -24,19 +20,18 @@
     <div id="ui-layer">
         <div class="menu">
             <h1 style="color: #55aa55; margin-top:0;">BLOCK ARENA</h1>
-            <p>Your Network ID: <span id="id-tag">Connecting...</span></p>
-            <button id="hostBtn">START NEW WORLD</button>
+            <p>Your ID: <span id="id-tag">Connecting...</span></p>
+            <button id="hostBtn">START WORLD</button>
             <p>— OR —</p>
-            <input type="text" id="joinInput" placeholder="PASTE FRIEND'S ID">
-            <button id="joinBtn">JOIN WORLD</button>
-            <p style="font-size: 0.8rem; color: #aaa;">WASD to Move | T to Chat | Click to Shoot</p>
+            <input type="text" id="joinInput" placeholder="PASTE FRIEND'S ID" style="padding: 12px; width: 200px;">
+            <button id="joinBtn">CONNECT</button>
         </div>
     </div>
 
     <div id="crosshair"></div>
     <div id="chat-area">
         <div id="chat-log"></div>
-        <input type="text" id="chat-input" placeholder="Type message and press Enter...">
+        <input type="text" id="chat-input" placeholder="T to Chat / Enter to Send">
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -44,23 +39,23 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
     <script>
+        // --- Core Variables ---
         let scene, camera, renderer, controls, gun, peer, conn;
+        let isChatting = false, gameStarted = false;
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let isChatting = false; // The Master State
         let velocity = new THREE.Vector3(), direction = new THREE.Vector3(), prevTime = performance.now();
         
-        let worldBlocks = [];
-        let otherPlayers = {};
-        let bullets = [];
+        let worldBlocks = [], otherPlayers = {}, bullets = [];
 
-        // --- 1. NETWORKING ---
+        // --- 1. PeerJS Networking ---
         peer = new Peer();
         peer.on('open', (id) => { document.getElementById('id-tag').innerText = id; });
 
+        // When someone connects to YOU
         peer.on('connection', (connection) => {
             conn = connection;
             setupDataHandlers();
-            if(!scene) startWorld(); // Auto-start if host
+            if(!gameStarted) launchGame(); 
         });
 
         document.getElementById('joinBtn').onclick = () => {
@@ -68,13 +63,14 @@
             if(hostId) {
                 conn = peer.connect(hostId);
                 setupDataHandlers();
-                startWorld();
+                launchGame();
             }
         };
 
-        document.getElementById('hostBtn').onclick = () => startWorld();
+        document.getElementById('hostBtn').onclick = () => launchGame();
 
         function setupDataHandlers() {
+            conn.on('open', () => addChatMessage("System", "Connected to peer!"));
             conn.on('data', (data) => {
                 if (data.type === 'move') updateRemotePlayer(data.id, data.pos, data.rot);
                 if (data.type === 'chat') addChatMessage(data.id.substring(0,4), data.msg);
@@ -82,26 +78,33 @@
             });
         }
 
-        // --- 2. THE GAME ENGINE ---
-        function init() {
+        // --- 2. Game Setup ---
+        function launchGame() {
+            if(gameStarted) return; // Prevent double-loading
+            gameStarted = true;
+            document.getElementById('ui-layer').style.display = 'none';
+            document.getElementById('crosshair').style.display = 'block';
+            initEngine();
+            controls.lock();
+        }
+
+        function initEngine() {
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.y = 1.6;
+            camera.position.set(0, 1.6, 5);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.8));
             const sun = new THREE.DirectionalLight(0xffffff, 0.5);
             sun.position.set(10, 20, 10);
             scene.add(sun);
 
-            // Grass
             const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ color: 0x55aa55 }));
             ground.rotation.x = -Math.PI / 2;
             scene.add(ground);
 
-            // Blocks (Collidable)
             for (let i = 0; i < 30; i++) {
                 const h = Math.random() * 3 + 1;
                 const block = new THREE.Mesh(new THREE.BoxGeometry(2, h, 2), new THREE.MeshLambertMaterial({ color: 0x333333 }));
@@ -110,7 +113,6 @@
                 worldBlocks.push(block);
             }
 
-            // Weapon
             gun = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.7), new THREE.MeshLambertMaterial({ color: 0x222222 }));
             gun.position.set(0.35, -0.3, -0.5);
             camera.add(gun);
@@ -122,65 +124,44 @@
 
             controls = new THREE.PointerLockControls(camera, document.body);
             
-            // Re-lock if screen clicked
             document.body.addEventListener('click', () => {
-                if (!isChatting && !controls.isLocked) controls.lock();
+                if (!isChatting && gameStarted && !controls.isLocked) controls.lock();
             });
 
-            setupKeyListeners();
+            setupEvents();
             animate();
         }
 
-        function setupKeyListeners() {
+        function setupEvents() {
             document.addEventListener('keydown', (e) => {
-                // Toggle Chat
                 if (e.code === 'KeyT' && !isChatting) {
                     e.preventDefault();
                     isChatting = true;
-                    moveForward = moveBackward = moveLeft = moveRight = false; // Stop movement
+                    moveForward = moveBackward = moveLeft = moveRight = false;
                     document.getElementById('chat-input').style.display = 'block';
                     document.getElementById('chat-input').focus();
                     controls.unlock();
-                    return;
-                }
-
-                // Close Chat / Send
-                if (e.code === 'Enter' && isChatting) {
+                } else if (e.code === 'Enter' && isChatting) {
                     const msg = document.getElementById('chat-input').value.trim();
                     if(msg && conn) conn.send({type: 'chat', id: peer.id, msg: msg});
                     if(msg) addChatMessage("You", msg);
-                    
                     document.getElementById('chat-input').value = "";
                     document.getElementById('chat-input').style.display = 'none';
                     isChatting = false;
                     controls.lock();
-                    return;
-                }
-
-                // Exit Chat without sending
-                if (e.code === 'Escape' && isChatting) {
-                    isChatting = false;
-                    document.getElementById('chat-input').style.display = 'none';
-                    controls.lock();
-                    return;
-                }
-
-                // Normal Movement
-                if (!isChatting) {
+                } else if (!isChatting) {
                     if (e.code === 'KeyW') moveForward = true;
                     if (e.code === 'KeyS') moveBackward = true;
                     if (e.code === 'KeyA') moveLeft = true;
                     if (e.code === 'KeyD') moveRight = true;
                 }
             });
-
             document.addEventListener('keyup', (e) => {
                 if (e.code === 'KeyW') moveForward = false;
                 if (e.code === 'KeyS') moveBackward = false;
                 if (e.code === 'KeyA') moveLeft = false;
                 if (e.code === 'KeyD') moveRight = false;
             });
-
             window.addEventListener('mousedown', () => { 
                 if(controls.isLocked && !isChatting) shoot(); 
             });
@@ -190,9 +171,7 @@
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             spawnBullet(camera.position, dir, true);
-            if(conn) conn.send({type: 'shoot', pos: camera.position, dir: dir});
-            
-            // Visual Recoil
+            if(conn && conn.open) conn.send({type: 'shoot', pos: camera.position, dir: dir});
             gun.position.z += 0.1;
             setTimeout(() => gun.position.z -= 0.1, 50);
         }
@@ -207,9 +186,7 @@
 
         function updateRemotePlayer(id, pos, rot) {
             if(!otherPlayers[id]) {
-                const p = new THREE.Group();
-                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshLambertMaterial({color: 0xff4444}));
-                p.add(body);
+                const p = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshLambertMaterial({color: 0xff4444}));
                 otherPlayers[id] = p;
                 scene.add(p);
             }
@@ -225,56 +202,39 @@
             if (controls.isLocked && !isChatting) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                // MOVEMENT SPEED: Tuned to be intuitive
                 if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
                 if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
 
                 const nextX = camera.position.x + (-velocity.x * delta);
                 const nextZ = camera.position.z + (-velocity.z * delta);
                 
-                // Better Sliding Collision
-                let canMoveX = true;
-                let canMoveZ = true;
+                let canMoveX = true, canMoveZ = true;
                 for(let b of worldBlocks) {
                     if(Math.abs(nextX - b.position.x) < 1.4 && Math.abs(camera.position.z - b.position.z) < 1.4) canMoveX = false;
                     if(Math.abs(camera.position.x - b.position.x) < 1.4 && Math.abs(nextZ - b.position.z) < 1.4) canMoveZ = false;
                 }
-
                 if(canMoveX) controls.moveRight(-velocity.x * delta);
                 if(canMoveZ) controls.moveForward(-velocity.z * delta);
 
-                if(conn && conn.open) {
-                    conn.send({type:'move', id: peer.id, pos: camera.position, rot: camera.rotation});
-                }
+                if(conn && conn.open) conn.send({type:'move', id: peer.id, pos: camera.position, rot: camera.rotation});
             }
-
             bullets.forEach((b, i) => {
                 b.position.add(b.userData.velocity);
                 if(b.position.distanceTo(camera.position) > 60) { scene.remove(b); bullets.splice(i,1); }
             });
-
             renderer.render(scene, camera);
             prevTime = time;
         }
 
-        function startWorld() {
-            document.getElementById('ui-layer').style.display = 'none';
-            document.getElementById('crosshair').style.display = 'block';
-            if(!scene) init();
-            controls.lock();
-            addChatMessage("System", "Press 'T' for chat. Enjoy!");
-        }
-
         function addChatMessage(u, m) {
             const log = document.getElementById('chat-log');
-            const div = document.createElement('div');
-            div.innerHTML = `<strong>${u}:</strong> ${m}`;
-            log.appendChild(div);
+            const d = document.createElement('div');
+            d.innerHTML = `<strong>${u}:</strong> ${m}`;
+            log.appendChild(d);
             log.scrollTop = log.scrollHeight;
         }
     </script>
