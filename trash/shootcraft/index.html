@@ -302,7 +302,7 @@
             const bodyGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 0.9;
+            body.position.y = 0.9 - PLAYER_HEIGHT;
             group.add(body);
 
             scene.add(group);
@@ -453,6 +453,8 @@
             }
 
             if (controls.isLocked) {
+                const originalPos = controls.getObject().position.clone();
+
                 // Friction
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
@@ -467,6 +469,21 @@
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
+
+                // Check X/Z Collision
+                let pos = controls.getObject().position;
+                let playerBox = new THREE.Box3().setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
+                
+                for (let obs of obstacles) {
+                    const obsBox = new THREE.Box3().setFromObject(obs);
+                    if (playerBox.intersectsBox(obsBox)) {
+                        controls.getObject().position.x = originalPos.x;
+                        controls.getObject().position.z = originalPos.z;
+                        velocity.x = 0;
+                        velocity.z = 0;
+                        break;
+                    }
+                }
                 
                 controls.getObject().position.y += velocity.y * delta;
 
@@ -477,17 +494,16 @@
                     canJump = true;
                 }
 
-                // Obstacle Collision (Simple AABB check against camera position)
-                const pos = controls.getObject().position;
-                const playerBox = new THREE.Box3().setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
+                // Check Y Collision (Obstacles)
+                pos = controls.getObject().position;
+                playerBox.setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
                 
                 for (let obs of obstacles) {
                     const obsBox = new THREE.Box3().setFromObject(obs);
                     if (playerBox.intersectsBox(obsBox)) {
-                        // Push back (simplified: just reverse velocity)
-                        velocity.x = 0;
-                        velocity.z = 0;
-                        // Ideally, push out of box, but for prototype, stopping is okay
+                        controls.getObject().position.y = originalPos.y;
+                        velocity.y = 0;
+                        break;
                     }
                 }
 
