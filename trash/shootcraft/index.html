@@ -286,13 +286,19 @@
         }
 
         function setupConnection(conn) {
-            conn.on('open', () => {
-                peers[conn.peer] = conn;
-                createRemotePlayer(conn.peer);
-                statusMsg.innerText = "Connected to " + conn.peer;
-            });
+            const register = () => {
+                if (!peers[conn.peer]) {
+                    peers[conn.peer] = conn;
+                    createRemotePlayer(conn.peer);
+                    statusMsg.innerText = "Connected to " + conn.peer;
+                }
+            };
+
+            if (conn.open) register();
+            conn.on('open', register);
 
             conn.on('data', (data) => {
+                register();
                 handleData(conn.peer, data);
             });
 
