@@ -1,1 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voxel FPS P2P</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Courier New', Courier, monospace; user-select: none; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        /* HUD */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            background: transparent; border: 2px solid rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%); border-radius: 50%;
+        }
+        #crosshair::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+            background: white; transform: translate(-50%, -50%); border-radius: 50%;
+        }
+        
+        #hud-bottom { padding: 20px; display: flex; align-items: flex-end; }
+        #health-container { width: 200px; height: 25px; background: #333; border: 2px solid #fff; position: relative; }
+        #health-bar { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
+        #health-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; color: white; line-height: 25px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+        
+        #kill-feed { position: absolute; top: 20px; right: 20px; text-align: right; color: #ff4444; font-weight: bold; text-shadow: 1px 1px 0 #000; }
 
+        /* Menu / Connection */
+        #menu-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center;
+            pointer-events: auto; z-index: 10;
+        }
+        #menu-box {
+            background: #fff; padding: 30px; border-radius: 8px; text-align: center; max-width: 400px; width: 90%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        h1 { margin-top: 0; color: #333; }
+        input { width: 70%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        .status { margin-top: 10px; font-size: 12px; color: #666; word-break: break-all; }
+        
+        #controls-hint { position: absolute; top: 10px; left: 10px; color: rgba(255,255,255,0.7); font-size: 12px; }
+        
+        .copy-btn { margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #6c757d; }
+        .copy-btn:hover { background: #5a6268; }
+    </style>
+</head>
+<body>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div id="controls-hint">WASD to Move | SPACE to Jump | CLICK to Shoot</div>
+        <div id="kill-feed"></div>
+        <div id="crosshair"></div>
+        <div id="hud-bottom">
+            <div id="health-container">
+                <div id="health-bar"></div>
+                <div id="health-text">100 HP</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <div id="menu-box">
+            <h1>Voxel FPS</h1>
+            <p>Your ID: <span id="my-id">Generating...</span> <button id="copy-btn" class="copy-btn">Copy</button></p>
+            <hr>
+            <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
+            <button id="connect-btn">Connect</button>
+            <p>OR</p>
+            <button id="play-btn">Play Solo / Wait</button>
+            <div class="status" id="status-msg">Ready to connect.</div>
+        </div>
+    </div>
+
+    <!-- Import Maps -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "peerjs": "https://esm.sh/peerjs@1.5.2?bundle-deps"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { Peer } from 'peerjs';
+
+        // --- Configuration ---
+        const WORLD_SIZE = 100;
+        const PLAYER_HEIGHT = 1.6;
+        const MOVEMENT_SPEED = 10;
+        const JUMP_FORCE = 10;
+        const GRAVITY = 25;
+        
+        // --- Globals ---
+        let camera, scene, renderer, controls;
+        let raycaster;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let canJump = false;
+        let prevTime = performance.now();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        
+        // Game State
+        let health = 100;
+        const obstacles = []; // Array of meshes for collision
+        const bullets = []; // Active projectiles
+        const peers = {}; // Connection objects
+        const remotePlayers = {}; // Meshes for remote players
+        let myPeerId = null;
+        
+        // DOM Elements
+        const menuOverlay = document.getElementById('menu-overlay');
+        const playBtn = document.getElementById('play-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const connectBtn = document.getElementById('connect-btn');
+        const peerInput = document.getElementById('peer-id-input');
+        const statusMsg = document.getElementById('status-msg');
+        const myIdDisplay = document.getElementById('my-id');
+        const healthBar = document.getElementById('health-bar');
+        const healthText = document.getElementById('health-text');
+        const killFeed = document.getElementById('kill-feed');
+
+        // --- Initialization ---
+        init();
+        animate();
+        initNetwork();
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Sky blue
+            scene.fog = new THREE.Fog(0x87CEEB, 0, 60);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.y = PLAYER_HEIGHT;
+
+            // Lights
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+            hemiLight.position.set(0, 20, 0);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new PointerLockControls(camera, document.body);
+            
+            controls.addEventListener('lock', () => {
+                menuOverlay.style.display = 'none';
+            });
+            controls.addEventListener('unlock', () => {
+                menuOverlay.style.display = 'flex';
+            });
+
+            // World Generation
+            generateWorld();
+
+            // Weapon (Visual)
+            const gunGeo = new THREE.BoxGeometry(0.1, 0.1, 0.4);
+            const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const gun = new THREE.Mesh(gunGeo, gunMat);
+            gun.position.set(0.2, -0.2, -0.3);
+            camera.add(gun);
+            scene.add(camera);
+
+            // Raycaster
+            raycaster = new THREE.Raycaster();
+
+            // Event Listeners
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('resize', onWindowResize);
+            
+            playBtn.addEventListener('click', () => controls.lock());
+            copyBtn.addEventListener('click', () => {
+                if (myPeerId) {
+                    navigator.clipboard.writeText(myPeerId);
+                    copyBtn.innerText = "Copied!";
+                    setTimeout(() => copyBtn.innerText = "Copy", 2000);
+                }
+            });
+            connectBtn.addEventListener('click', () => {
+                const id = peerInput.value;
+                if(id) connectToPeer(id);
+            });
+        }
+
+        function generateWorld() {
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            // Random Voxels
+            const boxGeo = new THREE.BoxGeometry(2, 2, 2);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 }); // Brown
+
+            for (let i = 0; i < 40; i++) {
+                const box = new THREE.Mesh(boxGeo, boxMat);
+                box.position.x = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+                box.position.y = 1; // On floor
+                box.position.z = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+                
+                // Keep spawn area clear
+                if (box.position.distanceTo(new THREE.Vector3(0,1,0)) < 5) continue;
+
+                scene.add(box);
+                obstacles.push(box);
+            }
+        }
+
+        // --- Networking ---
+        function initNetwork() {
+            const peer = new Peer(); // Auto-generate ID
+            
+            peer.on('open', (id) => {
+                myPeerId = id;
+                myIdDisplay.innerText = id;
+                statusMsg.innerText = "ID Generated. Share it with a friend.";
+            });
+
+            peer.on('connection', (conn) => {
+                setupConnection(conn);
+                statusMsg.innerText = "Incoming connection from " + conn.peer;
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                statusMsg.innerText = "Error: " + err.type;
+            });
+
+            window.connectToPeer = (id) => {
+                const conn = peer.connect(id);
+                setupConnection(conn);
+            };
+        }
+
+        function setupConnection(conn) {
+            conn.on('open', () => {
+                peers[conn.peer] = conn;
+                createRemotePlayer(conn.peer);
+                statusMsg.innerText = "Connected to " + conn.peer;
+            });
+
+            conn.on('data', (data) => {
+                handleData(conn.peer, data);
+            });
+
+            conn.on('close', () => {
+                removeRemotePlayer(conn.peer);
+                delete peers[conn.peer];
+                statusMsg.innerText = "Disconnected from " + conn.peer;
+            });
+        }
+
+        function handleData(peerId, data) {
+            if (data.t === 'm') { // Move
+                updateRemotePlayer(peerId, data);
+            } else if (data.t === 'h') { // Hit
+                takeDamage(data.d);
+            } else if (data.t === 's') { // Shoot visual
+                visualizeShot(peerId);
+            } else if (data.t === 'k') { // Kill confirm
+                killFeed.innerText = `You killed ${peerId.substr(0,5)}!`;
+                setTimeout(() => killFeed.innerText = '', 3000);
+            }
+        }
+
+        function broadcast(data) {
+            for (let id in peers) {
+                peers[id].send(data);
+            }
+        }
+
+        // --- Player Logic ---
+        function createRemotePlayer(id) {
+            if (remotePlayers[id]) return;
+            
+            const group = new THREE.Group();
+            
+            // Body
+            const bodyGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.9;
+            group.add(body);
+
+            scene.add(group);
+            remotePlayers[id] = group;
+        }
+
+        function updateRemotePlayer(id, data) {
+            const p = remotePlayers[id];
+            if (p) {
+                p.position.set(data.x, data.y, data.z);
+                p.rotation.y = data.ry;
+            }
+        }
+
+        function removeRemotePlayer(id) {
+            if (remotePlayers[id]) {
+                scene.remove(remotePlayers[id]);
+                delete remotePlayers[id];
+            }
+        }
+
+        function takeDamage(amount) {
+            health -= amount;
+            updateHealthUI();
+            if (health <= 0) {
+                respawn();
+            }
+        }
+
+        function respawn() {
+            health = 100;
+            updateHealthUI();
+            camera.position.set(0, PLAYER_HEIGHT, 0); // Reset pos
+            // Notify killer? (Simplified: just respawn locally)
+        }
+
+        function updateHealthUI() {
+            healthBar.style.width = health + '%';
+            healthText.innerText = health + ' HP';
+            if (health < 30) healthBar.style.background = '#ff0000';
+            else healthBar.style.background = '#00ff00';
+        }
+
+        function visualizeShot(peerId) {
+            const p = remotePlayers[peerId];
+            if (p) {
+                const pos = p.position.clone();
+                pos.y += 1.5; // Approximate eye level
+                
+                const dir = new THREE.Vector3(0, 0, -1);
+                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), p.rotation.y);
+                
+                spawnBullet(pos, dir);
+            }
+        }
+
+        function spawnBullet(position, direction) {
+            const bullet = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
+            bullet.position.copy(position);
+            bullet.userData = { velocity: direction.multiplyScalar(50), life: 2.0 }; // 50 units/sec, 2 sec life
+            scene.add(bullet);
+            bullets.push(bullet);
+        }
+
+        // --- Input & Physics ---
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = true; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = true; break;
+                case 'ArrowRight': case 'KeyD': moveRight = true; break;
+                case 'Space': if (canJump) velocity.y += JUMP_FORCE; canJump = false; break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward = false; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
+                case 'ArrowDown': case 'KeyS': moveBackward = false; break;
+                case 'ArrowRight': case 'KeyD': moveRight = false; break;
+            }
+        }
+
+        function onMouseDown(event) {
+            if (!controls.isLocked) return;
+            
+            // Shoot
+            // 1. Spawn Bullet
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            spawnBullet(camera.position.clone().add(dir), dir.clone());
+
+            // 2. Raycast
+            raycaster.setFromCamera(new THREE.Vector2(), camera);
+            
+            // Check intersection with remote players
+            const targets = [];
+            for (let id in remotePlayers) {
+                targets.push(remotePlayers[id].children[0]); // The body mesh
+            }
+
+            const intersects = raycaster.intersectObjects(targets);
+            
+            if (intersects.length > 0) {
+                // Find which player owns this mesh
+                const hitMesh = intersects[0].object;
+                for (let id in remotePlayers) {
+                    if (remotePlayers[id].children[0] === hitMesh) {
+                        // Send hit
+                        const conn = peers[id];
+                        if (conn) {
+                            conn.send({ t: 'h', d: 20 }); // 20 damage
+                            // Visual feedback
+                            killFeed.innerText = "Hit!";
+                            setTimeout(() => killFeed.innerText = '', 500);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Broadcast shot event (for visuals)
+            broadcast({ t: 's' });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            // Update Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.position.addScaledVector(b.userData.velocity, delta);
+                b.userData.life -= delta;
+                if (b.userData.life <= 0) {
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            if (controls.isLocked) {
+                // Friction
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.y -= GRAVITY * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) velocity.z -= direction.z * MOVEMENT_SPEED * 10.0 * delta; // Inverted in Three.js
+                if (moveLeft || moveRight) velocity.x -= direction.x * MOVEMENT_SPEED * 10.0 * delta; // Inverted
+
+                controls.moveRight(-velocity.x * delta);
+                controls.moveForward(-velocity.z * delta);
+                
+                controls.getObject().position.y += velocity.y * delta;
+
+                // Floor Collision
+                if (controls.getObject().position.y < PLAYER_HEIGHT) {
+                    velocity.y = 0;
+                    controls.getObject().position.y = PLAYER_HEIGHT;
+                    canJump = true;
+                }
+
+                // Obstacle Collision (Simple AABB check against camera position)
+                const pos = controls.getObject().position;
+                const playerBox = new THREE.Box3().setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
+                
+                for (let obs of obstacles) {
+                    const obsBox = new THREE.Box3().setFromObject(obs);
+                    if (playerBox.intersectsBox(obsBox)) {
+                        // Push back (simplified: just reverse velocity)
+                        velocity.x = 0;
+                        velocity.z = 0;
+                        // Ideally, push out of box, but for prototype, stopping is okay
+                    }
+                }
+
+                // Network Sync (Send position every frame or throttled)
+                // Throttling to ~30fps is better, but per frame is okay for local test
+                broadcast({
+                    t: 'm',
+                    x: pos.x,
+                    y: pos.y,
+                    z: pos.z,
+                    ry: camera.rotation.y // Only Y rotation needed for body facing
+                });
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
