@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -74,14 +74,20 @@
     <!-- Menu Overlay -->
     <div id="menu-overlay">
         <div id="menu-box">
-            <h1>Voxel FPS</h1>
-            <p>Your ID: <span id="my-id">Generating...</span> <button id="copy-btn" class="copy-btn">Copy</button></p>
-            <hr>
-            <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
-            <button id="connect-btn">Connect</button>
-            <p>OR</p>
-            <button id="play-btn">Play Solo / Wait</button>
-            <div class="status" id="status-msg">Ready to connect.</div>
+            <div id="main-menu">
+                <h1>Voxel FPS</h1>
+                <p>Your ID: <span id="my-id">Generating...</span> <button id="copy-btn" class="copy-btn">Copy</button></p>
+                <hr>
+                <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
+                <button id="connect-btn">Connect</button>
+                <p>OR</p>
+                <button id="play-btn">Play Solo / Wait</button>
+                <div class="status" id="status-msg">Ready to connect.</div>
+            </div>
+            <div id="pause-menu" style="display:none;">
+                <h1>Paused</h1>
+                <button id="resume-btn">Resume</button>
+            </div>
         </div>
     </div>
 
@@ -124,6 +130,7 @@
         const peers = {}; // Connection objects
         const remotePlayers = {}; // Meshes for remote players
         let myPeerId = null;
+        let gameStarted = false;
         
         // Audio
         const shootSound = new Audio('https://kaffetish.club/trash/shootcraft/shoot.mp3');
@@ -133,6 +140,9 @@
         
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
+        const mainMenu = document.getElementById('main-menu');
+        const pauseMenu = document.getElementById('pause-menu');
+        const resumeBtn = document.getElementById('resume-btn');
         const playBtn = document.getElementById('play-btn');
         const copyBtn = document.getElementById('copy-btn');
         const connectBtn = document.getElementById('connect-btn');
@@ -187,6 +197,10 @@
             });
             controls.addEventListener('unlock', () => {
                 menuOverlay.style.display = 'flex';
+                if (gameStarted) {
+                    mainMenu.style.display = 'none';
+                    pauseMenu.style.display = 'block';
+                }
                 runSound.pause();
             });
 
@@ -210,7 +224,8 @@
             document.addEventListener('mousedown', onMouseDown);
             window.addEventListener('resize', onWindowResize);
             
-            playBtn.addEventListener('click', () => controls.lock());
+            playBtn.addEventListener('click', () => { gameStarted = true; controls.lock(); });
+            resumeBtn.addEventListener('click', () => controls.lock());
             copyBtn.addEventListener('click', () => {
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
@@ -313,12 +328,15 @@
             if (data.t === 'm') { // Move
                 updateRemotePlayer(peerId, data);
             } else if (data.t === 'h') { // Hit
-                takeDamage(data.d);
+                takeDamage(data.d, peerId);
             } else if (data.t === 's') { // Shoot visual
                 visualizeShot(peerId);
             } else if (data.t === 'k') { // Kill confirm
                 killFeed.innerText = `You killed ${peerId.substr(0,5)}!`;
                 setTimeout(() => killFeed.innerText = '', 3000);
+            } else if (data.t === 'd') { // Death/Respawn
+                const p = remotePlayers[peerId];
+                if (p) p.visible = false;
             }
         }
 
@@ -362,10 +380,13 @@
             }
         }
 
-        function takeDamage(amount) {
+        function takeDamage(amount, attackerId) {
             health -= amount;
             updateHealthUI();
             if (health <= 0) {
+                if (attackerId && peers[attackerId]) {
+                    peers[attackerId].send({ t: 'k' });
+                }
                 respawn();
             }
         }
@@ -375,6 +396,7 @@
             updateHealthUI();
             const spawn = getSpawnPoint();
             camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
+            broadcast({ t: 'd' });
             // Notify killer? (Simplified: just respawn locally)
         }
 
