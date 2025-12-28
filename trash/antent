@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Azure Wisp (Antent Tribute)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;400&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050a14; /* Deep dark blue background */
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        #gameCanvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            /* A subtle gradient to give depth */
+            background: linear-gradient(to bottom, #0a0e29 0%, #050814 100%);
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgba(180, 220, 255, 0.7);
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+        }
+
+        #score {
+            font-size: 24px;
+            font-weight: 200;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 10, 20, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
+            transition: opacity 1s ease;
+        }
+
+        #start-screen h1 {
+            font-weight: 200;
+            letter-spacing: 5px;
+            color: #aaddff;
+            text-shadow: 0 0 20px #0066ff;
+        }
+
+        #start-screen p {
+            font-weight: 200;
+            opacity: 0.7;
+        }
+
+        #start-button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            color: #aaddff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+        }
+
+        #start-button:hover {
+            background: rgba(0, 100, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 150, 255, 0.4);
+            border-color: rgba(100, 200, 255, 0.8);
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="fable.mp3" type="audio/mpeg">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-ethereal-fairy-win-857.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="ui-layer">
+        <div id="score">Memories: 0</div>
+    </div>
+
+    <div id="start-screen">
+        <h1>THE AZURE WISP</h1>
+        <p>A tribute to the sounds of Antent.</p>
+        <p>Use your mouse to guide the light.</p>
+        <button id="start-button">BEGIN JOURNEY</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+        const audio = document.getElementById('bgMusic');
+
+        let width, height;
+        let gameRunning = false;
+        let score = 0;
+        let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        
+        // --- Game Entities ---
+
+        // The Player Character (The Wisp)
+        class Player {
+            constructor() {
+                this.x = width / 2;
+                this.y = height / 2;
+                this.size = 15;
+                this.glowSize = 50;
+                // Easing for smooth movement
+                this.ease = 0.08; 
+                this.trail = [];
+            }
+
+            update() {
+                // Smooth follow mouse
+                this.x += (mouse.x - this.x) * this.ease;
+                this.y += (mouse.y - this.y) * this.ease;
+
+                // Add position to trail
+                this.trail.push({x: this.x, y: this.y, age: 100});
+                // Limit trail length
+                if (this.trail.length > 20) {
+                    this.trail.shift();
+                }
+
+                // Age the trails
+                for (let t of this.trail) {
+                    t.age -= 5;
+                }
+            }
+
+            draw() {
+                // Draw Trail
+                for (let t of this.trail) {
+                    let opacity = t.age / 100;
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(100, 180, 255, ${opacity * 0.5})`;
+                    ctx.arc(t.x, t.y, this.size * (opacity), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Main Body Glow
+                ctx.shadowBlur = this.glowSize;
+                ctx.shadowColor = "#0099ff";
+                ctx.beginPath();
+                ctx.fillStyle = "rgba(200, 240, 255, 1)";
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; // Reset shadow for other elements
+
+                // Core center
+                ctx.beginPath();
+                ctx.fillStyle = "#ffffff";
+                ctx.arc(this.x, this.y, this.size / 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Collectible Orbs (Memories)
+        class Orb {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 8 + 4;
+                this.baseAlpha = Math.random() * 0.5 + 0.2;
+                this.pulseSpeed = Math.random() * 0.05 + 0.02;
+                this.pulse = 0;
+            }
+
+            update() {
+                // Gentle pulsing effect
+                this.pulse += this.pulseSpeed;
+                this.alpha = this.baseAlpha + Math.sin(this.pulse) * 0.2;
+            }
+
+            draw() {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = "rgba(120, 50, 255, 0.8)"; // Purplish glow
+                ctx.beginPath();
+                ctx.fillStyle = `rgba(150, 150, 255, ${this.alpha})`;
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Atmospheric Rain
+        class RainDrop {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * height; // Initial random placement
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = -10;
+                this.speed = Math.random() * 15 + 10;
+                this.length = Math.random() * 30 + 10;
+                this.opacity = Math.random() * 0.3 + 0.1;
+                // Slight horizontal drift for realism
+                this.drift = (Math.random() - 0.5) * 2;
+            }
+
+            update() {
+                this.y += this.speed;
+                this.x += this.drift;
+                if (this.y > height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(150, 170, 220, ${this.opacity})`;
+                ctx.lineWidth = 1;
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + this.drift, this.y + this.length);
+                ctx.stroke();
+            }
+        }
+
+        // --- Game State ---
+        let player;
+        let orbs = [];
+        let rain = [];
+        const MAX_ORBS = 10;
+        const RAIN_COUNT = 200;
+
+        function init() {
+            resize();
+            player = new Player();
+            
+            for(let i=0; i < MAX_ORBS; i++) {
+                orbs.push(new Orb());
+            }
+
+            for(let i=0; i < RAIN_COUNT; i++) {
+                rain.push(new RainDrop());
+            }
+
+            window.addEventListener('resize', resize);
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function checkCollisions() {
+            for (let i = orbs.length - 1; i >= 0; i--) {
+                let o = orbs[i];
+                let dx = player.x - o.x;
+                let dy = player.y - o.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                // If collision happens (player radius + orb radius + buffer)
+                if (distance < player.size + o.size + 10) {
+                    score++;
+                    scoreDisplay.innerText = `Memories: ${score}`;
+                    // Remove orb and spawn a new one elsewhere
+                    orbs.splice(i, 1);
+                    setTimeout(() => {
+                        orbs.push(new Orb());
+                    }, 1000);
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // 1. Update & Draw Rain (Background layer)
+            rain.forEach(r => {
+                r.update();
+                r.draw();
+            });
+
+            // 2. Update & Draw Orbs
+            orbs.forEach(o => {
+                o.update();
+                o.draw();
+            });
+
+            // 3. Update & Draw Player (Foreground layer)
+            player.update();
+            player.draw();
+
+            checkCollisions();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Start Game Interaction ---
+        startButton.addEventListener('click', () => {
+            startScreen.classList.add('hidden');
+            gameRunning = true;
+            
+            // Attempt to play audio. 
+            // If fable.mp3 exists, it plays. If not, the placeholder plays.
+            audio.volume = 0.6; // Set comfortable volume
+            let playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    // Automatic playback started!
+                })
+                .catch(error => {
+                    // Auto-play was prevented. 
+                    console.log("Audio autoplay prevented. User interaction needed.");
+                });
+            }
+            
+            init();
+            gameLoop();
+        });
+
+    </script>
+</body>
+</html>
