@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Block Arena - Ultimate P2P</title>
+    <title>Block Arena - Polished P2P</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #87CEEB; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); color: white; z-index: 100; text-align: center; }
@@ -10,13 +10,12 @@
         
         /* HUD & Chat */
         #crosshair { position: absolute; top: 50%; left: 50%; width: 15px; height: 15px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; display: none; }
-        #chat-area { position: absolute; bottom: 20px; left: 20px; width: 300px; z-index: 50; pointer-events: none; }
-        #chat-log { height: 150px; overflow-y: hidden; background: rgba(0,0,0,0.3); color: #0f0; padding: 5px; font-size: 14px; margin-bottom: 5px; }
-        #chat-input { width: 100%; background: rgba(0,0,0,0.8); border: 1px solid #55aa55; color: white; padding: 10px; display: none; pointer-events: auto; outline: none; }
+        #chat-area { position: absolute; bottom: 20px; left: 20px; width: 350px; z-index: 50; pointer-events: none; }
+        #chat-log { height: 150px; overflow-y: auto; background: rgba(0,0,0,0.4); color: #0f0; padding: 10px; font-size: 14px; margin-bottom: 5px; border-radius: 5px; }
+        #chat-input { width: 100%; background: rgba(0,0,0,0.8); border: 2px solid #55aa55; color: white; padding: 12px; display: none; pointer-events: auto; outline: none; box-sizing: border-box; }
         
-        input, button { padding: 12px; font-size: 1rem; margin: 5px; border-radius: 5px; border: none; }
-        button { background: #55aa55; color: white; font-weight: bold; cursor: pointer; }
-        button:hover { background: #66bb66; }
+        button { padding: 12px 24px; font-size: 1rem; background: #55aa55; color: white; font-weight: bold; cursor: pointer; border: none; margin: 5px; border-radius: 5px; }
+        input[type="text"] { padding: 12px; font-size: 1rem; border-radius: 5px; border: none; margin: 5px; width: 250px; }
         #id-tag { color: #f1c40f; font-weight: bold; font-family: monospace; }
     </style>
 </head>
@@ -30,13 +29,14 @@
             <p>— OR —</p>
             <input type="text" id="joinInput" placeholder="PASTE FRIEND'S ID">
             <button id="joinBtn">JOIN WORLD</button>
+            <p style="font-size: 0.8rem; color: #aaa;">WASD to Move | T to Chat | Click to Shoot</p>
         </div>
     </div>
 
     <div id="crosshair"></div>
     <div id="chat-area">
         <div id="chat-log"></div>
-        <input type="text" id="chat-input" placeholder="Press Enter to send...">
+        <input type="text" id="chat-input" placeholder="Type message and press Enter...">
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -45,7 +45,8 @@
 
     <script>
         let scene, camera, renderer, controls, gun, peer, conn;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isChatting = false;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let isChatting = false; // The Master State
         let velocity = new THREE.Vector3(), direction = new THREE.Vector3(), prevTime = performance.now();
         
         let worldBlocks = [];
@@ -56,16 +57,14 @@
         peer = new Peer();
         peer.on('open', (id) => { document.getElementById('id-tag').innerText = id; });
 
-        // Host side
         peer.on('connection', (connection) => {
             conn = connection;
             setupDataHandlers();
-            startWorld();
+            if(!scene) startWorld(); // Auto-start if host
         });
 
-        // Client side
         document.getElementById('joinBtn').onclick = () => {
-            const hostId = document.getElementById('joinInput').value;
+            const hostId = document.getElementById('joinInput').value.trim();
             if(hostId) {
                 conn = peer.connect(hostId);
                 setupDataHandlers();
@@ -79,7 +78,7 @@
             conn.on('data', (data) => {
                 if (data.type === 'move') updateRemotePlayer(data.id, data.pos, data.rot);
                 if (data.type === 'chat') addChatMessage(data.id.substring(0,4), data.msg);
-                if (data.type === 'shoot') spawnRemoteBullet(data.pos, data.dir);
+                if (data.type === 'shoot') spawnBullet(data.pos, data.dir, false);
             });
         }
 
@@ -97,25 +96,23 @@
             sun.position.set(10, 20, 10);
             scene.add(sun);
 
-            // Grass Floor
+            // Grass
             const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ color: 0x55aa55 }));
             ground.rotation.x = -Math.PI / 2;
             scene.add(ground);
 
-            // Obstacles (Collidable)
-            for (let i = 0; i < 40; i++) {
-                const h = Math.random() * 4 + 1;
+            // Blocks (Collidable)
+            for (let i = 0; i < 30; i++) {
+                const h = Math.random() * 3 + 1;
                 const block = new THREE.Mesh(new THREE.BoxGeometry(2, h, 2), new THREE.MeshLambertMaterial({ color: 0x333333 }));
-                block.position.set(Math.random() * 60 - 30, h/2, Math.random() * 60 - 30);
+                block.position.set(Math.random() * 50 - 25, h/2, Math.random() * 50 - 25);
                 scene.add(block);
                 worldBlocks.push(block);
             }
 
-            // Weapon (Block in hand)
-            const gunGeo = new THREE.BoxGeometry(0.2, 0.2, 0.8);
-            const gunMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-            gun = new THREE.Mesh(gunGeo, gunMat);
-            gun.position.set(0.4, -0.4, -0.6);
+            // Weapon
+            gun = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.7), new THREE.MeshLambertMaterial({ color: 0x222222 }));
+            gun.position.set(0.35, -0.3, -0.5);
             camera.add(gun);
             scene.add(camera);
 
@@ -125,77 +122,96 @@
 
             controls = new THREE.PointerLockControls(camera, document.body);
             
+            // Re-lock if screen clicked
+            document.body.addEventListener('click', () => {
+                if (!isChatting && !controls.isLocked) controls.lock();
+            });
+
             setupKeyListeners();
             animate();
         }
 
         function setupKeyListeners() {
             document.addEventListener('keydown', (e) => {
+                // Toggle Chat
                 if (e.code === 'KeyT' && !isChatting) {
-                    e.preventDefault(); isChatting = true;
+                    e.preventDefault();
+                    isChatting = true;
+                    moveForward = moveBackward = moveLeft = moveRight = false; // Stop movement
                     document.getElementById('chat-input').style.display = 'block';
                     document.getElementById('chat-input').focus();
                     controls.unlock();
-                } else if (e.code === 'Enter' && isChatting) {
-                    const msg = document.getElementById('chat-input').value;
+                    return;
+                }
+
+                // Close Chat / Send
+                if (e.code === 'Enter' && isChatting) {
+                    const msg = document.getElementById('chat-input').value.trim();
                     if(msg && conn) conn.send({type: 'chat', id: peer.id, msg: msg});
                     if(msg) addChatMessage("You", msg);
+                    
                     document.getElementById('chat-input').value = "";
                     document.getElementById('chat-input').style.display = 'none';
                     isChatting = false;
                     controls.lock();
-                } else if (!isChatting) {
+                    return;
+                }
+
+                // Exit Chat without sending
+                if (e.code === 'Escape' && isChatting) {
+                    isChatting = false;
+                    document.getElementById('chat-input').style.display = 'none';
+                    controls.lock();
+                    return;
+                }
+
+                // Normal Movement
+                if (!isChatting) {
                     if (e.code === 'KeyW') moveForward = true;
                     if (e.code === 'KeyS') moveBackward = true;
                     if (e.code === 'KeyA') moveLeft = true;
                     if (e.code === 'KeyD') moveRight = true;
                 }
             });
+
             document.addEventListener('keyup', (e) => {
                 if (e.code === 'KeyW') moveForward = false;
                 if (e.code === 'KeyS') moveBackward = false;
                 if (e.code === 'KeyA') moveLeft = false;
                 if (e.code === 'KeyD') moveRight = false;
             });
-            window.addEventListener('mousedown', () => { if(controls.isLocked) shoot(); });
-        }
 
-        function checkCollision(nextPos) {
-            for (let block of worldBlocks) {
-                const dx = Math.abs(nextPos.x - block.position.x);
-                const dz = Math.abs(nextPos.z - block.position.z);
-                if (dx < 1.4 && dz < 1.4) return true;
-            }
-            return false;
+            window.addEventListener('mousedown', () => { 
+                if(controls.isLocked && !isChatting) shoot(); 
+            });
         }
 
         function shoot() {
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
-            const pos = camera.position.clone();
+            spawnBullet(camera.position, dir, true);
+            if(conn) conn.send({type: 'shoot', pos: camera.position, dir: dir});
             
-            spawnBullet(pos, dir);
-            if(conn) conn.send({type: 'shoot', pos: pos, dir: dir});
-            
-            // Recoil
+            // Visual Recoil
             gun.position.z += 0.1;
             setTimeout(() => gun.position.z -= 0.1, 50);
         }
 
-        function spawnBullet(pos, dir) {
-            const b = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({color: 0xffff00}));
+        function spawnBullet(pos, dir, isLocal) {
+            const b = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({color: isLocal ? 0xffff00 : 0xff4444}));
             b.position.copy(pos);
-            b.userData.velocity = dir.clone().multiplyScalar(1.2);
+            b.userData.velocity = dir.clone().multiplyScalar(1.5);
             bullets.push(b);
             scene.add(b);
         }
 
         function updateRemotePlayer(id, pos, rot) {
             if(!otherPlayers[id]) {
-                const pGeo = new THREE.BoxGeometry(1, 2, 1);
-                const pMat = new THREE.MeshLambertMaterial({color: 0xff4444});
-                otherPlayers[id] = new THREE.Mesh(pGeo, pMat);
-                scene.add(otherPlayers[id]);
+                const p = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshLambertMaterial({color: 0xff4444}));
+                p.add(body);
+                otherPlayers[id] = p;
+                scene.add(p);
             }
             otherPlayers[id].position.copy(pos);
             otherPlayers[id].rotation.copy(rot);
@@ -206,22 +222,31 @@
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
 
-            if (controls.isLocked) {
+            if (controls.isLocked && !isChatting) {
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
+
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                // SLOW MOVEMENT (Fixed speed)
-                if (moveForward || moveBackward) velocity.z -= direction.z * 80.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 80.0 * delta;
+                // MOVEMENT SPEED: Tuned to be intuitive
+                if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
 
                 const nextX = camera.position.x + (-velocity.x * delta);
                 const nextZ = camera.position.z + (-velocity.z * delta);
                 
-                if(!checkCollision({x: nextX, z: camera.position.z})) controls.moveRight(-velocity.x * delta);
-                if(!checkCollision({x: camera.position.x, z: nextZ})) controls.moveForward(-velocity.z * delta);
+                // Better Sliding Collision
+                let canMoveX = true;
+                let canMoveZ = true;
+                for(let b of worldBlocks) {
+                    if(Math.abs(nextX - b.position.x) < 1.4 && Math.abs(camera.position.z - b.position.z) < 1.4) canMoveX = false;
+                    if(Math.abs(camera.position.x - b.position.x) < 1.4 && Math.abs(nextZ - b.position.z) < 1.4) canMoveZ = false;
+                }
+
+                if(canMoveX) controls.moveRight(-velocity.x * delta);
+                if(canMoveZ) controls.moveForward(-velocity.z * delta);
 
                 if(conn && conn.open) {
                     conn.send({type:'move', id: peer.id, pos: camera.position, rot: camera.rotation});
@@ -240,14 +265,16 @@
         function startWorld() {
             document.getElementById('ui-layer').style.display = 'none';
             document.getElementById('crosshair').style.display = 'block';
-            init();
+            if(!scene) init();
             controls.lock();
-            addChatMessage("System", "Welcome to the Arena.");
+            addChatMessage("System", "Press 'T' for chat. Enjoy!");
         }
 
         function addChatMessage(u, m) {
             const log = document.getElementById('chat-log');
-            log.innerHTML += `<div><strong>${u}:</strong> ${m}</div>`;
+            const div = document.createElement('div');
+            div.innerHTML = `<strong>${u}:</strong> ${m}`;
+            log.appendChild(div);
             log.scrollTop = log.scrollHeight;
         }
     </script>
