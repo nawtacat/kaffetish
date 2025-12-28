@@ -2,55 +2,52 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Cyber Arena - Multiplayer</title>
+    <title>Block World - Multiplayer</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; }
+        body { margin: 0; overflow: hidden; font-family: 'Courier New', Courier, monospace; background: #87CEEB; }
         
         /* UI OVERLAY */
-        #ui-layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,10,0.9); color: white; z-index: 1000; }
-        .menu { background: #111; padding: 40px; border: 2px solid #00f2ff; border-radius: 20px; text-align: center; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); }
+        #ui-layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(135, 206, 235, 0.8); color: #fff; z-index: 1000; }
+        .menu { background: #3d3d3d; padding: 30px; border: 6px solid #222; image-rendering: pixelated; text-align: center; color: #fff; box-shadow: 10px 10px 0px rgba(0,0,0,0.2); }
         
         /* HUD */
         #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid #00f2ff; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0.7; }
-        #health-bar-container { position: absolute; bottom: 30px; left: 30px; width: 250px; height: 25px; background: rgba(0,0,0,0.5); border: 2px solid #fff; }
-        #health-bar-fill { height: 100%; width: 100%; background: #ff4444; transition: width 0.2s; }
-        #score-board { position: absolute; top: 20px; right: 30px; color: #00f2ff; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px #00f2ff; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 24px; height: 24px; border: 2px solid white; transform: translate(-50%, -50%); }
+        #health-bar { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 300px; height: 20px; background: #555; border: 4px solid #000; }
+        #health-fill { height: 100%; width: 100%; background: #ff0000; }
 
         /* CHAT */
-        #chat-area { position: absolute; bottom: 80px; left: 30px; width: 300px; z-index: 500; pointer-events: none; }
-        #chat-log { height: 120px; overflow-y: auto; color: #fff; font-size: 14px; margin-bottom: 5px; text-shadow: 1px 1px 2px #000; }
-        #chat-input { width: 100%; background: rgba(0,0,0,0.8); border: 1px solid #00f2ff; color: white; padding: 10px; display: none; pointer-events: auto; outline: none; }
+        #chat-area { position: absolute; bottom: 80px; left: 20px; width: 350px; pointer-events: none; }
+        #chat-log { height: 150px; color: #fff; font-size: 16px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; text-shadow: 2px 2px #000; }
+        #chat-input { width: 100%; background: rgba(0,0,0,0.6); border: none; color: white; padding: 8px; display: none; pointer-events: auto; outline: none; }
         
-        button { padding: 12px 24px; background: #00f2ff; color: #000; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; margin: 10px; transition: 0.2s; }
-        button:hover { background: #fff; box-shadow: 0 0 15px #00f2ff; }
-        input[type="text"] { padding: 12px; border-radius: 4px; border: 1px solid #444; width: 220px; background: #222; color: #fff; }
-        #id-display { color: #00f2ff; font-family: monospace; font-weight: bold; }
+        button { padding: 10px 20px; background: #5a9e3f; color: white; font-weight: bold; cursor: pointer; border: 4px solid #2d5e1f; margin-top: 15px; font-family: inherit; }
+        button:hover { background: #6dbf4c; }
+        input { padding: 10px; border: 4px solid #222; width: 220px; background: #fff; color: #000; font-family: inherit; }
     </style>
 </head>
 <body>
 
     <div id="ui-layer">
         <div class="menu">
-            <h1 style="color: #00f2ff; margin: 0 0 10px 0; letter-spacing: 5px;">CYBER ARENA</h1>
-            <p>Your ID: <span id="id-display">Connecting...</span></p>
-            <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
-            <input type="text" id="joinInput" placeholder="ENTER FRIEND'S ID">
-            <button id="joinBtn">CONNECT TO PEER</button>
+            <h1 style="margin: 0 0 10px 0; -webkit-text-stroke: 1px black;">BLOCK ARENA</h1>
+            <p>YOUR ID: <span id="id-display" style="background:#000; padding: 2px 5px; color:#ff0;">Connecting...</span></p>
+            <input type="text" id="joinInput" placeholder="Friend's ID">
             <br>
-            <button id="soloBtn" style="background:#333; color: #aaa;">START SOLO / HOST</button>
+            <button id="joinBtn">CONNECT & PLAY</button>
+            <br>
+            <button id="soloBtn" style="background:#888; border-color:#444;">PLAY SOLO</button>
         </div>
     </div>
 
     <div id="hud">
         <div id="crosshair"></div>
-        <div id="score-board">KILLS: <span id="kills">0</span></div>
-        <div id="health-bar-container"><div id="health-bar-fill"></div></div>
+        <div id="health-bar"><div id="health-fill"></div></div>
     </div>
 
     <div id="chat-area">
         <div id="chat-log"></div>
-        <input type="text" id="chat-input" placeholder="Press Enter to send...">
+        <input type="text" id="chat-input" placeholder="Type message...">
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -64,51 +61,42 @@
         let isChatting = false, isInitialized = false;
         let velocity = new THREE.Vector3(), direction = new THREE.Vector3(), prevTime = performance.now();
         let worldBlocks = [], otherPlayers = {}, bullets = [];
-        let health = 100, kills = 0;
+        let health = 100;
 
-        // --- ENGINE INIT ---
+        // --- ENGINE ---
         function initEngine() {
             if (isInitialized) return;
-            isInitialized = true;
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x020205);
-            scene.fog = new THREE.Fog(0x020205, 10, 100);
+            scene.background = new THREE.Color(0x87CEEB); // Sky Blue
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 100);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1.6, 20);
+            camera.position.set(0, 2, 10);
 
-            // Lights
-            const ambient = new THREE.AmbientLight(0x404040, 0.5);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambient);
-            const sun = new THREE.DirectionalLight(0x00f2ff, 1);
+            const sun = new THREE.DirectionalLight(0xffffff, 0.6);
             sun.position.set(10, 20, 10);
             scene.add(sun);
 
-            // Floor Grid
-            const grid = new THREE.GridHelper(100, 50, 0x00f2ff, 0x222222);
-            scene.add(grid);
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshPhongMaterial({ color: 0x050505 }));
+            // Minecraft Grass
+            const floorGeo = new THREE.PlaneGeometry(200, 200);
+            const floorMat = new THREE.MeshLambertMaterial({ color: 0x5a9e3f });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            // Map Building
-            buildMap();
+            buildMinecraftWorld();
 
-            // Gun Mesh
-            gun = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.7), new THREE.MeshPhongMaterial({ color: 0x222222 }));
-            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8), new THREE.MeshPhongMaterial({ color: 0x00f2ff }));
-            barrel.rotation.x = Math.PI / 2;
-            barrel.position.z = -0.2;
-            gun.add(body, barrel);
-            gun.position.set(0.4, -0.3, -0.6);
+            // Blocky Gun
+            gun = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.8), new THREE.MeshLambertMaterial({ color: 0x333333 }));
+            gun.position.set(0.4, -0.4, -0.5);
             camera.add(gun);
             scene.add(camera);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ antialias: false }); // Pixelated feel
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
             controls = new THREE.PointerLockControls(camera, document.body);
@@ -117,56 +105,95 @@
             controls.lock();
 
             setupEvents();
+            isInitialized = true;
             animate();
         }
 
-        function buildMap() {
-            // Boundary Walls
-            const wallMat = new THREE.MeshPhongMaterial({ color: 0x111111, emissive: 0x001122 });
-            const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(1, 10, 100), wallMat);
-            wallLeft.position.set(-50, 5, 0);
-            const wallRight = wallLeft.clone(); wallRight.position.x = 50;
-            const wallBack = new THREE.Mesh(new THREE.BoxGeometry(100, 10, 1), wallMat);
-            wallBack.position.set(0, 5, -50);
-            const wallFront = wallBack.clone(); wallFront.position.z = 50;
-            scene.add(wallLeft, wallRight, wallBack, wallFront);
-            worldBlocks.push(wallLeft, wallRight, wallBack, wallFront);
+        function buildMinecraftWorld() {
+            const boxGeo = new THREE.BoxGeometry(2, 2, 2);
+            const woodMat = new THREE.MeshLambertMaterial({ color: 0x6e502d }); // Brown
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x2d5e1f }); // Dark Green
 
-            // Neon Obstacles
             for (let i = 0; i < 40; i++) {
-                const h = Math.random() * 8 + 2;
-                const block = new THREE.Mesh(
-                    new THREE.BoxGeometry(2, h, 2), 
-                    new THREE.MeshPhongMaterial({ color: 0x111111, emissive: Math.random() > 0.5 ? 0x00f2ff : 0x7000ff, emissiveIntensity: 0.5 })
-                );
-                block.position.set(Math.random() * 80 - 40, h/2, Math.random() * 80 - 40);
-                scene.add(block);
-                worldBlocks.push(block);
+                const x = Math.floor(Math.random() * 80 - 40);
+                const z = Math.floor(Math.random() * 80 - 40);
+                
+                // Create "Trees"
+                const trunk = new THREE.Mesh(boxGeo, woodMat);
+                trunk.position.set(x, 1, z);
+                scene.add(trunk);
+                worldBlocks.push(trunk);
+
+                const leaves = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), leafMat);
+                leaves.position.set(x, 4, z);
+                scene.add(leaves);
+                worldBlocks.push(leaves);
             }
         }
+
+        // --- NETWORK FIX ---
+        peer = new Peer();
+        peer.on('open', id => document.getElementById('id-display').innerText = id);
+
+        // Safety: Only handle data if the engine is ready
+        function handleData(data) {
+            if (!isInitialized) return;
+            if (data.type === 'move') {
+                if (!otherPlayers['peer']) {
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshLambertMaterial({ color: 0xff0000 }));
+                    otherPlayers['peer'] = body;
+                    scene.add(body);
+                }
+                otherPlayers['peer'].position.set(data.x, data.y - 1, data.z);
+            }
+            if (data.type === 'chat') addChatMessage("FRIEND", data.msg);
+            if (data.type === 'shoot') spawnBullet(data.pos, data.dir, false);
+        }
+
+        peer.on('connection', c => {
+            conn = c;
+            conn.on('data', handleData);
+            initEngine();
+        });
+
+        document.getElementById('joinBtn').onclick = () => {
+            const hostId = document.getElementById('joinInput').value.trim();
+            if (hostId) {
+                conn = peer.connect(hostId);
+                conn.on('open', () => {
+                    conn.on('data', handleData);
+                    initEngine();
+                });
+            }
+        };
+
+        document.getElementById('soloBtn').onclick = initEngine;
 
         // --- INPUTS ---
         function setupEvents() {
             document.addEventListener('keydown', (e) => {
-                if (e.code === 'KeyT' && !isChatting) {
-                    e.preventDefault(); isChatting = true;
-                    moveForward = moveBackward = moveLeft = moveRight = false;
-                    document.getElementById('chat-input').style.display = 'block';
-                    document.getElementById('chat-input').focus();
-                    controls.unlock();
-                } else if (e.code === 'Enter' && isChatting) {
-                    const msg = document.getElementById('chat-input').value.trim();
-                    if(msg && conn && conn.open) conn.send({type:'chat', msg});
-                    if(msg) addChatMessage("You", msg);
-                    document.getElementById('chat-input').style.display = 'none';
-                    document.getElementById('chat-input').value = "";
-                    isChatting = false; controls.lock();
-                } else if (!isChatting) {
+                if (e.code === 'Enter') {
+                    if (!isChatting) {
+                        isChatting = true;
+                        document.getElementById('chat-input').style.display = 'block';
+                        document.getElementById('chat-input').focus();
+                        controls.unlock();
+                    } else {
+                        const msg = document.getElementById('chat-input').value.trim();
+                        if (msg && conn && conn.open) conn.send({ type: 'chat', msg });
+                        if (msg) addChatMessage("YOU", msg);
+                        document.getElementById('chat-input').style.display = 'none';
+                        document.getElementById('chat-input').value = "";
+                        isChatting = false;
+                        controls.lock();
+                    }
+                }
+                if (!isChatting) {
                     if (e.code === 'KeyW') moveForward = true;
                     if (e.code === 'KeyS') moveBackward = true;
                     if (e.code === 'KeyA') moveLeft = true;
                     if (e.code === 'KeyD') moveRight = true;
-                    if (e.code === 'Space' && canJump) { velocity.y += 15; canJump = false; }
+                    if (e.code === 'Space' && canJump) { velocity.y += 12; canJump = false; }
                 }
             });
             document.addEventListener('keyup', (e) => {
@@ -175,88 +202,30 @@
                 if (e.code === 'KeyA') moveLeft = false;
                 if (e.code === 'KeyD') moveRight = false;
             });
-            window.addEventListener('mousedown', () => { if(controls.isLocked && !isChatting) shoot(); });
+            window.addEventListener('mousedown', () => { if (controls.isLocked) shoot(); });
         }
 
-        // --- COMBAT & BULLETS ---
         function shoot() {
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             spawnBullet(camera.position, dir, true);
-            if(conn && conn.open) conn.send({type: 'shoot', pos: {x:camera.position.x, y:camera.position.y, z:camera.position.z}, dir: {x:dir.x, y:dir.y, z:dir.z}});
-            
-            // Recoil
-            gun.position.z += 0.15;
-            setTimeout(() => gun.position.z -= 0.15, 40);
-
-            // Raycast for hits
-            const raycaster = new THREE.Raycaster(camera.position, dir);
-            if(otherPlayers['peer']) {
-                const intersects = raycaster.intersectObject(otherPlayers['peer']);
-                if(intersects.length > 0 && intersects[0].distance < 50) {
-                    conn.send({type: 'hit', damage: 20});
-                }
+            if (conn && conn.open) {
+                conn.send({ 
+                    type: 'shoot', 
+                    pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, 
+                    dir: { x: dir.x, y: dir.y, z: dir.z } 
+                });
             }
+            gun.position.z += 0.2;
+            setTimeout(() => gun.position.z -= 0.2, 50);
         }
 
         function spawnBullet(pos, dir, isLocal) {
-            const b = new THREE.Mesh(new THREE.SphereGeometry(0.08), new THREE.MeshBasicMaterial({color: isLocal ? 0x00f2ff : 0xff0000}));
+            const b = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: isLocal ? 0xffff00 : 0xff4444 }));
             b.position.copy(pos);
-            b.userData.velocity = new THREE.Vector3(dir.x, dir.y, dir.z).multiplyScalar(1.5);
+            b.userData.velocity = new THREE.Vector3(dir.x, dir.y, dir.z).multiplyScalar(1.2);
             bullets.push(b);
             scene.add(b);
-        }
-
-        function takeDamage(amt) {
-            health -= amt;
-            document.getElementById('health-bar-fill').style.width = health + "%";
-            if(health <= 0) {
-                addChatMessage("System", "You were terminated.");
-                respawn();
-                if(conn && conn.open) conn.send({type: 'killed_me'});
-            }
-        }
-
-        function respawn() {
-            health = 100;
-            document.getElementById('health-bar-fill').style.width = "100%";
-            camera.position.set(Math.random() * 20 - 10, 1.6, Math.random() * 20 - 10);
-        }
-
-        // --- NETWORKING ---
-        peer = new Peer();
-        peer.on('open', (id) => { document.getElementById('id-display').innerText = id; });
-        peer.on('connection', (c) => { conn = c; setupDataListeners(); initEngine(); });
-        
-        document.getElementById('joinBtn').onclick = () => {
-            const hostId = document.getElementById('joinInput').value.trim();
-            if(hostId) { conn = peer.connect(hostId); setupDataListeners(); initEngine(); }
-        };
-        document.getElementById('soloBtn').onclick = () => initEngine();
-
-        function setupDataListeners() {
-            conn.on('data', (data) => {
-                if (!isInitialized) return;
-                if (data.type === 'move') updatePlayer(data.pos, data.rot);
-                if (data.type === 'chat') addChatMessage("Peer", data.msg);
-                if (data.type === 'shoot') spawnBullet(data.pos, data.dir, false);
-                if (data.type === 'hit') takeDamage(data.damage);
-                if (data.type === 'killed_me') { kills++; document.getElementById('kills').innerText = kills; addChatMessage("System", "You eliminated the target."); }
-            });
-        }
-
-        function updatePlayer(pos, rot) {
-            if(!otherPlayers['peer']) {
-                const group = new THREE.Group();
-                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshPhongMaterial({color: 0xff0044}));
-                const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.6), new THREE.MeshPhongMaterial({color: 0xffffff}));
-                head.position.y = 1.3;
-                group.add(body, head);
-                otherPlayers['peer'] = group;
-                scene.add(group);
-            }
-            otherPlayers['peer'].position.set(pos.x, pos.y - 1, pos.z);
-            otherPlayers['peer'].rotation.y = rot.y;
         }
 
         // --- GAME LOOP ---
@@ -266,50 +235,45 @@
             const delta = (time - prevTime) / 1000;
 
             if (controls.isLocked) {
-                // Physics: Velocity friction
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 9.8 * 4.0 * delta; // Gravity $$v_y = v_{y0} - g \cdot \Delta t$$
+                velocity.y -= 9.8 * 3.0 * delta; // Gravity
 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+                if (moveForward || moveBackward) velocity.z -= direction.z * 80.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 80.0 * delta;
 
-                // Move & Collide
+                // Simple collision
                 const nextX = camera.position.x + (-velocity.x * delta);
                 const nextZ = camera.position.z + (-velocity.z * delta);
                 let canMoveX = true, canMoveZ = true;
-                
-                for(let b of worldBlocks) {
-                    if(Math.abs(nextX - b.position.x) < 1.5 && Math.abs(camera.position.z - b.position.z) < 1.5) canMoveX = false;
-                    if(Math.abs(camera.position.x - b.position.x) < 1.5 && Math.abs(nextZ - b.position.z) < 1.5) canMoveZ = false;
+                for (let b of worldBlocks) {
+                    if (Math.abs(nextX - b.position.x) < 2 && Math.abs(camera.position.z - b.position.z) < 2) canMoveX = false;
+                    if (Math.abs(camera.position.x - b.position.x) < 2 && Math.abs(nextZ - b.position.z) < 2) canMoveZ = false;
                 }
 
-                if(canMoveX) controls.moveRight(-velocity.x * delta);
-                if(canMoveZ) controls.moveForward(-velocity.z * delta);
+                if (canMoveX) controls.moveRight(-velocity.x * delta);
+                if (canMoveZ) controls.moveForward(-velocity.z * delta);
                 
                 camera.position.y += (velocity.y * delta);
-                if (camera.position.y < 1.6) {
+                if (camera.position.y < 2) {
                     velocity.y = 0;
-                    camera.position.y = 1.6;
+                    camera.position.y = 2;
                     canJump = true;
                 }
 
-                if(conn && conn.open) {
-                    conn.send({
-                        type: 'move', 
-                        pos: {x: camera.position.x, y: camera.position.y, z: camera.position.z}, 
-                        rot: {y: camera.rotation.y}
-                    });
+                // Send position as simple numbers to prevent freezing
+                if (conn && conn.open) {
+                    conn.send({ type: 'move', x: camera.position.x, y: camera.position.y, z: camera.position.z });
                 }
             }
 
             bullets.forEach((b, i) => {
                 b.position.add(b.userData.velocity);
-                if(b.position.distanceTo(camera.position) > 80) { scene.remove(b); bullets.splice(i, 1); }
+                if (b.position.distanceTo(camera.position) > 60) { scene.remove(b); bullets.splice(i, 1); }
             });
 
             renderer.render(scene, camera);
@@ -319,16 +283,10 @@
         function addChatMessage(u, m) {
             const log = document.getElementById('chat-log');
             const d = document.createElement('div');
-            d.innerHTML = `<b style="color:#00f2ff">${u}:</b> ${m}`;
+            d.innerHTML = `<strong>[${u}]</strong> ${m}`;
             log.appendChild(d);
-            log.scrollTop = log.scrollHeight;
+            if (log.childNodes.length > 6) log.removeChild(log.firstChild);
         }
-        
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
