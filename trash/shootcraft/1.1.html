@@ -86,7 +86,7 @@
 
     <!-- UI Layer -->
     <div id="ui-layer">
-        <div id="controls-hint">WASD Move | SPACE Jump | SHIFT Sprint | C Crouch | 1-5 Inventory | L-Click Action | R-Click Build</div>
+        <div id="controls-hint">WASD Move | SPACE Jump | SHIFT Sprint | C Crouch | 1-2 Inventory | L-Click Shoot/Attack</div>
         <div id="kill-feed"></div>
         <div id="crosshair"></div>
         <div id="hud-bottom">
@@ -97,10 +97,7 @@
         </div>
         <div id="hotbar">
             <div class="slot selected" data-id="0">GUN</div>
-            <div class="slot" data-id="1">PICK</div>
-            <div class="slot" data-id="2" style="background:#5d4037;">DIRT</div>
-            <div class="slot" data-id="3" style="background:#757575;">STONE</div>
-            <div class="slot" data-id="4" style="background:#8d6e63;">WOOD</div>
+            <div class="slot" data-id="1">KNIFE</div>
         </div>
         <canvas id="minimap" width="150" height="150"></canvas>
     </div>
@@ -175,7 +172,7 @@
         const bullets = []; // Active projectiles
         const particles = []; // Active particles
         let selectedSlot = 0;
-        const inventory = ['gun', 'pickaxe', 'dirt', 'stone', 'wood'];
+        const inventory = ['gun', 'knife'];
         let worldTime = 0;
         const peers = {}; // Connection objects
         const remotePlayers = {}; // Meshes for remote players
@@ -385,32 +382,55 @@
         function generateWorld() {
             // Floor
             const floorGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a }); // Asphalt
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            // Random Voxels
-            const boxGeo = new THREE.BoxGeometry(2, 2, 2);
-            const boxMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 }); // Brown
+            // Materials
+            const concrete = new THREE.MeshStandardMaterial({ color: 0x555555 });
+            const darkConcrete = new THREE.MeshStandardMaterial({ color: 0x333333 });
 
-            // Seeded random for consistency
-            let seed = 12345;
-            const seededRandom = () => { const x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
+            // Helper
+            const addBlock = (x, y, z, w, h, d, mat) => {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+                mesh.position.set(x, y, z);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+                obstacles.push(mesh);
+            };
 
-            for (let i = 0; i < 40; i++) {
-                const box = new THREE.Mesh(boxGeo, boxMat);
-                box.position.x = (seededRandom() - 0.5) * WORLD_SIZE * 0.8;
-                box.position.y = 1; // On floor
-                box.position.z = (seededRandom() - 0.5) * WORLD_SIZE * 0.8;
-                box.userData.isDestructible = true;
-                
-                // Keep spawn area clear
-                if (box.position.distanceTo(new THREE.Vector3(0,1,0)) < 5) continue;
+            // Central Tower
+            addBlock(0, 2.5, 0, 12, 5, 12, concrete); // Base
+            addBlock(0, 6, 0, 8, 2, 8, darkConcrete); // Top
 
-                scene.add(box);
-                obstacles.push(box);
-            }
+            // Bridges
+            addBlock(0, 4.5, 12, 4, 0.5, 12, concrete); // South Bridge
+            addBlock(0, 4.5, -12, 4, 0.5, 12, concrete); // North Bridge
+
+            // Outer Platforms
+            addBlock(0, 3, 22, 12, 6, 8, concrete); // South Platform
+            addBlock(0, 3, -22, 12, 6, 8, concrete); // North Platform
+
+            // Ramps (Rotated Boxes)
+            const ramp1 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 12), concrete);
+            ramp1.position.set(0, 0, 30);
+            ramp1.rotation.x = -Math.PI / 6; // Slope up
+            scene.add(ramp1);
+            obstacles.push(ramp1);
+
+            const ramp2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 12), concrete);
+            ramp2.position.set(0, 0, -30);
+            ramp2.rotation.x = Math.PI / 6; // Slope up
+            scene.add(ramp2);
+            obstacles.push(ramp2);
+
+            // Cover Walls
+            addBlock(15, 1.5, 0, 1, 3, 6, darkConcrete);
+            addBlock(-15, 1.5, 0, 1, 3, 6, darkConcrete);
+            addBlock(8, 6, 8, 2, 2, 2, darkConcrete); // Cover on top
+            addBlock(-8, 6, -8, 2, 2, 2, darkConcrete);
         }
 
         function selectSlot(index) {
@@ -636,9 +656,6 @@
                 case 'KeyC': isCrouching = true; break;
                 case 'Digit1': selectSlot(0); break;
                 case 'Digit2': selectSlot(1); break;
-                case 'Digit3': selectSlot(2); break;
-                case 'Digit4': selectSlot(3); break;
-                case 'Digit5': selectSlot(4); break;
             }
         }
 
@@ -658,43 +675,10 @@
             
             const item = inventory[selectedSlot];
             
-            // Right Click: Build
-            if (event.button === 2 && ['dirt','stone','wood'].includes(item)) {
-                raycaster.setFromCamera(new THREE.Vector2(), camera);
-                const intersects = raycaster.intersectObjects(obstacles);
-                if (intersects.length > 0 && intersects[0].distance < 8) {
-                    const hit = intersects[0];
-                    const placePos = hit.point.add(hit.face.normal.multiplyScalar(GRID_SIZE/2));
-                    // Snap to grid
-                    placePos.x = Math.round(placePos.x / GRID_SIZE) * GRID_SIZE;
-                    placePos.y = Math.round(placePos.y / GRID_SIZE) * GRID_SIZE;
-                    placePos.z = Math.round(placePos.z / GRID_SIZE) * GRID_SIZE;
-                    
-                    // Check if occupied by player
-                    if (placePos.distanceTo(camera.position) > 2) {
-                        createBlock(placePos.x, placePos.y, placePos.z, item);
-                        broadcast({ t: 'map', a: 'add', x: placePos.x, y: placePos.y, z: placePos.z, type: item });
-                    }
-                }
-                return;
-            }
-
-            // Left Click: Pickaxe (Break)
-            if (item === 'pickaxe') {
-                raycaster.setFromCamera(new THREE.Vector2(), camera);
-                const intersects = raycaster.intersectObjects(obstacles);
-                if (intersects.length > 0 && intersects[0].distance < 5) {
-                    const obj = intersects[0].object;
-                    if (obj.userData.isDestructible) {
-                        spawnParticles(obj.position, obj.material.color);
-                        scene.remove(obj);
-                        obstacles.splice(obstacles.indexOf(obj), 1);
-                        
-                        // Broadcast removal (using position as ID for simplicity in this p2p setup)
-                        broadcast({ t: 'map', a: 'rem', x: obj.position.x, y: obj.position.y, z: obj.position.z });
-                    }
-                }
-                // Visual swing effect could go here
+            // Left Click: Knife (Melee)
+            if (item === 'knife') {
+                // Melee logic placeholder (could add short range raycast here)
+                // For now just visual swing or nothing
                 return;
             }
 
@@ -752,34 +736,8 @@
             broadcast({ t: 's' });
         }
 
-        function createBlock(x, y, z, type) {
-            const colors = { dirt: 0x5d4037, stone: 0x757575, wood: 0x8d6e63 };
-            const geo = new THREE.BoxGeometry(GRID_SIZE, GRID_SIZE, GRID_SIZE);
-            const mat = new THREE.MeshStandardMaterial({ color: colors[type] || 0xffffff });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(x, y, z);
-            mesh.userData.isDestructible = true;
-            scene.add(mesh);
-            obstacles.push(mesh);
-            spawnParticles(mesh.position, colors[type]);
-        }
-
         function handleMapUpdate(data) {
-            if (data.a === 'add') {
-                createBlock(data.x, data.y, data.z, data.type);
-            } else if (data.a === 'rem') {
-                // Find block at pos
-                const target = obstacles.find(o => 
-                    Math.abs(o.position.x - data.x) < 0.1 && 
-                    Math.abs(o.position.y - data.y) < 0.1 && 
-                    Math.abs(o.position.z - data.z) < 0.1
-                );
-                if (target) {
-                    spawnParticles(target.position, target.material.color);
-                    scene.remove(target);
-                    obstacles.splice(obstacles.indexOf(target), 1);
-                }
-            }
+            // Map is now static, no updates needed
         }
 
         function onWindowResize() {
