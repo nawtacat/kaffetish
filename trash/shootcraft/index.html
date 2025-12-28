@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -84,10 +84,6 @@
                 <button id="play-btn">Play Solo / Wait</button>
                 <div class="status" id="status-msg">Ready to connect.</div>
             </div>
-            <div id="pause-menu" style="display:none;">
-                <h1>Paused</h1>
-                <button id="resume-btn">Resume</button>
-            </div>
         </div>
     </div>
 
@@ -141,8 +137,6 @@
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
         const mainMenu = document.getElementById('main-menu');
-        const pauseMenu = document.getElementById('pause-menu');
-        const resumeBtn = document.getElementById('resume-btn');
         const playBtn = document.getElementById('play-btn');
         const copyBtn = document.getElementById('copy-btn');
         const connectBtn = document.getElementById('connect-btn');
@@ -196,12 +190,12 @@
                 menuOverlay.style.display = 'none';
             });
             controls.addEventListener('unlock', () => {
-                menuOverlay.style.display = 'flex';
-                if (gameStarted) {
-                    mainMenu.style.display = 'none';
-                    pauseMenu.style.display = 'block';
-                }
                 runSound.pause();
+                if (gameStarted) {
+                    exitMatch();
+                } else {
+                    menuOverlay.style.display = 'flex';
+                }
             });
 
             // World Generation
@@ -225,7 +219,6 @@
             window.addEventListener('resize', onWindowResize);
             
             playBtn.addEventListener('click', () => { gameStarted = true; controls.lock(); });
-            resumeBtn.addEventListener('click', () => controls.lock());
             copyBtn.addEventListener('click', () => {
                 if (myPeerId) {
                     navigator.clipboard.writeText(myPeerId);
@@ -272,6 +265,29 @@
                 {x: range, z: range}, {x: -range, z: range}
             ];
             return corners[Math.floor(Math.random() * corners.length)];
+        }
+
+        function exitMatch() {
+            // Disconnect from all peers
+            for (let id in peers) {
+                if (peers[id]) {
+                    peers[id].close();
+                }
+            }
+            // The 'close' event listeners will handle cleanup.
+
+            // Reset local game state
+            gameStarted = false;
+            health = 100;
+            updateHealthUI();
+            const spawn = getSpawnPoint();
+            camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
+            velocity.set(0, 0, 0);
+
+            // Reset UI to initial state
+            mainMenu.style.display = 'block';
+            menuOverlay.style.display = 'flex';
+            statusMsg.innerText = "Ready to connect.";
         }
 
         // --- Networking ---
