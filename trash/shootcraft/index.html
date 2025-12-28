@@ -117,6 +117,12 @@
         const remotePlayers = {}; // Meshes for remote players
         let myPeerId = null;
         
+        // Audio
+        const shootSound = new Audio('https://kaffetish.club/trash/shootcraft/shoot.mp3');
+        const hitSound = new Audio('https://kaffetish.club/trash/shootcraft/ah.mp3');
+        const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
+        runSound.loop = true;
+        
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
         const playBtn = document.getElementById('play-btn');
@@ -167,6 +173,7 @@
             });
             controls.addEventListener('unlock', () => {
                 menuOverlay.style.display = 'flex';
+                runSound.pause();
             });
 
             // World Generation
@@ -356,6 +363,10 @@
                 dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), p.rotation.y);
                 
                 spawnBullet(pos, dir);
+                
+                const s = shootSound.cloneNode();
+                s.volume = 0.5;
+                s.play().catch(() => {});
             }
         }
 
@@ -392,6 +403,9 @@
             
             // Shoot
             // 1. Spawn Bullet
+            shootSound.currentTime = 0;
+            shootSound.play().catch(() => {});
+            
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
             spawnBullet(camera.position.clone().add(dir), dir.clone());
@@ -417,6 +431,10 @@
                         if (conn) {
                             conn.send({ t: 'h', d: 20 }); // 20 damage
                             // Visual feedback
+                            if (Math.random() < 0.2) {
+                                hitSound.currentTime = 0;
+                                hitSound.play().catch(() => {});
+                            }
                             killFeed.innerText = "Hit!";
                             setTimeout(() => killFeed.innerText = '', 500);
                         }
@@ -454,6 +472,14 @@
 
             if (controls.isLocked) {
                 const originalPos = controls.getObject().position.clone();
+                
+                // Run Sound
+                const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+                if (isMoving && canJump) {
+                    if (runSound.paused) runSound.play().catch(() => {});
+                } else {
+                    runSound.pause();
+                }
 
                 // Friction
                 velocity.x -= velocity.x * 10.0 * delta;
