@@ -205,8 +205,8 @@
         let playerStats = {}; // { peerId: { kills: 0, deaths: 0, nick: "...", team: "..." } }
         let isTabPressed = false;
         let isHost = false;
-        let recoilStep = 0;
         
+        let muzzleLight;
         // Mobile Input State
         let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
         let touchLook = { active: false, lastX: 0, lastY: 0 };
@@ -215,7 +215,6 @@
         const shootSound = new Audio('https://kaffetish.club/trash/shootcraft/shoot.mp3');
         const hitSound = new Audio('https://kaffetish.club/trash/shootcraft/ah.mp3');
         const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
-        let muzzleLight;
         runSound.loop = true;
         
         // DOM Elements
@@ -314,13 +313,13 @@
             const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
             const gun = new THREE.Mesh(gunGeo, gunMat);
             gun.position.set(0.2, -0.2, -0.3);
+            
+            muzzleLight = new THREE.PointLight(0xffff00, 0, 3);
+            muzzleLight.position.set(0, 0, -0.3);
+            gun.add(muzzleLight);
+            
             camera.add(gun);
             scene.add(camera);
-            
-            // Muzzle Flash
-            muzzleLight = new THREE.PointLight(0xffff00, 0, 3);
-            muzzleLight.position.set(0.2, -0.2, -1);
-            camera.add(muzzleLight);
 
             // Raycaster
             raycaster = new THREE.Raycaster();
@@ -728,7 +727,7 @@
             if (remotePlayers[id]) return;
             
             const group = new THREE.Group();
-            group.userData = { team: team, nick: nick, targetPos: new THREE.Vector3(), targetRot: 0 };
+            group.userData = { team: team, nick: nick };
             
             // Init Stats if not present
             if (!playerStats[id]) {
@@ -768,13 +767,16 @@
         function updateRemotePlayer(id, data) {
             const p = remotePlayers[id];
             if (p) {
-                if (!p.visible) {
+                if (!p.userData.targetPos) {
                     p.position.set(data.x, data.y, data.z);
                     p.rotation.y = data.ry;
-                    p.visible = true;
+                    p.userData.targetPos = new THREE.Vector3(data.x, data.y, data.z);
+                    p.userData.targetRot = data.ry;
+                } else {
+                    p.userData.targetPos.set(data.x, data.y, data.z);
+                    p.userData.targetRot = data.ry;
                 }
-                p.userData.targetPos.set(data.x, data.y, data.z);
-                p.userData.targetRot = data.ry;
+                p.visible = true;
             }
         }
 
@@ -853,17 +855,22 @@
             bullets.push(bullet);
         }
 
-        function spawnParticles(pos, color = 0x8b4513) {
-            for(let i=0; i<8; i++) {
-                const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({color: color}));
-                mesh.position.copy(pos);
-                mesh.position.x += (Math.random()-0.5)*0.5;
-                mesh.position.y += (Math.random()-0.5)*0.5;
-                mesh.position.z += (Math.random()-0.5)*0.5;
-                mesh.userData.vel = new THREE.Vector3((Math.random()-0.5)*5, (Math.random()-0.5)*5, (Math.random()-0.5)*5);
-                mesh.userData.life = 0.5 + Math.random() * 0.5;
+        function createImpact(position) {
+            for(let i=0; i<5; i++) {
+                const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.copy(position);
+                mesh.position.add(new THREE.Vector3((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5));
+                
+                const vel = new THREE.Vector3(
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 5
+                );
+                
                 scene.add(mesh);
-                particles.push(mesh);
+                particles.push({ mesh: mesh, velocity: vel, life: 0.5 });
             }
         }
 
@@ -936,19 +943,11 @@
             camera.getWorldDirection(dir);
             spawnBullet(camera.position.clone().add(dir), dir.clone(), true);
             
-            // Visual Juice
-            muzzleLight.intensity = 2;
+            // Visuals
+            muzzleLight.intensity = 5;
             setTimeout(() => muzzleLight.intensity = 0, 50);
-            
-            // Recoil Pattern
-            recoilStep++;
-            camera.rotation.x += 0.002; // Reduced vertical recoil
-            
-            const cycle = Math.floor(recoilStep / 5) % 4;
-            let targetTilt = 0;
-            if (cycle === 0) targetTilt = -0.05; // Tilt Right
-            else if (cycle === 2) targetTilt = 0.05; // Tilt Left
-            camera.rotation.z = targetTilt;
+            camera.rotation.x += 0.02;
+            setTimeout(() => camera.rotation.x -= 0.02, 50);
 
             // Broadcast shot event (for visuals)
             broadcast({ t: 's' });
@@ -1041,6 +1040,7 @@
                 const intersects = raycaster.intersectObjects(targets);
                 if (intersects.length > 0 && intersects[0].distance <= dist) {
                     const hitObj = intersects[0].object;
+                    createImpact(intersects[0].point);
                     
                     if (b.userData.isLocal && !obstacles.includes(hitObj)) {
                         // Hit a player
@@ -1062,8 +1062,6 @@
                                 break;
                             }
                         }
-                    } else {
-                        spawnParticles(b.position, 0x8b4513);
                     }
                     scene.remove(b);
                     bullets.splice(i, 1);
@@ -1076,36 +1074,31 @@
                     bullets.splice(i, 1);
                 }
             }
-            
+
             // Update Particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
-                p.userData.life -= delta;
-                p.position.addScaledVector(p.userData.vel, delta);
-                p.userData.vel.y -= GRAVITY * delta;
-                if (p.userData.life <= 0) {
-                    scene.remove(p);
+                p.life -= delta;
+                p.mesh.position.addScaledVector(p.velocity, delta);
+                p.mesh.material.opacity = p.life / 0.5;
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
                     particles.splice(i, 1);
                 }
             }
-            
+
             // Interpolate Remote Players
             for (let id in remotePlayers) {
                 const p = remotePlayers[id];
-                if (p.visible && p.userData.targetPos) {
-                    p.position.lerp(p.userData.targetPos, 10 * delta);
-                    // Simple rotation lerp
-                    p.rotation.y += (p.userData.targetRot - p.rotation.y) * 10 * delta;
+                if (p.userData.targetPos) {
+                    p.position.lerp(p.userData.targetPos, 0.2);
+                    p.rotation.y += (p.userData.targetRot - p.rotation.y) * 0.2;
                 }
             }
-            
-            // Recoil Recovery (Z-axis)
-            camera.rotation.z -= camera.rotation.z * 5.0 * delta;
 
             drawMinimap();
 
             // Physics & Logic
-            const originalPos = controls.getObject().position.clone();
             
             // Input Processing
             let inputX = 0;
@@ -1139,43 +1132,46 @@
             if (inputZ !== 0) velocity.z -= direction.z * MOVEMENT_SPEED * 10.0 * delta;
             if (inputX !== 0) velocity.x -= direction.x * MOVEMENT_SPEED * 10.0 * delta;
 
-            // Movement & Collision (Sliding) - Planar Movement
-            const forward = new THREE.Vector3();
-            camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-            const right = new THREE.Vector3();
-            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
-
-            const moveVec = new THREE.Vector3();
-            moveVec.addScaledVector(right, -velocity.x * delta);
-            moveVec.addScaledVector(forward, -velocity.z * delta);
+            // Sliding Collision Logic
+            const startPos = controls.getObject().position.clone();
             
-            // Check X
-            controls.getObject().position.x += moveVec.x;
+            controls.moveRight(-velocity.x * delta);
+            controls.moveForward(-velocity.z * delta);
+
+            const endPos = controls.getObject().position.clone();
+            const deltaX = endPos.x - startPos.x;
+            const deltaZ = endPos.z - startPos.z;
+            
+            controls.getObject().position.copy(startPos);
+
+            // Apply X
+            controls.getObject().position.x += deltaX;
             let playerBox = new THREE.Box3().setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
-            let hitX = false;
+            
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
-                obsBox.max.y = 1000; // Prevent jumping on top
-                if (playerBox.intersectsBox(obsBox)) { hitX = true; break; }
+                obsBox.max.y = 1000; 
+                if (playerBox.intersectsBox(obsBox)) {
+                    controls.getObject().position.x -= deltaX;
+                    break;
+                }
             }
-            if (hitX) controls.getObject().position.x -= moveVec.x;
-            
-            // Check Z
-            controls.getObject().position.z += moveVec.z;
+
+            // Apply Z
+            controls.getObject().position.z += deltaZ;
             playerBox.setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
-            let hitZ = false;
+            
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
                 obsBox.max.y = 1000;
-                if (playerBox.intersectsBox(obsBox)) { hitZ = true; break; }
+                if (playerBox.intersectsBox(obsBox)) {
+                    controls.getObject().position.z -= deltaZ;
+                    break;
+                }
             }
-            if (hitZ) controls.getObject().position.z -= moveVec.z;
-            
-            let pos = controls.getObject().position;
 
             // Map Boundaries
+            let pos = controls.getObject().position;
             const limit = WORLD_SIZE / 2;
             if (pos.x < -limit) pos.x = -limit;
             if (pos.x > limit) pos.x = limit;
@@ -1198,7 +1194,7 @@
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
                 if (playerBox.intersectsBox(obsBox)) {
-                    controls.getObject().position.y = originalPos.y;
+                    controls.getObject().position.y -= velocity.y * delta;
                     velocity.y = 0;
                     break;
                 }
