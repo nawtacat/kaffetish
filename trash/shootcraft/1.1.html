@@ -367,6 +367,13 @@
                 
                 // Keep spawn area clear
                 if (box.position.distanceTo(new THREE.Vector3(0,1,0)) < 5) continue;
+                
+                // Keep corners clear (Spawn Points)
+                const range = WORLD_SIZE / 2 - 5;
+                if (box.position.distanceTo(new THREE.Vector3(range, 1, range)) < 5) continue;
+                if (box.position.distanceTo(new THREE.Vector3(-range, 1, range)) < 5) continue;
+                if (box.position.distanceTo(new THREE.Vector3(range, 1, -range)) < 5) continue;
+                if (box.position.distanceTo(new THREE.Vector3(-range, 1, -range)) < 5) continue;
 
                 scene.add(box);
                 obstacles.push(box);
@@ -525,6 +532,7 @@
             updateHealthUI();
             const spawn = getSpawnPoint();
             camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
+            velocity.set(0, 0, 0);
             broadcast({ t: 'd' });
             // Notify killer? (Simplified: just respawn locally)
         }
@@ -564,6 +572,11 @@
         // --- Input & Physics ---
         function onKeyDown(event) {
             switch (event.code) {
+                case 'Escape':
+                    if (gameStarted && !controls.isLocked && !isMobile) {
+                        controls.lock();
+                    }
+                    break;
                 case 'ArrowUp': case 'KeyW': moveForward = true; break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
