@@ -548,7 +548,8 @@
 
         // --- Networking ---
         function initNetwork() {
-            const peer = new Peer(); // Auto-generate ID
+            const shortId = Math.random().toString(36).substring(2, 8);
+            const peer = new Peer(shortId);
             
             peer.on('open', (id) => {
                 myPeerId = id;
