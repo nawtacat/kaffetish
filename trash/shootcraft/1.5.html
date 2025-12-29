@@ -1139,18 +1139,20 @@
             if (inputZ !== 0) velocity.z -= direction.z * MOVEMENT_SPEED * 10.0 * delta;
             if (inputX !== 0) velocity.x -= direction.x * MOVEMENT_SPEED * 10.0 * delta;
 
-            // Movement & Collision (Sliding)
-            controls.moveRight(-velocity.x * delta);
-            controls.moveForward(-velocity.z * delta);
-            
-            const intendedPos = controls.getObject().position.clone();
-            const deltaPos = intendedPos.clone().sub(originalPos);
-            
-            // Reset to check axes individually
-            controls.getObject().position.copy(originalPos);
+            // Movement & Collision (Sliding) - Planar Movement
+            const forward = new THREE.Vector3();
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+
+            const moveVec = new THREE.Vector3();
+            moveVec.addScaledVector(right, -velocity.x * delta);
+            moveVec.addScaledVector(forward, -velocity.z * delta);
             
             // Check X
-            controls.getObject().position.x += deltaPos.x;
+            controls.getObject().position.x += moveVec.x;
             let playerBox = new THREE.Box3().setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
             let hitX = false;
             for (let obs of obstacles) {
@@ -1158,10 +1160,10 @@
                 obsBox.max.y = 1000; // Prevent jumping on top
                 if (playerBox.intersectsBox(obsBox)) { hitX = true; break; }
             }
-            if (hitX) controls.getObject().position.x -= deltaPos.x;
+            if (hitX) controls.getObject().position.x -= moveVec.x;
             
             // Check Z
-            controls.getObject().position.z += deltaPos.z;
+            controls.getObject().position.z += moveVec.z;
             playerBox.setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
             let hitZ = false;
             for (let obs of obstacles) {
@@ -1169,7 +1171,7 @@
                 obsBox.max.y = 1000;
                 if (playerBox.intersectsBox(obsBox)) { hitZ = true; break; }
             }
-            if (hitZ) controls.getObject().position.z -= deltaPos.z;
+            if (hitZ) controls.getObject().position.z -= moveVec.z;
             
             let pos = controls.getObject().position;
 
