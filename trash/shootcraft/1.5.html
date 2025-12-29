@@ -205,6 +205,7 @@
         let playerStats = {}; // { peerId: { kills: 0, deaths: 0, nick: "...", team: "..." } }
         let isTabPressed = false;
         let isHost = false;
+        let recoilStep = 0;
         
         // Mobile Input State
         let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
@@ -938,7 +939,16 @@
             // Visual Juice
             muzzleLight.intensity = 2;
             setTimeout(() => muzzleLight.intensity = 0, 50);
-            camera.rotation.x += 0.02; // Recoil
+            
+            // Recoil Pattern
+            recoilStep++;
+            camera.rotation.x += 0.002; // Reduced vertical recoil
+            
+            const cycle = Math.floor(recoilStep / 5) % 4;
+            let targetTilt = 0;
+            if (cycle === 0) targetTilt = -0.05; // Tilt Right
+            else if (cycle === 2) targetTilt = 0.05; // Tilt Left
+            camera.rotation.z = targetTilt;
 
             // Broadcast shot event (for visuals)
             broadcast({ t: 's' });
@@ -1088,6 +1098,9 @@
                     p.rotation.y += (p.userData.targetRot - p.rotation.y) * 10 * delta;
                 }
             }
+            
+            // Recoil Recovery (Z-axis)
+            camera.rotation.z -= camera.rotation.z * 5.0 * delta;
 
             drawMinimap();
 
