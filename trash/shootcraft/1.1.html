@@ -345,6 +345,17 @@
                     onMouseDown({});
                 });
             }
+
+            // Network Heartbeat (20 TPS)
+            setInterval(() => {
+                broadcast({
+                    t: 'm',
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z,
+                    ry: camera.rotation.y
+                });
+            }, 50);
         }
 
         function generateWorld() {
@@ -445,6 +456,15 @@
                     peers[conn.peer] = conn;
                     createRemotePlayer(conn.peer);
                     statusMsg.innerText = "Connected to " + conn.peer;
+                
+                // Send immediate position update
+                conn.send({
+                    t: 'm',
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z,
+                    ry: camera.rotation.y
+                });
                 }
             };
 
@@ -709,98 +729,87 @@
 
             drawMinimap();
 
-            if (true) { // Always run physics/logic to keep state active
-                const originalPos = controls.getObject().position.clone();
-                
-                // Input Processing
-                let inputX = 0;
-                let inputZ = 0;
+            // Physics & Logic
+            const originalPos = controls.getObject().position.clone();
+            
+            // Input Processing
+            let inputX = 0;
+            let inputZ = 0;
 
-                if (isMobile) {
-                    inputX = joystick.x;
-                    inputZ = joystick.y;
-                } else if (controls.isLocked) {
-                    inputZ = Number(moveForward) - Number(moveBackward);
-                    inputX = Number(moveRight) - Number(moveLeft);
+            if (isMobile) {
+                inputX = joystick.x;
+                inputZ = joystick.y;
+            } else if (controls.isLocked) {
+                inputZ = Number(moveForward) - Number(moveBackward);
+                inputX = Number(moveRight) - Number(moveLeft);
+            }
+
+            // Run Sound
+            const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
+            if (isMoving && canJump) {
+                if (runSound.paused) runSound.play().catch(() => {});
+            } else {
+                runSound.pause();
+            }
+
+            // Friction
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.y -= GRAVITY * delta;
+
+            direction.z = inputZ;
+            direction.x = inputX;
+            direction.normalize();
+
+            if (inputZ !== 0) velocity.z -= direction.z * MOVEMENT_SPEED * 10.0 * delta;
+            if (inputX !== 0) velocity.x -= direction.x * MOVEMENT_SPEED * 10.0 * delta;
+
+            controls.moveRight(-velocity.x * delta);
+            controls.moveForward(-velocity.z * delta);
+
+            // Check X/Z Collision
+            let pos = controls.getObject().position;
+            let playerBox = new THREE.Box3().setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
+            
+            for (let obs of obstacles) {
+                const obsBox = new THREE.Box3().setFromObject(obs);
+                obsBox.max.y = 1000; // Prevent jumping on top
+                if (playerBox.intersectsBox(obsBox)) {
+                    controls.getObject().position.x = originalPos.x;
+                    controls.getObject().position.z = originalPos.z;
+                    velocity.x = 0;
+                    velocity.z = 0;
+                    break;
                 }
+            }
 
-                // Run Sound
-                const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
-                if (isMoving && canJump) {
-                    if (runSound.paused) runSound.play().catch(() => {});
-                } else {
-                    runSound.pause();
-                }
+            // Map Boundaries
+            const limit = WORLD_SIZE / 2;
+            if (pos.x < -limit) pos.x = -limit;
+            if (pos.x > limit) pos.x = limit;
+            if (pos.z < -limit) pos.z = -limit;
+            if (pos.z > limit) pos.z = limit;
+            
+            controls.getObject().position.y += velocity.y * delta;
 
-                // Friction
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= GRAVITY * delta;
+            // Floor Collision
+            if (controls.getObject().position.y < PLAYER_HEIGHT) {
+                velocity.y = 0;
+                controls.getObject().position.y = PLAYER_HEIGHT;
+                canJump = true;
+            }
 
-                direction.z = inputZ;
-                direction.x = inputX;
-                direction.normalize();
-
-                if (inputZ !== 0) velocity.z -= direction.z * MOVEMENT_SPEED * 10.0 * delta;
-                if (inputX !== 0) velocity.x -= direction.x * MOVEMENT_SPEED * 10.0 * delta;
-
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
-
-                // Check X/Z Collision
-                let pos = controls.getObject().position;
-                let playerBox = new THREE.Box3().setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
-                
-                for (let obs of obstacles) {
-                    const obsBox = new THREE.Box3().setFromObject(obs);
-                    obsBox.max.y = 1000; // Prevent jumping on top
-                    if (playerBox.intersectsBox(obsBox)) {
-                        controls.getObject().position.x = originalPos.x;
-                        controls.getObject().position.z = originalPos.z;
-                        velocity.x = 0;
-                        velocity.z = 0;
-                        break;
-                    }
-                }
-
-                // Map Boundaries
-                const limit = WORLD_SIZE / 2;
-                if (pos.x < -limit) pos.x = -limit;
-                if (pos.x > limit) pos.x = limit;
-                if (pos.z < -limit) pos.z = -limit;
-                if (pos.z > limit) pos.z = limit;
-                
-                controls.getObject().position.y += velocity.y * delta;
-
-                // Floor Collision
-                if (controls.getObject().position.y < PLAYER_HEIGHT) {
+            // Check Y Collision (Obstacles)
+            pos = controls.getObject().position;
+            playerBox.setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
+            
+            for (let obs of obstacles) {
+                const obsBox = new THREE.Box3().setFromObject(obs);
+                if (playerBox.intersectsBox(obsBox)) {
+                    controls.getObject().position.y = originalPos.y;
                     velocity.y = 0;
-                    controls.getObject().position.y = PLAYER_HEIGHT;
-                    canJump = true;
+                    break;
                 }
-
-                // Check Y Collision (Obstacles)
-                pos = controls.getObject().position;
-                playerBox.setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
-                
-                for (let obs of obstacles) {
-                    const obsBox = new THREE.Box3().setFromObject(obs);
-                    if (playerBox.intersectsBox(obsBox)) {
-                        controls.getObject().position.y = originalPos.y;
-                        velocity.y = 0;
-                        break;
-                    }
-                }
-
-                // Network Sync (Send position every frame or throttled)
-                // Throttling to ~30fps is better, but per frame is okay for local test
-                broadcast({
-                    t: 'm',
-                    x: pos.x,
-                    y: pos.y,
-                    z: pos.z,
-                    ry: camera.rotation.y // Only Y rotation needed for body facing
-                });
             }
 
             prevTime = time;
