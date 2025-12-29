@@ -201,7 +201,7 @@
         const MOVEMENT_SPEED = 10;
         const JUMP_FORCE = 10;
         const GRAVITY = 25;
-        const MQTT_BROKER = 'wss://broker.hivemq.com:8000/mqtt';
+        const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
         const MQTT_TOPIC = 'voxel-fps-p2p/lobby';
         
         // --- Globals ---
@@ -822,6 +822,10 @@
             mqttClient.on('connect', () => {
                 serverListEl.innerHTML = '<div style="padding:10px; color:#666;">Searching for games...</div>';
                 mqttClient.subscribe(MQTT_TOPIC);
+            });
+
+            mqttClient.on('error', (err) => {
+                serverListEl.innerHTML = '<div style="padding:10px; color:red;">Connection Error.</div>';
             });
 
             mqttClient.on('message', (topic, message) => {
