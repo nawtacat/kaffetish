@@ -466,9 +466,6 @@
             } else if (data.t === 'k') { // Kill confirm
                 killFeed.innerText = `You killed ${peerId.substr(0,5)}!`;
                 setTimeout(() => killFeed.innerText = '', 3000);
-            } else if (data.t === 'd') { // Death/Respawn
-                const p = remotePlayers[peerId];
-                if (p) p.visible = false;
             }
         }
 
@@ -743,6 +740,7 @@
                 
                 for (let obs of obstacles) {
                     const obsBox = new THREE.Box3().setFromObject(obs);
+                    obsBox.max.y = 1000; // Prevent jumping on top
                     if (playerBox.intersectsBox(obsBox)) {
                         controls.getObject().position.x = originalPos.x;
                         controls.getObject().position.z = originalPos.z;
@@ -751,6 +749,13 @@
                         break;
                     }
                 }
+
+                // Map Boundaries
+                const limit = WORLD_SIZE / 2;
+                if (pos.x < -limit) pos.x = -limit;
+                if (pos.x > limit) pos.x = limit;
+                if (pos.z < -limit) pos.z = -limit;
+                if (pos.z > limit) pos.z = limit;
                 
                 controls.getObject().position.y += velocity.y * delta;
 
