@@ -665,38 +665,40 @@
                 const oldPos = b.position.clone();
                 b.position.addScaledVector(b.userData.velocity, delta);
 
-                // Projectile Collision Logic (Local bullets only)
+                // Projectile Collision Logic
+                const dist = b.position.distanceTo(oldPos);
+                raycaster.set(oldPos, b.userData.velocity.clone().normalize());
+                
+                const targets = [...obstacles];
+                // Only check against players if it's a local bullet (to deal damage)
                 if (b.userData.isLocal) {
-                    const dist = b.position.distanceTo(oldPos);
-                    raycaster.set(oldPos, b.userData.velocity.clone().normalize());
-                    
-                    const targets = [...obstacles];
                     for (let id in remotePlayers) targets.push(remotePlayers[id].children[0]);
+                }
+                
+                const intersects = raycaster.intersectObjects(targets);
+                if (intersects.length > 0 && intersects[0].distance <= dist) {
+                    const hitObj = intersects[0].object;
                     
-                    const intersects = raycaster.intersectObjects(targets);
-                    if (intersects.length > 0 && intersects[0].distance <= dist) {
-                        const hitObj = intersects[0].object;
-                        if (!obstacles.includes(hitObj)) {
-                            // Hit a player
-                            for (let id in remotePlayers) {
-                                if (remotePlayers[id].children[0] === hitObj) {
-                                    if (peers[id]) {
-                                        peers[id].send({ t: 'h', d: 20 });
-                                        if (Math.random() < 0.2) {
-                                            hitSound.currentTime = 0;
-                                            hitSound.play().catch(() => {});
-                                        }
-                                        killFeed.innerText = "Hit!";
-                                        setTimeout(() => killFeed.innerText = '', 500);
+                    if (b.userData.isLocal && !obstacles.includes(hitObj)) {
+                        // Hit a player
+                        for (let id in remotePlayers) {
+                            if (remotePlayers[id].children[0] === hitObj) {
+                                if (peers[id]) {
+                                    peers[id].send({ t: 'h', d: 20 });
+                                    if (Math.random() < 0.2) {
+                                        hitSound.currentTime = 0;
+                                        hitSound.play().catch(() => {});
                                     }
-                                    break;
+                                    killFeed.innerText = "Hit!";
+                                    setTimeout(() => killFeed.innerText = '', 500);
                                 }
+                                break;
                             }
                         }
-                        scene.remove(b);
-                        bullets.splice(i, 1);
-                        continue;
                     }
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                    continue;
                 }
 
                 b.userData.life -= delta;
