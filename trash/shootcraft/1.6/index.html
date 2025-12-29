@@ -140,11 +140,8 @@
                 <hr>
                 <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
                 <button id="connect-btn">Connect</button>
-                <button id="join-public-btn" style="background:#28a745; margin-top:5px;">Join Public Game</button>
                 <p>OR</p>
-                    <input type="checkbox" id="public-check"> Public Room
-                </label>
-                <button id="play-btn">Create Room</button>
+                <button id="play-btn">Play Solo / Wait</button>
                 <div class="status" id="status-msg">Ready to connect.</div>
             </div>
             <div id="pause-menu" style="display:none;">
@@ -191,9 +188,9 @@
         let health = 100;
         const obstacles = []; // Array of meshes for collision
         const bullets = []; // Active projectiles
+        const grenades = []; // Active grenades
         const particles = []; // Visual particles
         const peers = {}; // Connection objects
-        let peer; // Global peer object
         const remotePlayers = {}; // Meshes for remote players
         let myPeerId = null;
         let gameStarted = false;
@@ -210,6 +207,10 @@
         let isTabPressed = false;
         let isHost = false;
         
+        let lastGrenadeTime = 0;
+        let grenadeChargeStart = 0;
+        let isChargingGrenade = false;
+        
         let muzzleLight;
         // Mobile Input State
         let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
@@ -220,6 +221,7 @@
         const hitSound = new Audio('https://kaffetish.club/trash/shootcraft/ah.mp3');
         const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
         runSound.loop = true;
+        const boomSound = new Audio('https://kaffetish.club/trash/shootcraft/boom.mp3');
         
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
@@ -230,8 +232,6 @@
         const playBtn = document.getElementById('play-btn');
         const copyBtn = document.getElementById('copy-btn');
         const connectBtn = document.getElementById('connect-btn');
-        const joinPublicBtn = document.getElementById('join-public-btn');
-        const publicCheck = document.getElementById('public-check');
         const peerInput = document.getElementById('peer-id-input');
         const nicknameInput = document.getElementById('nickname-input');
         const statusMsg = document.getElementById('status-msg');
@@ -338,11 +338,11 @@
             
             playBtn.addEventListener('click', () => { 
                 if (nicknameInput.value) myNickname = nicknameInput.value;
-                if (publicCheck.checked) {
-                    attemptPublicHost(1);
-                } else {
-                    startGameAsHost();
-                }
+                isHost = true; // Playing solo/waiting implies hosting
+                myTeam = 'blue'; // Host is always blue initially
+                gameStarted = true; 
+                if (!isMobile) controls.lock();
+                else menuOverlay.style.display = 'none';
             });
             resumeBtn.addEventListener('click', () => {
                 if (!isMobile) controls.lock();
@@ -360,10 +360,6 @@
                 if (nicknameInput.value) myNickname = nicknameInput.value;
                 const id = peerInput.value;
                 if(id) connectToPeer(id);
-            });
-            joinPublicBtn.addEventListener('click', () => {
-                if (nicknameInput.value) myNickname = nicknameInput.value;
-                joinPublicGame();
             });
 
             // Mobile Events
@@ -492,14 +488,6 @@
             return corners[Math.floor(Math.random() * corners.length)];
         }
 
-        function startGameAsHost() {
-            isHost = true;
-            myTeam = 'blue';
-            gameStarted = true;
-            if (!isMobile) controls.lock();
-            else menuOverlay.style.display = 'none';
-        }
-
         function exitMatch() {
             // Disconnect from all peers
             for (let id in peers) {
@@ -522,9 +510,6 @@
             pauseMenu.style.display = 'none';
             menuOverlay.style.display = 'flex';
             statusMsg.innerText = "Ready to connect.";
-            
-            // Reset Peer to random ID (in case we were a public host)
-            setupPeer();
         }
         
         function updateScoreUI() {
@@ -576,12 +561,9 @@
 
         // --- Networking ---
         function initNetwork() {
-            setupPeer();
-        }
-
-        function setupPeer(customId = null) {
-            if (peer) peer.destroy();
-            peer = new Peer(customId || Math.random().toString(36).substring(2, 8));
+            const shortId = Math.random().toString(36).substring(2, 8);
+            const peer = new Peer(shortId);
+            
             peer.on('open', (id) => {
                 myPeerId = id;
                 myIdDisplay.innerText = id;
@@ -608,52 +590,10 @@
             };
         }
 
-        function attemptPublicHost(index) {
-            statusMsg.innerText = `Trying to create public room ${index}...`;
-            if (index > 10) {
-                statusMsg.innerText = "All public slots full. Creating private room.";
-                setupPeer(); // Fallback
-                startGameAsHost();
-                return;
-            }
-
-            if (peer) peer.destroy();
-            const id = 'voxel-pub-' + index;
-            peer = new Peer(id);
-
-            peer.on('open', (id) => {
-                myPeerId = id;
-                myIdDisplay.innerText = id + " (Public)";
-                setupPeerListeners(peer); // Re-attach standard listeners
-                startGameAsHost();
-            });
-
-            peer.on('error', (err) => {
-                if (err.type === 'unavailable-id') {
-                    attemptPublicHost(index + 1);
-                } else {
-                    console.error(err);
-                    statusMsg.innerText = "Error: " + err.type;
-                }
-            });
-        }
-
-        function setupPeerListeners(p) {
-            // Re-attach the standard connection/error listeners to a specific peer instance
-            p.on('connection', (conn) => {
-                setupConnection(conn);
-                statusMsg.innerText = "Incoming connection from " + conn.peer;
-            });
-        }
-
         function setupConnection(conn) {
             // Max players check (Host side)
             if (isHost && Object.keys(peers).length >= 9) {
                 conn.close();
-                return;
-            }
-            // Client side: prevent joining multiple games if scanning
-            if (!isHost && Object.keys(peers).length > 0) {
                 return;
             }
 
@@ -684,20 +624,6 @@
                 delete peers[conn.peer];
                 statusMsg.innerText = "Disconnected from " + conn.peer;
             });
-        }
-
-        function joinPublicGame() {
-            statusMsg.innerText = "Scanning for public games...";
-            // Try connecting to the first 10 public slots
-            for (let i = 1; i <= 10; i++) {
-                const id = 'voxel-pub-' + i;
-                const conn = peer.connect(id);
-                setupConnection(conn);
-            }
-            setTimeout(() => {
-                if (!gameStarted && statusMsg.innerText.includes("Scanning")) 
-                    statusMsg.innerText = "No public games found.";
-            }, 3000);
         }
 
         function handleData(peerId, data) {
@@ -763,10 +689,12 @@
                 updateRemotePlayer(sourceId, data);
             } else if (data.t === 'h') { // Hit
                 if (data.targetId === myPeerId) {
-                    takeDamage(data.d, sourceId);
+                    takeDamage(data.d, sourceId, data.g);
                 }
             } else if (data.t === 's') { // Shoot visual
                 visualizeShot(sourceId);
+            } else if (data.t === 'g') { // Grenade
+                spawnGrenade(new THREE.Vector3(data.x, data.y, data.z), new THREE.Vector3(data.vx, data.vy, data.vz), false);
             } else if (data.t === 'die') { // Player died
                 const killerTeam = data.team === 'blue' ? 'red' : 'blue';
                 scores[killerTeam]++;
@@ -867,10 +795,10 @@
             }
         }
 
-        function takeDamage(amount, attackerId) {
+        function takeDamage(amount, attackerId, isGrenade = false) {
             if (!matchActive) return; // No damage before match starts
             // Friendly Fire Check
-            if (attackerId && remotePlayers[attackerId] && remotePlayers[attackerId].userData.team === myTeam) return;
+            if (!isGrenade && attackerId && remotePlayers[attackerId] && remotePlayers[attackerId].userData.team === myTeam) return;
             
             health -= amount;
             updateHealthUI();
@@ -954,6 +882,52 @@
             }
         }
 
+        function spawnGrenade(pos, vel, isLocal) {
+            const geo = new THREE.SphereGeometry(0.2, 8, 8);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            mesh.userData = { velocity: vel, isLocal: isLocal };
+            scene.add(mesh);
+            grenades.push(mesh);
+        }
+
+        function explodeGrenade(pos, isLocal) {
+            boomSound.currentTime = 0;
+            boomSound.play().catch(()=>{});
+            
+            // Visuals (Simple particles)
+            for(let i=0; i<20; i++) {
+                const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xff4500 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.copy(pos);
+                const vel = new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*10 + 5, (Math.random()-0.5)*10);
+                scene.add(mesh);
+                particles.push({ mesh: mesh, velocity: vel, life: 1.0 });
+            }
+
+            if (isLocal) {
+                const radius = 8;
+                const maxDamage = 80;
+                
+                // Damage Remote Players
+                for (let id in remotePlayers) {
+                    const dist = remotePlayers[id].position.distanceTo(pos);
+                    if (dist < radius) {
+                        const dmg = Math.floor(maxDamage * (1 - dist/radius));
+                        if (dmg > 0 && peers[id]) peers[id].send({ t: 'h', d: dmg, targetId: id, g: true });
+                    }
+                }
+                // Damage Self
+                const dist = camera.position.distanceTo(pos);
+                if (dist < radius) {
+                    const dmg = Math.floor(maxDamage * (1 - dist/radius));
+                    if (dmg > 0) takeDamage(dmg, null, true);
+                }
+            }
+        }
+
         // --- Input & Physics ---
         function onKeyDown(event) {
             switch (event.code) {
@@ -972,6 +946,12 @@
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
                 case 'ArrowRight': case 'KeyD': moveRight = true; break;
                 case 'Space': if (canJump) velocity.y += JUMP_FORCE; canJump = false; break;
+                case 'KeyR':
+                    if (matchActive && !isChargingGrenade && performance.now() - lastGrenadeTime > 5000) {
+                        isChargingGrenade = true;
+                        grenadeChargeStart = performance.now();
+                    }
+                    break;
             }
         }
 
@@ -985,6 +965,22 @@
                 case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = false; break;
                 case 'ArrowRight': case 'KeyD': moveRight = false; break;
+                case 'KeyR':
+                    if (isChargingGrenade) {
+                        const duration = Math.min(performance.now() - grenadeChargeStart, 2000);
+                        const force = 15 + (duration / 2000) * 35; 
+                        const dir = new THREE.Vector3();
+                        camera.getWorldDirection(dir);
+                        const vel = dir.multiplyScalar(force);
+                        spawnGrenade(camera.position.clone(), vel, true);
+                        broadcast({
+                            t: 'g', x: camera.position.x, y: camera.position.y, z: camera.position.z,
+                            vx: vel.x, vy: vel.y, vz: vel.z
+                        });
+                        isChargingGrenade = false;
+                        lastGrenadeTime = performance.now();
+                    }
+                    break;
             }
         }
 
@@ -1152,6 +1148,36 @@
                 if (b.userData.life <= 0) {
                     scene.remove(b);
                     bullets.splice(i, 1);
+                }
+            }
+
+            // Update Grenades
+            for (let i = grenades.length - 1; i >= 0; i--) {
+                const g = grenades[i];
+                g.userData.velocity.y -= GRAVITY * delta;
+                const oldPos = g.position.clone();
+                g.position.addScaledVector(g.userData.velocity, delta);
+                
+                let hit = false;
+                // Floor
+                if (g.position.y < 0.2) {
+                    g.position.y = 0.2;
+                    hit = true;
+                }
+                // Obstacles
+                if (!hit) {
+                    const dist = g.position.distanceTo(oldPos);
+                    raycaster.set(oldPos, g.userData.velocity.clone().normalize());
+                    const intersects = raycaster.intersectObjects(obstacles);
+                    if (intersects.length > 0 && intersects[0].distance <= dist) {
+                        hit = true;
+                        g.position.copy(intersects[0].point);
+                    }
+                }
+                if (hit) {
+                    explodeGrenade(g.position, g.userData.isLocal);
+                    scene.remove(g);
+                    grenades.splice(i, 1);
                 }
             }
 
