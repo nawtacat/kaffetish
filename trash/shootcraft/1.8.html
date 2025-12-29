@@ -376,7 +376,8 @@
             document.addEventListener('mousedown', onMouseDown);
             window.addEventListener('resize', onWindowResize);
             
-            playBtn.addEventListener('click', () => { 
+            playBtn.addEventListener('click', (e) => { 
+                e.stopPropagation();
                 if (nicknameInput.value) myNickname = nicknameInput.value;
                 isPublic = publicCheck.checked;
                 isHost = true; // Playing solo/waiting implies hosting
@@ -386,7 +387,8 @@
                 else menuOverlay.style.display = 'none';
                 if (isPublic) startAdvertising();
             });
-            resumeBtn.addEventListener('click', () => {
+            resumeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 if (!isMobile) controls.lock();
                 else menuOverlay.style.display = 'none';
             });
@@ -1052,7 +1054,11 @@
                     const dist = remotePlayers[id].position.distanceTo(pos);
                     if (dist < radius) {
                         const dmg = Math.floor(maxDamage * (1 - dist/radius));
-                        if (dmg > 0 && peers[id]) peers[id].send({ t: 'h', d: dmg, targetId: id, g: true });
+                        if (dmg > 0) {
+                            const hitData = { t: 'h', d: dmg, targetId: id, g: true };
+                            if (peers[id]) peers[id].send(hitData);
+                            else broadcast(hitData);
+                        }
                     }
                 }
                 // Damage Self
