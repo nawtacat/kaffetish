@@ -387,7 +387,8 @@
                     y: camera.position.y,
                     z: camera.position.z,
                     ry: camera.rotation.y,
-                    tm: myTeam // Send team for late joiners/verification
+                    tm: myTeam, // Send team for late joiners/verification
+                    nick: myNickname
                 });
             }, 50);
         }
@@ -544,6 +545,20 @@
         }
 
         function handleData(peerId, data) {
+            const sourceId = data.id || peerId;
+
+            // Relay Logic (Host Only)
+            if (isHost && peerId !== myPeerId && data.t !== 'hello') {
+                const relayData = { ...data, id: sourceId };
+                if (data.targetId) {
+                    if (peers[data.targetId]) peers[data.targetId].send(relayData);
+                } else {
+                    for (let pid in peers) {
+                        if (pid !== peerId) peers[pid].send(relayData);
+                    }
+                }
+            }
+
             if (data.t === 'hello') {
                 // New player joined
                 let assignedTeam = data.team;
@@ -582,11 +597,16 @@
                 else menuOverlay.style.display = 'none';
                 
             } else if (data.t === 'm') { // Move
-                updateRemotePlayer(peerId, data);
+                if (!remotePlayers[sourceId]) {
+                    createRemotePlayer(sourceId, data.nick || 'Player', data.tm || 'blue');
+                }
+                updateRemotePlayer(sourceId, data);
             } else if (data.t === 'h') { // Hit
-                takeDamage(data.d, peerId);
+                if (data.targetId === myPeerId) {
+                    takeDamage(data.d, sourceId);
+                }
             } else if (data.t === 's') { // Shoot visual
-                visualizeShot(peerId);
+                visualizeShot(sourceId);
             } else if (data.t === 'die') { // Player died
                 const killerTeam = data.team === 'blue' ? 'red' : 'blue';
                 scores[killerTeam]++;
@@ -851,15 +871,19 @@
                         // Hit a player
                         for (let id in remotePlayers) {
                             if (remotePlayers[id].children[0] === hitObj) {
+                                const hitData = { t: 'h', d: 20, targetId: id };
                                 if (peers[id]) {
-                                    peers[id].send({ t: 'h', d: 20 });
-                                    if (Math.random() < 0.2) {
-                                        hitSound.currentTime = 0;
-                                        hitSound.play().catch(() => {});
-                                    }
-                                    killFeed.innerText = "Hit!";
-                                    setTimeout(() => killFeed.innerText = '', 500);
+                                    peers[id].send(hitData);
+                                } else {
+                                    broadcast(hitData);
                                 }
+                                
+                                if (Math.random() < 0.2) {
+                                    hitSound.currentTime = 0;
+                                    hitSound.play().catch(() => {});
+                                }
+                                killFeed.innerText = "Hit!";
+                                setTimeout(() => killFeed.innerText = '', 500);
                                 break;
                             }
                         }
