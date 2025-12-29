@@ -93,10 +93,6 @@
         #mobile-shoot { bottom: 130px; right: 40px; background: rgba(255,0,0,0.3); border-color: rgba(255,0,0,0.5); }
         #mobile-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; pointer-events: auto; z-index: -1; }
 
-        @media (hover: none) and (pointer: coarse) {
-            #mobile-controls { display: block; }
-            #controls-hint { display: none; }
-        }
     </style>
 </head>
 <body>
@@ -225,7 +221,7 @@
         const remotePlayers = {}; // Meshes for remote players
         let myPeerId = null;
         let gameStarted = false;
-        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         // Match Logic
         let myNickname = "Player";
@@ -420,6 +416,9 @@
 
             // Mobile Events
             if (isMobile) {
+                document.getElementById('mobile-controls').style.display = 'block';
+                document.getElementById('controls-hint').style.display = 'none';
+
                 const joyZone = document.getElementById('joystick-zone');
                 const joyKnob = document.getElementById('joystick-knob');
                 const lookZone = document.getElementById('mobile-look-zone');
