@@ -634,7 +634,15 @@
         // --- Networking ---
         function initNetwork() {
             const shortId = Math.random().toString(36).substring(2, 8);
-            const peer = new Peer(shortId);
+            const peer = new Peer(shortId, {
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                }
+            });
             
             peer.on('open', (id) => {
                 myPeerId = id;
@@ -657,6 +665,7 @@
             });
 
             window.connectToPeer = (id) => {
+                statusMsg.innerText = "Connecting to " + id + "...";
                 const conn = peer.connect(id);
                 setupConnection(conn);
             };
