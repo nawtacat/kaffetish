@@ -517,7 +517,6 @@
         }
 
         function takeDamage(amount, attackerId) {
-            if (!gameStarted) return;
             health -= amount;
             updateHealthUI();
             if (health <= 0) {
@@ -596,7 +595,7 @@
         }
 
         function onMouseDown(event) {
-            if (!gameStarted || (!isMobile && !controls.isLocked)) return;
+            if (!isMobile && !controls.isLocked) return;
             
             // Shoot
             // 1. Spawn Bullet
@@ -710,7 +709,7 @@
 
             drawMinimap();
 
-            if (gameStarted) {
+            if (true) { // Always run physics/logic to keep state active
                 const originalPos = controls.getObject().position.clone();
                 
                 // Input Processing
