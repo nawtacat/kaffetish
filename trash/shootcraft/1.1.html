@@ -517,6 +517,7 @@
         }
 
         function takeDamage(amount, attackerId) {
+            if (!gameStarted) return;
             health -= amount;
             updateHealthUI();
             if (health <= 0) {
