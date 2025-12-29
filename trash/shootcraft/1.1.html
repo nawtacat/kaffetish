@@ -68,25 +68,13 @@
             #mobile-controls { display: block; }
             #controls-hint { display: none; }
         }
-
-        /* Inventory / Hotbar */
-        #hotbar {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; pointer-events: auto;
-        }
-        .slot {
-            width: 50px; height: 50px; border: 2px solid #555; display: flex;
-            align-items: center; justify-content: center; font-weight: bold;
-            color: #fff; font-size: 10px; cursor: pointer; background: rgba(0,0,0,0.3); user-select: none;
-        }
-        .slot.selected { border-color: #fff; background: rgba(255,255,255,0.2); transform: scale(1.1); }
     </style>
 </head>
 <body>
 
     <!-- UI Layer -->
     <div id="ui-layer">
-        <div id="controls-hint">WASD Move | SPACE Jump | SHIFT Sprint | C Crouch | 1-2 Inventory | L-Click Shoot/Attack</div>
+        <div id="controls-hint">WASD to Move | SPACE to Jump | CLICK to Shoot</div>
         <div id="kill-feed"></div>
         <div id="crosshair"></div>
         <div id="hud-bottom">
@@ -94,10 +82,6 @@
                 <div id="health-bar"></div>
                 <div id="health-text">100 HP</div>
             </div>
-        </div>
-        <div id="hotbar">
-            <div class="slot selected" data-id="0">GUN</div>
-            <div class="slot" data-id="1">KNIFE</div>
         </div>
         <canvas id="minimap" width="150" height="150"></canvas>
     </div>
@@ -153,7 +137,6 @@
         const MOVEMENT_SPEED = 10;
         const JUMP_FORCE = 10;
         const GRAVITY = 25;
-        const GRID_SIZE = 2;
         
         // --- Globals ---
         let camera, scene, renderer, controls;
@@ -161,8 +144,6 @@
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
         let canJump = false;
         let prevTime = performance.now();
-        let isSprinting = false;
-        let isCrouching = false;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         
@@ -170,10 +151,6 @@
         let health = 100;
         const obstacles = []; // Array of meshes for collision
         const bullets = []; // Active projectiles
-        const particles = []; // Active particles
-        let selectedSlot = 0;
-        const inventory = ['gun', 'knife'];
-        let worldTime = 0;
         const peers = {}; // Connection objects
         const remotePlayers = {}; // Meshes for remote players
         let myPeerId = null;
@@ -207,7 +184,6 @@
         const killFeed = document.getElementById('kill-feed');
         const minimapCanvas = document.getElementById('minimap');
         const minimapCtx = minimapCanvas.getContext('2d');
-        const slots = document.querySelectorAll('.slot');
 
         // --- Initialization ---
         init();
@@ -233,9 +209,8 @@
             hemiLight.position.set(0, 20, 0);
             scene.add(hemiLight);
 
-            window.dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(50, 50, 50);
-            dirLight.castShadow = true;
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(10, 20, 10);
             scene.add(dirLight);
 
             // Renderer
@@ -278,7 +253,6 @@
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
             document.addEventListener('mousedown', onMouseDown);
-            document.addEventListener('contextmenu', e => e.preventDefault()); // Block context menu for build
             window.addEventListener('resize', onWindowResize);
             
             playBtn.addEventListener('click', () => { 
@@ -371,73 +345,32 @@
                     onMouseDown({});
                 });
             }
-
-            // Hotbar selection
-            slots.forEach((slot, index) => {
-                slot.addEventListener('mousedown', (e) => { e.stopPropagation(); selectSlot(index); });
-                slot.addEventListener('touchstart', (e) => { e.stopPropagation(); selectSlot(index); });
-            });
         }
 
         function generateWorld() {
             // Floor
             const floorGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a }); // Asphalt
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            // Materials
-            const concrete = new THREE.MeshStandardMaterial({ color: 0x555555 });
-            const darkConcrete = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            // Random Voxels
+            const boxGeo = new THREE.BoxGeometry(2, 2, 2);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 }); // Brown
 
-            // Helper
-            const addBlock = (x, y, z, w, h, d, mat) => {
-                const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-                mesh.position.set(x, y, z);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                scene.add(mesh);
-                obstacles.push(mesh);
-            };
+            for (let i = 0; i < 40; i++) {
+                const box = new THREE.Mesh(boxGeo, boxMat);
+                box.position.x = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+                box.position.y = 1; // On floor
+                box.position.z = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
+                
+                // Keep spawn area clear
+                if (box.position.distanceTo(new THREE.Vector3(0,1,0)) < 5) continue;
 
-            // Central Tower
-            addBlock(0, 2.5, 0, 12, 5, 12, concrete); // Base
-            addBlock(0, 6, 0, 8, 2, 8, darkConcrete); // Top
-
-            // Bridges
-            addBlock(0, 4.5, 12, 4, 0.5, 12, concrete); // South Bridge
-            addBlock(0, 4.5, -12, 4, 0.5, 12, concrete); // North Bridge
-
-            // Outer Platforms
-            addBlock(0, 3, 22, 12, 6, 8, concrete); // South Platform
-            addBlock(0, 3, -22, 12, 6, 8, concrete); // North Platform
-
-            // Ramps (Rotated Boxes)
-            const ramp1 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 12), concrete);
-            ramp1.position.set(0, 0, 30);
-            ramp1.rotation.x = -Math.PI / 6; // Slope up
-            scene.add(ramp1);
-            obstacles.push(ramp1);
-
-            const ramp2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 12), concrete);
-            ramp2.position.set(0, 0, -30);
-            ramp2.rotation.x = Math.PI / 6; // Slope up
-            scene.add(ramp2);
-            obstacles.push(ramp2);
-
-            // Cover Walls
-            addBlock(15, 1.5, 0, 1, 3, 6, darkConcrete);
-            addBlock(-15, 1.5, 0, 1, 3, 6, darkConcrete);
-            addBlock(8, 6, 8, 2, 2, 2, darkConcrete); // Cover on top
-            addBlock(-8, 6, -8, 2, 2, 2, darkConcrete);
-        }
-
-        function selectSlot(index) {
-            selectedSlot = index;
-            slots.forEach(s => s.classList.remove('selected'));
-            slots[index].classList.add('selected');
-            // Visual feedback or weapon switch could go here
+                scene.add(box);
+                obstacles.push(box);
+            }
         }
 
         function getSpawnPoint() {
@@ -536,8 +469,6 @@
             } else if (data.t === 'd') { // Death/Respawn
                 const p = remotePlayers[peerId];
                 if (p) p.visible = false;
-            } else if (data.t === 'map') { // Map update
-                handleMapUpdate(data);
             }
         }
 
@@ -633,17 +564,6 @@
             bullets.push(bullet);
         }
 
-        function spawnParticles(pos, color) {
-            for(let i=0; i<8; i++) {
-                const p = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.2,0.2), new THREE.MeshBasicMaterial({color: color}));
-                p.position.copy(pos);
-                p.position.add(new THREE.Vector3((Math.random()-0.5), (Math.random()-0.5), (Math.random()-0.5)));
-                p.userData = { vel: new THREE.Vector3((Math.random()-0.5)*5, Math.random()*5, (Math.random()-0.5)*5), life: 1.0 };
-                scene.add(p);
-                particles.push(p);
-            }
-        }
-
         // --- Input & Physics ---
         function onKeyDown(event) {
             switch (event.code) {
@@ -652,10 +572,6 @@
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
                 case 'ArrowRight': case 'KeyD': moveRight = true; break;
                 case 'Space': if (canJump) velocity.y += JUMP_FORCE; canJump = false; break;
-                case 'ShiftLeft': case 'ShiftRight': isSprinting = true; break;
-                case 'KeyC': isCrouching = true; break;
-                case 'Digit1': selectSlot(0); break;
-                case 'Digit2': selectSlot(1); break;
             }
         }
 
@@ -665,25 +581,11 @@
                 case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = false; break;
                 case 'ArrowRight': case 'KeyD': moveRight = false; break;
-                case 'ShiftLeft': case 'ShiftRight': isSprinting = false; break;
-                case 'KeyC': isCrouching = false; break;
             }
         }
 
         function onMouseDown(event) {
             if (!gameStarted || (!isMobile && !controls.isLocked)) return;
-            
-            const item = inventory[selectedSlot];
-            
-            // Left Click: Knife (Melee)
-            if (item === 'knife') {
-                // Melee logic placeholder (could add short range raycast here)
-                // For now just visual swing or nothing
-                return;
-            }
-
-            // Left Click: Gun (Shoot)
-            if (item !== 'gun') return; // Only shoot if gun selected
             
             // Shoot
             // 1. Spawn Bullet
@@ -734,10 +636,6 @@
 
             // Broadcast shot event (for visuals)
             broadcast({ t: 's' });
-        }
-
-        function handleMapUpdate(data) {
-            // Map is now static, no updates needed
         }
 
         function onWindowResize() {
@@ -798,25 +696,6 @@
                     bullets.splice(i, 1);
                 }
             }
-            
-            // Update Particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.position.addScaledVector(p.userData.vel, delta);
-                p.userData.vel.y -= GRAVITY * delta;
-                p.rotation.x += delta;
-                p.userData.life -= delta;
-                if (p.userData.life <= 0) {
-                    scene.remove(p);
-                    particles.splice(i, 1);
-                }
-            }
-
-            // Day/Night Cycle
-            worldTime += delta * 0.1;
-            const lightIntensity = Math.max(0.1, Math.sin(worldTime));
-            window.dirLight.intensity = lightIntensity;
-            scene.background.setHSL(0.6, 0.5, lightIntensity * 0.5);
 
             drawMinimap();
 
@@ -852,16 +731,8 @@
                 direction.x = inputX;
                 direction.normalize();
 
-                // Modifiers
-                let speed = MOVEMENT_SPEED;
-                if (isSprinting) speed *= 1.5;
-                if (isCrouching) speed *= 0.5;
-                
-                // Crouch Height
-                const targetHeight = isCrouching ? PLAYER_HEIGHT * 0.6 : PLAYER_HEIGHT;
-                
-                if (inputZ !== 0) velocity.z -= direction.z * speed * 10.0 * delta;
-                if (inputX !== 0) velocity.x -= direction.x * speed * 10.0 * delta;
+                if (inputZ !== 0) velocity.z -= direction.z * MOVEMENT_SPEED * 10.0 * delta;
+                if (inputX !== 0) velocity.x -= direction.x * MOVEMENT_SPEED * 10.0 * delta;
 
                 controls.moveRight(-velocity.x * delta);
                 controls.moveForward(-velocity.z * delta);
@@ -884,9 +755,9 @@
                 controls.getObject().position.y += velocity.y * delta;
 
                 // Floor Collision
-                if (controls.getObject().position.y < targetHeight) {
+                if (controls.getObject().position.y < PLAYER_HEIGHT) {
                     velocity.y = 0;
-                    controls.getObject().position.y = targetHeight;
+                    controls.getObject().position.y = PLAYER_HEIGHT;
                     canJump = true;
                 }
 
