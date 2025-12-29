@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voxel FPS P2P</title>
+    <title>Grassland</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Courier New', Courier, monospace; user-select: none; }
+        @font-face {
+            font-family: 'Pixelpurl';
+            src: url('https://kaffetish.club/trash/shootcraft/fonts/Pixelpurl-0vBPP.ttf');
+        }
+        body { margin: 0; overflow: hidden; font-family: 'Pixelpurl', monospace; user-select: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
         
         /* HUD */
@@ -24,7 +28,24 @@
         #health-bar { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
         #health-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; color: white; line-height: 25px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
         
-        #kill-feed { position: absolute; top: 20px; right: 20px; text-align: right; color: #ff4444; font-weight: bold; text-shadow: 1px 1px 0 #000; }
+        #kill-feed { position: absolute; top: 60px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
+        .kill-msg { color: #fff; font-weight: bold; text-shadow: 1px 1px 0 #000; margin-bottom: 5px; font-size: 16px; }
+        
+        #tab-scoreboard { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; background: rgba(0,0,0,0.85); border-radius: 10px; padding: 20px; z-index: 20; justify-content: space-around; color: white; }
+        .team-col { width: 45%; }
+        .team-col h2 { text-align: center; border-bottom: 2px solid white; padding-bottom: 10px; }
+        .player-list { list-style: none; padding: 0; }
+        .player-list li { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 18px; display: flex; justify-content: space-between; }
+        .list-header { display: flex; justify-content: space-between; padding: 5px 8px; font-weight: bold; border-bottom: 1px solid white; margin-bottom: 5px; }
+        
+        #scoreboard { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #000; color: white; }
+        .score-blue { color: #4444ff; }
+        .score-red { color: #ff4444; }
+        #timer { font-size: 30px; color: yellow; }
+
+        #game-over { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #winner-text { font-size: 48px; font-weight: bold; margin-bottom: 10px; }
+        #restart-text { font-size: 24px; color: #ccc; }
 
         /* Menu / Connection */
         #menu-overlay {
@@ -33,19 +54,41 @@
             pointer-events: auto; z-index: 10;
         }
         #menu-box {
-            background: #fff; padding: 30px; border-radius: 8px; text-align: center; max-width: 400px; width: 90%;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            background: rgba(30, 30, 30, 0.95); padding: 40px; border: 4px solid #4caf50; 
+            text-align: center; max-width: 450px; width: 90%;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); color: white;
+            image-rendering: pixelated;
         }
-        h1 { margin-top: 0; color: #333; }
-        input { width: 70%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #0056b3; }
-        .status { margin-top: 10px; font-size: 12px; color: #666; word-break: break-all; }
+        h1 { margin-top: 0; color: #4caf50; font-size: 48px; text-shadow: 4px 4px 0 #000; letter-spacing: 2px; margin-bottom: 20px; }
+        input { width: 70%; padding: 12px; margin: 10px 0; background: #222; border: 2px solid #555; color: white; font-family: 'Pixelpurl', monospace; font-size: 16px; outline: none; }
+        input:focus { border-color: #4caf50; }
+        button { padding: 12px 24px; background: #4caf50; color: white; border: 2px solid #388e3c; border-bottom-width: 5px; cursor: pointer; font-size: 20px; font-family: 'Pixelpurl', monospace; margin: 5px; transition: transform 0.1s; text-shadow: 2px 2px 0 #000; }
+        button:hover { background: #5cb860; transform: translateY(-2px); }
+        button:active { transform: translateY(2px); border-bottom-width: 2px; margin-top: 7px; margin-bottom: 3px; }
+        .status { margin-top: 15px; font-size: 14px; color: #aaa; word-break: break-all; }
         
         #controls-hint { position: absolute; top: 10px; left: 10px; color: rgba(255,255,255,0.7); font-size: 12px; }
         
-        .copy-btn { margin-left: 10px; padding: 5px 10px; font-size: 12px; background: #6c757d; }
-        .copy-btn:hover { background: #5a6268; }
+        .copy-btn { margin-left: 10px; padding: 5px 10px; font-size: 14px; background: #555; border-color: #333; }
+        .copy-btn:hover { background: #666; }
+
+        /* Server Browser */
+        #server-browser { display: none; flex-direction: column; height: 100%; }
+        #server-list { flex: 1; overflow-y: auto; border: 2px solid #444; margin: 15px 0; padding: 10px; text-align: left; background: #111; }
+        .server-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; margin-bottom: 8px; border: 1px solid #444; color: #eee; }
+        .server-item:hover { background: #333; border-color: #666; }
+        .server-info { display: flex; flex-direction: column; }
+        .server-name { font-weight: bold; font-size: 18px; color: #4caf50; }
+        .server-meta { font-size: 12px; color: #888; }
+        .join-btn { padding: 5px 15px; font-size: 14px; background: #2196f3; border-color: #1976d2; margin-left: 10px; }
+        .join-btn:hover { background: #42a5f5; }
+        .host-options { display: flex; align-items: center; justify-content: center; margin: 15px 0; gap: 10px; }
+        
+        /* Scrollbar for server list */
+        #server-list::-webkit-scrollbar { width: 10px; }
+        #server-list::-webkit-scrollbar-track { background: #111; }
+        #server-list::-webkit-scrollbar-thumb { background: #444; border: 1px solid #111; }
+        #server-list::-webkit-scrollbar-thumb:hover { background: #555; }
 
         #minimap {
             position: absolute; bottom: 20px; left: 20px;
@@ -64,10 +107,6 @@
         #mobile-shoot { bottom: 130px; right: 40px; background: rgba(255,0,0,0.3); border-color: rgba(255,0,0,0.5); }
         #mobile-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; pointer-events: auto; z-index: -1; }
 
-        @media (hover: none) and (pointer: coarse) {
-            #mobile-controls { display: block; }
-            #controls-hint { display: none; }
-        }
     </style>
 </head>
 <body>
@@ -75,8 +114,21 @@
     <!-- UI Layer -->
     <div id="ui-layer">
         <div id="controls-hint">WASD to Move | SPACE to Jump | CLICK to Shoot</div>
+        <div id="scoreboard"><span class="score-blue" id="score-blue">BLUE: 0</span> <div id="timer">WAITING</div> <span class="score-red" id="score-red">RED: 0</span></div>
         <div id="kill-feed"></div>
         <div id="crosshair"></div>
+        <div id="tab-scoreboard">
+            <div class="team-col">
+                <h2 style="color:#4444ff">BLUE TEAM</h2>
+                <div class="list-header"><span>Name</span> <span>K / D</span></div>
+                <ul id="blue-list" class="player-list"></ul>
+            </div>
+            <div class="team-col">
+                <h2 style="color:#ff4444">RED TEAM</h2>
+                <div class="list-header"><span>Name</span> <span>K / D</span></div>
+                <ul id="red-list" class="player-list"></ul>
+            </div>
+        </div>
         <div id="hud-bottom">
             <div id="health-container">
                 <div id="health-bar"></div>
@@ -86,6 +138,12 @@
         <canvas id="minimap" width="150" height="150"></canvas>
     </div>
     
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <div id="winner-text">BLUE WINS!</div>
+        <div id="restart-text">Next match in 3...</div>
+    </div>
+
     <!-- Mobile Controls -->
     <div id="mobile-controls">
         <div id="mobile-look-zone"></div>
@@ -98,19 +156,33 @@
     <div id="menu-overlay">
         <div id="menu-box">
             <div id="main-menu">
-                <h1>Voxel FPS</h1>
+                <h1>GRASSLAND</h1>
+                <input type="text" id="nickname-input" placeholder="Enter Nickname" maxlength="10">
                 <p>Your ID: <span id="my-id">Generating...</span> <button id="copy-btn" class="copy-btn">Copy</button></p>
-                <hr>
-                <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
-                <button id="connect-btn">Connect</button>
-                <p>OR</p>
-                <button id="play-btn">Play Solo / Wait</button>
+                <hr style="border-color: #444; margin: 20px 0;">
+                <div id="menu-default">
+                    <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
+                    <button id="connect-btn">Connect</button>
+                    <button id="browse-btn" style="background:#00bcd4; border-color:#0097a7; margin-top:5px;">Browse Public Servers</button>
+                    <p>OR</p>
+                    <div class="host-options">
+                        <label style="font-size:18px; color:#eee; display:flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" id="public-host-check" style="width:auto; margin:0 10px 0 0; transform: scale(1.5);"> Public Game
+                        </label>
+                    </div>
+                    <button id="play-btn">Play Solo / Host</button>
+                </div>
+                <div id="server-browser">
+                    <h2 style="font-size: 24px; margin-bottom: 10px; color: #00bcd4;">Public Servers</h2>
+                    <div id="server-list">Connecting to directory...</div>
+                    <button id="back-btn" style="background:#757575; border-color: #616161;">Back</button>
+                </div>
                 <div class="status" id="status-msg">Ready to connect.</div>
             </div>
             <div id="pause-menu" style="display:none;">
                 <h1>Paused</h1>
                 <button id="resume-btn">Resume</button>
-                <button id="exit-btn" style="background:#dc3545; margin-top:10px;">Exit Match</button>
+                <button id="exit-btn" style="background:#f44336; border-color:#d32f2f; margin-top:10px;">Exit Match</button>
             </div>
         </div>
     </div>
@@ -121,7 +193,8 @@
             "imports": {
                 "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
                 "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "peerjs": "https://esm.sh/peerjs@1.5.2?bundle-deps"
+                "peerjs": "https://esm.sh/peerjs@1.5.2?bundle-deps",
+                "mqtt": "https://esm.sh/mqtt@5.3.5"
             }
         }
     </script>
@@ -130,6 +203,7 @@
         import * as THREE from 'three';
         import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
         import { Peer } from 'peerjs';
+        import mqtt from 'mqtt';
 
         // --- Configuration ---
         const WORLD_SIZE = 60;
@@ -137,6 +211,8 @@
         const MOVEMENT_SPEED = 10;
         const JUMP_FORCE = 10;
         const GRAVITY = 25;
+        const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+        const MQTT_TOPIC = 'voxel-fps-p2p/lobby';
         
         // --- Globals ---
         let camera, scene, renderer, controls;
@@ -149,14 +225,37 @@
         
         // Game State
         let health = 100;
+        let currentHeight = PLAYER_HEIGHT;
+        let currentSpeed = MOVEMENT_SPEED;
         const obstacles = []; // Array of meshes for collision
         const bullets = []; // Active projectiles
+        const grenades = []; // Active grenades
+        const particles = []; // Visual particles
         const peers = {}; // Connection objects
         const remotePlayers = {}; // Meshes for remote players
         let myPeerId = null;
         let gameStarted = false;
-        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        let isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
+        // Match Logic
+        let myNickname = "Player";
+        let myTeam = 'blue'; // 'blue' or 'red'
+        let matchActive = false;
+        let matchTime = 180; // 3 minutes
+        let scores = { blue: 0, red: 0 };
+        let rounds = { blue: 0, red: 0 };
+        let playerStats = {}; // { peerId: { kills: 0, deaths: 0, nick: "...", team: "..." } }
+        let isTabPressed = false;
+        let isHost = false;
+        let isPublic = false;
+        let mqttClient = null;
+        let discoveredHosts = new Map(); // ID -> { info, timestamp }
+        
+        let lastGrenadeTime = 0;
+        let grenadeChargeStart = 0;
+        let isChargingGrenade = false;
+        
+        let muzzleLight;
         // Mobile Input State
         let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
         let touchLook = { active: false, lastX: 0, lastY: 0 };
@@ -166,6 +265,7 @@
         const hitSound = new Audio('https://kaffetish.club/trash/shootcraft/ah.mp3');
         const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
         runSound.loop = true;
+        const boomSound = new Audio('https://kaffetish.club/trash/shootcraft/boom.mp3');
         
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
@@ -177,6 +277,7 @@
         const copyBtn = document.getElementById('copy-btn');
         const connectBtn = document.getElementById('connect-btn');
         const peerInput = document.getElementById('peer-id-input');
+        const nicknameInput = document.getElementById('nickname-input');
         const statusMsg = document.getElementById('status-msg');
         const myIdDisplay = document.getElementById('my-id');
         const healthBar = document.getElementById('health-bar');
@@ -184,6 +285,18 @@
         const killFeed = document.getElementById('kill-feed');
         const minimapCanvas = document.getElementById('minimap');
         const minimapCtx = minimapCanvas.getContext('2d');
+        const scoreBlueEl = document.getElementById('score-blue');
+        const scoreRedEl = document.getElementById('score-red');
+        const timerEl = document.getElementById('timer');
+        const tabScoreboard = document.getElementById('tab-scoreboard');
+        const blueList = document.getElementById('blue-list');
+        const redList = document.getElementById('red-list');
+        const browseBtn = document.getElementById('browse-btn');
+        const backBtn = document.getElementById('back-btn');
+        const serverBrowser = document.getElementById('server-browser');
+        const menuDefault = document.getElementById('menu-default');
+        const serverListEl = document.getElementById('server-list');
+        const publicCheck = document.getElementById('public-host-check');
 
         // --- Initialization ---
         init();
@@ -224,6 +337,7 @@
             
             controls.addEventListener('lock', () => {
                 menuOverlay.style.display = 'none';
+                if (isTabPressed) showScoreboard(true); // Ensure scoreboard shows if tab held
             });
             controls.addEventListener('unlock', () => {
                 // Pause Menu Logic
@@ -231,8 +345,20 @@
                     mainMenu.style.display = 'none';
                     pauseMenu.style.display = 'block';
                     menuOverlay.style.display = 'flex';
+                    
+                    // If Tab caused unlock, hide menu immediately to allow quick resume
+                    if (isTabPressed) {
+                        menuOverlay.style.display = 'none';
+                    }
                 }
                 runSound.pause();
+            });
+
+            // Click to resume if unlocked by Tab
+            document.addEventListener('click', () => {
+                if (gameStarted && !isMobile && !controls.isLocked && menuOverlay.style.display === 'none') {
+                    controls.lock();
+                }
             });
 
             // World Generation
@@ -243,6 +369,11 @@
             const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
             const gun = new THREE.Mesh(gunGeo, gunMat);
             gun.position.set(0.2, -0.2, -0.3);
+            
+            muzzleLight = new THREE.PointLight(0xffff00, 0, 3);
+            muzzleLight.position.set(0, 0, -0.3);
+            gun.add(muzzleLight);
+            
             camera.add(gun);
             scene.add(camera);
 
@@ -255,12 +386,19 @@
             document.addEventListener('mousedown', onMouseDown);
             window.addEventListener('resize', onWindowResize);
             
-            playBtn.addEventListener('click', () => { 
+            playBtn.addEventListener('click', (e) => { 
+                e.stopPropagation();
+                if (nicknameInput.value) myNickname = nicknameInput.value;
+                isPublic = publicCheck.checked;
+                isHost = true; // Playing solo/waiting implies hosting
+                myTeam = 'blue'; // Host is always blue initially
                 gameStarted = true; 
                 if (!isMobile) controls.lock();
                 else menuOverlay.style.display = 'none';
+                if (isPublic) startAdvertising();
             });
-            resumeBtn.addEventListener('click', () => {
+            resumeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 if (!isMobile) controls.lock();
                 else menuOverlay.style.display = 'none';
             });
@@ -273,12 +411,28 @@
                 }
             });
             connectBtn.addEventListener('click', () => {
+                if (nicknameInput.value) myNickname = nicknameInput.value;
                 const id = peerInput.value;
                 if(id) connectToPeer(id);
+            });
+            
+            browseBtn.addEventListener('click', () => {
+                menuDefault.style.display = 'none';
+                serverBrowser.style.display = 'flex';
+                startBrowsing();
+            });
+            
+            backBtn.addEventListener('click', () => {
+                serverBrowser.style.display = 'none';
+                menuDefault.style.display = 'block';
+                stopBrowsing();
             });
 
             // Mobile Events
             if (isMobile) {
+                document.getElementById('mobile-controls').style.display = 'block';
+                document.getElementById('controls-hint').style.display = 'none';
+
                 const joyZone = document.getElementById('joystick-zone');
                 const joyKnob = document.getElementById('joystick-knob');
                 const lookZone = document.getElementById('mobile-look-zone');
@@ -345,6 +499,20 @@
                     onMouseDown({});
                 });
             }
+
+            // Network Heartbeat (20 TPS)
+            setInterval(() => {
+                if (!gameStarted) return;
+                broadcast({
+                    t: 'm',
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z,
+                    ry: camera.rotation.y,
+                    tm: myTeam, // Send team for late joiners/verification
+                    nick: myNickname
+                });
+            }, 50);
         }
 
         function generateWorld() {
@@ -367,6 +535,13 @@
                 
                 // Keep spawn area clear
                 if (box.position.distanceTo(new THREE.Vector3(0,1,0)) < 5) continue;
+                
+                // Keep corners clear (Spawn Points)
+                const range = WORLD_SIZE / 2 - 5;
+                if (box.position.distanceTo(new THREE.Vector3(range, 1, range)) < 5) continue;
+                if (box.position.distanceTo(new THREE.Vector3(-range, 1, range)) < 5) continue;
+                if (box.position.distanceTo(new THREE.Vector3(range, 1, -range)) < 5) continue;
+                if (box.position.distanceTo(new THREE.Vector3(-range, 1, -range)) < 5) continue;
 
                 scene.add(box);
                 obstacles.push(box);
@@ -391,6 +566,7 @@
             }
             // The 'close' event listeners will handle cleanup.
 
+            if (mqttClient) { mqttClient.end(); mqttClient = null; }
             // Reset local game state
             gameStarted = false;
             health = 100;
@@ -402,17 +578,71 @@
             // Reset UI to initial state
             mainMenu.style.display = 'block';
             pauseMenu.style.display = 'none';
+            menuDefault.style.display = 'block';
+            serverBrowser.style.display = 'none';
             menuOverlay.style.display = 'flex';
             statusMsg.innerText = "Ready to connect.";
+        }
+        
+        function updateScoreUI() {
+            scoreBlueEl.innerText = `BLUE: ${scores.blue} (${rounds.blue})`;
+            scoreRedEl.innerText = `RED: ${scores.red} (${rounds.red})`;
+        }
+
+        function checkMatchStart() {
+            // Host Logic: Start match if 2+ players and not active
+            if (isHost && !matchActive && Object.keys(peers).length >= 1) {
+                matchActive = true;
+                matchTime = 180;
+                broadcast({ t: 'sys', k: 'start' });
+            }
+        }
+
+        function endGame() {
+            matchActive = false;
+            gameStarted = false;
+            document.exitPointerLock();
+            document.getElementById('game-over').style.display = 'flex';
+            
+            let winner = "DRAW";
+            if (scores.blue > scores.red) { winner = "BLUE"; rounds.blue++; }
+            else if (scores.red > scores.blue) { winner = "RED"; rounds.red++; }
+            
+            document.getElementById('winner-text').innerText = `${winner} WINS!`;
+            updateScoreUI();
+
+            if (isHost) {
+                setTimeout(() => {
+                    broadcast({ t: 'sys', k: 'restart' });
+                    resetMatch();
+                }, 3000);
+            }
+        }
+
+        function resetMatch() {
+            scores = { blue: 0, red: 0 };
+            for (let id in playerStats) { playerStats[id].kills = 0; playerStats[id].deaths = 0; }
+            matchTime = 180;
+            matchActive = true;
+            gameStarted = true;
+            updateScoreUI();
+            document.getElementById('game-over').style.display = 'none';
+            respawn();
+            if (!isMobile) controls.lock();
         }
 
         // --- Networking ---
         function initNetwork() {
-            const peer = new Peer(); // Auto-generate ID
+            const shortId = Math.random().toString(36).substring(2, 8);
+            const peer = new Peer(shortId);
             
             peer.on('open', (id) => {
                 myPeerId = id;
                 myIdDisplay.innerText = id;
+                playerStats[myPeerId] = { 
+                    kills: 0, deaths: 0, 
+                    nick: myNickname, team: myTeam 
+                };
                 statusMsg.innerText = "ID Generated. Share it with a friend.";
             });
 
@@ -433,11 +663,23 @@
         }
 
         function setupConnection(conn) {
+            // Max players check (Host side)
+            if (isHost && Object.keys(peers).length >= 9) {
+                conn.close();
+                return;
+            }
+
             const register = () => {
                 if (!peers[conn.peer]) {
                     peers[conn.peer] = conn;
-                    createRemotePlayer(conn.peer);
                     statusMsg.innerText = "Connected to " + conn.peer;
+                    
+                    // Handshake
+                    conn.send({ t: 'hello', nick: myNickname, team: myTeam });
+                    
+                    if (isHost) {
+                        checkMatchStart();
+                    }
                 }
             };
 
@@ -457,18 +699,100 @@
         }
 
         function handleData(peerId, data) {
-            if (data.t === 'm') { // Move
-                updateRemotePlayer(peerId, data);
+            const sourceId = data.id || peerId;
+
+            // Relay Logic (Host Only)
+            if (isHost && peerId !== myPeerId && data.t !== 'hello') {
+                const relayData = { ...data, id: sourceId };
+                if (data.targetId) {
+                    if (peers[data.targetId]) peers[data.targetId].send(relayData);
+                } else {
+                    for (let pid in peers) {
+                        if (pid !== peerId) peers[pid].send(relayData);
+                    }
+                }
+            }
+
+            if (data.t === 'hello') {
+                // New player joined
+                let assignedTeam = data.team;
+                
+                // Host assigns team to balance
+                if (isHost) {
+                    let blueCount = (myTeam === 'blue' ? 1 : 0);
+                    let redCount = (myTeam === 'red' ? 1 : 0);
+                    for(let id in remotePlayers) {
+                        if(remotePlayers[id].userData.team === 'blue') blueCount++;
+                        else redCount++;
+                    }
+                    assignedTeam = blueCount <= redCount ? 'blue' : 'red';
+                    
+                    // Send Welcome Packet with Game State
+                    peers[peerId].send({ 
+                        t: 'welcome', 
+                        team: assignedTeam, 
+                        time: matchTime, 
+                        active: matchActive,
+                        scores: scores,
+                        rounds: rounds,
+                        stats: playerStats
+                    });
+                }
+                
+                createRemotePlayer(peerId, data.nick, assignedTeam);
+                
+            } else if (data.t === 'welcome') {
+                // We just joined, apply state from Host
+                myTeam = data.team;
+                matchTime = data.time;
+                matchActive = data.active;
+                scores = data.scores;
+                rounds = data.rounds || { blue: 0, red: 0 };
+                if (data.stats) playerStats = data.stats;
+                updateScoreUI();
+                gameStarted = true;
+                if (!isMobile) controls.lock();
+                else menuOverlay.style.display = 'none';
+                
+            } else if (data.t === 'm') { // Move
+                if (!remotePlayers[sourceId]) {
+                    createRemotePlayer(sourceId, data.nick || 'Player', data.tm || 'blue');
+                }
+                updateRemotePlayer(sourceId, data);
             } else if (data.t === 'h') { // Hit
-                takeDamage(data.d, peerId);
+                if (data.targetId === myPeerId) {
+                    takeDamage(data.d, sourceId, data.g);
+                }
             } else if (data.t === 's') { // Shoot visual
-                visualizeShot(peerId);
-            } else if (data.t === 'k') { // Kill confirm
-                killFeed.innerText = `You killed ${peerId.substr(0,5)}!`;
-                setTimeout(() => killFeed.innerText = '', 3000);
-            } else if (data.t === 'd') { // Death/Respawn
-                const p = remotePlayers[peerId];
-                if (p) p.visible = false;
+                visualizeShot(sourceId);
+            } else if (data.t === 'g') { // Grenade
+                spawnGrenade(new THREE.Vector3(data.x, data.y, data.z), new THREE.Vector3(data.vx, data.vy, data.vz), false);
+            } else if (data.t === 'die') { // Player died
+                const killerTeam = data.team === 'blue' ? 'red' : 'blue';
+                scores[killerTeam]++;
+                updateScoreUI();
+
+                // Update Stats
+                if (data.victimId && playerStats[data.victimId]) playerStats[data.victimId].deaths++;
+                if (data.killerId && playerStats[data.killerId]) playerStats[data.killerId].kills++;
+                
+                // Sync local stats if we are the victim (redundant but safe)
+                if (data.victimId === myPeerId && playerStats[myPeerId]) {
+                    playerStats[myPeerId].deaths = Math.max(playerStats[myPeerId].deaths, (playerStats[data.victimId]?.deaths || 0));
+                }
+
+                if (isTabPressed) showScoreboard(true); // Refresh if open
+                
+                const msg = document.createElement('div');
+                msg.className = 'kill-msg';
+                msg.innerText = data.killer ? `${data.killer} killed ${data.nick}` : `${data.nick} died`;
+                killFeed.appendChild(msg);
+                setTimeout(() => msg.remove(), 10000);
+            } else if (data.t === 'sys') { // System commands
+                if (data.k === 'start') { matchActive = true; matchTime = 180; }
+                if (data.k === 'tick') { matchTime = data.v; }
+                if (data.k === 'end') { endGame(); }
+                if (data.k === 'restart') { resetMatch(); }
             }
         }
 
@@ -478,19 +802,122 @@
             }
         }
 
+        // --- MQTT / Public Lobby Logic ---
+        function startAdvertising() {
+            if (!mqttClient) mqttClient = mqtt.connect(MQTT_BROKER);
+            
+            mqttClient.on('connect', () => {
+                console.log('Connected to Public Lobby');
+                statusMsg.innerText = "Public Game Listed.";
+                
+                // Advertise loop
+                const advertise = () => {
+                    if (!gameStarted || !isHost) return;
+                    const payload = {
+                        id: myPeerId,
+                        nick: myNickname,
+                        players: Object.keys(peers).length + 1,
+                        active: matchActive
+                    };
+                    mqttClient.publish(MQTT_TOPIC, JSON.stringify(payload));
+                };
+                
+                advertise();
+                setInterval(advertise, 3000);
+            });
+        }
+
+        function startBrowsing() {
+            serverListEl.innerHTML = '<div style="padding:10px; color:#666;">Connecting to directory...</div>';
+            discoveredHosts.clear();
+            
+            if (mqttClient) mqttClient.end();
+            mqttClient = mqtt.connect(MQTT_BROKER);
+            
+            mqttClient.on('connect', () => {
+                serverListEl.innerHTML = '<div style="padding:10px; color:#666;">Searching for games...</div>';
+                mqttClient.subscribe(MQTT_TOPIC);
+            });
+
+            mqttClient.on('error', (err) => {
+                serverListEl.innerHTML = '<div style="padding:10px; color:red;">Connection Error.</div>';
+            });
+
+            mqttClient.on('message', (topic, message) => {
+                try {
+                    const data = JSON.parse(message.toString());
+                    if (data.id === myPeerId) return; // Ignore self
+                    discoveredHosts.set(data.id, { info: data, ts: Date.now() });
+                    updateServerListUI();
+                } catch(e) {}
+            });
+        }
+
+        function stopBrowsing() {
+            if (mqttClient) {
+                mqttClient.end();
+                mqttClient = null;
+            }
+        }
+
+        function updateServerListUI() {
+            const now = Date.now();
+            let html = '';
+            let count = 0;
+            
+            discoveredHosts.forEach((val, id) => {
+                if (now - val.ts > 5000) { // Remove stale hosts (>5s silence)
+                    discoveredHosts.delete(id);
+                    return;
+                }
+                count++;
+                html += `<div class="server-item">
+                    <div class="server-info"><span class="server-name">${val.info.nick}'s Game</span> <span class="server-meta">Players: ${val.info.players} | Status: ${val.info.active ? 'In Match' : 'Lobby'}</span></div>
+                    <button class="join-btn" onclick="window.connectToPeer('${id}')">JOIN</button>
+                </div>`;
+            });
+            
+            if (count === 0) serverListEl.innerHTML = '<div style="padding:10px; color:#666;">No public games found.</div>';
+            else serverListEl.innerHTML = html;
+        }
+
         // --- Player Logic ---
-        function createRemotePlayer(id) {
+        function createRemotePlayer(id, nick, team) {
             if (remotePlayers[id]) return;
             
             const group = new THREE.Group();
+            group.userData = { team: team, nick: nick };
+            
+            // Init Stats if not present
+            if (!playerStats[id]) {
+                playerStats[id] = { kills: 0, deaths: 0, nick: nick, team: team };
+            }
             
             // Body
             const bodyGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+            const color = team === 'blue' ? 0x0000ff : 0xff0000;
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 0.9 - PLAYER_HEIGHT;
             group.visible = false; // Hide until first update to prevent ghosting at 0,0,0
             group.add(body);
+
+            // Name Tag
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 256; canvas.height = 64;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0,0,256,64);
+            ctx.fillStyle = team === 'blue' ? '#aaaaff' : '#ffaaaa';
+            ctx.font = 'bold 30px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(nick || id.substr(0,5), 128, 32);
+            
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
+            sprite.scale.set(2, 0.5, 1);
+            sprite.position.y = 1.2;
+            group.add(sprite);
 
             scene.add(group);
             remotePlayers[id] = group;
@@ -499,8 +926,15 @@
         function updateRemotePlayer(id, data) {
             const p = remotePlayers[id];
             if (p) {
-                p.position.set(data.x, data.y, data.z);
-                p.rotation.y = data.ry;
+                if (!p.userData.targetPos) {
+                    p.position.set(data.x, data.y, data.z);
+                    p.rotation.y = data.ry;
+                    p.userData.targetPos = new THREE.Vector3(data.x, data.y, data.z);
+                    p.userData.targetRot = data.ry;
+                } else {
+                    p.userData.targetPos.set(data.x, data.y, data.z);
+                    p.userData.targetRot = data.ry;
+                }
                 p.visible = true;
             }
         }
@@ -512,13 +946,25 @@
             }
         }
 
-        function takeDamage(amount, attackerId) {
+        function takeDamage(amount, attackerId, isGrenade = false) {
+            if (!matchActive) return; // No damage before match starts
+            // Friendly Fire Check
+            if (!isGrenade && attackerId && remotePlayers[attackerId] && remotePlayers[attackerId].userData.team === myTeam) return;
+            
             health -= amount;
             updateHealthUI();
             if (health <= 0) {
-                if (attackerId && peers[attackerId]) {
-                    peers[attackerId].send({ t: 'k' });
-                }
+                // Broadcast death so everyone updates score
+                const killerNick = attackerId ? (remotePlayers[attackerId]?.userData?.nick || "Unknown") : null;
+                
+                broadcast({ 
+                    t: 'die', 
+                    victimId: myPeerId,
+                    killerId: attackerId,
+                    nick: myNickname, 
+                    team: myTeam, 
+                    killer: killerNick 
+                });
                 respawn();
             }
         }
@@ -526,10 +972,14 @@
         function respawn() {
             health = 100;
             updateHealthUI();
+            // Add to enemy score locally
+            const enemyTeam = myTeam === 'blue' ? 'red' : 'blue';
+            scores[enemyTeam]++;
+            updateScoreUI();
+            
             const spawn = getSpawnPoint();
             camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
-            broadcast({ t: 'd' });
-            // Notify killer? (Simplified: just respawn locally)
+            velocity.set(0, 0, 0);
         }
 
         function updateHealthUI() {
@@ -556,36 +1006,180 @@
             }
         }
 
-        function spawnBullet(position, direction) {
+        function spawnBullet(position, direction, isLocal = false) {
             const bullet = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
             bullet.position.copy(position);
-            bullet.userData = { velocity: direction.multiplyScalar(50), life: 2.0 }; // 50 units/sec, 2 sec life
+            bullet.userData = { velocity: direction.multiplyScalar(50), life: 2.0, isLocal: isLocal }; // 50 units/sec, 2 sec life
             scene.add(bullet);
             bullets.push(bullet);
+        }
+
+        function createImpact(position) {
+            for(let i=0; i<5; i++) {
+                const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.copy(position);
+                mesh.position.add(new THREE.Vector3((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5));
+                
+                const vel = new THREE.Vector3(
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 5,
+                    (Math.random() - 0.5) * 5
+                );
+                
+                scene.add(mesh);
+                particles.push({ mesh: mesh, velocity: vel, life: 0.5 });
+            }
+        }
+
+        function spawnGrenade(pos, vel, isLocal) {
+            const geo = new THREE.SphereGeometry(0.2, 8, 8);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            mesh.userData = { velocity: vel, isLocal: isLocal };
+            scene.add(mesh);
+            grenades.push(mesh);
+        }
+
+        function explodeGrenade(pos, isLocal) {
+            boomSound.currentTime = 0;
+            boomSound.play().catch(()=>{});
+            
+            // Visuals (Simple particles)
+            for(let i=0; i<20; i++) {
+                const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const mat = new THREE.MeshBasicMaterial({ color: 0xff4500 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.copy(pos);
+                const vel = new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*10 + 5, (Math.random()-0.5)*10);
+                scene.add(mesh);
+                particles.push({ mesh: mesh, velocity: vel, life: 1.0 });
+            }
+
+            if (isLocal) {
+                const radius = 8;
+                const maxDamage = 80;
+                
+                // Damage Remote Players
+                for (let id in remotePlayers) {
+                    const dist = remotePlayers[id].position.distanceTo(pos);
+                    if (dist < radius) {
+                        const dmg = Math.floor(maxDamage * (1 - dist/radius));
+                        if (dmg > 0) {
+                            const hitData = { t: 'h', d: dmg, targetId: id, g: true };
+                            if (peers[id]) peers[id].send(hitData);
+                            else broadcast(hitData);
+                        }
+                    }
+                }
+                // Damage Self
+                const dist = camera.position.distanceTo(pos);
+                if (dist < radius) {
+                    const dmg = Math.floor(maxDamage * (1 - dist/radius));
+                    if (dmg > 0) takeDamage(dmg, null, true);
+                }
+            }
         }
 
         // --- Input & Physics ---
         function onKeyDown(event) {
             switch (event.code) {
+                case 'Escape':
+                    if (gameStarted && !controls.isLocked && !isMobile) {
+                        controls.lock();
+                    }
+                    break;
+                case 'Tab':
+                    event.preventDefault();
+                    isTabPressed = true;
+                    showScoreboard(true);
+                    break;
                 case 'ArrowUp': case 'KeyW': moveForward = true; break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
                 case 'ArrowRight': case 'KeyD': moveRight = true; break;
                 case 'Space': if (canJump) velocity.y += JUMP_FORCE; canJump = false; break;
+                case 'KeyR':
+                    if (matchActive && !isChargingGrenade && performance.now() - lastGrenadeTime > 5000) {
+                        isChargingGrenade = true;
+                        grenadeChargeStart = performance.now();
+                    }
+                    break;
+                case 'KeyC':
+                    camera.fov = 30;
+                    camera.updateProjectionMatrix();
+                    break;
+                case 'ShiftLeft': case 'ShiftRight':
+                    currentHeight = PLAYER_HEIGHT / 2;
+                    currentSpeed = MOVEMENT_SPEED / 2;
+                    break;
             }
         }
 
         function onKeyUp(event) {
             switch (event.code) {
+                case 'Tab':
+                    isTabPressed = false;
+                    showScoreboard(false);
+                    break;
                 case 'ArrowUp': case 'KeyW': moveForward = false; break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = false; break;
                 case 'ArrowRight': case 'KeyD': moveRight = false; break;
+                case 'KeyR':
+                    if (isChargingGrenade) {
+                        const duration = Math.min(performance.now() - grenadeChargeStart, 2000);
+                        const force = 15 + (duration / 2000) * 35; 
+                        const dir = new THREE.Vector3();
+                        camera.getWorldDirection(dir);
+                        const vel = dir.multiplyScalar(force);
+                        spawnGrenade(camera.position.clone(), vel, true);
+                        broadcast({
+                            t: 'g', x: camera.position.x, y: camera.position.y, z: camera.position.z,
+                            vx: vel.x, vy: vel.y, vz: vel.z
+                        });
+                        isChargingGrenade = false;
+                        lastGrenadeTime = performance.now();
+                    }
+                    break;
+                case 'KeyC':
+                    camera.fov = 75;
+                    camera.updateProjectionMatrix();
+                    break;
+                case 'ShiftLeft': case 'ShiftRight':
+                    currentHeight = PLAYER_HEIGHT;
+                    currentSpeed = MOVEMENT_SPEED;
+                    break;
+            }
+        }
+
+        function showScoreboard(visible) {
+            tabScoreboard.style.display = visible ? 'flex' : 'none';
+            if (visible) {
+                blueList.innerHTML = '';
+                redList.innerHTML = '';
+                
+                const addPlayer = (id, nick, team) => {
+                    const stats = playerStats[id] || { kills: 0, deaths: 0 };
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${nick}</span> <span>${stats.kills} / ${stats.deaths}</span>`;
+                    (team === 'blue' ? blueList : redList).appendChild(li);
+                };
+                
+                // Add Self
+                if (myPeerId) addPlayer(myPeerId, myNickname, myTeam);
+                
+                // Add Others
+                for (let id in remotePlayers) {
+                    addPlayer(id, remotePlayers[id].userData.nick, remotePlayers[id].userData.team);
+                }
             }
         }
 
         function onMouseDown(event) {
-            if (!gameStarted || (!isMobile && !controls.isLocked)) return;
+            if ((!isMobile && !controls.isLocked) || !matchActive) return;
             
             // Shoot
             // 1. Spawn Bullet
@@ -594,45 +1188,13 @@
             
             const dir = new THREE.Vector3();
             camera.getWorldDirection(dir);
-            spawnBullet(camera.position.clone().add(dir), dir.clone());
-
-            // 2. Raycast
-            raycaster.setFromCamera(new THREE.Vector2(), camera);
+            spawnBullet(camera.position.clone().add(dir), dir.clone(), true);
             
-            // Check intersection with remote players
-            // Include obstacles to prevent shooting through walls
-            const targets = [...obstacles];
-            for (let id in remotePlayers) {
-                targets.push(remotePlayers[id].children[0]); // The body mesh
-            }
-
-            const intersects = raycaster.intersectObjects(targets);
-            
-            if (intersects.length > 0) {
-                const hitObj = intersects[0].object;
-                
-                // If we hit an obstacle first, stop
-                if (obstacles.includes(hitObj)) return;
-
-                // Find which player owns this mesh
-                for (let id in remotePlayers) {
-                    if (remotePlayers[id].children[0] === hitObj) {
-                        // Send hit
-                        const conn = peers[id];
-                        if (conn) {
-                            conn.send({ t: 'h', d: 20 }); // 20 damage
-                            // Visual feedback
-                            if (Math.random() < 0.2) {
-                                hitSound.currentTime = 0;
-                                hitSound.play().catch(() => {});
-                            }
-                            killFeed.innerText = "Hit!";
-                            setTimeout(() => killFeed.innerText = '', 500);
-                        }
-                        break;
-                    }
-                }
-            }
+            // Visuals
+            muzzleLight.intensity = 5;
+            setTimeout(() => muzzleLight.intensity = 0, 50);
+            camera.rotation.x += 0.02;
+            setTimeout(() => camera.rotation.x -= 0.02, 50);
 
             // Broadcast shot event (for visuals)
             broadcast({ t: 's' });
@@ -664,21 +1226,41 @@
             });
 
             // Draw Remote Players (Red)
-            minimapCtx.fillStyle = '#ff0000';
             for (let id in remotePlayers) {
                 const p = remotePlayers[id];
                 if (!p.visible) continue;
+                minimapCtx.fillStyle = p.userData.team === 'blue' ? '#0000ff' : '#ff0000';
                 minimapCtx.beginPath();
                 minimapCtx.arc(toMap(p.position.x), toMap(p.position.z), 4, 0, Math.PI*2);
                 minimapCtx.fill();
             }
 
             // Draw Local Player (Blue)
-            minimapCtx.fillStyle = '#0000ff';
+            minimapCtx.fillStyle = myTeam === 'blue' ? '#00ffff' : '#ffaaaa';
             minimapCtx.beginPath();
             minimapCtx.arc(toMap(camera.position.x), toMap(camera.position.z), 4, 0, Math.PI*2);
             minimapCtx.fill();
         }
+        
+        // Timer Logic (1 second interval)
+        setInterval(() => {
+            if (matchActive) {
+                if (isHost) {
+                    matchTime--;
+                    broadcast({ t: 'sys', k: 'tick', v: matchTime });
+                    if (matchTime <= 0) {
+                        broadcast({ t: 'sys', k: 'end' });
+                        endGame();
+                    }
+                }
+                
+                const m = Math.floor(matchTime / 60);
+                const s = matchTime % 60;
+                timerEl.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+            } else {
+                timerEl.innerText = Object.keys(peers).length < 1 ? "WAITING FOR PLAYERS" : "READY";
+            }
+        }, 1000);
 
         function animate() {
             requestAnimationFrame(animate);
@@ -689,7 +1271,50 @@
             // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
+                const oldPos = b.position.clone();
                 b.position.addScaledVector(b.userData.velocity, delta);
+
+                // Projectile Collision Logic
+                const dist = b.position.distanceTo(oldPos);
+                raycaster.set(oldPos, b.userData.velocity.clone().normalize());
+                
+                const targets = [...obstacles];
+                // Only check against players if it's a local bullet (to deal damage)
+                if (b.userData.isLocal) {
+                    for (let id in remotePlayers) targets.push(remotePlayers[id].children[0]);
+                }
+                
+                const intersects = raycaster.intersectObjects(targets);
+                if (intersects.length > 0 && intersects[0].distance <= dist) {
+                    const hitObj = intersects[0].object;
+                    createImpact(intersects[0].point);
+                    
+                    if (b.userData.isLocal && !obstacles.includes(hitObj)) {
+                        // Hit a player
+                        for (let id in remotePlayers) {
+                            if (remotePlayers[id].children[0] === hitObj) {
+                                const hitData = { t: 'h', d: 20, targetId: id };
+                                if (peers[id]) {
+                                    peers[id].send(hitData);
+                                } else {
+                                    broadcast(hitData);
+                                }
+                                
+                                if (Math.random() < 0.2) {
+                                    hitSound.currentTime = 0;
+                                    hitSound.play().catch(() => {});
+                                }
+                                killFeed.innerText = "Hit!";
+                                setTimeout(() => killFeed.innerText = '', 500);
+                                break;
+                            }
+                        }
+                    }
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
                 b.userData.life -= delta;
                 if (b.userData.life <= 0) {
                     scene.remove(b);
@@ -697,92 +1322,159 @@
                 }
             }
 
+            // Update Grenades
+            for (let i = grenades.length - 1; i >= 0; i--) {
+                const g = grenades[i];
+                g.userData.velocity.y -= GRAVITY * delta;
+                const oldPos = g.position.clone();
+                g.position.addScaledVector(g.userData.velocity, delta);
+                
+                let hit = false;
+                // Floor
+                if (g.position.y < 0.2) {
+                    g.position.y = 0.2;
+                    hit = true;
+                }
+                // Obstacles
+                if (!hit) {
+                    const dist = g.position.distanceTo(oldPos);
+                    raycaster.set(oldPos, g.userData.velocity.clone().normalize());
+                    const intersects = raycaster.intersectObjects(obstacles);
+                    if (intersects.length > 0 && intersects[0].distance <= dist) {
+                        hit = true;
+                        g.position.copy(intersects[0].point);
+                    }
+                }
+                if (hit) {
+                    explodeGrenade(g.position, g.userData.isLocal);
+                    scene.remove(g);
+                    grenades.splice(i, 1);
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.life -= delta;
+                p.mesh.position.addScaledVector(p.velocity, delta);
+                p.mesh.material.opacity = p.life / 0.5;
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Interpolate Remote Players
+            for (let id in remotePlayers) {
+                const p = remotePlayers[id];
+                if (p.userData.targetPos) {
+                    p.position.lerp(p.userData.targetPos, 0.2);
+                    p.rotation.y += (p.userData.targetRot - p.rotation.y) * 0.2;
+                }
+            }
+
             drawMinimap();
 
-            if (gameStarted) {
-                const originalPos = controls.getObject().position.clone();
-                
-                // Input Processing
-                let inputX = 0;
-                let inputZ = 0;
+            // Physics & Logic
+            
+            // Input Processing
+            let inputX = 0;
+            let inputZ = 0;
 
-                if (isMobile) {
-                    inputX = joystick.x;
-                    inputZ = joystick.y;
-                } else if (controls.isLocked) {
-                    inputZ = Number(moveForward) - Number(moveBackward);
-                    inputX = Number(moveRight) - Number(moveLeft);
+            if (isMobile) {
+                inputX = joystick.x;
+                inputZ = joystick.y;
+            } else if (controls.isLocked) {
+                inputZ = Number(moveForward) - Number(moveBackward);
+                inputX = Number(moveRight) - Number(moveLeft);
+            }
+
+            // Run Sound
+            const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
+            if (isMoving && canJump) {
+                if (runSound.paused) runSound.play().catch(() => {});
+            } else {
+                runSound.pause();
+            }
+
+            // Friction
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            velocity.y -= GRAVITY * delta;
+
+            direction.z = inputZ;
+            direction.x = inputX;
+            direction.normalize();
+
+            if (inputZ !== 0) velocity.z -= direction.z * currentSpeed * 10.0 * delta;
+            if (inputX !== 0) velocity.x -= direction.x * currentSpeed * 10.0 * delta;
+
+            // Sliding Collision Logic
+            const startPos = controls.getObject().position.clone();
+            
+            controls.moveRight(-velocity.x * delta);
+            controls.moveForward(-velocity.z * delta);
+
+            const endPos = controls.getObject().position.clone();
+            const deltaX = endPos.x - startPos.x;
+            const deltaZ = endPos.z - startPos.z;
+            
+            controls.getObject().position.copy(startPos);
+
+            // Apply X
+            controls.getObject().position.x += deltaX;
+            let playerBox = new THREE.Box3().setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
+            
+            for (let obs of obstacles) {
+                const obsBox = new THREE.Box3().setFromObject(obs);
+                obsBox.max.y = 1000; 
+                if (playerBox.intersectsBox(obsBox)) {
+                    controls.getObject().position.x -= deltaX;
+                    break;
                 }
+            }
 
-                // Run Sound
-                const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
-                if (isMoving && canJump) {
-                    if (runSound.paused) runSound.play().catch(() => {});
-                } else {
-                    runSound.pause();
+            // Apply Z
+            controls.getObject().position.z += deltaZ;
+            playerBox.setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
+            
+            for (let obs of obstacles) {
+                const obsBox = new THREE.Box3().setFromObject(obs);
+                obsBox.max.y = 1000;
+                if (playerBox.intersectsBox(obsBox)) {
+                    controls.getObject().position.z -= deltaZ;
+                    break;
                 }
+            }
 
-                // Friction
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= GRAVITY * delta;
+            // Map Boundaries
+            let pos = controls.getObject().position;
+            const limit = WORLD_SIZE / 2;
+            if (pos.x < -limit) pos.x = -limit;
+            if (pos.x > limit) pos.x = limit;
+            if (pos.z < -limit) pos.z = -limit;
+            if (pos.z > limit) pos.z = limit;
+            
+            controls.getObject().position.y += velocity.y * delta;
 
-                direction.z = inputZ;
-                direction.x = inputX;
-                direction.normalize();
+            // Floor Collision
+            if (controls.getObject().position.y < currentHeight) {
+                velocity.y = 0;
+                controls.getObject().position.y = currentHeight;
+                canJump = true;
+            }
 
-                if (inputZ !== 0) velocity.z -= direction.z * MOVEMENT_SPEED * 10.0 * delta;
-                if (inputX !== 0) velocity.x -= direction.x * MOVEMENT_SPEED * 10.0 * delta;
-
-                controls.moveRight(-velocity.x * delta);
-                controls.moveForward(-velocity.z * delta);
-
-                // Check X/Z Collision
-                let pos = controls.getObject().position;
-                let playerBox = new THREE.Box3().setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
-                
-                for (let obs of obstacles) {
-                    const obsBox = new THREE.Box3().setFromObject(obs);
-                    if (playerBox.intersectsBox(obsBox)) {
-                        controls.getObject().position.x = originalPos.x;
-                        controls.getObject().position.z = originalPos.z;
-                        velocity.x = 0;
-                        velocity.z = 0;
-                        break;
-                    }
-                }
-                
-                controls.getObject().position.y += velocity.y * delta;
-
-                // Floor Collision
-                if (controls.getObject().position.y < PLAYER_HEIGHT) {
+            // Check Y Collision (Obstacles)
+            pos = controls.getObject().position;
+            playerBox.setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
+            
+            for (let obs of obstacles) {
+                const obsBox = new THREE.Box3().setFromObject(obs);
+                if (playerBox.intersectsBox(obsBox)) {
+                    controls.getObject().position.y -= velocity.y * delta;
                     velocity.y = 0;
-                    controls.getObject().position.y = PLAYER_HEIGHT;
-                    canJump = true;
+                    break;
                 }
-
-                // Check Y Collision (Obstacles)
-                pos = controls.getObject().position;
-                playerBox.setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
-                
-                for (let obs of obstacles) {
-                    const obsBox = new THREE.Box3().setFromObject(obs);
-                    if (playerBox.intersectsBox(obsBox)) {
-                        controls.getObject().position.y = originalPos.y;
-                        velocity.y = 0;
-                        break;
-                    }
-                }
-
-                // Network Sync (Send position every frame or throttled)
-                // Throttling to ~30fps is better, but per frame is okay for local test
-                broadcast({
-                    t: 'm',
-                    x: pos.x,
-                    y: pos.y,
-                    z: pos.z,
-                    ry: camera.rotation.y // Only Y rotation needed for body facing
-                });
             }
 
             prevTime = time;
