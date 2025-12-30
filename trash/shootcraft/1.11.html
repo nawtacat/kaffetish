@@ -263,6 +263,10 @@
         let grenadeChargeStart = 0;
         let isChargingGrenade = false;
         
+        let isSliding = false;
+        let lastSlideTime = 0;
+        let isCrouching = false;
+        
         let muzzleLight;
         // Mobile Input State
         let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
@@ -1178,7 +1182,24 @@
                     camera.fov = 30;
                     camera.updateProjectionMatrix();
                     break;
+                case 'KeyF':
+                    if (!isSliding && canJump && performance.now() - lastSlideTime > 4000) {
+                        isSliding = true;
+                        lastSlideTime = performance.now();
+                        
+                        // Slide Boost
+                        const slideDir = new THREE.Vector3();
+                        camera.getWorldDirection(slideDir);
+                        slideDir.y = 0;
+                        slideDir.normalize();
+                        
+                        velocity.x = slideDir.x * 30;
+                        velocity.z = slideDir.z * 30;
+                        currentHeight = PLAYER_HEIGHT * 0.4;
+                    }
+                    break;
                 case 'ShiftLeft': case 'ShiftRight':
+                    isCrouching = true;
                     currentHeight = PLAYER_HEIGHT / 2;
                     currentSpeed = MOVEMENT_SPEED / 2;
                     break;
@@ -1216,6 +1237,7 @@
                     camera.updateProjectionMatrix();
                     break;
                 case 'ShiftLeft': case 'ShiftRight':
+                    isCrouching = false;
                     currentHeight = PLAYER_HEIGHT;
                     currentSpeed = MOVEMENT_SPEED;
                     break;
@@ -1457,6 +1479,20 @@
 
             // Physics & Logic
             
+            // Slide Logic
+            if (isSliding) {
+                if (performance.now() - lastSlideTime > 800) {
+                    isSliding = false;
+                    if (isCrouching) {
+                        currentHeight = PLAYER_HEIGHT / 2;
+                        currentSpeed = MOVEMENT_SPEED / 2;
+                    } else {
+                        currentHeight = PLAYER_HEIGHT;
+                        currentSpeed = MOVEMENT_SPEED;
+                    }
+                }
+            }
+            
             // Input Processing
             let inputX = 0;
             let inputZ = 0;
@@ -1464,7 +1500,7 @@
             if (isMobile) {
                 inputX = joystick.x;
                 inputZ = joystick.y;
-            } else if (controls.isLocked) {
+            } else if (controls.isLocked && !isSliding) {
                 inputZ = Number(moveForward) - Number(moveBackward);
                 inputX = Number(moveRight) - Number(moveLeft);
             }
@@ -1478,16 +1514,17 @@
             }
 
             // Friction
-            velocity.x -= velocity.x * 10.0 * delta;
-            velocity.z -= velocity.z * 10.0 * delta;
+            const friction = isSliding ? 2.0 : 10.0;
+            velocity.x -= velocity.x * friction * delta;
+            velocity.z -= velocity.z * friction * delta;
             velocity.y -= GRAVITY * delta;
 
             direction.z = inputZ;
             direction.x = inputX;
             direction.normalize();
 
-            if (inputZ !== 0) velocity.z -= direction.z * currentSpeed * 10.0 * delta;
-            if (inputX !== 0) velocity.x -= direction.x * currentSpeed * 10.0 * delta;
+            if (!isSliding && inputZ !== 0) velocity.z -= direction.z * currentSpeed * 10.0 * delta;
+            if (!isSliding && inputX !== 0) velocity.x -= direction.x * currentSpeed * 10.0 * delta;
 
             // Sliding Collision Logic
             const startPos = controls.getObject().position.clone();
