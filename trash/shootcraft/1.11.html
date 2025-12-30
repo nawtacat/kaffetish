@@ -112,6 +112,11 @@
             background: red; opacity: 0; pointer-events: none; transition: opacity 0.1s;
             z-index: 1;
         }
+        #heal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #00ff00; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
@@ -119,6 +124,7 @@
     <!-- UI Layer -->
     <div id="ui-layer">
         <div id="damage-overlay"></div>
+        <div id="heal-overlay"></div>
         <div id="controls-hint">WASD to Move | SPACE to Jump | CLICK to Shoot</div>
         <div id="scoreboard"><span class="score-blue" id="score-blue">BLUE: 0</span> <div id="timer">WAITING</div> <span class="score-red" id="score-red">RED: 0</span></div>
         <div id="kill-feed"></div>
@@ -266,6 +272,7 @@
         let isSliding = false;
         let lastSlideTime = 0;
         let isCrouching = false;
+        let lastHealTime = 0;
         
         let muzzleLight;
         // Mobile Input State
@@ -280,6 +287,7 @@
         const boomSound = new Audio('https://kaffetish.club/trash/shootcraft/boom.mp3');
         const ouchSound = new Audio('https://kaffetish.club/trash/shootcraft/ouch.m4a');
         const slideSound = new Audio('https://kaffetish.club/trash/shootcraft/sliding.m4a');
+        const healSound = new Audio('https://kaffetish.club/trash/shootcraft/heal.mp3');
         
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
@@ -1171,6 +1179,18 @@
                     event.preventDefault();
                     isTabPressed = true;
                     showScoreboard(true);
+                    break;
+                case 'KeyE':
+                    if (matchActive && health < 100 && performance.now() - lastHealTime > 12000) {
+                        lastHealTime = performance.now();
+                        health = Math.min(100, health + 30);
+                        updateHealthUI();
+                        healSound.currentTime = 0;
+                        healSound.play().catch(() => {});
+                        const hOverlay = document.getElementById('heal-overlay');
+                        hOverlay.style.opacity = '0.3';
+                        setTimeout(() => hOverlay.style.opacity = '0', 500);
+                    }
                     break;
                 case 'ArrowUp': case 'KeyW': moveForward = true; break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
