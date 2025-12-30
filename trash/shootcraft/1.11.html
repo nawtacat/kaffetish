@@ -107,12 +107,18 @@
         #mobile-shoot { bottom: 130px; right: 40px; background: rgba(255,0,0,0.3); border-color: rgba(255,0,0,0.5); }
         #mobile-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; pointer-events: auto; z-index: -1; }
 
+        #damage-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: red; opacity: 0; pointer-events: none; transition: opacity 0.1s;
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
 
     <!-- UI Layer -->
     <div id="ui-layer">
+        <div id="damage-overlay"></div>
         <div id="controls-hint">WASD to Move | SPACE to Jump | CLICK to Shoot</div>
         <div id="scoreboard"><span class="score-blue" id="score-blue">BLUE: 0</span> <div id="timer">WAITING</div> <span class="score-red" id="score-red">RED: 0</span></div>
         <div id="kill-feed"></div>
@@ -268,6 +274,7 @@
         const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
         runSound.loop = true;
         const boomSound = new Audio('https://kaffetish.club/trash/shootcraft/boom.mp3');
+        const ouchSound = new Audio('https://kaffetish.club/trash/shootcraft/ouch.m4a');
         
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
@@ -1004,6 +1011,13 @@
             if (!isGrenade && attackerId && remotePlayers[attackerId] && remotePlayers[attackerId].userData.team === myTeam) return;
             
             health -= amount;
+            
+            const overlay = document.getElementById('damage-overlay');
+            overlay.style.opacity = '0.4';
+            setTimeout(() => overlay.style.opacity = '0', 200);
+            ouchSound.currentTime = 0;
+            ouchSound.play().catch(() => {});
+
             updateHealthUI();
             if (health <= 0) {
                 // Broadcast death so everyone updates score
