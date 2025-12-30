@@ -1135,7 +1135,7 @@
 
             if (isLocal) {
                 const radius = 8;
-                const maxDamage = 80;
+                const maxDamage = 160;
                 
                 // Damage Remote Players
                 for (let id in remotePlayers) {
@@ -1409,7 +1409,7 @@
                         // Hit a player
                         for (let id in remotePlayers) {
                             if (remotePlayers[id].children[0] === hitObj) {
-                                const hitData = { t: 'h', d: 20, targetId: id };
+                                const hitData = { t: 'h', d: 10, targetId: id };
                                 if (peers[id]) {
                                     peers[id].send(hitData);
                                 } else {
