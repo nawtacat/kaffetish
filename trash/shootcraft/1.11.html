@@ -1407,8 +1407,16 @@
             // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
+                b.userData.velocity.y -= GRAVITY * delta;
                 const oldPos = b.position.clone();
                 b.position.addScaledVector(b.userData.velocity, delta);
+
+                if (b.position.y <= 0) {
+                    createImpact(b.position);
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                    continue;
+                }
 
                 // Projectile Collision Logic
                 const dist = b.position.distanceTo(oldPos);
