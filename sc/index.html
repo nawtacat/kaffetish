@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grassland</title>
+    <title>BALDSTAFF</title>
     <style>
         @font-face {
             font-family: 'Pixelpurl';
@@ -25,7 +25,7 @@
         
         #hud-bottom { padding: 20px; display: flex; align-items: flex-end; }
         #health-container { width: 200px; height: 25px; background: #333; border: 2px solid #fff; position: relative; }
-        #health-bar { width: 100%; height: 100%; background: #00ff00; transition: width 0.2s; }
+        #health-bar { width: 100%; height: 100%; background: #42b132; transition: width 0.2s; }
         #health-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; color: white; line-height: 25px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
         
         #kill-feed { position: absolute; top: 60px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
@@ -39,9 +39,9 @@
         .list-header { display: flex; justify-content: space-between; padding: 5px 8px; font-weight: bold; border-bottom: 1px solid white; margin-bottom: 5px; }
         
         #scoreboard { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #000; color: white; }
-        .score-blue { color: #4444ff; }
-        .score-red { color: #ff4444; }
-        #timer { font-size: 30px; color: yellow; }
+        .score-blue { color: #009cda; }
+        .score-red { color: #e71e07; }
+        #timer { font-size: 30px; color: #fcd000; }
 
         #game-over { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20; flex-direction: column; align-items: center; justify-content: center; color: white; }
         #winner-text { font-size: 48px; font-weight: bold; margin-bottom: 10px; }
@@ -54,16 +54,16 @@
             pointer-events: auto; z-index: 10;
         }
         #menu-box {
-            background: rgba(30, 30, 30, 0.95); padding: 40px; border: 4px solid #4caf50; 
+            background: rgba(30, 30, 30, 0.95); padding: 40px; border: 4px solid #42b132; 
             text-align: center; max-width: 450px; width: 90%;
             box-shadow: 0 0 30px rgba(0,0,0,0.8); color: white;
             image-rendering: pixelated;
         }
-        h1 { margin-top: 0; color: #4caf50; font-size: 48px; text-shadow: 4px 4px 0 #000; letter-spacing: 2px; margin-bottom: 20px; }
+        h1 { margin-top: 0; color: #42b132; font-size: 48px; text-shadow: 4px 4px 0 #000; letter-spacing: 2px; margin-bottom: 20px; }
         input { width: 70%; padding: 12px; margin: 10px 0; background: #222; border: 2px solid #555; color: white; font-family: 'Pixelpurl', monospace; font-size: 16px; outline: none; }
-        input:focus { border-color: #4caf50; }
-        button { padding: 12px 24px; background: #4caf50; color: white; border: 2px solid #388e3c; border-bottom-width: 5px; cursor: pointer; font-size: 20px; font-family: 'Pixelpurl', monospace; margin: 5px; transition: transform 0.1s; text-shadow: 2px 2px 0 #000; }
-        button:hover { background: #5cb860; transform: translateY(-2px); }
+        input:focus { border-color: #42b132; }
+        button { padding: 12px 24px; background: #42b132; color: white; border: 2px solid #2a7a20; border-bottom-width: 5px; cursor: pointer; font-size: 20px; font-family: 'Pixelpurl', monospace; margin: 5px; transition: transform 0.1s; text-shadow: 2px 2px 0 #000; }
+        button:hover { background: #5cd64f; transform: translateY(-2px); }
         button:active { transform: translateY(2px); border-bottom-width: 2px; margin-top: 7px; margin-bottom: 3px; }
         .status { margin-top: 15px; font-size: 14px; color: #aaa; word-break: break-all; }
         
@@ -78,10 +78,10 @@
         .server-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; margin-bottom: 8px; border: 1px solid #444; color: #eee; }
         .server-item:hover { background: #333; border-color: #666; }
         .server-info { display: flex; flex-direction: column; }
-        .server-name { font-weight: bold; font-size: 18px; color: #4caf50; }
+        .server-name { font-weight: bold; font-size: 18px; color: #42b132; }
         .server-meta { font-size: 12px; color: #888; }
-        .join-btn { padding: 5px 15px; font-size: 14px; background: #2196f3; border-color: #1976d2; margin-left: 10px; }
-        .join-btn:hover { background: #42a5f5; }
+        .join-btn { padding: 5px 15px; font-size: 14px; background: #009cda; border-color: #007ba8; margin-left: 10px; }
+        .join-btn:hover { background: #33b5e5; }
         .host-options { display: flex; align-items: center; justify-content: center; margin: 15px 0; gap: 10px; }
         
         /* Scrollbar for server list */
@@ -131,12 +131,12 @@
         <div id="crosshair"></div>
         <div id="tab-scoreboard">
             <div class="team-col">
-                <h2 style="color:#4444ff">BLUE TEAM</h2>
+                <h2 style="color:#009cda">BLUE TEAM</h2>
                 <div class="list-header"><span>Name</span> <span>K / D</span></div>
                 <ul id="blue-list" class="player-list"></ul>
             </div>
             <div class="team-col">
-                <h2 style="color:#ff4444">RED TEAM</h2>
+                <h2 style="color:#e71e07">RED TEAM</h2>
                 <div class="list-header"><span>Name</span> <span>K / D</span></div>
                 <ul id="red-list" class="player-list"></ul>
             </div>
@@ -168,14 +168,14 @@
     <div id="menu-overlay">
         <div id="menu-box">
             <div id="main-menu">
-                <h1>GRASSLAND</h1>
+                <img src="https://kaffetish.club/trash/shootcraft/baldstaff.png" alt="Baldstaff" style="max-width: 100%; margin-bottom: 20px;">
                 <input type="text" id="nickname-input" placeholder="Enter Nickname" maxlength="10">
                 <p>Your ID: <span id="my-id">Generating...</span> <button id="copy-btn" class="copy-btn">Copy</button></p>
                 <hr style="border-color: #444; margin: 20px 0;">
                 <div id="menu-default">
                     <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
                     <button id="connect-btn">Connect</button>
-                    <button id="browse-btn" style="background:#00bcd4; border-color:#0097a7; margin-top:5px;">Browse Public Servers</button>
+                    <button id="browse-btn" style="background:#009cda; border-color:#007ba8; margin-top:5px;">Browse Public Servers</button>
                     <p>OR</p>
                     <div class="host-options">
                         <label style="font-size:18px; color:#eee; display:flex; align-items:center; cursor:pointer;">
@@ -185,7 +185,7 @@
                     <button id="play-btn">Play Solo / Host</button>
                 </div>
                 <div id="server-browser">
-                    <h2 style="font-size: 24px; margin-bottom: 10px; color: #00bcd4;">Public Servers</h2>
+                    <h2 style="font-size: 24px; margin-bottom: 10px; color: #009cda;">Public Servers</h2>
                     <div id="server-list">Connecting to directory...</div>
                     <button id="back-btn" style="background:#757575; border-color: #616161;">Back</button>
                 </div>
@@ -194,7 +194,7 @@
             <div id="pause-menu" style="display:none;">
                 <h1>Paused</h1>
                 <button id="resume-btn">Resume</button>
-                <button id="exit-btn" style="background:#f44336; border-color:#d32f2f; margin-top:10px;">Exit Match</button>
+                <button id="exit-btn" style="background:#e71e07; border-color:#b01605; margin-top:10px;">Exit Match</button>
             </div>
         </div>
     </div>
@@ -971,7 +971,7 @@
             
             // Body
             const bodyGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
-            const color = team === 'blue' ? 0x0000ff : 0xff0000;
+            const color = team === 'blue' ? 0x009cda : 0xe71e07;
             const bodyMat = new THREE.MeshStandardMaterial({ color: color });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 0.9 - PLAYER_HEIGHT;
@@ -1068,8 +1068,8 @@
         function updateHealthUI() {
             healthBar.style.width = health + '%';
             healthText.innerText = health + ' HP';
-            if (health < 30) healthBar.style.background = '#ff0000';
-            else healthBar.style.background = '#00ff00';
+            if (health < 30) healthBar.style.background = '#e71e07';
+            else healthBar.style.background = '#42b132';
         }
 
         function visualizeShot(peerId) {
@@ -1353,7 +1353,7 @@
             for (let id in remotePlayers) {
                 const p = remotePlayers[id];
                 if (!p.visible) continue;
-                minimapCtx.fillStyle = p.userData.team === 'blue' ? '#0000ff' : '#ff0000';
+                minimapCtx.fillStyle = p.userData.team === 'blue' ? '#009cda' : '#e71e07';
                 minimapCtx.beginPath();
                 minimapCtx.arc(toMap(p.position.x), toMap(p.position.z), 4, 0, Math.PI*2);
                 minimapCtx.fill();
@@ -1407,7 +1407,7 @@
             // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
-                b.userData.velocity.y -= GRAVITY * delta;
+                b.userData.velocity.y -= (GRAVITY * 0.1) * delta;
                 const oldPos = b.position.clone();
                 b.position.addScaledVector(b.userData.velocity, delta);
 
