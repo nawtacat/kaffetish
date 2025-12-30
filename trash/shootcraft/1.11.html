@@ -714,6 +714,10 @@
             });
 
             window.connectToPeer = (id) => {
+                serverBrowser.style.display = 'none';
+                menuDefault.style.display = 'block';
+                stopBrowsing();
+
                 statusMsg.innerText = "Connecting to " + id + "...";
                 const conn = peer.connect(id);
                 setupConnection(conn);
