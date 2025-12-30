@@ -107,12 +107,24 @@
         #mobile-shoot { bottom: 130px; right: 40px; background: rgba(255,0,0,0.3); border-color: rgba(255,0,0,0.5); }
         #mobile-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; pointer-events: auto; z-index: -1; }
 
+        #damage-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: red; opacity: 0; pointer-events: none; transition: opacity 0.1s;
+            z-index: 1;
+        }
+        #heal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #00ff00; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            z-index: 1;
+        }
     </style>
 </head>
 <body>
 
     <!-- UI Layer -->
     <div id="ui-layer">
+        <div id="damage-overlay"></div>
+        <div id="heal-overlay"></div>
         <div id="controls-hint">WASD to Move | SPACE to Jump | CLICK to Shoot</div>
         <div id="scoreboard"><span class="score-blue" id="score-blue">BLUE: 0</span> <div id="timer">WAITING</div> <span class="score-red" id="score-red">RED: 0</span></div>
         <div id="kill-feed"></div>
@@ -257,6 +269,11 @@
         let grenadeChargeStart = 0;
         let isChargingGrenade = false;
         
+        let isSliding = false;
+        let lastSlideTime = 0;
+        let isCrouching = false;
+        let lastHealTime = 0;
+        
         let muzzleLight;
         // Mobile Input State
         let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
@@ -268,6 +285,9 @@
         const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
         runSound.loop = true;
         const boomSound = new Audio('https://kaffetish.club/trash/shootcraft/boom.mp3');
+        const ouchSound = new Audio('https://kaffetish.club/trash/shootcraft/ouch.m4a');
+        const slideSound = new Audio('https://kaffetish.club/trash/shootcraft/sliding.m4a');
+        const healSound = new Audio('https://kaffetish.club/trash/shootcraft/heal.mp3');
         
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
@@ -526,16 +546,30 @@
         }
 
         function generateWorld() {
+            const loader = new THREE.TextureLoader();
+            
+            // Textures
+            const grassTex = loader.load('https://kaffetish.club/trash/shootcraft/grass.jpg');
+            grassTex.wrapS = THREE.RepeatWrapping;
+            grassTex.wrapT = THREE.RepeatWrapping;
+            grassTex.repeat.set(WORLD_SIZE / 2, WORLD_SIZE / 2);
+            grassTex.magFilter = THREE.NearestFilter;
+            grassTex.colorSpace = THREE.SRGBColorSpace;
+
+            const woodTex = loader.load('https://kaffetish.club/trash/shootcraft/wood.jpg');
+            woodTex.magFilter = THREE.NearestFilter;
+            woodTex.colorSpace = THREE.SRGBColorSpace;
+
             // Floor
             const floorGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
+            const floorMat = new THREE.MeshStandardMaterial({ map: grassTex });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
             // Random Voxels
             const boxGeo = new THREE.BoxGeometry(2, 2, 2);
-            const boxMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 }); // Brown
+            const boxMat = new THREE.MeshStandardMaterial({ map: woodTex });
 
             for (let i = 0; i < 40; i++) {
                 const box = new THREE.Mesh(boxGeo, boxMat);
@@ -555,6 +589,19 @@
 
                 scene.add(box);
                 obstacles.push(box);
+            }
+
+            // Clouds
+            const cloudGeo = new THREE.BoxGeometry(6, 2, 4);
+            const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+            for (let i = 0; i < 20; i++) {
+                const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+                cloud.position.set(
+                    (Math.random() - 0.5) * WORLD_SIZE * 1.5,
+                    30 + Math.random() * 15,
+                    (Math.random() - 0.5) * WORLD_SIZE * 1.5
+                );
+                scene.add(cloud);
             }
         }
 
@@ -675,6 +722,10 @@
             });
 
             window.connectToPeer = (id) => {
+                serverBrowser.style.display = 'none';
+                menuDefault.style.display = 'block';
+                stopBrowsing();
+
                 statusMsg.innerText = "Connecting to " + id + "...";
                 const conn = peer.connect(id);
                 setupConnection(conn);
@@ -977,6 +1028,13 @@
             if (!isGrenade && attackerId && remotePlayers[attackerId] && remotePlayers[attackerId].userData.team === myTeam) return;
             
             health -= amount;
+            
+            const overlay = document.getElementById('damage-overlay');
+            overlay.style.opacity = '0.4';
+            setTimeout(() => overlay.style.opacity = '0', 200);
+            ouchSound.currentTime = 0;
+            ouchSound.play().catch(() => {});
+
             updateHealthUI();
             if (health <= 0) {
                 // Broadcast death so everyone updates score
@@ -1085,7 +1143,7 @@
 
             if (isLocal) {
                 const radius = 8;
-                const maxDamage = 80;
+                const maxDamage = 160;
                 
                 // Damage Remote Players
                 for (let id in remotePlayers) {
@@ -1122,6 +1180,18 @@
                     isTabPressed = true;
                     showScoreboard(true);
                     break;
+                case 'KeyE':
+                    if (matchActive && health < 100 && performance.now() - lastHealTime > 12000) {
+                        lastHealTime = performance.now();
+                        health = Math.min(100, health + 30);
+                        updateHealthUI();
+                        healSound.currentTime = 0;
+                        healSound.play().catch(() => {});
+                        const hOverlay = document.getElementById('heal-overlay');
+                        hOverlay.style.opacity = '0.3';
+                        setTimeout(() => hOverlay.style.opacity = '0', 500);
+                    }
+                    break;
                 case 'ArrowUp': case 'KeyW': moveForward = true; break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
@@ -1137,7 +1207,33 @@
                     camera.fov = 30;
                     camera.updateProjectionMatrix();
                     break;
+                case 'KeyF':
+                    if (!isSliding && canJump && performance.now() - lastSlideTime > 4000) {
+                        isSliding = true;
+                        lastSlideTime = performance.now();
+                        
+                        slideSound.currentTime = 0;
+                        slideSound.play().catch(() => {});
+                        
+                        // Slide Boost
+                        let inputZ = Number(moveForward) - Number(moveBackward);
+                        let inputX = Number(moveRight) - Number(moveLeft);
+                        
+                        // Default to forward if no input
+                        if (inputZ === 0 && inputX === 0) inputZ = 1;
+                        
+                        // Normalize
+                        const len = Math.sqrt(inputX*inputX + inputZ*inputZ);
+                        const dirX = len > 0 ? inputX / len : 0;
+                        const dirZ = len > 0 ? inputZ / len : 0;
+                        
+                        velocity.x = -dirX * 30;
+                        velocity.z = -dirZ * 30;
+                        currentHeight = PLAYER_HEIGHT * 0.4;
+                    }
+                    break;
                 case 'ShiftLeft': case 'ShiftRight':
+                    isCrouching = true;
                     currentHeight = PLAYER_HEIGHT / 2;
                     currentSpeed = MOVEMENT_SPEED / 2;
                     break;
@@ -1175,6 +1271,7 @@
                     camera.updateProjectionMatrix();
                     break;
                 case 'ShiftLeft': case 'ShiftRight':
+                    isCrouching = false;
                     currentHeight = PLAYER_HEIGHT;
                     currentSpeed = MOVEMENT_SPEED;
                     break;
@@ -1310,8 +1407,16 @@
             // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
+                b.userData.velocity.y -= GRAVITY * delta;
                 const oldPos = b.position.clone();
                 b.position.addScaledVector(b.userData.velocity, delta);
+
+                if (b.position.y <= 0) {
+                    createImpact(b.position);
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                    continue;
+                }
 
                 // Projectile Collision Logic
                 const dist = b.position.distanceTo(oldPos);
@@ -1332,7 +1437,7 @@
                         // Hit a player
                         for (let id in remotePlayers) {
                             if (remotePlayers[id].children[0] === hitObj) {
-                                const hitData = { t: 'h', d: 20, targetId: id };
+                                const hitData = { t: 'h', d: 10, targetId: id };
                                 if (peers[id]) {
                                     peers[id].send(hitData);
                                 } else {
@@ -1416,6 +1521,20 @@
 
             // Physics & Logic
             
+            // Slide Logic
+            if (isSliding) {
+                if (performance.now() - lastSlideTime > 800) {
+                    isSliding = false;
+                    if (isCrouching) {
+                        currentHeight = PLAYER_HEIGHT / 2;
+                        currentSpeed = MOVEMENT_SPEED / 2;
+                    } else {
+                        currentHeight = PLAYER_HEIGHT;
+                        currentSpeed = MOVEMENT_SPEED;
+                    }
+                }
+            }
+            
             // Input Processing
             let inputX = 0;
             let inputZ = 0;
@@ -1423,7 +1542,7 @@
             if (isMobile) {
                 inputX = joystick.x;
                 inputZ = joystick.y;
-            } else if (controls.isLocked) {
+            } else if (controls.isLocked && !isSliding) {
                 inputZ = Number(moveForward) - Number(moveBackward);
                 inputX = Number(moveRight) - Number(moveLeft);
             }
@@ -1437,16 +1556,17 @@
             }
 
             // Friction
-            velocity.x -= velocity.x * 10.0 * delta;
-            velocity.z -= velocity.z * 10.0 * delta;
+            const friction = isSliding ? 2.0 : 10.0;
+            velocity.x -= velocity.x * friction * delta;
+            velocity.z -= velocity.z * friction * delta;
             velocity.y -= GRAVITY * delta;
 
             direction.z = inputZ;
             direction.x = inputX;
             direction.normalize();
 
-            if (inputZ !== 0) velocity.z -= direction.z * currentSpeed * 10.0 * delta;
-            if (inputX !== 0) velocity.x -= direction.x * currentSpeed * 10.0 * delta;
+            if (!isSliding && inputZ !== 0) velocity.z -= direction.z * currentSpeed * 10.0 * delta;
+            if (!isSliding && inputX !== 0) velocity.x -= direction.x * currentSpeed * 10.0 * delta;
 
             // Sliding Collision Logic
             const startPos = controls.getObject().position.clone();
@@ -1469,6 +1589,7 @@
                 obsBox.max.y = 1000; 
                 if (playerBox.intersectsBox(obsBox)) {
                     controls.getObject().position.x -= deltaX;
+                    if (isSliding) velocity.x = 0;
                     break;
                 }
             }
@@ -1482,6 +1603,7 @@
                 obsBox.max.y = 1000;
                 if (playerBox.intersectsBox(obsBox)) {
                     controls.getObject().position.z -= deltaZ;
+                    if (isSliding) velocity.z = 0;
                     break;
                 }
             }
