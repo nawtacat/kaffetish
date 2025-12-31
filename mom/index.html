@@ -137,6 +137,21 @@
             cursor: pointer;
             font-family: 'ArmBoloragir', serif;
         }
+
+        #welcomeMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: #2c1810;
+            opacity: 0;
+            transition: opacity 1s ease;
+            text-align: center;
+            width: 100%;
+            font-family: 'ArmBoloragir', serif;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -147,6 +162,7 @@
             <button onclick="checkPassword()">Մուտք</button>
             <p id="errorMsg" style="color: #d32f2f; display: none; margin-top: 10px;">Սխալ գաղտնաբառ</p>
         </div>
+        <div id="welcomeMessage">Բարի Գալուստ.. Տուն</div>
     </div>
 
     <div class="container">
@@ -191,8 +207,23 @@
         
         function checkPassword() {
             if (passwordInput.value === CORRECT_PASSWORD) {
-                overlay.style.display = 'none';
                 audio.play().catch(() => {});
+                
+                const loginBox = document.querySelector('.login-box');
+                const welcomeMsg = document.getElementById('welcomeMessage');
+                
+                loginBox.style.opacity = '0';
+                setTimeout(() => {
+                    loginBox.style.display = 'none';
+                    welcomeMsg.style.opacity = '1';
+                    
+                    setTimeout(() => {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                        }, 2000);
+                    }, 3000);
+                }, 500);
             } else {
                 errorMsg.style.display = 'block';
                 passwordInput.value = '';
