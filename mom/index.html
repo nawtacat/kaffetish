@@ -40,9 +40,7 @@
             max-width: 800px;
             margin: 0 auto;
             min-height: 100vh;
-            background-color: rgba(255, 255, 255, 0.85); /* White overlay with 85% opacity */
             padding: 40px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         header {
@@ -126,6 +124,29 @@
             <p>Սիրով՝ քո զավակ</p>
         </footer>
     </div>
+
+    <audio id="bgMusic" src="https://kaffetish.club/mom/music.mp3" autoplay loop></audio>
+
+    <script>
+        const audio = document.getElementById('bgMusic');
+        
+        // Try to play immediately, but handle browser blocking
+        audio.play().catch(() => {
+            // If blocked, play on first interaction
+            window.addEventListener('click', () => audio.play(), { once: true });
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            const fadeTime = 6; // seconds
+            if (audio.duration && audio.currentTime > audio.duration - fadeTime) {
+                // Linear fade out
+                const newVolume = (audio.duration - audio.currentTime) / fadeTime;
+                audio.volume = Math.max(0, newVolume);
+            } else {
+                // Ensure volume is full otherwise
+                audio.volume = 1;
+            }
+        });
+    </script>
 </body>
 </html>
-
