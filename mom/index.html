@@ -24,7 +24,7 @@
             margin: 0;
             padding: 0;
             /* Background setup */
-            background-image: url('https://kaffetish.club/mom/mash.png');
+            background-image: url('https://kaffetish.club/mom/mash.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed; /* Keeps background still while scrolling */
@@ -93,9 +93,62 @@
             font-size: 1rem;
             opacity: 0.7;
         }
+
+        #passwordOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://kaffetish.club/mom/mash.jpg');
+            background-size: cover;
+            background-position: center;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            max-width: 90%;
+        }
+        .login-box input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 1.1rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: 'ArmBoloragir', serif;
+        }
+        .login-box button {
+            background: #2c1810;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'ArmBoloragir', serif;
+        }
     </style>
 </head>
 <body>
+    <div id="passwordOverlay">
+        <div class="login-box">
+            <h2>Մուտքագրեք գաղտնաբառը</h2>
+            <input type="password" id="passwordInput" placeholder="********">
+            <button onclick="checkPassword()">Մուտք</button>
+            <p id="errorMsg" style="color: #d32f2f; display: none; margin-top: 10px;">Սխալ գաղտնաբառ</p>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <h1>Մայրիկիս</h1>
@@ -131,20 +184,26 @@
 
     <script>
         const audio = document.getElementById('bgMusic');
+        const overlay = document.getElementById('passwordOverlay');
+        const passwordInput = document.getElementById('passwordInput');
+        const errorMsg = document.getElementById('errorMsg');
+        const CORRECT_PASSWORD = 'sonayar3';
         
-        function tryPlay() {
-            audio.play().then(() => {
-                // Remove listeners once playing
-                window.removeEventListener('click', tryPlay);
-                window.removeEventListener('touchstart', tryPlay);
-                window.removeEventListener('keydown', tryPlay);
-            }).catch(() => {});
+        function checkPassword() {
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                overlay.style.display = 'none';
+                audio.play().catch(() => {});
+            } else {
+                errorMsg.style.display = 'block';
+                passwordInput.value = '';
+            }
         }
 
-        tryPlay();
-        window.addEventListener('click', tryPlay);
-        window.addEventListener('touchstart', tryPlay);
-        window.addEventListener('keydown', tryPlay);
+        passwordInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
 
         audio.addEventListener('timeupdate', () => {
             const fadeTime = 6; // seconds
