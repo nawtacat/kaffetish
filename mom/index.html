@@ -1,1 +1,131 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Մայրիկիս</title>
+    <style>
+        /* Define the custom fonts */
+        @font-face {
+            font-family: 'ArmBoloragir';
+            src: url('https://kaffetish.club/mom/fonts/ArmBoloragir%20Italic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'ArmBoloragir';
+            src: url('https://kaffetish.club/mom/fonts/ArmBoloragir%20Bold%20Italic.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            /* Background setup */
+            background-image: url('https://kaffetish.club/mom/mash.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* Keeps background still while scrolling */
+            background-repeat: no-repeat;
+            
+            /* Font setup */
+            font-family: 'ArmBoloragir', serif;
+            color: #2c1810; /* Dark brown text for better contrast */
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: rgba(255, 255, 255, 0.85); /* White overlay with 85% opacity */
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            border-bottom: 2px solid #2c1810;
+            padding-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        .letter {
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px dashed #999;
+        }
+
+        .letter h2 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .date {
+            display: block;
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .content p {
+            font-size: 1.25rem;
+            margin-bottom: 15px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Մայրիկիս</h1>
+            <p class="subtitle">Նամակների և հիշողությունների արխիվ</p>
+        </header>
+        
+        <main>
+            <!-- Example Letter 1 -->
+            <article class="letter">
+                <h2>Առաջին նամակ</h2>
+                <span class="date">Հունվար 1, 2024</span>
+                <div class="content">
+                    <p>Սիրելի մայրիկ, սա առաջին գրառումն է քո արխիվում...</p>
+                </div>
+            </article>
+
+            <!-- Example Letter 2 -->
+            <article class="letter">
+                <h2>Ծնունդդ շնորհավոր</h2>
+                <span class="date">Մարտ 8, 2024</span>
+                <div class="content">
+                    <p>Այսօր ուզում եմ գրել քեզ այն մասին, թե որքան...</p>
+                </div>
+            </article>
+        </main>
+
+        <footer>
+            <p>Սիրով՝ քո զավակ</p>
+        </footer>
+    </div>
+</body>
+</html>
 
