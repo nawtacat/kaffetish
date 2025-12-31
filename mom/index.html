@@ -24,7 +24,7 @@
             margin: 0;
             padding: 0;
             /* Background setup */
-            background-image: url('https://kaffetish.club/mom/mash.png');
+            background-image: url('https://kaffetish.club/mom/mash.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed; /* Keeps background still while scrolling */
@@ -93,22 +93,6 @@
             font-size: 1rem;
             opacity: 0.7;
         }
-
-        #playBtn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 100;
-            padding: 10px 20px;
-            background: #2c1810;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: 'ArmBoloragir', serif;
-            font-size: 1.2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
     </style>
 </head>
 <body>
@@ -144,24 +128,20 @@
     </div>
 
     <audio id="bgMusic" src="https://kaffetish.club/mom/music.mp3" autoplay loop></audio>
-    <button id="playBtn">Միացնել երաժշտությունը</button>
 
     <script>
         const audio = document.getElementById('bgMusic');
-        const playBtn = document.getElementById('playBtn');
         
         function tryPlay() {
             audio.play().then(() => {
-                // Remove listeners and button once playing
+                // Remove listeners once playing
                 window.removeEventListener('click', tryPlay);
                 window.removeEventListener('touchstart', tryPlay);
                 window.removeEventListener('keydown', tryPlay);
-                playBtn.style.display = 'none';
             }).catch(() => {});
         }
 
         tryPlay();
-        playBtn.addEventListener('click', tryPlay);
         window.addEventListener('click', tryPlay);
         window.addEventListener('touchstart', tryPlay);
         window.addEventListener('keydown', tryPlay);
