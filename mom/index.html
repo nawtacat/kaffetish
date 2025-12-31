@@ -24,7 +24,7 @@
             margin: 0;
             padding: 0;
             /* Background setup */
-            background-image: url('https://kaffetish.club/mom/mash.png');
+            background-image: url('https://kaffetish.club/mom/mash.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed; /* Keeps background still while scrolling */
@@ -100,13 +100,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://kaffetish.club/mom/mash.jpg');
-            background-size: cover;
-            background-position: center;
+            background-color: white;
             z-index: 9999;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: opacity 2s ease;
         }
         .login-box {
             background: rgba(255, 255, 255, 0.9);
@@ -115,6 +114,7 @@
             text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             max-width: 90%;
+            transition: opacity 0.5s ease;
         }
         .login-box input {
             display: block;
