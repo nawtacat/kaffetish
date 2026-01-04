@@ -524,9 +524,9 @@
                     touchLook.lastY = touch.clientY;
                     lastActivityTime = performance.now();
                     
-                    camera.rotation.y -= dx * 0.005;
-                    camera.rotation.x -= dy * 0.005;
-                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                    camera.rotation.y -= dx * 0.003;
+                    camera.rotation.x -= dy * 0.003;
+                    camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x));
                 }, {passive: false});
 
                 const endLook = (e) => {
@@ -1601,7 +1601,7 @@
             let inputZ = 0;
 
             if (isMobile) {
-                inputX = -joystick.x;
+                inputX = joystick.x;
                 inputZ = -joystick.y;
             } else if (controls.isLocked && !isSliding) {
                 inputZ = Number(moveForward) - Number(moveBackward);
