@@ -228,7 +228,7 @@
         const FRICTION_AIR = 0.91;
         const ACCEL_WALK = 10.0;
         const ACCEL_SPRINT = 13.0;
-        const ACCEL_SNEAK = 0.6;
+        const ACCEL_SNEAK = 0.3;
         const ACCEL_AIR = 1.0;
         const JUMP_BOOST = 4.0;         // 0.2 blocks/tick * 20
 
@@ -1753,7 +1753,7 @@
             }
             
             // Check ground state before gravity applies
-            const onGround = (velocity.y === 0 && canJump);
+            const onGround = (Math.abs(velocity.y) < 0.001 && canJump);
 
             if (onLadder) {
                 canJump = true;
