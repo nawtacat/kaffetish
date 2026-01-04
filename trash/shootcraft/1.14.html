@@ -1736,7 +1736,7 @@
 
             // Apply Z
             controls.getObject().position.z += deltaZ;
-            let playerBox = new THREE.Box3().setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.5, 1.9, 0.5));
+            playerBox.setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.5, 1.9, 0.5));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
