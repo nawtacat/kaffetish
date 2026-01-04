@@ -228,7 +228,7 @@
         const FRICTION_AIR = 0.91;
         const ACCEL_WALK = 10.0;
         const ACCEL_SPRINT = 13.0;
-        const ACCEL_SNEAK = 3.0;
+        const ACCEL_SNEAK = 1.5;
         const ACCEL_AIR = 1.0;
         const JUMP_BOOST = 4.0;         // 0.2 blocks/tick * 20
 
@@ -1410,11 +1410,7 @@
                     }
                     break;
                 case 'ShiftLeft': case 'ShiftRight':
-                    if (!isCrouching) {
-                        isCrouching = true;
-                        controls.getObject().position.y -= (PLAYER_HEIGHT - PLAYER_HEIGHT/2);
-                        currentHeight = PLAYER_HEIGHT / 2;
-                    }
+                    isCrouching = true;
                     break;
             }
         }
@@ -1454,11 +1450,8 @@
                     camera.updateProjectionMatrix();
                     break;
                 case 'ShiftLeft': case 'ShiftRight':
-                    if (isCrouching) {
-                        isCrouching = false;
-                        controls.getObject().position.y += (PLAYER_HEIGHT - PLAYER_HEIGHT/2);
-                        currentHeight = PLAYER_HEIGHT;
-                    }
+                    isCrouching = false;
+                    break;
             }
         }
 
@@ -1710,16 +1703,20 @@
             const targetFov = (isSprinting && !isCrouching && !isSliding) ? baseFov * 1.15 : baseFov;
             camera.fov += (targetFov - camera.fov) * 0.1;
             camera.updateProjectionMatrix();
+
+            // Smooth Crouching
+            let targetHeight = isCrouching ? PLAYER_HEIGHT / 2 : PLAYER_HEIGHT;
+            if (isSliding) targetHeight = PLAYER_HEIGHT / 2;
+            
+            const heightDiff = (targetHeight - currentHeight) * delta * 10;
+            currentHeight += heightDiff;
+            controls.getObject().position.y += heightDiff;
             
             // Slide Logic
             if (isSliding) {
                 if (performance.now() - lastSlideTime > 800) {
                     isSliding = false;
-                    if (isCrouching) {
-                        currentHeight = PLAYER_HEIGHT / 2;
-                    } else {
-                        currentHeight = PLAYER_HEIGHT;
-                    }
+                    // Height handled by smooth logic above
                 }
             }
             
@@ -1843,7 +1840,7 @@
                 const obsBox = new THREE.Box3().setFromObject(obs);
                 if (playerBox.intersectsBox(obsBox)) {
                     controls.getObject().position.x -= deltaX;
-                    if (isSliding) velocity.x = 0;
+                    velocity.x = 0;
                     break;
                 }
             }
@@ -1856,7 +1853,7 @@
                 const obsBox = new THREE.Box3().setFromObject(obs);
                 if (playerBox.intersectsBox(obsBox)) {
                     controls.getObject().position.z -= deltaZ;
-                    if (isSliding) velocity.z = 0;
+                    velocity.z = 0;
                     break;
                 }
             }
