@@ -226,10 +226,10 @@
         const JUMP_FORCE = 9.0;         // ~1.25 blocks height
         const FRICTION_GROUND = 0.546;  // 0.6 * 0.91
         const FRICTION_AIR = 0.91;
-        const ACCEL_WALK = 3.58;        // 0.179 blocks/tick * 20
-        const ACCEL_SPRINT = 4.66;      // 0.233 blocks/tick * 20
-        const ACCEL_SNEAK = 1.08;       // 0.054 blocks/tick * 20
-        const ACCEL_AIR = 0.4;          // 0.02 blocks/tick * 20
+        const ACCEL_WALK = 8.0;         // Increased for better feel
+        const ACCEL_SPRINT = 12.0;      // Increased for better feel
+        const ACCEL_SNEAK = 2.5;        // Increased for better feel
+        const ACCEL_AIR = 1.0;          // Increased for better feel
         const JUMP_BOOST = 4.0;         // 0.2 blocks/tick * 20
 
         const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
@@ -285,6 +285,7 @@
         let maxY = 0;
         let lastHealTime = 0;
         let lastJumpTime = 0;
+        let lastWTime = 0;
         
         let muzzleLight;
         // Mobile Input State
@@ -1346,7 +1347,15 @@
                         setTimeout(() => hOverlay.style.opacity = '0', 500);
                     }
                     break;
-                case 'ArrowUp': case 'KeyW': moveForward = true; break;
+                case 'ArrowUp': case 'KeyW': 
+                    if (!moveForward && !event.repeat) {
+                        const now = performance.now();
+                        if (now - lastWTime < 300) isSprinting = true;
+                        lastWTime = now;
+                    }
+                    if (event.ctrlKey) isSprinting = true;
+                    moveForward = true; 
+                    break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
                 case 'ArrowRight': case 'KeyD': moveRight = true; break;
@@ -1411,7 +1420,10 @@
                     isTabPressed = false;
                     showScoreboard(false);
                     break;
-                case 'ArrowUp': case 'KeyW': moveForward = false; break;
+                case 'ArrowUp': case 'KeyW': 
+                    moveForward = false; 
+                    isSprinting = false; // Stop sprinting when stopping
+                    break;
                 case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = false; break;
                 case 'ArrowRight': case 'KeyD': moveRight = false; break;
