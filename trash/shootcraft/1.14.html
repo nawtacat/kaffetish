@@ -1732,6 +1732,9 @@
                 inputZ = Number(moveForward) - Number(moveBackward);
                 inputX = Number(moveRight) - Number(moveLeft);
             }
+            
+            // Update direction vector from inputs immediately
+            direction.set(inputX, 0, inputZ).normalize();
 
             // Dynamic Hitbox Height
             let boundsHeight = 1.9;
@@ -1748,6 +1751,9 @@
             for (let l of ladders) {
                 if (playerBounds.intersectsBox(l.box)) { onLadder = true; break; }
             }
+            
+            // Check ground state before gravity applies
+            const onGround = (velocity.y === 0 && canJump);
 
             if (onLadder) {
                 canJump = true;
@@ -1791,7 +1797,6 @@
 
             // --- Minecraft Physics Engine ---
             const ticks = delta * 20;
-            const onGround = (velocity.y === 0 && canJump);
 
             // 1. Determine Friction & Acceleration
             let friction = onGround ? FRICTION_GROUND : FRICTION_AIR;
@@ -1817,10 +1822,6 @@
             velocity.x *= Math.pow(friction, ticks);
             velocity.z *= Math.pow(friction, ticks);
             
-            direction.z = inputZ;
-            direction.x = inputX;
-            direction.normalize();
-
             // Sliding Collision Logic
             const startPos = controls.getObject().position.clone();
             
