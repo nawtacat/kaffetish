@@ -221,7 +221,7 @@
         const WORLD_SIZE = 90;
         const PLAYER_HEIGHT = 1.6;
         const MOVEMENT_SPEED = 10;
-        const JUMP_FORCE = 10;
+        const JUMP_FORCE = 8.5;
         const GRAVITY = 25;
         const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
         const MQTT_TOPIC = 'voxel-fps-p2p/lobby';
@@ -240,6 +240,7 @@
         let currentHeight = PLAYER_HEIGHT;
         let currentSpeed = MOVEMENT_SPEED;
         const obstacles = []; // Array of meshes for collision
+        const ladders = []; // Array of ladder objects
         const bullets = []; // Active projectiles
         const grenades = []; // Active grenades
         const particles = []; // Visual particles
@@ -560,6 +561,9 @@
             woodTex.magFilter = THREE.NearestFilter;
             woodTex.colorSpace = THREE.SRGBColorSpace;
 
+            const ladderTex = loader.load('https://kaffetish.club/trash/shootcraft/ladder.png');
+            ladderTex.colorSpace = THREE.SRGBColorSpace;
+
             // Floor
             const floorGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
             const floorMat = new THREE.MeshStandardMaterial({ map: grassTex });
@@ -592,6 +596,24 @@
                 obstacles.push(box);
             };
 
+            const ladderGeo = new THREE.PlaneGeometry(0.8, 1);
+            const ladderMat = new THREE.MeshStandardMaterial({ 
+                map: ladderTex, 
+                transparent: true, 
+                side: THREE.DoubleSide,
+                alphaTest: 0.5
+            });
+
+            const createLadder = (x, y, z, ry) => {
+                const mesh = new THREE.Mesh(ladderGeo, ladderMat);
+                mesh.position.set(x, y, z);
+                mesh.rotation.y = ry;
+                scene.add(mesh);
+                const box = new THREE.Box3().setFromObject(mesh);
+                box.expandByScalar(0.1);
+                ladders.push({ mesh, box });
+            };
+
             // Structures
             const createWall = (cx, cz) => {
                 const isX = Math.random() > 0.5;
@@ -613,7 +635,14 @@
                     createBlock(cx+1, 0.5 + h, cz+1);
                 }
                 // Platform
-                for(let x=-1; x<=2; x++) for(let z=-1; z<=2; z++) createBlock(cx+x, 0.5 + height, cz+z);
+                for(let x=-1; x<=2; x++) for(let z=-1; z<=2; z++) {
+                    if (x === 0 && z === -1) continue; // Hole for ladder
+                    createBlock(cx+x, 0.5 + height, cz+z);
+                }
+                // Ladders
+                for (let h = 0; h < height + 2; h++) {
+                    createLadder(cx, 0.5 + h, cz - 0.51, Math.PI);
+                }
             };
 
             const createBuilding = (cx, cz) => {
@@ -1641,7 +1670,23 @@
             const friction = isSliding ? 2.0 : 10.0;
             velocity.x -= velocity.x * friction * delta;
             velocity.z -= velocity.z * friction * delta;
-            velocity.y -= GRAVITY * delta;
+            
+            // Ladder Logic
+            let onLadder = false;
+            const playerBounds = new THREE.Box3().setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(0.5, 1.5, 0.5));
+            for (let l of ladders) {
+                if (playerBounds.intersectsBox(l.box)) { onLadder = true; break; }
+            }
+
+            if (onLadder) {
+                canJump = true;
+                velocity.y -= GRAVITY * delta;
+                if (moveForward) velocity.y = 6;
+                else if (moveBackward) velocity.y = -6;
+                else if (velocity.y < 0) velocity.y = 0;
+            } else {
+                velocity.y -= GRAVITY * delta;
+            }
 
             direction.z = inputZ;
             direction.x = inputX;
