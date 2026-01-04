@@ -282,6 +282,7 @@
         let lastSlideTime = 0;
         let isCrouching = false;
         let isSprinting = false;
+        let isZooming = false;
         let maxY = 0;
         let lastHealTime = 0;
         let lastJumpTime = 0;
@@ -1381,8 +1382,7 @@
                     }
                     break;
                 case 'KeyC':
-                    camera.fov = 30;
-                    camera.updateProjectionMatrix();
+                    isZooming = true;
                     break;
                 case 'KeyF':
                     if (!isSliding && canJump && performance.now() - lastSlideTime > 4000) {
@@ -1446,8 +1446,7 @@
                     }
                     break;
                 case 'KeyC':
-                    camera.fov = 75;
-                    camera.updateProjectionMatrix();
+                    isZooming = false;
                     break;
                 case 'ShiftLeft': case 'ShiftRight':
                     isCrouching = false;
@@ -1700,7 +1699,9 @@
             
             // Dynamic FOV
             const baseFov = 75;
-            const targetFov = (isSprinting && !isCrouching && !isSliding) ? baseFov * 1.15 : baseFov;
+            let targetFov = baseFov;
+            if (isZooming) targetFov = 30;
+            else if (isSprinting && !isCrouching && !isSliding) targetFov = baseFov * 1.15;
             camera.fov += (targetFov - camera.fov) * 0.1;
             camera.updateProjectionMatrix();
 
