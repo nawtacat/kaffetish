@@ -226,10 +226,10 @@
         const JUMP_FORCE = 9.0;         // ~1.25 blocks height
         const FRICTION_GROUND = 0.546;  // 0.6 * 0.91
         const FRICTION_AIR = 0.91;
-        const ACCEL_WALK = 6.0;
-        const ACCEL_SPRINT = 8.0;
-        const ACCEL_SNEAK = 2.0;
-        const ACCEL_AIR = 0.8;
+        const ACCEL_WALK = 10.0;
+        const ACCEL_SPRINT = 13.0;
+        const ACCEL_SNEAK = 3.0;
+        const ACCEL_AIR = 1.0;
         const JUMP_BOOST = 4.0;         // 0.2 blocks/tick * 20
 
         const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
@@ -1753,8 +1753,11 @@
                 if (isCrouching) {
                     // Sneak Mechanic: Hold position, no horizontal movement
                     velocity.y = 0;
-                    velocity.x = 0;
-                    velocity.z = 0;
+                    // Only lock horizontal movement if we are actually up on the ladder (not on ground)
+                    if (pPos.y > currentHeight + 0.2) {
+                        velocity.x = 0;
+                        velocity.z = 0;
+                    }
                 } else {
                     // Ascent (Moving Forward)
                     if (moveForward) {
@@ -1798,9 +1801,14 @@
             
             if (onGround) {
                 if (isSliding) { friction = 0.98; accel = 0; } // Sliding on ice-like physics
-                else if (isCrouching) accel = ACCEL_SNEAK;
-                else if (isSprinting) accel = ACCEL_SPRINT;
-                else accel = ACCEL_WALK;
+                else {
+                    // Snappy stopping: if no input, high friction
+                    if (inputX === 0 && inputZ === 0) friction = 0.2;
+                    
+                    if (isCrouching) accel = ACCEL_SNEAK;
+                    else if (isSprinting) accel = ACCEL_SPRINT;
+                    else accel = ACCEL_WALK;
+                }
             }
 
             // 2. Apply Acceleration (Local Space)
