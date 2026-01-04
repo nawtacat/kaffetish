@@ -1410,8 +1410,16 @@
                     }
                     break;
                 case 'ShiftLeft': case 'ShiftRight':
-                    isCrouching = true;
-                    currentHeight = PLAYER_HEIGHT / 2;
+                    if (!isCrouching) {
+                        isCrouching = true;
+                        controls.getObject().position.y -= (PLAYER_HEIGHT - PLAYER_HEIGHT/2);
+                        currentHeight = PLAYER_HEIGHT / 2;
+                    }
+                    if (isCrouching) {
+                        isCrouching = false;
+                        controls.getObject().position.y += (PLAYER_HEIGHT - PLAYER_HEIGHT/2);
+                        currentHeight = PLAYER_HEIGHT;
+                    }
                     break;
             }
         }
