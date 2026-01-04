@@ -1730,44 +1730,6 @@
                 inputX = Number(moveRight) - Number(moveLeft);
             }
 
-            // Run Sound
-            const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
-            if (isMoving && canJump && !onLadder) {
-                if (runSound.paused) runSound.play().catch(() => {});
-            } else {
-                runSound.pause();
-            }
-
-            // Ladder Sound
-            if (onLadder && !isCrouching && Math.abs(velocity.y) > 0.1) {
-                if (ladderSound.paused) ladderSound.play().catch(() => {});
-            } else {
-                ladderSound.pause();
-            }
-
-            // --- Minecraft Physics Engine ---
-            const ticks = delta * 20;
-            const onGround = (velocity.y === 0 && canJump);
-
-            // 1. Determine Friction & Acceleration
-            let friction = onGround ? FRICTION_GROUND : FRICTION_AIR;
-            let accel = ACCEL_AIR;
-            
-            if (onGround) {
-                if (isSliding) { friction = 0.98; accel = 0; } // Sliding on ice-like physics
-                else if (isCrouching) accel = ACCEL_SNEAK;
-                else if (isSprinting) accel = ACCEL_SPRINT;
-                else accel = ACCEL_WALK;
-            }
-
-            // 2. Apply Acceleration (Local Space)
-            if (inputZ !== 0) velocity.z -= direction.z * accel * ticks;
-            if (inputX !== 0) velocity.x -= direction.x * accel * ticks;
-
-            // 3. Apply Friction
-            velocity.x *= Math.pow(friction, ticks);
-            velocity.z *= Math.pow(friction, ticks);
-            
             // Dynamic Hitbox Height
             let boundsHeight = 1.9;
             if (isSliding) boundsHeight = 0.9;
@@ -1811,6 +1773,44 @@
                 maxY = Math.max(maxY, pPos.y);
             }
 
+            // Run Sound
+            const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
+            if (isMoving && canJump && !onLadder) {
+                if (runSound.paused) runSound.play().catch(() => {});
+            } else {
+                runSound.pause();
+            }
+
+            // Ladder Sound
+            if (onLadder && !isCrouching && Math.abs(velocity.y) > 0.1) {
+                if (ladderSound.paused) ladderSound.play().catch(() => {});
+            } else {
+                ladderSound.pause();
+            }
+
+            // --- Minecraft Physics Engine ---
+            const ticks = delta * 20;
+            const onGround = (velocity.y === 0 && canJump);
+
+            // 1. Determine Friction & Acceleration
+            let friction = onGround ? FRICTION_GROUND : FRICTION_AIR;
+            let accel = ACCEL_AIR;
+            
+            if (onGround) {
+                if (isSliding) { friction = 0.98; accel = 0; } // Sliding on ice-like physics
+                else if (isCrouching) accel = ACCEL_SNEAK;
+                else if (isSprinting) accel = ACCEL_SPRINT;
+                else accel = ACCEL_WALK;
+            }
+
+            // 2. Apply Acceleration (Local Space)
+            if (inputZ !== 0) velocity.z -= direction.z * accel * ticks;
+            if (inputX !== 0) velocity.x -= direction.x * accel * ticks;
+
+            // 3. Apply Friction
+            velocity.x *= Math.pow(friction, ticks);
+            velocity.z *= Math.pow(friction, ticks);
+            
             direction.z = inputZ;
             direction.x = inputX;
             direction.normalize();
