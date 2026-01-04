@@ -1519,7 +1519,7 @@
             requestAnimationFrame(animate);
 
             const time = performance.now();
-            const delta = (time - prevTime) / 1000;
+            const delta = Math.min((time - prevTime) / 1000, 0.1); // Cap delta to prevent physics explosion on lag/tab switch
 
             // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
@@ -1677,11 +1677,17 @@
             velocity.x -= velocity.x * friction * delta;
             velocity.z -= velocity.z * friction * delta;
             
+            // Dynamic Hitbox Height
+            let boundsHeight = 1.9;
+            if (isSliding) boundsHeight = 0.9;
+            else if (isCrouching) boundsHeight = 1.4;
+
             // Ladder Logic
             let onLadder = false;
             const pPos = controls.getObject().position;
-            const pCenter = new THREE.Vector3(pPos.x, pPos.y - currentHeight + 1, pPos.z);
-            const playerBounds = new THREE.Box3().setFromCenterAndSize(pCenter, new THREE.Vector3(0.5, 1.9, 0.5));
+            // Calculate center based on feet position (CameraY - currentHeight) + half bounds height
+            const pCenter = new THREE.Vector3(pPos.x, pPos.y - currentHeight + (boundsHeight / 2), pPos.z);
+            const playerBounds = new THREE.Box3().setFromCenterAndSize(pCenter, new THREE.Vector3(0.5, boundsHeight, 0.5));
             
             for (let l of ladders) {
                 if (playerBounds.intersectsBox(l.box)) { onLadder = true; break; }
@@ -1690,10 +1696,22 @@
             if (onLadder) {
                 canJump = true;
                 maxY = pPos.y;
-                velocity.y -= GRAVITY * delta;
-                if (moveForward) velocity.y = 6;
-                else if (moveBackward) velocity.y = -6;
-                else if (velocity.y < 0) velocity.y = 0;
+                
+                if (isCrouching) {
+                    // Sneak Mechanic: Hold position, no horizontal movement
+                    velocity.y = 0;
+                    velocity.x = 0;
+                    velocity.z = 0;
+                } else {
+                    // Ascent (Moving Forward)
+                    if (moveForward) {
+                        velocity.y = 2.35; // ~0.1176 blocks/tick
+                    } else {
+                        // Descent (Gravity Cap)
+                        velocity.y -= GRAVITY * delta;
+                        if (velocity.y < -3.0) velocity.y = -3.0; // ~0.15 blocks/tick cap
+                    }
+                }
             } else {
                 velocity.y -= GRAVITY * delta;
             }
@@ -1723,7 +1741,7 @@
 
             // Apply X
             controls.getObject().position.x += deltaX;
-            let playerBox = new THREE.Box3().setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.5, 1.9, 0.5));
+            let playerBox = new THREE.Box3().setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + (boundsHeight / 2), controls.getObject().position.z), new THREE.Vector3(0.5, boundsHeight, 0.5));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
@@ -1736,7 +1754,7 @@
 
             // Apply Z
             controls.getObject().position.z += deltaZ;
-            playerBox.setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.5, 1.9, 0.5));
+            playerBox.setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + (boundsHeight / 2), controls.getObject().position.z), new THREE.Vector3(0.5, boundsHeight, 0.5));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
@@ -1773,7 +1791,7 @@
 
             // Check Y Collision (Obstacles)
             pos = controls.getObject().position;
-            playerBox.setFromCenterAndSize(pCenter.set(pos.x, pos.y - currentHeight + 1, pos.z), new THREE.Vector3(0.5, 1.9, 0.5));
+            playerBox.setFromCenterAndSize(pCenter.set(pos.x, pos.y - currentHeight + (boundsHeight / 2), pos.z), new THREE.Vector3(0.5, boundsHeight, 0.5));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
