@@ -305,6 +305,8 @@
         const ouchSound = new Audio('https://kaffetish.club/trash/shootcraft/ouch.m4a');
         const slideSound = new Audio('https://kaffetish.club/trash/shootcraft/sliding.m4a');
         const healSound = new Audio('https://kaffetish.club/trash/shootcraft/heal.mp3');
+        const ladderSound = new Audio('https://kaffetish.club/trash/shootcraft/ladder.mp3');
+        ladderSound.loop = true;
         
         // DOM Elements
         const menuOverlay = document.getElementById('menu-overlay');
@@ -395,6 +397,7 @@
                     }
                 }
                 runSound.pause();
+                ladderSound.pause();
             });
 
             // Click to resume if unlocked by Tab
@@ -1729,10 +1732,17 @@
 
             // Run Sound
             const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
-            if (isMoving && canJump) {
+            if (isMoving && canJump && !onLadder) {
                 if (runSound.paused) runSound.play().catch(() => {});
             } else {
                 runSound.pause();
+            }
+
+            // Ladder Sound
+            if (onLadder && !isCrouching && Math.abs(velocity.y) > 0.1) {
+                if (ladderSound.paused) ladderSound.play().catch(() => {});
+            } else {
+                ladderSound.pause();
             }
 
             // --- Minecraft Physics Engine ---
