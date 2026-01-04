@@ -302,7 +302,7 @@
         const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
         runSound.loop = true;
         const boomSound = new Audio('https://kaffetish.club/trash/shootcraft/boom.mp3');
-        const ouchSound = new Audio('https://kaffetish.club/trash/shootcraft/ouch.m4a');
+        const ouchSound = new Audio('https://kaffetish.club/trash/shootcraft/ouch.mp3');
         const slideSound = new Audio('https://kaffetish.club/trash/shootcraft/sliding.m4a');
         const healSound = new Audio('https://kaffetish.club/trash/shootcraft/heal.mp3');
         const ladderSound = new Audio('https://kaffetish.club/trash/shootcraft/ladder.mp3');
@@ -1181,7 +1181,7 @@
         }
 
         function takeDamage(amount, attackerId, isGrenade = false) {
-            if (!matchActive) return; // No damage before match starts
+            if (!gameStarted) return; // Allow damage in solo/lobby
             // Friendly Fire Check
             if (!isGrenade && attackerId && remotePlayers[attackerId] && remotePlayers[attackerId].userData.team === myTeam) return;
             
@@ -1871,7 +1871,7 @@
             // Floor Collision
             if (controls.getObject().position.y < currentHeight) {
                 const fallDist = maxY - controls.getObject().position.y;
-                if (fallDist > 4) {
+                if (fallDist > 3) {
                     const dmg = Math.floor((fallDist - 3) * 10);
                     if (dmg > 0) takeDamage(dmg, null);
                 }
@@ -1891,7 +1891,7 @@
                 if (playerBox.intersectsBox(obsBox)) {
                     if (velocity.y < 0) {
                         const fallDist = maxY - pos.y;
-                        if (fallDist > 4) {
+                        if (fallDist > 3) {
                             const dmg = Math.floor((fallDist - 3) * 10);
                             if (dmg > 0) takeDamage(dmg, null);
                         }
