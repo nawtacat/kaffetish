@@ -9,7 +9,7 @@
             font-family: 'Pixelpurl';
             src: url('https://kaffetish.club/trash/shootcraft/fonts/Pixelpurl-0vBPP.ttf');
         }
-        body { margin: 0; overflow: hidden; font-family: 'Pixelpurl', monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; font-family: 'Pixelpurl', monospace; user-select: none; touch-action: none; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
         
         /* HUD */
@@ -1601,8 +1601,8 @@
             let inputZ = 0;
 
             if (isMobile) {
-                inputX = joystick.x;
-                inputZ = joystick.y;
+                inputX = -joystick.x;
+                inputZ = -joystick.y;
             } else if (controls.isLocked && !isSliding) {
                 inputZ = Number(moveForward) - Number(moveBackward);
                 inputX = Number(moveRight) - Number(moveLeft);
