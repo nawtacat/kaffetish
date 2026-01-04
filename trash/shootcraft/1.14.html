@@ -219,7 +219,7 @@
 
         // --- Configuration ---
         const WORLD_SIZE = 90;
-        const PLAYER_HEIGHT = 1.6;
+        const PLAYER_HEIGHT = 1.8;
         const MOVEMENT_SPEED = 10;
         const JUMP_FORCE = 8.5;
         const GRAVITY = 25;
@@ -273,6 +273,7 @@
         let isSliding = false;
         let lastSlideTime = 0;
         let isCrouching = false;
+        let maxY = 0;
         let lastHealTime = 0;
         
         let muzzleLight;
@@ -610,7 +611,7 @@
                 mesh.rotation.y = ry;
                 scene.add(mesh);
                 const box = new THREE.Box3().setFromObject(mesh);
-                box.expandByScalar(0.1);
+                box.expandByScalar(0.2);
                 ladders.push({ mesh, box });
             };
 
@@ -1673,19 +1674,27 @@
             
             // Ladder Logic
             let onLadder = false;
-            const playerBounds = new THREE.Box3().setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(0.5, 1.5, 0.5));
+            const pPos = controls.getObject().position;
+            const pCenter = new THREE.Vector3(pPos.x, pPos.y - currentHeight + 1, pPos.z);
+            const playerBounds = new THREE.Box3().setFromCenterAndSize(pCenter, new THREE.Vector3(0.6, 2.0, 0.6));
+            
             for (let l of ladders) {
                 if (playerBounds.intersectsBox(l.box)) { onLadder = true; break; }
             }
 
             if (onLadder) {
                 canJump = true;
+                maxY = pPos.y;
                 velocity.y -= GRAVITY * delta;
                 if (moveForward) velocity.y = 6;
                 else if (moveBackward) velocity.y = -6;
                 else if (velocity.y < 0) velocity.y = 0;
             } else {
                 velocity.y -= GRAVITY * delta;
+            }
+
+            if (velocity.y < 0 && !onLadder) {
+                maxY = Math.max(maxY, pPos.y);
             }
 
             direction.z = inputZ;
@@ -1709,7 +1718,7 @@
 
             // Apply X
             controls.getObject().position.x += deltaX;
-            let playerBox = new THREE.Box3().setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
+            let playerBox = new THREE.Box3().setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.6, 2.0, 0.6));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
@@ -1723,7 +1732,7 @@
 
             // Apply Z
             controls.getObject().position.z += deltaZ;
-            playerBox.setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
+            playerBox.setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.6, 2.0, 0.6));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
@@ -1747,6 +1756,13 @@
 
             // Floor Collision
             if (controls.getObject().position.y < currentHeight) {
+                const fallDist = maxY - controls.getObject().position.y;
+                if (fallDist > 4) {
+                    const dmg = Math.floor((fallDist - 3) * 10);
+                    if (dmg > 0) takeDamage(dmg, null);
+                }
+                maxY = controls.getObject().position.y;
+                
                 velocity.y = 0;
                 controls.getObject().position.y = currentHeight;
                 canJump = true;
@@ -1754,11 +1770,20 @@
 
             // Check Y Collision (Obstacles)
             pos = controls.getObject().position;
-            playerBox.setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
+            playerBox.setFromCenterAndSize(pCenter.set(pos.x, pos.y - currentHeight + 1, pos.z), new THREE.Vector3(0.6, 2.0, 0.6));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
                 if (playerBox.intersectsBox(obsBox)) {
+                    if (velocity.y < 0) {
+                        const fallDist = maxY - pos.y;
+                        if (fallDist > 4) {
+                            const dmg = Math.floor((fallDist - 3) * 10);
+                            if (dmg > 0) takeDamage(dmg, null);
+                        }
+                        maxY = pos.y;
+                        canJump = true;
+                    }
                     controls.getObject().position.y -= velocity.y * delta;
                     velocity.y = 0;
                     break;
