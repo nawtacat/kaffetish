@@ -218,7 +218,7 @@
         import mqtt from 'mqtt';
 
         // --- Configuration ---
-        const WORLD_SIZE = 60;
+        const WORLD_SIZE = 90;
         const PLAYER_HEIGHT = 1.6;
         const MOVEMENT_SPEED = 10;
         const JUMP_FORCE = 10;
@@ -616,37 +616,61 @@
                 for(let x=-1; x<=2; x++) for(let z=-1; z<=2; z++) createBlock(cx+x, 0.5 + height, cz+z);
             };
 
-            const createHangar = (cx, cz) => {
-                const w = 6, d = 6, h = 4;
-                for (let x = 0; x < w; x++) {
-                    for (let z = 0; z < d; z++) {
-                        if (x === 0 || x === w-1 || z === d-1 || z === 0) { // Walls
-                            for (let y = 0; y < h; y++) {
-                                if (z === 0 && x > 1 && x < w-2 && y < 3) continue; // Door
-                                createBlock(cx + x, 0.5 + y, cz + z);
+            const createBuilding = (cx, cz) => {
+                const roomCount = 2 + Math.floor(Math.random() * 2); // 2-3 connected rooms
+                let curX = cx, curZ = cz;
+                
+                for (let r = 0; r < roomCount; r++) {
+                    const w = 5 + Math.floor(Math.random() * 4);
+                    const d = 5 + Math.floor(Math.random() * 4);
+                    const h = 3 + Math.floor(Math.random() * 2);
+                    
+                    for (let x = 0; x < w; x++) {
+                        for (let z = 0; z < d; z++) {
+                            // Walls
+                            if (x === 0 || x === w-1 || z === 0 || z === d-1) {
+                                for (let y = 0; y < h; y++) {
+                                    // Doorways
+                                    if (y < 2) {
+                                        if ((x===0 || x===w-1) && z > 1 && z < d-2) continue;
+                                        if ((z===0 || z===d-1) && x > 1 && x < w-2) continue;
+                                    }
+                                    createBlock(curX + x, 0.5 + y, curZ + z);
+                                }
                             }
+                            // Roof
+                            if ((x+z)%2 === 0) createBlock(curX + x, 0.5 + h, curZ + z);
                         }
-                        createBlock(cx + x, 0.5 + h, cz + z); // Roof
                     }
+                    // Offset for next room
+                    if (Math.random() > 0.5) curX += w - 1; else curZ += d - 1;
+                }
+            };
+
+            const createMiniStructure = (cx, cz) => {
+                // Minimum 2x2 wall or corner
+                createBlock(cx, 0.5, cz); createBlock(cx+1, 0.5, cz);
+                createBlock(cx, 1.5, cz); createBlock(cx+1, 1.5, cz);
+                if (Math.random() > 0.5) { // Add corner
+                    createBlock(cx, 0.5, cz+1); createBlock(cx, 1.5, cz+1);
                 }
             };
 
             // Generate Map
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 40; i++) {
                 const type = Math.random();
-                const x = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 16));
-                const z = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 16));
-                if (type < 0.5) createWall(x, z);
-                else if (type < 0.75) createTower(x, z);
-                else createHangar(x, z);
+                const x = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 20));
+                const z = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 20));
+                if (type < 0.4) createWall(x, z);
+                else if (type < 0.7) createTower(x, z);
+                else createBuilding(x, z);
             }
             
-            // Random Scatter
-            for (let i = 0; i < 30; i++) {
-                const x = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 6));
-                const z = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 6));
-                createBlock(x, 0.5, z);
-                if(Math.random() > 0.7) createBlock(x, 1.5, z);
+            // Mini Structures (Replacing Scatter)
+            for (let i = 0; i < 60; i++) {
+                const x = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 10));
+                const z = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 10));
+                createMiniStructure(x, z);
             }
 
             // Clouds
