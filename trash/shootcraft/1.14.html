@@ -220,9 +220,12 @@
         // --- Configuration ---
         const WORLD_SIZE = 90;
         const PLAYER_HEIGHT = 1.8;
-        const MOVEMENT_SPEED = 10;
-        const JUMP_FORCE = 8.5;
-        const GRAVITY = 25;
+        // Physics Constants (Minecraft-like)
+        const WALK_SPEED = 4.317;
+        const SPRINT_SPEED = 5.612;
+        const SNEAK_SPEED = 1.295;
+        const JUMP_FORCE = 9.0;
+        const GRAVITY = 32.0;
         const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
         const MQTT_TOPIC = 'voxel-fps-p2p/lobby';
         
@@ -238,7 +241,7 @@
         // Game State
         let health = 100;
         let currentHeight = PLAYER_HEIGHT;
-        let currentSpeed = MOVEMENT_SPEED;
+        let currentSpeed = WALK_SPEED;
         const obstacles = []; // Array of meshes for collision
         const ladders = []; // Array of ladder objects
         const bullets = []; // Active projectiles
@@ -273,6 +276,7 @@
         let isSliding = false;
         let lastSlideTime = 0;
         let isCrouching = false;
+        let isSprinting = false;
         let maxY = 0;
         let lastHealTime = 0;
         let lastJumpTime = 0;
@@ -282,6 +286,10 @@
         let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
         let touchLook = { active: false, lastX: 0, lastY: 0 };
         
+        // Map Generation
+        let mapGroup;
+        let worldSeed = Math.floor(Math.random() * 2147483647);
+
         // Audio
         const shootSound = new Audio('https://kaffetish.club/trash/shootcraft/shoot.mp3');
         const hitSound = new Audio('https://kaffetish.club/trash/shootcraft/ah.mp3');
@@ -342,6 +350,9 @@
             camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
             camera.lookAt(0, PLAYER_HEIGHT, 0); // Look at center
 
+            mapGroup = new THREE.Group();
+            scene.add(mapGroup);
+
             // Lights
             const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
             hemiLight.position.set(0, 20, 0);
@@ -373,6 +384,7 @@
                     
                     // If Tab caused unlock, hide menu immediately to allow quick resume
                     if (isTabPressed) {
+                        isSprinting = false; // Reset sprint on tab out
                         menuOverlay.style.display = 'none';
                     }
                 }
@@ -387,7 +399,7 @@
             });
 
             // World Generation
-            generateWorld();
+            generateWorld(worldSeed);
 
             // Weapon (Visual)
             const gunGeo = new THREE.BoxGeometry(0.1, 0.1, 0.4);
@@ -548,7 +560,24 @@
             }, 50);
         }
 
-        function generateWorld() {
+        // Seeded RNG (Mulberry32)
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        function generateWorld(seed) {
+            const rng = mulberry32(seed);
+            
+            // Clear existing map
+            mapGroup.clear();
+            obstacles.length = 0;
+            ladders.length = 0;
+
             const loader = new THREE.TextureLoader();
             
             // Textures
@@ -571,7 +600,7 @@
             const floorMat = new THREE.MeshStandardMaterial({ map: grassTex });
             const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
+            mapGroup.add(floor);
 
             // Random Voxels
             const boxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -594,7 +623,7 @@
 
                 const box = new THREE.Mesh(boxGeo, boxMat);
                 box.position.copy(pos);
-                scene.add(box);
+                mapGroup.add(box);
                 obstacles.push(box);
             };
 
@@ -610,7 +639,7 @@
                 const mesh = new THREE.Mesh(ladderGeo, ladderMat);
                 mesh.position.set(x, y, z);
                 mesh.rotation.y = ry;
-                scene.add(mesh);
+                mapGroup.add(mesh);
                 const box = new THREE.Box3().setFromObject(mesh);
                 box.expandByScalar(0.2);
                 ladders.push({ mesh, box });
@@ -618,9 +647,9 @@
 
             // Structures
             const createWall = (cx, cz) => {
-                const isX = Math.random() > 0.5;
-                const len = 4 + Math.floor(Math.random() * 5); 
-                const height = 2 + Math.floor(Math.random() * 3);
+                const isX = rng() > 0.5;
+                const len = 4 + Math.floor(rng() * 5); 
+                const height = 2 + Math.floor(rng() * 3);
                 for (let i = 0; i < len; i++) {
                     for (let h = 0; h < height; h++) {
                         createBlock(isX ? cx + i : cx, 0.5 + h, isX ? cz : cz + i);
@@ -629,7 +658,7 @@
             };
 
             const createTower = (cx, cz) => {
-                const height = 6 + Math.floor(Math.random() * 4);
+                const height = 6 + Math.floor(rng() * 4);
                 for (let h = 0; h < height; h++) {
                     createBlock(cx, 0.5 + h, cz);
                     createBlock(cx+1, 0.5 + h, cz);
@@ -648,13 +677,13 @@
             };
 
             const createBuilding = (cx, cz) => {
-                const roomCount = 2 + Math.floor(Math.random() * 2); // 2-3 connected rooms
+                const roomCount = 2 + Math.floor(rng() * 2); // 2-3 connected rooms
                 let curX = cx, curZ = cz;
                 
                 for (let r = 0; r < roomCount; r++) {
-                    const w = 5 + Math.floor(Math.random() * 4);
-                    const d = 5 + Math.floor(Math.random() * 4);
-                    const h = 3 + Math.floor(Math.random() * 2);
+                    const w = 5 + Math.floor(rng() * 4);
+                    const d = 5 + Math.floor(rng() * 4);
+                    const h = 3 + Math.floor(rng() * 2);
                     
                     for (let x = 0; x < w; x++) {
                         for (let z = 0; z < d; z++) {
@@ -674,7 +703,7 @@
                         }
                     }
                     // Offset for next room
-                    if (Math.random() > 0.5) curX += w - 1; else curZ += d - 1;
+                    if (rng() > 0.5) curX += w - 1; else curZ += d - 1;
                 }
             };
 
@@ -682,16 +711,16 @@
                 // Minimum 2x2 wall or corner
                 createBlock(cx, 0.5, cz); createBlock(cx+1, 0.5, cz);
                 createBlock(cx, 1.5, cz); createBlock(cx+1, 1.5, cz);
-                if (Math.random() > 0.5) { // Add corner
+                if (rng() > 0.5) { // Add corner
                     createBlock(cx, 0.5, cz+1); createBlock(cx, 1.5, cz+1);
                 }
             };
 
             // Generate Map
             for (let i = 0; i < 40; i++) {
-                const type = Math.random();
-                const x = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 20));
-                const z = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 20));
+                const type = rng();
+                const x = Math.round((rng() - 0.5) * (WORLD_SIZE - 20));
+                const z = Math.round((rng() - 0.5) * (WORLD_SIZE - 20));
                 if (type < 0.4) createWall(x, z);
                 else if (type < 0.7) createTower(x, z);
                 else createBuilding(x, z);
@@ -699,8 +728,8 @@
             
             // Mini Structures (Replacing Scatter)
             for (let i = 0; i < 60; i++) {
-                const x = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 10));
-                const z = Math.round((Math.random() - 0.5) * (WORLD_SIZE - 10));
+                const x = Math.round((rng() - 0.5) * (WORLD_SIZE - 10));
+                const z = Math.round((rng() - 0.5) * (WORLD_SIZE - 10));
                 createMiniStructure(x, z);
             }
 
@@ -710,11 +739,11 @@
             for (let i = 0; i < 20; i++) {
                 const cloud = new THREE.Mesh(cloudGeo, cloudMat);
                 cloud.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                    30 + Math.random() * 15,
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5
+                    (rng() - 0.5) * WORLD_SIZE * 1.5,
+                    30 + rng() * 15,
+                    (rng() - 0.5) * WORLD_SIZE * 1.5
                 );
-                scene.add(cloud);
+                mapGroup.add(cloud);
             }
         }
 
@@ -859,7 +888,7 @@
                     statusMsg.innerText = "Connected to " + conn.peer;
                     
                     // Handshake
-                    conn.send({ t: 'hello', nick: myNickname, team: myTeam });
+                    conn.send({ t: 'hello', nick: myNickname, team: myTeam, seed: worldSeed });
                     
                     if (isHost) {
                         checkMatchStart();
@@ -920,7 +949,8 @@
                         active: matchActive,
                         scores: scores,
                         rounds: rounds,
-                        stats: playerStats
+                        stats: playerStats,
+                        seed: worldSeed
                     });
                 }
                 
@@ -934,6 +964,12 @@
                 scores = data.scores;
                 rounds = data.rounds || { blue: 0, red: 0 };
                 if (data.stats) playerStats = data.stats;
+                
+                if (data.seed && data.seed !== worldSeed) {
+                    worldSeed = data.seed;
+                    generateWorld(worldSeed);
+                }
+
                 updateScoreUI();
                 gameStarted = true;
                 lastActivityTime = performance.now();
@@ -1309,9 +1345,18 @@
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
                 case 'ArrowRight': case 'KeyD': moveRight = true; break;
+                case 'ControlLeft': isSprinting = true; break;
                 case 'Space': 
                     if (canJump && performance.now() - lastJumpTime > 250) {
                         velocity.y += JUMP_FORCE; canJump = false; lastJumpTime = performance.now();
+                        // Sprint Jump Boost
+                        if (isSprinting) {
+                            const dir = new THREE.Vector3();
+                            camera.getWorldDirection(dir);
+                            dir.y = 0; dir.normalize();
+                            velocity.x -= dir.x * 2.5; // Add burst
+                            velocity.z -= dir.z * 2.5;
+                        }
                     }
                     break;
                 case 'KeyR':
@@ -1367,6 +1412,7 @@
                 case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = false; break;
                 case 'ArrowRight': case 'KeyD': moveRight = false; break;
+                case 'ControlLeft': isSprinting = false; break;
                 case 'KeyR':
                     if (isChargingGrenade) {
                         const duration = Math.min(performance.now() - grenadeChargeStart, 2000);
@@ -1390,7 +1436,6 @@
                 case 'ShiftLeft': case 'ShiftRight':
                     isCrouching = false;
                     currentHeight = PLAYER_HEIGHT;
-                    currentSpeed = MOVEMENT_SPEED;
                     break;
             }
         }
@@ -1638,16 +1683,25 @@
 
             // Physics & Logic
             
+            // Determine Speed
+            if (isSprinting && !isCrouching && !isSliding) currentSpeed = SPRINT_SPEED;
+            else if (isCrouching) currentSpeed = SNEAK_SPEED;
+            else currentSpeed = WALK_SPEED;
+
+            // Dynamic FOV
+            const baseFov = 75;
+            const targetFov = (isSprinting && !isCrouching && !isSliding) ? baseFov * 1.15 : baseFov;
+            camera.fov += (targetFov - camera.fov) * 0.1;
+            camera.updateProjectionMatrix();
+            
             // Slide Logic
             if (isSliding) {
                 if (performance.now() - lastSlideTime > 800) {
                     isSliding = false;
                     if (isCrouching) {
                         currentHeight = PLAYER_HEIGHT / 2;
-                        currentSpeed = MOVEMENT_SPEED / 2;
                     } else {
                         currentHeight = PLAYER_HEIGHT;
-                        currentSpeed = MOVEMENT_SPEED;
                     }
                 }
             }
