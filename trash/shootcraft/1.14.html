@@ -275,6 +275,7 @@
         let isCrouching = false;
         let maxY = 0;
         let lastHealTime = 0;
+        let lastJumpTime = 0;
         
         let muzzleLight;
         // Mobile Input State
@@ -1308,7 +1309,11 @@
                 case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
                 case 'ArrowDown': case 'KeyS': moveBackward = true; break;
                 case 'ArrowRight': case 'KeyD': moveRight = true; break;
-                case 'Space': if (canJump) velocity.y += JUMP_FORCE; canJump = false; break;
+                case 'Space': 
+                    if (canJump && performance.now() - lastJumpTime > 250) {
+                        velocity.y += JUMP_FORCE; canJump = false; lastJumpTime = performance.now();
+                    }
+                    break;
                 case 'KeyR':
                     if (matchActive && !isChargingGrenade && performance.now() - lastGrenadeTime > 5000) {
                         isChargingGrenade = true;
@@ -1676,7 +1681,7 @@
             let onLadder = false;
             const pPos = controls.getObject().position;
             const pCenter = new THREE.Vector3(pPos.x, pPos.y - currentHeight + 1, pPos.z);
-            const playerBounds = new THREE.Box3().setFromCenterAndSize(pCenter, new THREE.Vector3(0.6, 2.0, 0.6));
+            const playerBounds = new THREE.Box3().setFromCenterAndSize(pCenter, new THREE.Vector3(0.5, 1.9, 0.5));
             
             for (let l of ladders) {
                 if (playerBounds.intersectsBox(l.box)) { onLadder = true; break; }
@@ -1718,11 +1723,10 @@
 
             // Apply X
             controls.getObject().position.x += deltaX;
-            let playerBox = new THREE.Box3().setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.6, 2.0, 0.6));
+            let playerBox = new THREE.Box3().setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.5, 1.9, 0.5));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
-                obsBox.max.y = 1000; 
                 if (playerBox.intersectsBox(obsBox)) {
                     controls.getObject().position.x -= deltaX;
                     if (isSliding) velocity.x = 0;
@@ -1732,11 +1736,10 @@
 
             // Apply Z
             controls.getObject().position.z += deltaZ;
-            playerBox.setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.6, 2.0, 0.6));
+            let playerBox = new THREE.Box3().setFromCenterAndSize(pCenter.set(controls.getObject().position.x, controls.getObject().position.y - currentHeight + 1, controls.getObject().position.z), new THREE.Vector3(0.5, 1.9, 0.5));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
-                obsBox.max.y = 1000;
                 if (playerBox.intersectsBox(obsBox)) {
                     controls.getObject().position.z -= deltaZ;
                     if (isSliding) velocity.z = 0;
@@ -1770,7 +1773,7 @@
 
             // Check Y Collision (Obstacles)
             pos = controls.getObject().position;
-            playerBox.setFromCenterAndSize(pCenter.set(pos.x, pos.y - currentHeight + 1, pos.z), new THREE.Vector3(0.6, 2.0, 0.6));
+            playerBox.setFromCenterAndSize(pCenter.set(pos.x, pos.y - currentHeight + 1, pos.z), new THREE.Vector3(0.5, 1.9, 0.5));
             
             for (let obs of obstacles) {
                 const obsBox = new THREE.Box3().setFromObject(obs);
