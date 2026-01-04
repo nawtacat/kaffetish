@@ -1412,7 +1412,6 @@
                 case 'ShiftLeft': case 'ShiftRight':
                     isCrouching = true;
                     currentHeight = PLAYER_HEIGHT / 2;
-                    currentSpeed = MOVEMENT_SPEED / 2;
                     break;
             }
         }
@@ -1753,11 +1752,6 @@
                 if (isCrouching) {
                     // Sneak Mechanic: Hold position, no horizontal movement
                     velocity.y = 0;
-                    // Only lock horizontal movement if we are actually up on the ladder (not on ground)
-                    if (pPos.y > currentHeight + 0.2) {
-                        velocity.x = 0;
-                        velocity.z = 0;
-                    }
                 } else {
                     // Ascent (Moving Forward)
                     if (moveForward) {
