@@ -70,6 +70,12 @@
             'https://kaffetish.club/qyachnoc/punch/ezgif-frame-010-removebg-preview.png'
         ];
 
+        // Preload images to prevent flickering or missing animations
+        [...idleFrames, ...punchFrames].forEach(src => {
+            const img = new Image();
+            img.src = src;
+        });
+
         let currentFrame = 0;
         let currentAnimation = idleFrames;
         let animationInterval;
