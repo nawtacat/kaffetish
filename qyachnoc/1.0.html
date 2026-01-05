@@ -69,6 +69,25 @@
             currentFrame = (currentFrame + 1) % frames.length;
             player.src = frames[currentFrame];
         }, 142); // 2000ms / 14 frames ≈ 142ms per frame
+
+        let playerX = 150;
+        const speed = 10;
+        const keys = {};
+
+        window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        function gameLoop() {
+            if (keys['a']) {
+                playerX -= speed;
+            }
+            if (keys['d']) {
+                playerX += speed;
+            }
+            player.style.left = playerX + 'px';
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
     </script>
 </body>
 </html>
