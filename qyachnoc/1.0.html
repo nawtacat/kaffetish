@@ -112,7 +112,7 @@
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'k' && !isPunching) {
                 isPunching = true;
-                startAnimation(punchFrames, 75); // 0.3s / 4 frames = 75ms
+                startAnimation([...punchFrames, ...[...punchFrames].reverse()], 75); // 0.3s forward + 0.3s reverse
             }
         });
         window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
