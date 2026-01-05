@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Art Mortal Kombat</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+
+        #game-stage {
+            position: relative;
+            /* Set a fixed resolution for the game window */
+            width: 100vw;
+            height: 100vh;
+            background-image: url('https://kaffetish.club/qyachnoc/stage.jpg');
+            background-size: cover;
+            background-position: center bottom;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            /* Adjust these values to place the character correctly on the floor */
+            bottom: 40px; 
+            left: 150px;
+            /* Adjust height based on how large you want the pixel art to appear */
+            height: 180px; 
+            /* Ensures pixel art remains crisp when scaled */
+            image-rendering: pixelated; 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-stage">
+        <img id="player" src="https://kaffetish.club/qyachnoc/afk/ezgif-frame-005-removebg-preview.png" alt="Player">
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const frames = [
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-005-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-006-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-007__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-008__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-009__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-010__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-011-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-012-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-013-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-014-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-015-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-016-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-017-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-018-removebg-preview.png'
+        ];
+        let currentFrame = 0;
+
+        setInterval(() => {
+            currentFrame = (currentFrame + 1) % frames.length;
+            player.src = frames[currentFrame];
+        }, 100); // Speed of animation in milliseconds
+    </script>
+</body>
+</html>
