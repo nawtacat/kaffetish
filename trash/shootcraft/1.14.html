@@ -1002,6 +1002,8 @@
                 visualizeShot(sourceId);
             } else if (data.t === 'g') { // Grenade
                 spawnGrenade(new THREE.Vector3(data.x, data.y, data.z), new THREE.Vector3(data.vx, data.vy, data.vz), false);
+            } else if (data.t === 'bd') { // Block Destroy
+                destroyBlocks(new THREE.Vector3(data.x, data.y, data.z), data.r);
             } else if (data.t === 'die') { // Player died
                 const killerTeam = data.team === 'blue' ? 'red' : 'blue';
                 scores[killerTeam]++;
@@ -1304,6 +1306,11 @@
                 const radius = 8;
                 const maxDamage = 160;
                 
+                // Block Destruction
+                const blastRadius = 4.0;
+                destroyBlocks(pos, blastRadius);
+                broadcast({ t: 'bd', x: pos.x, y: pos.y, z: pos.z, r: blastRadius });
+                
                 // Damage Remote Players
                 for (let id in remotePlayers) {
                     const dist = remotePlayers[id].position.distanceTo(pos);
@@ -1321,6 +1328,26 @@
                 if (dist < radius) {
                     const dmg = Math.floor(maxDamage * (1 - dist/radius));
                     if (dmg > 0) takeDamage(dmg, null, true);
+                }
+            }
+        }
+
+        function destroyBlocks(center, radius) {
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                if (obs.position.distanceTo(center) <= radius) {
+                    mapGroup.remove(obs);
+                    // Debris
+                    for(let j=0; j<3; j++) {
+                        const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+                        const mat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+                        const mesh = new THREE.Mesh(geo, mat);
+                        mesh.position.copy(obs.position);
+                        const vel = new THREE.Vector3((Math.random()-0.5)*8, Math.random()*8, (Math.random()-0.5)*8);
+                        scene.add(mesh);
+                        particles.push({ mesh: mesh, velocity: vel, life: 1.0 + Math.random() });
+                    }
+                    obstacles.splice(i, 1);
                 }
             }
         }
