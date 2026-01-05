@@ -47,7 +47,7 @@
 
     <script>
         const player = document.getElementById('player');
-        const frames = [
+        const idleFrames = [
             'https://kaffetish.club/qyachnoc/afk/ezgif-frame-005-removebg-preview.png',
             'https://kaffetish.club/qyachnoc/afk/ezgif-frame-006-removebg-preview.png',
             'https://kaffetish.club/qyachnoc/afk/ezgif-frame-007__1_-removebg-preview.png',
@@ -63,28 +63,71 @@
             'https://kaffetish.club/qyachnoc/afk/ezgif-frame-017-removebg-preview.png',
             'https://kaffetish.club/qyachnoc/afk/ezgif-frame-018-removebg-preview.png'
         ];
-        let currentFrame = 0;
+        const punchFrames = [
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-007-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-008-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-009-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-010-removebg-preview.png'
+        ];
 
-        setInterval(() => {
-            currentFrame = (currentFrame + 1) % frames.length;
-            player.src = frames[currentFrame];
-        }, 142); // 2000ms / 14 frames ≈ 142ms per frame
+        let currentFrame = 0;
+        let currentAnimation = idleFrames;
+        let animationInterval;
+        let isPunching = false;
+        let facingRight = true;
+
+        function startAnimation(frames, intervalTime) {
+            if (animationInterval) clearInterval(animationInterval);
+            currentAnimation = frames;
+            currentFrame = 0;
+            player.src = currentAnimation[currentFrame];
+            
+            animationInterval = setInterval(() => {
+                currentFrame++;
+                if (currentFrame >= currentAnimation.length) {
+                    if (isPunching) {
+                        isPunching = false;
+                        startAnimation(idleFrames, 142);
+                        return;
+                    }
+                    currentFrame = 0;
+                }
+                player.src = currentAnimation[currentFrame];
+            }, intervalTime);
+        }
+
+        startAnimation(idleFrames, 142);
 
         let playerX = 150;
         const speed = 10;
         const keys = {};
 
-        window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key.toLowerCase() === 'f' && !isPunching) {
+                isPunching = true;
+                startAnimation(punchFrames, 150); // 0.6s / 4 frames = 150ms
+            }
+        });
         window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
         function gameLoop() {
             if (keys['a']) {
                 playerX -= speed;
+                facingRight = false;
             }
             if (keys['d']) {
                 playerX += speed;
+                facingRight = true;
             }
             player.style.left = playerX + 'px';
+            
+            if (facingRight) {
+                player.style.transform = 'scaleX(1)';
+            } else {
+                player.style.transform = 'scaleX(-1)';
+            }
+            
             requestAnimationFrame(gameLoop);
         }
         gameLoop();
