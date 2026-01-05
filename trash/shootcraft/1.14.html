@@ -1350,6 +1350,24 @@
                     obstacles.splice(i, 1);
                 }
             }
+            // Destroy Ladders
+            for (let i = ladders.length - 1; i >= 0; i--) {
+                const l = ladders[i];
+                if (l.mesh.position.distanceTo(center) <= radius) {
+                    mapGroup.remove(l.mesh);
+                    // Ladder Debris
+                    for(let j=0; j<2; j++) {
+                        const geo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+                        const mat = new THREE.MeshStandardMaterial({ color: 0x5c3a21 });
+                        const mesh = new THREE.Mesh(geo, mat);
+                        mesh.position.copy(l.mesh.position);
+                        const vel = new THREE.Vector3((Math.random()-0.5)*6, Math.random()*6, (Math.random()-0.5)*6);
+                        scene.add(mesh);
+                        particles.push({ mesh: mesh, velocity: vel, life: 0.8 + Math.random() });
+                    }
+                    ladders.splice(i, 1);
+                }
+            }
         }
 
         // --- Input & Physics ---
