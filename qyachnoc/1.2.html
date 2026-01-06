@@ -167,6 +167,8 @@
             ['keydown', 'click'].forEach(e => window.addEventListener(e, playOnInteraction));
         });
 
+        const punchSound = new Audio('https://kaffetish.club/qyachnoc/Punch%20-%20Sound%20Effect%20(HD).mp3');
+
         class Fighter {
             constructor(elementId, startX, isFacingRight) {
                 this.el = document.getElementById(elementId);
@@ -215,10 +217,10 @@
                 if (this.isStunned) return;
                 this.isStunned = true;
                 this.health = Math.max(0, this.health - 10);
-                // 1 second for 16 frames is approx 63ms per frame
-                this.startAnimation(fallFrames, 63, () => {
-                    // Jump back: 0.6s for 10 frames is 60ms per frame
-                    this.startAnimation(jumpBackFrames, 60, () => {
+                // Switched order: Jump back first (0.6s), then Fall (1s)
+                this.startAnimation(jumpBackFrames, 60, () => {
+                    // Fall: 1s for 16 frames is approx 63ms per frame
+                    this.startAnimation(fallFrames, 63, () => {
                         this.isStunned = false;
                         this.startAnimation(idleFrames, 142);
                     });
@@ -263,6 +265,8 @@
                 if ((attacker.facingRight && attacker.x < defender.x) || 
                     (!attacker.facingRight && attacker.x > defender.x)) {
                     defender.takeHit();
+                    punchSound.currentTime = 0;
+                    punchSound.play().catch(() => {});
                     updateHealthBars();
                 }
             }
