@@ -219,6 +219,10 @@
                 p1.punch();
                 checkHit(p1, p2);
             }
+            if (e.key.toLowerCase() === 'c') {
+                p2.punch();
+                checkHit(p2, p1);
+            }
         });
         window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
@@ -251,6 +255,16 @@
                 p1.facingRight = true;
             }
             p1.updatePosition();
+
+            if (keys['arrowleft'] && !p2.isStunned) {
+                p2.x -= speed;
+                p2.facingRight = false;
+            }
+            if (keys['arrowright'] && !p2.isStunned) {
+                p2.x += speed;
+                p2.facingRight = true;
+            }
+            p2.updatePosition();
             
             requestAnimationFrame(gameLoop);
         }
