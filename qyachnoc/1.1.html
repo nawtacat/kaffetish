@@ -214,17 +214,17 @@
         const keys = {};
 
         window.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
-            if (e.key.toLowerCase() === 'k') {
+            keys[e.code] = true;
+            if (e.code === 'KeyK') {
                 p1.punch();
                 checkHit(p1, p2);
             }
-            if (e.key.toLowerCase() === 'c') {
+            if (e.code === 'KeyC') {
                 p2.punch();
                 checkHit(p2, p1);
             }
         });
-        window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
 
         function checkHit(attacker, defender) {
             // Simple distance check
@@ -246,21 +246,21 @@
         }
 
         function gameLoop() {
-            if (keys['a'] && !p1.isStunned) {
+            if (keys['KeyA'] && !p1.isStunned) {
                 p1.x -= speed;
                 p1.facingRight = false;
             }
-            if (keys['d'] && !p1.isStunned) {
+            if (keys['KeyD'] && !p1.isStunned) {
                 p1.x += speed;
                 p1.facingRight = true;
             }
             p1.updatePosition();
 
-            if (keys['arrowleft'] && !p2.isStunned) {
+            if (keys['ArrowLeft'] && !p2.isStunned) {
                 p2.x -= speed;
                 p2.facingRight = false;
             }
-            if (keys['arrowright'] && !p2.isStunned) {
+            if (keys['ArrowRight'] && !p2.isStunned) {
                 p2.x += speed;
                 p2.facingRight = true;
             }
