@@ -135,9 +135,21 @@
             'https://kaffetish.club/qyachnoc/fall/ezgif-frame-052-removebg-preview.png',
             'https://kaffetish.club/qyachnoc/fall/ezgif-frame-058-removebg-preview.png'
         ];
+        const jumpBackFrames = [
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-004-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-006__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-008__3_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-010__3_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-014__2_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-022-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-024-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-026-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-028-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-032__1_-removebg-preview.png'
+        ];
 
         // Preload images to prevent flickering or missing animations
-        [...idleFrames, ...punchFrames, ...fallFrames].forEach(src => {
+        [...idleFrames, ...punchFrames, ...fallFrames, ...jumpBackFrames].forEach(src => {
             const img = new Image();
             img.src = src;
         });
@@ -190,10 +202,13 @@
                 if (this.isStunned) return;
                 this.isStunned = true;
                 this.health = Math.max(0, this.health - 10);
-                // 0.6 seconds for 16 frames is approx 37ms per frame
-                this.startAnimation(fallFrames, 37, () => {
-                    this.isStunned = false;
-                    this.startAnimation(idleFrames, 142);
+                // 1 second for 16 frames is approx 63ms per frame
+                this.startAnimation(fallFrames, 63, () => {
+                    // Jump back: 0.6s for 10 frames is 60ms per frame
+                    this.startAnimation(jumpBackFrames, 60, () => {
+                        this.isStunned = false;
+                        this.startAnimation(idleFrames, 142);
+                    });
                 });
             }
 
