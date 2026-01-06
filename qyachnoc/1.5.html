@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Art Mortal Kombat</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+
+        #game-stage {
+            position: relative;
+            /* Set a fixed resolution for the game window */
+            width: 100vw;
+            height: 100vh;
+            background-image: url('https://kaffetish.club/qyachnoc/stage.jpg');
+            background-size: cover;
+            background-position: center bottom;
+            overflow: hidden;
+        }
+
+        .fighter {
+            position: absolute;
+            /* Adjust these values to place the character correctly on the floor */
+            bottom: -50px; 
+            /* Adjust height based on how large you want the pixel art to appear */
+            height: 700px; 
+            /* Ensures pixel art remains crisp when scaled */
+            image-rendering: pixelated; 
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .health-bar-border {
+            width: 40%;
+            height: 30px;
+            border: 3px solid #555;
+            background-color: #333;
+            position: relative;
+        }
+
+        .health-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #f00, #f00); /* Fallback */
+            background: linear-gradient(to bottom, #88ff00, #008800);
+            transition: width 0.2s ease-out;
+        }
+
+        /* Player 2 bar fills from right to left visually */
+        #p2-health-bar .health-fill {
+            float: right;
+        }
+        
+        #timer {
+            font-size: 40px;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 2px 2px #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="health-bar-border" id="p1-health-bar">
+            <div class="health-fill" id="p1-health"></div>
+        </div>
+        <div id="timer">99</div>
+        <div class="health-bar-border" id="p2-health-bar">
+            <div class="health-fill" id="p2-health"></div>
+        </div>
+    </div>
+
+    <div id="game-stage">
+        <img id="player1" class="fighter" src="https://kaffetish.club/qyachnoc/afk/ezgif-frame-005-removebg-preview.png" alt="Player 1" style="left: 150px;">
+        <img id="player2" class="fighter" src="https://kaffetish.club/qyachnoc/afk/ezgif-frame-005-removebg-preview.png" alt="Player 2" style="right: 150px; transform: scaleX(-1);">
+    </div>
+
+    <script>
+        const idleFrames = [
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-005-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-006-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-007__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-008__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-009__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-010__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-011-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-012-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-013-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-014-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-015-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-016-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-017-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/afk/ezgif-frame-018-removebg-preview.png'
+        ];
+        const punchFrames = [
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-007-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-008-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-009-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/punch/ezgif-frame-010-removebg-preview.png'
+        ];
+        const fullPunchFrames = [...punchFrames, ...[...punchFrames].reverse()];
+        const fallFrames = [
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-008__2_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-009__2_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-010__2_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-011__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-012__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-013__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-014__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-028-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-032-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-034-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-037-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-040-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-042-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-048-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-052-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/fall/ezgif-frame-058-removebg-preview.png'
+        ];
+        const jumpBackFrames = [
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-004-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-006__1_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-008__3_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-010__3_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-014__2_-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-022-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-024-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-026-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-028-removebg-preview.png',
+            'https://kaffetish.club/qyachnoc/jumpback/ezgif-frame-032__1_-removebg-preview.png'
+        ];
+
+        // Preload images to prevent flickering or missing animations
+        [...idleFrames, ...punchFrames, ...fallFrames, ...jumpBackFrames].forEach(src => {
+            const img = new Image();
+            img.src = src;
+        });
+
+        const bgMusic = new Audio('https://kaffetish.club/qyachnoc/12%20-%20The%20Bank%20%26%20River%20Kombat.mp3');
+        bgMusic.loop = true;
+        bgMusic.volume = 0.5;
+
+        // Attempt to play music immediately, or wait for user interaction if blocked
+        bgMusic.play().catch(() => {
+            const playOnInteraction = () => {
+                bgMusic.play();
+                ['keydown', 'click'].forEach(e => window.removeEventListener(e, playOnInteraction));
+            };
+            ['keydown', 'click'].forEach(e => window.addEventListener(e, playOnInteraction));
+        });
+
+        const punchSound = new Audio('https://kaffetish.club/qyachnoc/Punch%20-%20Sound%20Effect%20(HD).mp3');
+
+        class Fighter {
+            constructor(elementId, startX, isFacingRight) {
+                this.el = document.getElementById(elementId);
+                this.x = startX;
+                this.facingRight = isFacingRight;
+                this.health = 100;
+                this.isPunching = false;
+                this.isStunned = false;
+                this.currentFrame = 0;
+                this.currentAnimation = idleFrames;
+                this.animationFrameId = null;
+                
+                this.startAnimation(idleFrames, 142);
+                this.updatePosition();
+            }
+
+            stopAnimation() {
+                if (this.animationFrameId) {
+                    cancelAnimationFrame(this.animationFrameId);
+                    this.animationFrameId = null;
+                }
+            }
+
+            startAnimation(frames, intervalTime, onComplete) {
+                this.stopAnimation(); // Kill any existing loop
+                this.currentAnimation = frames;
+                this.currentFrame = 0;
+                
+                let lastTime = performance.now();
+
+                const animate = (time) => {
+                    if (!this.animationFrameId) return; // Safety break
+
+                    const delta = time - lastTime;
+                    if (delta >= intervalTime) {
+                        this.currentFrame++;
+                        
+                        if (this.currentFrame >= this.currentAnimation.length) {
+                            if (onComplete) {
+                                this.animationFrameId = null; // Mark as finished
+                                onComplete();
+                                return; 
+                            }
+                            this.currentFrame = 0; // Loop idle
+                        }
+                        
+                        this.el.src = this.currentAnimation[this.currentFrame];
+                        lastTime = time;
+                    }
+                    this.animationFrameId = requestAnimationFrame(animate);
+                };
+                
+                // Start the loop
+                this.animationFrameId = requestAnimationFrame(animate);
+            }
+
+            punch() {
+                if (this.isPunching || this.isStunned) return;
+                this.isPunching = true;
+                this.startAnimation(fullPunchFrames, 75, () => {
+                    this.isPunching = false;
+                    this.startAnimation(idleFrames, 142);
+                });
+            }
+
+            takeHit(attacker) {
+                if (this.health <= 0) return; // Don't react if dead
+                
+                this.isStunned = true;
+                this.isPunching = false;
+                this.health = Math.max(0, this.health - 10);
+
+                // Knockback Logic: Move the character away from the attacker
+                const knockbackDir = attacker.x < this.x ? 50 : -50;
+                this.x += knockbackDir;
+
+                // Visual turn to face the attacker
+                this.facingRight = attacker.x < this.x ? false : true;
+                this.updatePosition();
+
+                // Chain the animations safely
+                this.startAnimation(fallFrames, 60, () => {
+                    this.startAnimation(jumpBackFrames, 60, () => {
+                        this.isStunned = false;
+                        this.startAnimation(idleFrames, 142);
+                    });
+                });
+            }
+
+            updatePosition() {
+                // Keep players inside the screen
+                this.x = Math.max(0, Math.min(this.x, window.innerWidth - 200));
+                this.el.style.left = this.x + 'px';
+                this.el.style.transform = this.facingRight ? 'scaleX(1)' : 'scaleX(-1)';
+            }
+        }
+
+        const p1 = new Fighter('player1', 150, true);
+        const p2 = new Fighter('player2', window.innerWidth - 400, false);
+
+        const speed = 10;
+        const keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'KeyK') {
+                p1.punch();
+                checkHit(p1, p2);
+            }
+            if (e.code === 'KeyC') {
+                p2.punch();
+                checkHit(p2, p1);
+            }
+        });
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        function checkHit(attacker, defender) {
+            // Simple distance check
+            const distance = Math.abs(attacker.x - defender.x);
+            // If close enough and attacker is facing defender
+            if (distance < 300 && !defender.isStunned) {
+                // Check facing direction
+                if ((attacker.facingRight && attacker.x < defender.x) || 
+                    (!attacker.facingRight && attacker.x > defender.x)) {
+                defender.takeHit(attacker);
+                    punchSound.currentTime = 0;
+                    punchSound.play().catch(() => {});
+                    updateHealthBars();
+                }
+            }
+        }
+
+        function updateHealthBars() {
+            document.getElementById('p1-health').style.width = p1.health + '%';
+            document.getElementById('p2-health').style.width = p2.health + '%';
+        }
+
+        function gameLoop() {
+            if (keys['KeyA'] && !p1.isStunned && !p1.isPunching) {
+                p1.x -= speed;
+                p1.facingRight = false;
+            }
+            if (keys['KeyD'] && !p1.isStunned && !p1.isPunching) {
+                p1.x += speed;
+                p1.facingRight = true;
+            }
+            p1.updatePosition();
+
+            if (keys['ArrowLeft'] && !p2.isStunned && !p2.isPunching) {
+                p2.x -= speed;
+                p2.facingRight = false;
+            }
+            if (keys['ArrowRight'] && !p2.isStunned && !p2.isPunching) {
+                p2.x += speed;
+                p2.facingRight = true;
+            }
+            p2.updatePosition();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+    </script>
+</body>
+</html>
