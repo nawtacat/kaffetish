@@ -154,6 +154,19 @@
             img.src = src;
         });
 
+        const bgMusic = new Audio('https://kaffetish.club/qyachnoc/12%20-%20The%20Bank%20%26%20River%20Kombat.mp3');
+        bgMusic.loop = true;
+        bgMusic.volume = 0.5;
+
+        // Attempt to play music immediately, or wait for user interaction if blocked
+        bgMusic.play().catch(() => {
+            const playOnInteraction = () => {
+                bgMusic.play();
+                ['keydown', 'click'].forEach(e => window.removeEventListener(e, playOnInteraction));
+            };
+            ['keydown', 'click'].forEach(e => window.addEventListener(e, playOnInteraction));
+        });
+
         class Fighter {
             constructor(elementId, startX, isFacingRight) {
                 this.el = document.getElementById(elementId);
