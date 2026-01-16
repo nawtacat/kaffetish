@@ -1,327 +1,259 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PDF Read Aloud + Karaoke Transcript</title>
-  <style>
-    :root { --bg:#0b0d12; --panel:#111522; --muted:#8b93a7; --text:#e9ecf5; --accent:#6ee7ff; --accent2:#a78bfa; }
-    *{ box-sizing:border-box; }
-    body{
-      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background: radial-gradient(1200px 800px at 20% 0%, rgba(167,139,250,.18), transparent 50%),
-                  radial-gradient(1000px 700px at 90% 20%, rgba(110,231,255,.18), transparent 50%),
-                  var(--bg);
-      color:var(--text);
-    }
-    header{
-      padding:20px 18px 10px;
-      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-    }
-    header h1{ margin:0; font-size:18px; letter-spacing:.2px; }
-    header .hint{ color:var(--muted); font-size:12px; }
-    .wrap{ max-width:1100px; margin:0 auto; padding:12px 18px 24px; }
-    .grid{
-      display:grid; grid-template-columns: 380px 1fr; gap:14px;
-    }
-    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius:14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      overflow:hidden;
-    }
-    .card .hd{
-      padding:12px 12px;
-      display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.12);
-    }
-    .card .bd{ padding:12px; }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .btn{
-      appearance:none; border:none; border-radius:10px;
-      padding:10px 12px; font-weight:600; color:var(--text);
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.12);
-      cursor:pointer;
-    }
-    .btn.primary{
-      background: linear-gradient(90deg, rgba(110,231,255,.22), rgba(167,139,250,.22));
-      border-color: rgba(255,255,255,.16);
-    }
-    .btn:disabled{ opacity:.45; cursor:not-allowed; }
-    input[type="file"]{
-      width:100%;
-      padding:10px; border-radius:10px;
-      background: rgba(255,255,255,.04);
-      border: 1px dashed rgba(255,255,255,.16);
-      color:var(--muted);
-    }
-    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
-    select, input[type="range"], input[type="number"]{
-      width:100%;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius:10px;
-      color:var(--text);
-      padding:9px 10px;
-    }
-    .mini{ font-size:12px; color:var(--muted); }
-    .stat{
-      font-size:12px; color:var(--muted);
-      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-    }
-    .pill{
-      display:inline-flex; gap:6px; align-items:center;
-      padding:6px 10px; border-radius:999px;
-      background: rgba(255,255,255,.06);
-      border:1px solid rgba(255,255,255,.10);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Lyrics Reader v2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #b3b3b3;
+            --highlight-color: #ffffff;
+            --accent-color: #1DB954;
+        }
 
-    /* Transcript */
-    #transcript{
-      height: 72vh;
-      overflow:auto;
-      padding: 18px;
-      line-height: 1.9;
-      font-size: 16px;
-      background: rgba(0,0,0,.10);
-    }
-    #transcript .word{
-      padding: 1px 2px;
-      border-radius: 6px;
-      transition: background .08s ease, color .08s ease;
-      cursor: text;
-      user-select: text;
-    }
-    #transcript .word.current{
-      background: rgba(110,231,255,.22);
-      outline: 1px solid rgba(110,231,255,.35);
-      color: #f5fbff;
-    }
-    #transcript .word.past{ color: rgba(233,236,245,.75); }
-    #transcript .pagebreak{
-      display:block;
-      height:1px;
-      background: rgba(255,255,255,.08);
-      margin: 14px 0;
-    }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
 
-    /* Small footer */
-    footer{ color:var(--muted); font-size:12px; padding:16px 2px 0; }
-    a{ color: var(--accent); }
-  </style>
+        header {
+            padding: 15px 25px;
+            background: #181818;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .controls { display: flex; gap: 10px; align-items: center; }
+        
+        button {
+            background: var(--accent-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled { background: #444; color: #888; }
+
+        input[type="number"] {
+            background: #282828;
+            border: 1px solid #444;
+            color: white;
+            padding: 5px;
+            width: 50px;
+            border-radius: 4px;
+        }
+
+        #lyrics-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px 15%;
+            text-align: center;
+            scroll-behavior: smooth;
+        }
+
+        .page-marker {
+            color: var(--accent-color);
+            font-size: 0.9rem;
+            margin: 50px 0 20px 0;
+            display: block;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .word {
+            font-size: 2.2rem;
+            font-weight: 700;
+            display: inline-block;
+            margin: 4px 8px;
+            opacity: 0.2;
+            transition: transform 0.2s;
+        }
+
+        .word.active {
+            color: var(--highlight-color);
+            opacity: 1;
+            transform: scale(1.15);
+        }
+
+        .word.read { opacity: 0.6; }
+    </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>PDF → Read Aloud + Karaoke Transcript</h1>
-      <div class="hint">Local-only demo: extracts PDF text in your browser and reads it aloud.</div>
-    </div>
-    <div class="stat">
-      <span class="pill">Status: <span id="status">Idle</span></span>
-      <span class="pill">Words: <span id="wordCount">0</span></span>
-      <span class="pill">Page text: <span id="pageCount">0</span></span>
-    </div>
-  </header>
 
-  <div class="wrap">
-    <div class="grid">
-      <section class="card">
-        <div class="hd">
-          <strong>Controls</strong>
-          <span class="mini">Tip: use Chrome/Edge for best boundary events</span>
-        </div>
-        <div class="bd">
-          <label>1) Upload PDF</label>
-          <input id="pdfFile" type="file" accept="application/pdf" />
-
-          <div style="height:12px"></div>
-
-          <label>2) Voice</label>
-          <select id="voiceSelect"></select>
-          <div class="mini" id="voiceNote" style="margin-top:6px;"></div>
-
-          <div style="height:12px"></div>
-
-          <div class="row">
-            <div style="flex:1; min-width:160px;">
-              <label>Rate</label>
-              <input id="rate" type="range" min="0.7" max="1.4" step="0.05" value="1.0" />
-              <div class="mini">Current: <span id="rateVal">1.0</span></div>
-            </div>
-            <div style="flex:1; min-width:160px;">
-              <label>Pitch</label>
-              <input id="pitch" type="range" min="0.6" max="1.4" step="0.05" value="1.0" />
-              <div class="mini">Current: <span id="pitchVal">1.0</span></div>
-            </div>
-          </div>
-
-          <div style="height:12px"></div>
-
-          <label>Chunk size (words per utterance)</label>
-          <input id="chunkWords" type="number" min="40" max="220" value="120" />
-          <div class="mini">
-            Smaller chunks = more reliable highlighting & controls, but can sound slightly more “segmented”.
-          </div>
-
-          <div style="height:14px"></div>
-
-          <div class="row">
-            <button class="btn primary" id="btnParse" disabled>Extract Text</button>
-            <button class="btn primary" id="btnPlay" disabled>Play</button>
-            <button class="btn" id="btnPause" disabled>Pause</button>
-            <button class="btn" id="btnResume" disabled>Resume</button>
-            <button class="btn" id="btnStop" disabled>Stop</button>
-          </div>
-
-          <div style="height:14px"></div>
-
-          <div class="row">
-            <button class="btn" id="btnDownloadTxt" disabled>Download transcript (.txt)</button>
-            <button class="btn" id="btnDownloadAudio" disabled title="See note below">Download audio (limited)</button>
-          </div>
-
-          <div class="mini" style="margin-top:10px;">
-            <strong>Audio file note:</strong> browsers generally do <em>not</em> let you export Web Speech audio as MP3/WAV.
-            The “Download audio” button provides a <em>best-effort</em> fallback using <code>MediaRecorder</code> only if your
-            browser/OS exposes an audio track (often it won’t).
-            For reliable audio export you’d typically need a small backend TTS service.
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="hd">
-          <strong>Transcript</strong>
-          <div class="mini">Words highlight as they’re spoken</div>
-        </div>
-        <div id="transcript" aria-live="polite"></div>
-      </section>
+<header>
+    <input type="file" id="pdf-upload" accept=".pdf">
+    
+    <div class="controls">
+        <button id="play-btn" disabled>▶ Play</button>
+        <button id="pause-btn" disabled>⏸ Pause</button>
+        <button id="stop-btn" disabled>⏹ Stop</button>
     </div>
 
-    <footer>
-      Uses <a href="https://mozilla.github.io/pdf.js/" target="_blank" rel="noreferrer noopener">PDF.js</a> (loaded from CDN) + Web Speech API.
-      Works entirely in-browser.
-    </footer>
-  </div>
+    <div class="controls">
+        <label>Jump to Page:</label>
+        <input type="number" id="page-jump" value="1" min="1">
+        <button id="jump-btn" disabled>Go</button>
+    </div>
+</header>
 
-  <!-- PDF.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.js"></script>
+<div id="lyrics-container">
+    <p id="status">Upload a PDF to begin...</p>
+</div>
 
-  <script>
-    // ---------- UI refs ----------
-    const $ = (id) => document.getElementById(id);
-    const statusEl = $("status");
-    const wordCountEl = $("wordCount");
-    const pageCountEl = $("pageCount");
+<script>
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-    const pdfFileEl = $("pdfFile");
-    const voiceSelect = $("voiceSelect");
-    const voiceNote = $("voiceNote");
+    const container = document.getElementById('lyrics-container');
+    const playBtn = document.getElementById('play-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const jumpBtn = document.getElementById('jump-btn');
+    const pageInput = document.getElementById('page-jump');
 
-    const rateEl = $("rate");
-    const pitchEl = $("pitch");
-    const rateVal = $("rateVal");
-    const pitchVal = $("pitchVal");
-    const chunkWordsEl = $("chunkWords");
-
-    const btnParse = $("btnParse");
-    const btnPlay = $("btnPlay");
-    const btnPause = $("btnPause");
-    const btnResume = $("btnResume");
-    const btnStop = $("btnStop");
-    const btnDownloadTxt = $("btnDownloadTxt");
-    const btnDownloadAudio = $("btnDownloadAudio");
-
-    const transcriptEl = $("transcript");
-
-    // ---------- State ----------
+    let synth = window.speechSynthesis;
+    let pagesData = []; // Array of { pageNum, words: [] }
+    let utterance = null;
+    let allWordsSpans = []; // Flat list for indexing
     let fullText = "";
-    let words = [];                 // array of word strings
-    let wordSpans = [];             // array of span elements for highlighting
-    let isParsed = false;
 
-    // Speech state
-    let utterQueue = [];            // [{text, startWordIndex}]
-    let currentUtterIdx = 0;
-    let currentGlobalWord = 0;
-    let speaking = false;
-    let paused = false;
+    // Fix for some browsers: Pre-load voices
+    synth.getVoices();
 
-    // Recording (best-effort)
-    let recorder = null;
-    let recordedChunks = [];
-    let recordStream = null;
+    document.getElementById('pdf-upload').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    // ---------- Helpers ----------
-    function setStatus(s) { statusEl.textContent = s; }
+        document.getElementById('status').innerText = "Loading PDF...";
+        const reader = new FileReader();
+        
+        reader.onload = async function() {
+            const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+            pagesData = [];
+            allWordsSpans = [];
+            container.innerHTML = "";
+            fullText = "";
 
-    function clearTranscript() {
-      transcriptEl.innerHTML = "";
-      wordSpans = [];
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const text = content.items.map(s => s.str).join(" ");
+                
+                const words = text.split(/\s+/).filter(w => w.length > 0);
+                pagesData.push({ pageNum: i, words: words });
+                renderPage(i, words);
+                fullText += text + " ";
+            }
+
+            playBtn.disabled = false;
+            stopBtn.disabled = false;
+            jumpBtn.disabled = false;
+            document.getElementById('status').innerText = "";
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function renderPage(num, words) {
+        const marker = document.createElement('div');
+        marker.className = 'page-marker';
+        marker.id = `page-top-${num}`;
+        marker.innerText = `— Page ${num} —`;
+        container.appendChild(marker);
+
+        words.forEach(word => {
+            const span = document.createElement('span');
+            span.className = 'word';
+            span.innerText = word;
+            container.appendChild(span);
+            allWordsSpans.push(span);
+        });
     }
 
-    function normalizeText(t) {
-      // Light cleanup: keep punctuation but normalize whitespace
-      return t
-        .replace(/\s+/g, " ")
-        .replace(/\u00A0/g, " ")
-        .trim();
+    function speak(startIndex = 0) {
+        synth.cancel(); // Stop current speech
+
+        // Create text starting from the requested index
+        const remainingText = allWordsSpans.slice(startIndex).map(s => s.innerText).join(" ");
+        utterance = new SpeechSynthesisUtterance(remainingText);
+        
+        utterance.onboundary = (event) => {
+            if (event.name === 'word') {
+                const charIndex = event.charIndex;
+                const wordsBefore = remainingText.substring(0, charIndex).split(/\s+/).length - 1;
+                const absoluteIndex = startIndex + wordsBefore;
+                highlightWord(absoluteIndex);
+            }
+        };
+
+        utterance.onend = () => resetHighlights();
+        
+        synth.speak(utterance);
+        pauseBtn.disabled = false;
     }
 
-    function splitIntoWords(t) {
-      // Split while keeping punctuation attached to words for nicer reading.
-      // This keeps "hello," as one token.
-      return t.split(/\s+/).filter(Boolean);
+    function highlightWord(index) {
+        allWordsSpans.forEach((span, i) => {
+            span.classList.remove('active');
+            if (i < index) span.classList.add('read');
+            else span.classList.remove('read');
+        });
+
+        if (allWordsSpans[index]) {
+            allWordsSpans[index].classList.add('active');
+            allWordsSpans[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
-    function renderTranscript(wordArray) {
-      clearTranscript();
-      const frag = document.createDocumentFragment();
-      wordArray.forEach((w, i) => {
-        const span = document.createElement("span");
-        span.className = "word";
-        span.textContent = w + " ";
-        span.dataset.idx = String(i);
-        frag.appendChild(span);
-        wordSpans.push(span);
-      });
-      transcriptEl.appendChild(frag);
+    function resetHighlights() {
+        allWordsSpans.forEach(s => s.classList.remove('active', 'read'));
     }
 
-    function highlightWord(idx) {
-      // Unhighlight previous
-      const prev = transcriptEl.querySelector(".word.current");
-      if (prev) {
-        prev.classList.remove("current");
-        prev.classList.add("past");
-      }
-      const el = wordSpans[idx];
-      if (!el) return;
-      el.classList.add("current");
+    // Control Handlers
+    playBtn.addEventListener('click', () => {
+        if (synth.paused) synth.resume();
+        else speak(0);
+    });
 
-      // Keep current word roughly centered
-      const r = el.getBoundingClientRect();
-      const cr = transcriptEl.getBoundingClientRect();
-      if (r.top < cr.top + 60 || r.bottom > cr.bottom - 60) {
-        el.scrollIntoView({ block: "center", behavior: "smooth" });
-      }
-    }
+    pauseBtn.addEventListener('click', () => synth.pause());
+    
+    stopBtn.addEventListener('click', () => {
+        synth.cancel();
+        resetHighlights();
+    });
 
-    function buildUtterancesFromWords(wordArray, chunkSize) {
-      const chunks = [];
-      for (let i = 0; i < wordArray.length; i += chunkSize) {
-        const slice = wordArray.slice(i, i + chunkSize);
-        chunks.push({ text: slice.join(" "), startWordIndex: i });
-      }
-      return chunks;
-    }
+    jumpBtn.addEventListener('click', () => {
+        const pageNum = parseInt(pageInput.value);
+        const pageMarker = document.getElementById(`page-top-${pageNum}`);
+        
+        if (pageMarker) {
+            // Find the index of the first word on this page
+            let wordIndex = 0;
+            for(let i=0; i < pageNum - 1; i++) {
+                wordIndex += pagesData[i].words.length;
+            }
+            speak(wordIndex);
+        } else {
+            alert("Page not found");
+        }
+    });
 
-    function enableControlsAfterParse() {
-      btnPlay.disabled = false;
-      btnStop.disabled = false;
-      btnPause.disabled = false;
-      btnResume.disabled = false
+</script>
+</body>
+</html>
