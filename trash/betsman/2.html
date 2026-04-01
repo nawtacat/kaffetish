@@ -3,152 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Football Capital | Global Markets</title>
+    <title>Football Capital | Global Investment</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
         
+        :root {
+            --bg: #020617;
+            --accent: #3b82f6;
+        }
+
         body, html { 
             margin: 0; padding: 0; height: 100%; 
-            background: #020617; color: #f8fafc;
+            background: var(--bg); color: #f8fafc;
             font-family: 'Outfit', sans-serif;
-            overflow: hidden; /* Prevents the whole page from bouncing */
+            overflow: hidden; /* Prevent body bounce */
         }
 
-        /* THE SCROLL FIX */
-        .app-container {
+        /* FIXED SCROLLING LAYOUT */
+        .app-shell {
             display: flex;
             flex-direction: column;
-            height: 100vh; /* Fallback */
-            height: 100dvh; /* Modern mobile-aware height */
+            height: 100vh;
+            height: 100dvh;
         }
 
-        .header, .footer { flex-shrink: 0; }
+        .header, .footer { flex-shrink: 0; z-index: 50; }
 
-        .main-content {
+        .main-scroll {
             flex-grow: 1;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
-            padding-bottom: 20px;
+            -webkit-overflow-scrolling: touch;
+            padding: 1rem;
+            padding-bottom: 120px; /* Space for footer */
         }
 
         .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .card-gradient { background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8)); border: 1px solid rgba(255,255,255,0.05); }
+        .card-pro { background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.6)); border: 1px solid rgba(255,255,255,0.05); border-radius: 2rem; }
         
-        .active-side { border-color: #3b82f6 !important; background: rgba(59, 130, 246, 0.2) !important; color: white !important; }
+        .active-bet { border-color: var(--accent) !important; background: rgba(59, 130, 246, 0.2) !important; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
 
-        /* Custom Scrollbar for Desktop */
-        .main-content::-webkit-scrollbar { width: 4px; }
-        .main-content::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        .btn-tap { transition: transform 0.1s ease; }
+        .btn-tap:active { transform: scale(0.96); }
 
-        /* Result Animation */
-        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .result-entry { animation: popIn 0.3s ease-out forwards; }
+        /* Results Card Animation */
+        .settlement-card { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
     <div id="lobby" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#020617]">
-        <div class="w-full max-w-sm card-gradient rounded-[2.5rem] p-8 text-center shadow-2xl border-white/10 border">
-            <div class="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-900/40">
-                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <h1 class="text-4xl font-black tracking-tighter mb-8 leading-none">FOOTBALL<br><span class="text-blue-500 text-3xl">CAPITAL</span></h1>
+        <div class="w-full max-w-sm glass rounded-[2.5rem] p-8 text-center shadow-2xl border-white/10 border">
+            <h1 class="text-4xl font-black tracking-tighter mb-2 leading-none">FOOTBALL<br><span class="text-blue-500">CAPITAL</span></h1>
+            <p class="text-slate-500 text-[10px] tracking-[0.4em] uppercase mb-10 font-bold">Investment Firm Sim</p>
             
             <div id="connection-ui" class="space-y-4">
-                <button onclick="initializeHost()" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-black text-sm tracking-widest transition-all active:scale-95">HOST NEW FIRM</button>
-                <div class="flex items-center gap-3 py-2"><div class="h-px bg-slate-800 flex-grow"></div><span class="text-[10px] font-black text-slate-600 uppercase">Partner Join</span><div class="h-px bg-slate-800 flex-grow"></div></div>
-                <input type="number" id="joinId" inputmode="numeric" placeholder="4-Digit PIN" class="w-full bg-slate-900/50 border border-slate-800 p-4 rounded-2xl text-center text-3xl font-black tracking-[0.4em] focus:border-blue-500 outline-none">
-                <button onclick="joinGame()" class="w-full bg-slate-800 py-4 rounded-2xl font-black text-sm tracking-widest transition-all">JOIN ROOM</button>
+                <button onclick="initializeHost()" class="w-full bg-blue-600 py-4 rounded-2xl font-black text-xs tracking-widest btn-tap shadow-lg shadow-blue-900/40">HOST NEW SESSION</button>
+                <div class="flex items-center gap-3 py-2"><div class="h-px bg-slate-800 flex-grow"></div><span class="text-[10px] font-black text-slate-600 uppercase tracking-widest">OR</span><div class="h-px bg-slate-800 flex-grow"></div></div>
+                <input type="number" id="joinId" inputmode="numeric" placeholder="4-DIGIT PIN" class="w-full bg-slate-900/50 border border-slate-800 p-4 rounded-2xl text-center text-3xl font-black tracking-[0.5em] focus:border-blue-500 outline-none">
+                <button onclick="joinGame()" class="w-full bg-slate-800 py-4 rounded-2xl font-black text-xs tracking-widest btn-tap">JOIN COMPETITOR</button>
             </div>
             <div id="status" class="mt-8 text-blue-400 font-mono text-xs font-bold animate-pulse"></div>
         </div>
     </div>
 
-    <div id="game-container" class="hidden app-container">
+    <div id="game-container" class="hidden app-shell">
         
-        <div class="header glass p-4 flex justify-between items-center z-20">
+        <div class="header glass p-4 grid grid-cols-3 items-center">
             <div>
-                <p class="text-[9px] uppercase font-black text-slate-500">Equity Value</p>
-                <h2 id="balance" class="text-xl font-black text-emerald-400">$1,000,000</h2>
+                <p class="text-[9px] uppercase font-black text-slate-500 tracking-widest">Equity</p>
+                <h2 id="balance" class="text-lg font-black text-emerald-400 leading-tight">$1,000,000</h2>
             </div>
             <div class="text-center">
-                <div id="round-timer" class="text-3xl font-black tabular-nums leading-none">90</div>
-                <p class="text-[8px] font-black uppercase text-blue-500 tracking-tighter">Market Open</p>
+                <div id="round-timer" class="text-3xl font-black tabular-nums tracking-tighter">90</div>
+                <div class="w-full h-1 bg-slate-800 rounded-full mt-1 overflow-hidden mx-auto max-w-[40px]">
+                    <div id="timer-bar" class="h-full bg-blue-500 transition-all duration-1000"></div>
+                </div>
             </div>
             <div class="text-right">
-                <p class="text-[9px] uppercase font-black text-slate-500">Fiscal Month <span id="round-num">1</span></p>
-                <h2 id="opp-balance" class="text-xl font-black text-slate-500">$1.0M</h2>
+                <p class="text-[9px] uppercase font-black text-slate-500 tracking-widest">Rival</p>
+                <h2 id="opp-balance" class="text-lg font-black text-slate-400 leading-tight">$1.0M</h2>
             </div>
         </div>
 
         <div class="header flex overflow-x-auto bg-slate-950/40 px-4 py-3 gap-2 no-scrollbar border-b border-white/5">
-            <button onclick="filterLeague('All', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-blue-600 uppercase tracking-widest">Global</button>
+            <button onclick="filterLeague('All', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-blue-600 uppercase tracking-widest">Markets</button>
             <button onclick="filterLeague('Premier League', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-slate-800 text-slate-500 uppercase">England</button>
             <button onclick="filterLeague('La Liga', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-slate-800 text-slate-500 uppercase">Spain</button>
             <button onclick="filterLeague('Champions League', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-slate-800 text-slate-500 uppercase">UCL</button>
         </div>
 
-        <div id="fixtures-list" class="main-content p-4 space-y-4">
+        <div id="fixtures-list" class="main-scroll space-y-4">
             </div>
 
         <div class="footer glass p-5 pb-8 border-t border-white/10">
             <div class="flex items-center justify-between gap-4 max-w-xl mx-auto">
                 <div class="w-1/3">
-                    <p id="active-count" class="text-[9px] font-black text-slate-500 uppercase mb-1">0 Markets</p>
-                    <div id="total-stake-display" class="text-lg font-black text-white leading-none">$0</div>
+                    <p id="active-count" class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">0 Markets</p>
+                    <div id="total-stake-display" class="text-xl font-black text-white leading-none">$0</div>
                 </div>
-                <button id="lock-bets-btn" onclick="submitBets()" class="flex-grow bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
-                    LOCK PORTFOLIO
+                <button id="lock-bets-btn" onclick="submitBets()" class="flex-grow bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl btn-tap">
+                    LOCK INVESTMENTS
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="result-modal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4">
-        <div class="w-full max-w-md bg-[#0a0f1d] rounded-[3rem] p-8 text-center border-white/10 border shadow-2xl relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-blue-600/10 to-transparent"></div>
-            
-            <div class="relative z-10">
-                <p id="modal-round-text" class="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">Round Settlement</p>
-                <div id="modal-pnl" class="text-6xl font-black tracking-tighter mb-8">+$0</div>
+    <div id="result-modal" class="fixed inset-0 z-[110] hidden flex items-end sm:items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#0a0f1d] rounded-[3rem] p-8 text-center border-white/10 border shadow-2xl settlement-card">
+            <div class="w-12 h-1 bg-slate-800 rounded-full mx-auto mb-6 sm:hidden"></div>
+            <p id="modal-round-text" class="text-blue-500 text-[10px] font-black uppercase tracking-[0.4em] mb-4">Round Statement</p>
+            <div id="modal-pnl" class="text-5xl font-black tracking-tighter mb-8">+$0</div>
 
-                <div id="modal-logs" class="space-y-3 mb-10 max-h-[40vh] overflow-y-auto pr-2 no-scrollbar">
-                    </div>
+            <div id="modal-logs" class="space-y-3 mb-10 max-h-[35vh] overflow-y-auto pr-2 no-scrollbar"></div>
 
-                <button onclick="closeModal()" class="w-full bg-white text-black py-4 rounded-[2rem] font-black uppercase tracking-widest text-xs active:scale-95 transition-transform">Next Fiscal Period</button>
-            </div>
+            <button onclick="closeModal()" class="w-full bg-white text-black py-4 rounded-[2rem] font-black uppercase tracking-widest text-[10px] btn-tap">Next Fiscal Month</button>
         </div>
     </div>
 
     <script>
-        const CLUBS = {
-            "Premier League": ["Man City", "Arsenal", "Liverpool", "Chelsea", "Man Utd", "Tottenham", "Newcastle", "Aston Villa"],
-            "La Liga": ["Real Madrid", "Barcelona", "Atletico Madrid", "Girona", "Real Sociedad", "Sevilla"],
-            "Bundesliga": ["Leverkusen", "Bayern Munich", "Dortmund", "Leipzig", "Stuttgart"],
-            "Serie A": ["Inter Milan", "AC Milan", "Juventus", "Atalanta", "Napoli"],
-            "Champions League": ["Real Madrid", "Man City", "Bayern Munich", "Inter Milan", "PSG", "Arsenal"]
+        // DATA MAPPING FOR LOGOS
+        const TEAM_MAP = {
+            "Man City": { c: "england", s: "manchester-city" },
+            "Arsenal": { c: "england", s: "arsenal" },
+            "Liverpool": { c: "england", s: "liverpool" },
+            "Chelsea": { c: "england", s: "chelsea" },
+            "Man Utd": { c: "england", s: "manchester-united" },
+            "Tottenham": { c: "england", s: "tottenham-hotspur" },
+            "Newcastle": { c: "england", s: "newcastle-united" },
+            "Aston Villa": { c: "england", s: "aston-villa" },
+            "Real Madrid": { c: "spain", s: "real-madrid" },
+            "Barcelona": { c: "spain", s: "fc-barcelona" },
+            "Atletico Madrid": { c: "spain", s: "atletico-madrid" },
+            "Girona": { c: "spain", s: "girona-fc" },
+            "Real Sociedad": { c: "spain", s: "real-sociedad" },
+            "Sevilla": { c: "spain", s: "sevilla-fc" },
+            "PSG": { c: "france", s: "paris-saint-germain" },
+            "Bayern Munich": { c: "germany", s: "bayern-munchen" },
+            "Leverkusen": { c: "germany", s: "bayer-04-leverkusen" },
+            "Dortmund": { c: "germany", s: "borussia-dortmund" },
+            "Inter Milan": { c: "italy", s: "inter-milan" },
+            "AC Milan": { c: "italy", s: "ac-milan" },
+            "Juventus": { c: "italy", s: "juventus" }
         };
 
-        const ID_PREFIX = "FC-2026-";
+        const ID_PREFIX = "FCAP-26-";
         let peer, conn, myBalance = 1000000, oppBalance = 1000000, isHost = false;
         let round = 1, timeLeft = 90, myBets = {}, currentFixtures = [], timerInterval;
         let hostReady = false, joinerReady = false;
 
-        // SMART LOGO ENGINE: Reliable Initial Fallback + High Res Fetch
         function getLogo(name) {
-            // First attempt: High fidelity Logo CDN
-            // Second fallback: Initial-based generated vector
-            const initial = name.charAt(0);
-            return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&bold=true&rounded=true&size=128`;
+            const data = TEAM_MAP[name];
+            if (!data) return `https://ui-avatars.com/api/?name=${name}&background=random&color=fff`;
+            // This constructs the image URL using the pattern you provided
+            // We use a fallback error handler in case of CORS blocks
+            return `https://football-logos.cc/logos/${data.c}/${data.s}.png`;
         }
 
         function initializeHost() {
             const pin = Math.floor(1000 + Math.random() * 9000).toString();
             peer = new Peer(ID_PREFIX + pin);
             peer.on('open', () => {
-                document.getElementById('status').innerHTML = `ROOM PIN: <span class="text-white text-3xl block mt-2 font-black">${pin}</span>`;
+                document.getElementById('status').innerHTML = `PIN: <span class="text-white text-3xl block mt-2 font-black">${pin}</span>`;
                 isHost = true;
             });
             peer.on('connection', (c) => { conn = c; setupConnection(); });
@@ -193,12 +213,14 @@
         function startRound() {
             hostReady = false; joinerReady = false;
             currentFixtures = [];
-            Object.keys(CLUBS).forEach(league => {
-                const teams = CLUBS[league];
+            const leagues = ["Premier League", "La Liga", "Champions League"];
+            leagues.forEach(league => {
+                const teams = Object.keys(TEAM_MAP).filter(t => TEAM_MAP[t].c === (league === "Premier League" ? "england" : league === "La Liga" ? "spain" : TEAM_MAP[t].c));
+                const pool = teams.length > 0 ? teams : Object.keys(TEAM_MAP);
                 for(let i=0; i<2; i++) {
-                    const h = teams[Math.floor(Math.random()*teams.length)];
-                    let a = teams[Math.floor(Math.random()*teams.length)];
-                    while(a === h) a = teams[Math.floor(Math.random()*teams.length)];
+                    const h = pool[Math.floor(Math.random()*pool.length)];
+                    let a = pool[Math.floor(Math.random()*pool.length)];
+                    while(a === h) a = pool[Math.floor(Math.random()*pool.length)];
                     const s1 = Math.random() + 0.5, s2 = Math.random() + 0.5;
                     currentFixtures.push({
                         id: Math.random().toString(36).substr(2, 5),
@@ -218,9 +240,10 @@
             myBets = {};
             clearInterval(timerInterval);
             document.getElementById('fixtures-list').scrollTop = 0;
-            document.getElementById('lock-bets-btn').disabled = false;
-            document.getElementById('lock-bets-btn').innerText = "LOCK PORTFOLIO";
-            document.getElementById('lock-bets-btn').className = "flex-grow bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all";
+            const btn = document.getElementById('lock-bets-btn');
+            btn.disabled = false;
+            btn.innerText = "LOCK INVESTMENTS";
+            btn.className = "flex-grow bg-blue-600 py-4 rounded-2xl font-black uppercase text-[10px] btn-tap shadow-xl";
             renderFixtures('All');
             updateDashboard();
             startTimer();
@@ -230,6 +253,7 @@
             timerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('round-timer').innerText = timeLeft;
+                document.getElementById('timer-bar').style.width = (timeLeft/90*100) + "%";
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     if (isHost) simulateRound();
@@ -242,29 +266,29 @@
             list.innerHTML = '';
             currentFixtures.filter(f => filter === 'All' || f.league === filter).forEach(f => {
                 const card = document.createElement('div');
-                card.className = `p-6 rounded-[2rem] card-gradient flex flex-col gap-6`;
+                card.className = `p-6 card-pro flex flex-col gap-6`;
                 card.innerHTML = `
                     <div class="flex justify-between items-center">
-                        <span class="text-[9px] font-black uppercase text-blue-500 tracking-widest px-3 py-1 bg-blue-500/10 rounded-full">${f.league}</span>
+                        <span class="text-[8px] font-black uppercase text-blue-500 tracking-[0.2em] px-3 py-1 bg-blue-500/10 rounded-full">${f.league}</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center justify-between gap-4">
                         <div class="flex-1 text-center">
-                            <img src="${getLogo(f.h)}" class="w-14 h-14 mx-auto mb-3 shadow-xl rounded-full">
-                            <div class="text-xs font-black uppercase truncate">${f.h}</div>
+                            <img src="${getLogo(f.h)}" onerror="this.src='https://ui-avatars.com/api/?name=${f.h}&background=334155&color=fff'" class="w-14 h-14 mx-auto mb-3 shadow-xl rounded-2xl object-contain">
+                            <div class="text-[10px] font-black uppercase truncate">${f.h}</div>
                         </div>
-                        <div class="text-[10px] font-black text-slate-700 italic px-2">VS</div>
+                        <div class="text-[10px] font-black text-slate-700 italic">VS</div>
                         <div class="flex-1 text-center">
-                            <img src="${getLogo(f.a)}" class="w-14 h-14 mx-auto mb-3 shadow-xl rounded-full">
-                            <div class="text-xs font-black uppercase truncate">${f.a}</div>
+                            <img src="${getLogo(f.a)}" onerror="this.src='https://ui-avatars.com/api/?name=${f.a}&background=334155&color=fff'" class="w-14 h-14 mx-auto mb-3 shadow-xl rounded-2xl object-contain">
+                            <div class="text-[10px] font-black uppercase truncate">${f.a}</div>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="pick('${f.id}','h')" id="b-${f.id}-h" class="bg-slate-900 border border-slate-800 py-4 rounded-2xl text-[10px] font-black transition-all">LONG ${f.oh}x</button>
-                        <button onclick="pick('${f.id}','a')" id="b-${f.id}-a" class="bg-slate-900 border border-slate-800 py-4 rounded-2xl text-[10px] font-black transition-all">LONG ${f.oa}x</button>
+                        <button onclick="pick('${f.id}','h')" id="b-${f.id}-h" class="bg-slate-900 border border-slate-800 py-4 rounded-2xl text-[10px] font-black transition-all btn-tap">BUY ${f.oh}x</button>
+                        <button onclick="pick('${f.id}','a')" id="b-${f.id}-a" class="bg-slate-900 border border-slate-800 py-4 rounded-2xl text-[10px] font-black transition-all btn-tap">BUY ${f.oa}x</button>
                     </div>
                     <div class="relative">
-                        <input type="number" inputmode="numeric" placeholder="INVESTMENT STAKE" oninput="stake('${f.id}', this.value)" 
-                            class="w-full bg-black border border-white/5 py-4 px-6 rounded-2xl text-center text-xs font-black text-emerald-400 outline-none focus:border-blue-500 transition-colors">
+                        <input type="number" inputmode="numeric" placeholder="STAKE AMOUNT" oninput="stake('${f.id}', this.value)" 
+                            class="w-full bg-black/40 border border-white/5 py-4 px-6 rounded-2xl text-center text-xs font-black text-emerald-400 outline-none focus:border-blue-500">
                     </div>
                 `;
                 list.appendChild(card);
@@ -275,8 +299,8 @@
         function pick(id, side) {
             if (!myBets[id]) myBets[id] = { stake: 0 };
             myBets[id].side = side;
-            document.querySelectorAll(`[id^="b-${id}-"]`).forEach(b => b.classList.remove('active-side'));
-            document.getElementById(`b-${id}-${side}`).classList.add('active-side');
+            document.querySelectorAll(`[id^="b-${id}-"]`).forEach(b => b.classList.remove('active-bet'));
+            document.getElementById(`b-${id}-${side}`).classList.add('active-bet');
             updateSummary();
         }
 
@@ -295,12 +319,12 @@
 
         function submitBets() {
             const total = Object.values(myBets).reduce((a, b) => a + b.stake, 0);
-            if (total > myBalance) return alert("Capital Reserves Insufficient!");
+            if (total > myBalance) return alert("Insufficient Liquidity!");
             
             const btn = document.getElementById('lock-bets-btn');
             btn.disabled = true;
-            btn.innerText = "WAITING FOR RIVAL...";
-            btn.className = "flex-grow bg-slate-800 py-4 rounded-2xl font-black uppercase text-xs";
+            btn.innerText = "WAITING FOR PARTNER...";
+            btn.className = "flex-grow bg-slate-800 py-4 rounded-2xl font-black uppercase text-[10px]";
 
             if (isHost) {
                 hostReady = true;
@@ -328,10 +352,10 @@
                     if (bet.side === res.winner) {
                         const win = bet.stake * (res.winner === 'h' ? fix.oh : fix.oa);
                         pnl += (win - bet.stake);
-                        logs.push(`<div class="result-entry flex justify-between p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10"><div class="text-left"><p class="text-[8px] font-black text-emerald-500 uppercase">Profit</p><p class="text-xs font-bold text-white">${fix.h} vs ${fix.a}</p></div><div class="text-right text-emerald-400 font-black text-sm">+$${Math.floor(win).toLocaleString()}</div></div>`);
+                        logs.push(`<div class="flex justify-between p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10 text-left"><div class="text-[8px] font-black uppercase text-emerald-500">PROFIT</div><div class="text-[10px] font-bold">${fix.h} VS ${fix.a}</div><div class="text-emerald-400 font-black">+$${Math.floor(win).toLocaleString()}</div></div>`);
                     } else {
                         pnl -= bet.stake;
-                        logs.push(`<div class="result-entry flex justify-between p-4 bg-rose-500/5 rounded-2xl border border-rose-500/10"><div class="text-left"><p class="text-[8px] font-black text-rose-500 uppercase">Loss</p><p class="text-xs font-bold text-white">${fix.h} vs ${fix.a}</p></div><div class="text-right text-rose-400 font-black text-sm">-$${bet.stake.toLocaleString()}</div></div>`);
+                        logs.push(`<div class="flex justify-between p-4 bg-rose-500/5 rounded-2xl border border-rose-500/10 text-left"><div class="text-[8px] font-black uppercase text-rose-500">LOSS</div><div class="text-[10px] font-bold">${fix.h} VS ${fix.a}</div><div class="text-rose-400 font-black">-$${bet.stake.toLocaleString()}</div></div>`);
                     }
                 }
             });
@@ -345,8 +369,8 @@
             const pnlEl = document.getElementById('modal-pnl');
             pnlEl.innerText = (pnl >= 0 ? "+$" : "-$") + Math.abs(Math.floor(pnl)).toLocaleString();
             pnlEl.className = pnl >= 0 ? "text-6xl font-black tracking-tighter text-emerald-400 mb-8" : "text-6xl font-black tracking-tighter text-rose-500 mb-8";
-            document.getElementById('modal-logs').innerHTML = logs.length ? logs.join('') : '<p class="text-slate-600 font-black uppercase text-[10px] py-10">No positions taken this month</p>';
-            document.getElementById('modal-round-text').innerText = `Fiscal Month ${round} Statement`;
+            document.getElementById('modal-logs').innerHTML = logs.length ? logs.join('') : '<p class="text-slate-600 font-black uppercase text-[10px] py-10">No positions taken</p>';
+            document.getElementById('modal-round-text').innerText = `Month ${round} Settlement`;
             modal.classList.remove('hidden');
         }
 
@@ -354,7 +378,7 @@
             document.getElementById('result-modal').classList.add('hidden');
             if (isHost) {
                 round++;
-                if (round > 12) return alert("Fiscal Year End. Total Profit: $" + (myBalance - 1000000).toLocaleString());
+                if (round > 12) return alert("Fiscal Year Complete!");
                 startRound();
             }
         }
