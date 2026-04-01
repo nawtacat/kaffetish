@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Capital: Investment Sim</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .payout-green { color: #4ade80; }
+        .loss-red { color: #fb7185; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="lobby" class="max-w-md mx-auto mt-20 glass p-8 rounded-2xl shadow-2xl">
+        <h1 class="text-3xl font-black mb-2 text-center bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">FOOTBALL CAPITAL</h1>
+        <p class="text-slate-400 text-center mb-8 text-sm">Investment Firm Simulation</p>
+        
+        <div id="connection-controls">
+            <button onclick="initializeHost()" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-lg font-bold transition-all mb-4">Host New Session</button>
+            <div class="relative flex items-center py-4">
+                <div class="flex-grow border-t border-slate-700"></div>
+                <span class="flex-shrink mx-4 text-slate-500 text-xs">OR JOIN ROOM</span>
+                <div class="flex-grow border-t border-slate-700"></div>
+            </div>
+            <input type="text" id="joinId" placeholder="Enter Friend's ID" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="joinGame()" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-lg font-bold transition-all">Join Firm</button>
+        </div>
+
+        <div id="status" class="mt-6 text-center text-sm font-mono text-blue-400 animate-pulse"></div>
+    </div>
+
+    <div id="game-container" class="hidden max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div class="glass px-6 py-3 rounded-xl flex items-center gap-4">
+                <div class="text-xs text-slate-400 uppercase font-bold">Capital</div>
+                <div id="balance" class="text-2xl font-black text-emerald-400">$1,000,000</div>
+            </div>
+            <div class="glass px-6 py-3 rounded-xl text-center">
+                <div id="timer" class="text-xl font-mono font-bold text-blue-400">15:00</div>
+                <div class="text-[10px] uppercase text-slate-500">Year Progress</div>
+            </div>
+            <div class="glass px-6 py-3 rounded-xl flex items-center gap-4">
+                <div class="text-xs text-slate-400 uppercase font-bold">Opponent</div>
+                <div id="opp-balance" class="text-2xl font-black text-slate-300">$1,000,000</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-blue-500 rounded-full"></span>
+                    Current Market Fixtures
+                </h2>
+                <div id="fixtures-list" class="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+                    </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6 h-fit">
+                <h2 class="text-lg font-bold mb-4 border-b border-slate-700 pb-2">Active Investments</h2>
+                <div id="active-bets" class="text-sm text-slate-400 italic mb-4">No active positions...</div>
+                <button id="lock-bets-btn" onclick="submitBets()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-4 rounded-xl font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20">Lock Investments</button>
+                
+                <div class="mt-8 border-t border-slate-700 pt-4">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase mb-3">Ticker Tape</h3>
+                    <div id="ticker" class="text-xs font-mono space-y-1 h-32 overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden p-4">
+        <div class="glass max-w-lg w-full p-8 rounded-3xl text-center border-2 border-blue-500/30">
+            <h2 class="text-4xl font-black mb-2" id="modal-title">ROUND OVER</h2>
+            <p class="text-slate-400 mb-6" id="modal-round">Fiscal Month 1</p>
+            <div id="modal-pnl" class="text-3xl font-bold mb-8"></div>
+            <button onclick="closeModal()" class="bg-blue-600 px-10 py-3 rounded-full font-bold">Next Round</button>
+        </div>
+    </div>
+
+    <script>
+        const LEAGUES = {
+            "Premier League": ["Man City", "Arsenal", "Liverpool", "Chelsea", "Man Utd", "Spurs", "Newcastle", "Aston Villa"],
+            "La Liga": ["Real Madrid", "Barcelona", "Atletico Madrid", "Girona", "Real Sociedad", "Athletic Club"],
+            "Bundesliga": ["Bayer Leverkusen", "Bayern Munich", "Dortmund", "RB Leipzig", "Stuttgart"],
+            "Serie A": ["Inter Milan", "AC Milan", "Juventus", "Atalanta", "AS Roma", "Napoli"],
+            "Ligue 1": ["PSG", "Monaco", "Lille", "Brest", "Nice", "Lyon"],
+            "Champions League": ["Real Madrid", "Man City", "Bayern Munich", "Inter Milan", "PSG", "Arsenal"]
+        };
+
+        let peer, conn;
+        let myBalance = 1000000;
+        let oppBalance = 1000000;
+        let isHost = false;
+        let currentFixtures = [];
+        let myBets = {};
+        let gameActive = false;
+        let round = 1;
+        let timeLeft = 900; // 15 mins
+        let timerInterval;
+
+        function initializeHost() {
+            peer = new Peer();
+            peer.on('open', (id) => {
+                document.getElementById('status').innerText = "ID: " + id + " (Send this to player 2)";
+                isHost = true;
+            });
+            peer.on('connection', (c) => {
+                conn = c;
+                setupConnection();
+            });
+        }
+
+        function joinGame() {
+            const id = document.getElementById('joinId').value;
+            if (!id) return alert("Enter an ID");
+            peer = new Peer();
+            peer.on('open', () => {
+                conn = peer.connect(id);
+                setupConnection();
+            });
+        }
+
+        function setupConnection() {
+            conn.on('open', () => {
+                document.getElementById('lobby').classList.add('hidden');
+                document.getElementById('game-container').classList.remove('hidden');
+                gameActive = true;
+                if (isHost) startNewRound();
+                startTimer();
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'NEW_ROUND') {
+                    currentFixtures = data.fixtures;
+                    round = data.round;
+                    renderFixtures();
+                }
+                if (data.type === 'RESULTS') {
+                    processResults(data.results);
+                }
+                if (data.type === 'SYNC_BALANCE') {
+                    oppBalance = data.balance;
+                    updateUI();
+                }
+            });
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                let mins = Math.floor(timeLeft / 60);
+                let secs = timeLeft % 60;
+                document.getElementById('timer').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function startNewRound() {
+            currentFixtures = generateFixtures();
+            const data = { type: 'NEW_ROUND', fixtures: currentFixtures, round: round };
+            conn.send(data);
+            renderFixtures();
+        }
+
+        function generateFixtures() {
+            let fixtures = [];
+            Object.keys(LEAGUES).forEach(league => {
+                const teams = LEAGUES[league];
+                for(let i=0; i<2; i++) {
+                    const t1 = teams[Math.floor(Math.random() * teams.length)];
+                    let t2 = teams[Math.floor(Math.random() * teams.length)];
+                    while(t1 === t2) t2 = teams[Math.floor(Math.random() * teams.length)];
+                    
+                    // Simple logic: lower ID/Index = higher strength usually, but here random
+                    const strength1 = Math.random() + 0.5;
+                    const strength2 = Math.random() + 0.5;
+                    
+                    fixtures.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        league,
+                        home: t1,
+                        away: t2,
+                        oddsHome: (1 / (strength1 / (strength1 + strength2)) + 0.2).toFixed(2),
+                        oddsAway: (1 / (strength2 / (strength1 + strength2)) + 0.2).toFixed(2),
+                        s1: strength1,
+                        s2: strength2
+                    });
+                }
+            });
+            return fixtures;
+        }
+
+        function renderFixtures() {
+            const list = document.getElementById('fixtures-list');
+            list.innerHTML = '';
+            myBets = {};
+            document.getElementById('active-bets').innerText = "Select your stakes...";
+            document.getElementById('lock-bets-btn').disabled = false;
+            document.getElementById('lock-bets-btn').innerText = "Lock Investments";
+
+            currentFixtures.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'glass p-4 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4 hover:border-blue-500/50 transition-all';
+                div.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-blue-400 font-bold uppercase">${f.league}</span>
+                        <div class="font-bold">${f.home} <span class="text-slate-500 px-2">vs</span> ${f.away}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex flex-col items-center">
+                            <button onclick="setBet('${f.id}', 'home')" id="btn-${f.id}-home" class="bg-slate-800 hover:bg-slate-700 px-4 py-1 rounded border border-slate-700 text-xs transition-colors">
+                                Home: ${f.oddsHome}x
+                            </button>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <button onclick="setBet('${f.id}', 'away')" id="btn-${f.id}-away" class="bg-slate-800 hover:bg-slate-700 px-4 py-1 rounded border border-slate-700 text-xs transition-colors">
+                                Away: ${f.oddsAway}x
+                            </button>
+                        </div>
+                        <input type="number" placeholder="Stake $" id="stake-${f.id}" 
+                            class="w-24 bg-slate-900 border border-slate-700 p-1 text-xs rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                            onchange="updateStake('${f.id}', this.value)">
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function setBet(id, side) {
+            if (!myBets[id]) myBets[id] = { stake: 0 };
+            myBets[id].side = side;
+            // Visual Toggle
+            document.getElementById(`btn-${id}-home`).classList.remove('bg-emerald-600', 'border-emerald-400');
+            document.getElementById(`btn-${id}-away`).classList.remove('bg-emerald-600', 'border-emerald-400');
+            document.getElementById(`btn-${id}-${side}`).classList.add('bg-emerald-600', 'border-emerald-400');
+        }
+
+        function updateStake(id, val) {
+            if (!myBets[id]) myBets[id] = { side: 'home' };
+            myBets[id].stake = parseFloat(val) || 0;
+        }
+
+        function submitBets() {
+            const totalStake = Object.values(myBets).reduce((acc, curr) => acc + curr.stake, 0);
+            if (totalStake > myBalance) return alert("Insufficient Capital!");
+            
+            document.getElementById('lock-bets-btn').disabled = true;
+            document.getElementById('lock-bets-btn').innerText = "Waiting for Round Close...";
+
+            if (isHost) {
+                // Host simulates after small delay (allowing joiner to submit)
+                setTimeout(simulateMatches, 5000);
+            }
+        }
+
+        function simulateMatches() {
+            const results = currentFixtures.map(f => {
+                const roll = Math.random() * (f.s1 + f.s2);
+                const winner = roll < f.s1 ? 'home' : 'away';
+                const scoreHome = Math.floor(Math.random() * 4);
+                const scoreAway = Math.floor(Math.random() * 4);
+                return { id: f.id, winner, score: `${scoreHome}-${scoreAway}`, home: f.home, away: f.away };
+            });
+
+            const data = { type: 'RESULTS', results: results };
+            conn.send(data);
+            processResults(results);
+        }
+
+        function processResults(results) {
+            let pnl = 0;
+            let logs = [];
+
+            results.forEach(res => {
+                const bet = myBets[res.id];
+                const fixture = currentFixtures.find(f => f.id === res.id);
+                if (bet && bet.stake > 0) {
+                    if (bet.side === res.winner) {
+                        const winAmt = bet.stake * (res.winner === 'home' ? fixture.oddsHome : fixture.oddsAway);
+                        pnl += (winAmt - bet.stake);
+                        logs.push(`<span class="text-emerald-400">WON $${winAmt.toLocaleString()} on ${res.home}</span>`);
+                    } else {
+                        pnl -= bet.stake;
+                        logs.push(`<span class="text-rose-500">LOST $${bet.stake.toLocaleString()} on ${res.home} vs ${res.away}</span>`);
+                    }
+                }
+            });
+
+            myBalance += pnl;
+            updateUI();
+            showModal(pnl);
+            
+            // Log to ticker
+            const ticker = document.getElementById('ticker');
+            logs.forEach(l => {
+                ticker.innerHTML = `<div>${l}</div>` + ticker.innerHTML;
+            });
+
+            conn.send({ type: 'SYNC_BALANCE', balance: myBalance });
+            
+            round++;
+            if (isHost && round <= 12) {
+                setTimeout(startNewRound, 5000);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('balance').innerText = `$${Math.floor(myBalance).toLocaleString()}`;
+            document.getElementById('opp-balance').innerText = `$${Math.floor(oppBalance).toLocaleString()}`;
+        }
+
+        function showModal(pnl) {
+            const modal = document.getElementById('result-modal');
+            const pnlDiv = document.getElementById('modal-pnl');
+            pnlDiv.className = pnl >= 0 ? 'text-3xl font-bold text-emerald-400' : 'text-3xl font-bold text-rose-500';
+            pnlDiv.innerText = (pnl >= 0 ? "+$" : "-$") + Math.abs(Math.floor(pnl)).toLocaleString();
+            document.getElementById('modal-round').innerText = `Fiscal Month ${round}`;
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+        }
+
+        function endGame() {
+            gameActive = false;
+            alert(`Fiscal Year Over! Final Balance: $${myBalance.toLocaleString()}`);
+            location.reload();
+        }
+    </script>
+</body>
+</html>
