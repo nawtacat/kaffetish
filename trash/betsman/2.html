@@ -3,119 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Football Capital 2026</title>
+    <title>Football Capital: Pro Series</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
-        body { font-family: 'Outfit', sans-serif; background: #020617; color: #f8fafc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
-        .bet-card { transition: all 0.2s ease; }
-        .league-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Outfit:wght@400;700;900&display=swap');
+        
+        :root {
+            --bg: #020617;
+            --accent: #3b82f6;
+            --profit: #10b981;
+            --loss: #ef4444;
+        }
+
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background: var(--bg); 
+            color: #f8fafc; 
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.05); }
+        .stat-card { background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4)); }
+        
+        .timer-glow { transition: all 0.3s ease; }
+        .timer-low { color: #f43f5e; text-shadow: 0 0 10px rgba(244, 63, 94, 0.4); }
+
+        .fixture-card {
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .fixture-card:active { transform: scale(0.98); }
+
+        .logo-img { filter: drop-shadow(0 0 8px rgba(0,0,0,0.5)); }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide { animation: slideUp 0.4s ease forwards; }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
     <div id="lobby" class="flex-grow flex flex-col items-center justify-center p-6">
-        <div class="w-full max-w-sm glass rounded-3xl p-8 text-center shadow-2xl border-blue-500/20 border-2">
-            <div class="mb-8">
-                <div class="text-6xl mb-4">📈</div>
-                <h1 class="text-3xl font-black tracking-tight">FOOTBALL <span class="text-blue-500">CAPITAL</span></h1>
-                <p class="text-slate-500 text-[10px] tracking-[0.2em] uppercase mt-2">2026 Fiscal Season</p>
-            </div>
+        <div class="w-full max-w-sm glass rounded-[2.5rem] p-10 text-center shadow-2xl border-white/10 border relative overflow-hidden">
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-blue-600/20 blur-3xl rounded-full"></div>
             
-            <div id="connection-ui">
-                <button onclick="initializeHost()" class="w-full bg-blue-600 py-4 rounded-2xl font-bold text-lg mb-4 active:scale-95 transition-transform shadow-lg shadow-blue-900/20">Host Investment Room</button>
-                <div class="flex items-center gap-4 my-6">
-                    <div class="h-px bg-slate-800 flex-grow"></div>
-                    <span class="text-slate-600 text-xs font-bold">OR JOIN</span>
-                    <div class="h-px bg-slate-800 flex-grow"></div>
+            <div class="relative z-10">
+                <div class="inline-block p-4 bg-blue-600/10 rounded-3xl mb-6">
+                    <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                 </div>
-                <input type="number" id="joinId" inputmode="numeric" placeholder="4-Digit PIN" class="w-full bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl mb-4 text-center text-2xl font-black tracking-widest focus:border-blue-500 outline-none">
-                <button onclick="joinGame()" class="w-full bg-slate-800 py-4 rounded-2xl font-bold active:scale-95 transition-transform">Enter PIN</button>
+                <h1 class="text-4xl font-black tracking-tighter mb-2">FOOTBALL<br><span class="text-blue-500">CAPITAL</span></h1>
+                <p class="text-slate-500 text-[10px] tracking-[0.3em] uppercase mb-10 font-bold">Trading European Markets</p>
+                
+                <div id="connection-ui" class="space-y-4">
+                    <button onclick="initializeHost()" class="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-2xl font-black text-sm tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-900/40">HOST FIRM</button>
+                    <div class="flex items-center gap-3 py-2">
+                        <div class="h-px bg-slate-800 flex-grow"></div>
+                        <span class="text-slate-600 text-[10px] font-black uppercase">Join Competitor</span>
+                        <div class="h-px bg-slate-800 flex-grow"></div>
+                    </div>
+                    <input type="number" id="joinId" inputmode="numeric" placeholder="PIN" class="w-full bg-slate-900/50 border border-slate-800 p-4 rounded-2xl mb-2 text-center text-3xl font-black tracking-[0.5em] focus:border-blue-500 outline-none">
+                    <button onclick="joinGame()" class="w-full bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl font-black text-sm tracking-widest transition-all active:scale-95">ENTER PIN</button>
+                </div>
+                <div id="status" class="mt-8 text-blue-400 font-mono text-xs font-bold animate-pulse"></div>
             </div>
-            <div id="status" class="mt-6 text-blue-400 font-mono text-sm min-h-[1.5rem]"></div>
         </div>
     </div>
 
     <div id="game-container" class="hidden flex-col h-screen overflow-hidden">
         <div class="glass border-b border-white/5 p-4 flex justify-between items-center z-20 shrink-0">
             <div class="w-1/3">
-                <p class="text-[9px] uppercase font-bold text-slate-500">Month <span id="round-num">1</span></p>
-                <h2 id="balance" class="text-lg font-black text-emerald-400">$1,000,000</h2>
+                <p class="text-[9px] uppercase font-black text-slate-500 tracking-wider">Net Liquidity</p>
+                <h2 id="balance" class="text-xl font-black text-emerald-400 leading-tight">$1,000,000</h2>
             </div>
             <div class="flex flex-col items-center w-1/3">
-                <div id="round-timer" class="text-2xl font-black tabular-nums text-blue-400">90s</div>
-                <div class="w-full h-1 bg-slate-800 rounded-full mt-1 overflow-hidden max-w-[80px]">
-                    <div id="timer-bar" class="h-full bg-blue-500 transition-all duration-1000" style="width: 100%"></div>
+                <div id="round-timer" class="text-3xl font-black tabular-nums tracking-tighter">90</div>
+                <div class="w-full h-1 bg-slate-800 rounded-full mt-1 overflow-hidden max-w-[60px]">
+                    <div id="timer-bar" class="h-full bg-blue-500 transition-all duration-1000"></div>
                 </div>
             </div>
             <div class="w-1/3 text-right">
-                <p class="text-[9px] uppercase font-bold text-slate-500">Rival Firm</p>
-                <h2 id="opp-balance" class="text-lg font-black text-slate-400">$1,000,000</h2>
+                <p class="text-[9px] uppercase font-black text-slate-500 tracking-wider">Round <span id="round-num">1</span>/12</p>
+                <h2 id="opp-balance" class="text-xl font-black text-slate-500 leading-tight">$1.0M</h2>
             </div>
         </div>
 
-        <div class="flex overflow-x-auto bg-slate-950/40 border-b border-white/5 px-4 py-3 gap-3 no-scrollbar shrink-0">
-            <button onclick="filterLeague('All', this)" class="league-btn px-4 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-blue-600 text-white">All Markets</button>
-            <button onclick="filterLeague('Premier League', this)" class="league-btn px-4 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-slate-800 text-slate-400">Premier League</button>
-            <button onclick="filterLeague('La Liga', this)" class="league-btn px-4 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-slate-800 text-slate-400">La Liga</button>
-            <button onclick="filterLeague('Champions League', this)" class="league-btn px-4 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-slate-800 text-slate-400">UCL</button>
+        <div class="flex overflow-x-auto bg-slate-950/60 px-4 py-4 gap-3 no-scrollbar shrink-0">
+            <button onclick="filterLeague('All', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-blue-600 uppercase tracking-widest">Global</button>
+            <button onclick="filterLeague('Premier League', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-slate-800 text-slate-400 uppercase tracking-widest">England</button>
+            <button onclick="filterLeague('La Liga', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-slate-800 text-slate-400 uppercase tracking-widest">Spain</button>
+            <button onclick="filterLeague('Champions League', this)" class="league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-slate-800 text-slate-400 uppercase tracking-widest">UCL</button>
         </div>
 
-        <div id="fixtures-list" class="flex-grow overflow-y-auto p-4 space-y-3 pb-32">
+        <div id="fixtures-list" class="flex-grow overflow-y-auto p-4 space-y-4 pb-40">
             </div>
 
-        <div class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-4 safe-area-bottom z-30">
-            <div class="flex items-center justify-between gap-4 max-w-2xl mx-auto">
+        <div class="fixed bottom-0 left-0 right-0 glass border-t border-white/10 p-5 safe-area-bottom z-30">
+            <div class="flex items-center justify-between gap-6 max-w-2xl mx-auto">
                 <div class="shrink-0">
-                    <div id="active-count" class="text-[10px] font-bold text-slate-500 uppercase">0 Markets Selected</div>
-                    <div id="total-stake-display" class="text-sm font-black text-white">Stake: $0</div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        <div id="active-count" class="text-[10px] font-black text-slate-500 uppercase">Live Markets</div>
+                    </div>
+                    <div id="total-stake-display" class="text-lg font-black text-white">$0.00</div>
                 </div>
-                <button id="lock-bets-btn" onclick="submitBets()" class="flex-grow bg-emerald-600 py-4 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-emerald-900/30 active:scale-95 transition-all">
-                    LOCK INVESTMENTS
+                <button id="lock-bets-btn" onclick="submitBets()" class="flex-grow bg-blue-600 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-2xl shadow-blue-900/40 active:scale-95 transition-all">
+                    Finalize Positions
                 </button>
             </div>
         </div>
     </div>
 
-    <div id="result-modal" class="fixed inset-0 bg-slate-950/98 z-50 hidden flex flex-col items-center justify-center p-8 text-center">
-        <div class="max-w-sm w-full">
-            <div class="text-6xl mb-6">📉</div>
-            <h2 class="text-2xl font-black mb-1">MARKET SETTLEMENT</h2>
-            <p id="modal-round-text" class="text-slate-500 text-sm mb-8">Fiscal Month Results</p>
-            <div id="modal-pnl" class="text-5xl font-black mb-10 tracking-tighter">+$0</div>
+    <div id="result-modal" class="fixed inset-0 bg-slate-950/95 z-50 hidden flex flex-col items-center justify-center p-6 overflow-hidden">
+        <div class="w-full max-w-sm bg-[#0a0f1d] rounded-[3rem] p-8 border border-white/10 shadow-2xl relative">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 px-6 py-2 rounded-full text-[10px] font-black tracking-widest uppercase shadow-lg">Settlement Statement</div>
             
-            <div id="modal-logs" class="w-full h-48 overflow-y-auto text-[11px] space-y-2 mb-10 text-slate-400 font-mono text-left bg-black/40 p-4 rounded-2xl border border-white/5">
+            <div class="text-center pt-4 mb-8">
+                <p id="modal-round-text" class="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em] mb-2">Month 1 Results</p>
+                <div id="modal-pnl" class="text-5xl font-black tracking-tighter">+$0</div>
+            </div>
+
+            <div class="space-y-4 mb-10 max-h-[300px] overflow-y-auto no-scrollbar" id="modal-logs">
                 </div>
-            
-            <button onclick="closeModal()" id="modal-close-btn" class="w-full bg-blue-600 py-4 rounded-2xl font-black uppercase tracking-widest text-sm">Continue to Next Month</button>
+
+            <div class="flex gap-3">
+                <button onclick="closeModal()" id="modal-close-btn" class="w-full bg-white text-black py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] active:scale-95 transition-transform">Continue to Next Period</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const LEAGUES = {
-            "Premier League": { teams: ["Man City", "Arsenal", "Liverpool", "Chelsea", "Man Utd", "Aston Villa", "Newcastle", "Tottenham"], stars: ["Haaland", "Saka", "Salah", "Palmer"] },
-            "La Liga": { teams: ["Real Madrid", "Barcelona", "Atlético Madrid", "Real Sociedad", "Girona", "Villarreal"], stars: ["Mbappé", "Lamine Yamal", "Bellingham", "Vinícius Jr"] },
-            "Bundesliga": { teams: ["Bayer Leverkusen", "Bayern Munich", "Dortmund", "RB Leipzig", "Stuttgart"], stars: ["Kane", "Wirtz", "Musiala", "Xabi Ball"] },
-            "Serie A": { teams: ["Inter Milan", "AC Milan", "Juventus", "Atalanta", "Napoli", "Roma"], stars: ["Lautaro", "Leão", "Vlahović", "Dybala"] },
-            "Champions League": { teams: ["Real Madrid", "Man City", "Bayern Munich", "Inter Milan", "PSG", "Barcelona", "Liverpool", "Arsenal"], stars: ["UCL Anthem", "Elite Football", "Prime Time"] }
+        // High Fidelity Club Data
+        const CLUBS = {
+            "Premier League": ["Manchester City", "Arsenal", "Liverpool", "Chelsea", "Manchester United", "Tottenham Hotspur", "Newcastle United", "Aston Villa"],
+            "La Liga": ["Real Madrid", "FC Barcelona", "Atletico Madrid", "Girona", "Real Sociedad", "Villarreal"],
+            "Bundesliga": ["Bayer Leverkusen", "Bayern Munich", "Borussia Dortmund", "RB Leipzig", "Stuttgart"],
+            "Serie A": ["Inter Milan", "AC Milan", "Juventus", "Atalanta", "Napoli", "Lazio"],
+            "Ligue 1": ["PSG", "Monaco", "Lille", "Lyon", "Marseille"],
+            "Champions League": ["Real Madrid", "Manchester City", "Bayern Munich", "Inter Milan", "PSG", "Arsenal", "Liverpool", "FC Barcelona"]
         };
 
-        const ID_PREFIX = "FCAP-";
+        const ID_PREFIX = "FC-2026-";
         let peer, conn, myBalance = 1000000, oppBalance = 1000000, isHost = false;
         let round = 1, timeLeft = 90, myBets = {}, currentFixtures = [], timerInterval;
         let hostReady = false, joinerReady = false;
 
-        // PeerJS Initialization
+        // Logo Helper: Pulls from a reliable favicon/logo CDN
+        function getLogo(teamName) {
+            const cleanName = teamName.toLowerCase().replace(/ /g, '');
+            // Using a generic logo generator if specific one fails
+            return `https://logo.clearbit.com/${cleanName}.com?size=128&fallback=https://ui-avatars.com/api/?name=${teamName[0]}&background=1e293b&color=fff`;
+        }
+
         function initializeHost() {
             const pin = Math.floor(1000 + Math.random() * 9000).toString();
             peer = new Peer(ID_PREFIX + pin);
             peer.on('open', () => {
-                document.getElementById('status').innerHTML = `Room Code: <span class="text-white text-3xl block mt-2 font-black tracking-widest">${pin}</span>`;
+                document.getElementById('status').innerHTML = `FIRM ID: <span class="text-white text-3xl block mt-1 font-black">${pin}</span>`;
                 isHost = true;
             });
             peer.on('connection', (c) => { conn = c; setupConnection(); });
@@ -123,7 +171,7 @@
 
         function joinGame() {
             const pin = document.getElementById('joinId').value;
-            if (pin.length !== 4) return alert("Enter 4-digit PIN");
+            if (pin.length !== 4) return;
             peer = new Peer();
             peer.on('open', () => {
                 conn = peer.connect(ID_PREFIX + pin);
@@ -138,131 +186,141 @@
                 if (isHost) startRound();
             });
             conn.on('data', (data) => {
-                switch(data.type) {
-                    case 'SYNC_ROUND':
-                        currentFixtures = data.fixtures;
-                        round = data.round;
-                        prepareNewRoundUI();
-                        break;
-                    case 'RESULTS':
-                        processResults(data.results);
-                        break;
-                    case 'OPP_READY':
-                        joinerReady = true;
-                        if (hostReady) simulateRound();
-                        break;
-                    case 'BAL_UPDATE':
-                        oppBalance = data.bal;
-                        updateHeader();
-                        break;
+                if (data.type === 'SYNC') {
+                    currentFixtures = data.fixtures;
+                    round = data.round;
+                    timeLeft = data.timeLeft; // Sync time from host
+                    resetRoundState();
+                }
+                if (data.type === 'RESULTS') processResults(data.results);
+                if (data.type === 'READY_SIGNAL') {
+                    joinerReady = true;
+                    if (hostReady) simulateRound();
+                }
+                if (data.type === 'BALANCE_UPDATE') {
+                    oppBalance = data.bal;
+                    updateDashboard();
                 }
             });
         }
 
-        // Logic Functions
         function startRound() {
-            hostReady = false;
-            joinerReady = false;
+            hostReady = false; joinerReady = false;
             currentFixtures = [];
             
-            // Generate fixtures across all leagues
-            Object.keys(LEAGUES).forEach(league => {
-                const pool = LEAGUES[league].teams;
+            // Market Generator
+            Object.keys(CLUBS).forEach(league => {
+                const teams = CLUBS[league];
                 for(let i=0; i<2; i++) {
-                    const h = pool[Math.floor(Math.random()*pool.length)];
-                    let a = pool[Math.floor(Math.random()*pool.length)];
-                    while(a === h) a = pool[Math.floor(Math.random()*pool.length)];
+                    const h = teams[Math.floor(Math.random()*teams.length)];
+                    let a = teams[Math.floor(Math.random()*teams.length)];
+                    while(a === h) a = teams[Math.floor(Math.random()*teams.length)];
                     
                     const s1 = Math.random() + 0.5, s2 = Math.random() + 0.5;
                     currentFixtures.push({
-                        id: Math.random().toString(36).substr(2, 6),
+                        id: Math.random().toString(36).substr(2, 5),
                         league, h, a,
                         oh: (1/(s1/(s1+s2)) + 0.1).toFixed(2),
                         oa: (1/(s2/(s1+s2)) + 0.1).toFixed(2),
-                        s1, s2, star: LEAGUES[league].stars[Math.floor(Math.random()*LEAGUES[league].stars.length)]
+                        s1, s2
                     });
                 }
             });
 
             timeLeft = 90;
-            conn.send({ type: 'SYNC_ROUND', fixtures: currentFixtures, round });
-            prepareNewRoundUI();
-            startTimer();
+            conn.send({ type: 'SYNC', fixtures: currentFixtures, round, timeLeft });
+            resetRoundState();
         }
 
-        function prepareNewRoundUI() {
+        function resetRoundState() {
             myBets = {};
+            clearInterval(timerInterval); // CRITICAL BUG FIX: Clear old interval
             document.getElementById('fixtures-list').scrollTop = 0;
             document.getElementById('lock-bets-btn').disabled = false;
-            document.getElementById('lock-bets-btn').innerText = "LOCK INVESTMENTS";
-            document.getElementById('lock-bets-btn').classList.replace('bg-slate-700', 'bg-emerald-600');
-            updateHeader();
+            document.getElementById('lock-bets-btn').innerText = "FINALIZE POSITIONS";
+            document.getElementById('lock-bets-btn').classList.replace('bg-slate-700', 'bg-blue-600');
+            
             renderFixtures('All');
+            updateDashboard();
+            startClock();
         }
 
-        function startTimer() {
-            clearInterval(timerInterval);
+        function startClock() {
+            const timerEl = document.getElementById('round-timer');
+            const barEl = document.getElementById('timer-bar');
+            
             timerInterval = setInterval(() => {
                 timeLeft--;
-                document.getElementById('round-timer').innerText = timeLeft + "s";
-                document.getElementById('timer-bar').style.width = (timeLeft/90*100) + "%";
-                if (timeLeft <= 0 && isHost) simulateRound();
+                timerEl.innerText = timeLeft;
+                barEl.style.width = (timeLeft/90*100) + "%";
+                
+                if (timeLeft <= 10) timerEl.classList.add('timer-low');
+                else timerEl.classList.remove('timer-low');
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    if (isHost) simulateRound();
+                }
             }, 1000);
         }
 
         function renderFixtures(filter) {
             const list = document.getElementById('fixtures-list');
             list.innerHTML = '';
-            currentFixtures.filter(f => filter === 'All' || f.league === filter).forEach(f => {
+            currentFixtures.filter(f => filter === 'All' || f.league === filter).forEach((f, idx) => {
                 const card = document.createElement('div');
-                card.className = 'glass p-4 rounded-2xl bet-card border-l-4 ' + (f.league === 'Champions League' ? 'border-l-yellow-500' : 'border-l-blue-500');
+                card.className = `glass p-5 rounded-3xl fixture-card animate-slide`;
+                card.style.animationDelay = `${idx * 0.05}s`;
                 card.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-[9px] font-black uppercase text-slate-500">${f.league}</span>
-                        <span class="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">★ ${f.star}</span>
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-[8px] font-black uppercase tracking-widest text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full">${f.league}</span>
+                        <span class="text-[8px] font-bold text-slate-600 uppercase">Live Market</span>
                     </div>
-                    <div class="flex items-center justify-between gap-4 mb-4">
+                    <div class="flex items-center justify-between gap-2 mb-6">
                         <div class="flex-1 text-center">
-                            <div class="w-10 h-10 bg-slate-800 rounded-xl mx-auto mb-2 flex items-center justify-center font-bold text-sm text-slate-400">${f.h[0]}</div>
-                            <div class="text-[11px] font-bold leading-tight">${f.h}</div>
+                            <img src="${getLogo(f.h)}" class="w-12 h-12 mx-auto mb-3 logo-img">
+                            <div class="text-[11px] font-black leading-tight uppercase">${f.h}</div>
                         </div>
-                        <div class="text-slate-700 font-black text-xs">VS</div>
+                        <div class="text-[10px] font-black text-slate-800">VS</div>
                         <div class="flex-1 text-center">
-                            <div class="w-10 h-10 bg-slate-800 rounded-xl mx-auto mb-2 flex items-center justify-center font-bold text-sm text-slate-400">${f.a[0]}</div>
-                            <div class="text-[11px] font-bold leading-tight">${f.a}</div>
+                            <img src="${getLogo(f.a)}" class="w-12 h-12 mx-auto mb-3 logo-img">
+                            <div class="text-[11px] font-black leading-tight uppercase">${f.a}</div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <button onclick="selectSide('${f.id}','h')" id="btn-${f.id}-h" class="bg-slate-900 border border-slate-800 py-3 rounded-xl text-xs font-bold transition-colors">HOME ${f.oh}x</button>
-                        <button onclick="selectSide('${f.id}','a')" id="btn-${f.id}-a" class="bg-slate-900 border border-slate-800 py-3 rounded-xl text-xs font-bold transition-colors">AWAY ${f.oa}x</button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="pick('${f.id}','h')" id="b-${f.id}-h" class="bg-slate-900/50 border border-slate-800 py-3 rounded-2xl text-[10px] font-black transition-all uppercase">Buy ${f.oh}x</button>
+                        <button onclick="pick('${f.id}','a')" id="b-${f.id}-a" class="bg-slate-900/50 border border-slate-800 py-3 rounded-2xl text-[10px] font-black transition-all uppercase">Buy ${f.oa}x</button>
                     </div>
-                    <input type="number" inputmode="numeric" placeholder="Investment Stake ($)" oninput="updateStake('${f.id}', this.value)" 
-                        class="w-full bg-black/40 border border-white/5 p-3 rounded-xl text-center text-sm font-black text-emerald-400 outline-none focus:border-emerald-500/50 transition-colors">
+                    <div class="mt-3 relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-black text-slate-600">$</span>
+                        <input type="number" inputmode="numeric" placeholder="INVESTMENT" oninput="setStake('${f.id}', this.value)" 
+                            class="w-full bg-black/40 border border-white/5 py-3 pl-8 pr-4 rounded-2xl text-center text-xs font-black text-emerald-400 outline-none focus:border-blue-500/50">
+                    </div>
                 `;
                 list.appendChild(card);
             });
-            updateBetDisplay();
+            updateSummary();
         }
 
-        function selectSide(id, side) {
+        function pick(id, side) {
             if (!myBets[id]) myBets[id] = { stake: 0 };
             myBets[id].side = side;
-            document.querySelectorAll(`[id^="btn-${id}-"]`).forEach(b => b.className = 'bg-slate-900 border border-slate-800 py-3 rounded-xl text-xs font-bold transition-colors');
-            document.getElementById(`btn-${id}-${side}`).className = 'bg-blue-600 border border-blue-400 py-3 rounded-xl text-xs font-bold text-white transition-colors';
-            updateBetDisplay();
+            document.querySelectorAll(`[id^="b-${id}-"]`).forEach(b => b.className = 'bg-slate-900/50 border border-slate-800 py-3 rounded-2xl text-[10px] font-black transition-all uppercase');
+            document.getElementById(`b-${id}-${side}`).className = 'bg-blue-600 border border-blue-400 py-3 rounded-2xl text-[10px] font-black text-white transition-all uppercase';
+            updateSummary();
         }
 
-        function updateStake(id, val) {
+        function setStake(id, val) {
             if (!myBets[id]) myBets[id] = { side: 'h' };
-            myBets[id].stake = Math.abs(parseInt(val)) || 0;
-            updateBetDisplay();
+            myBets[id].stake = Math.max(0, parseInt(val) || 0);
+            updateSummary();
         }
 
-        function updateBetDisplay() {
+        function updateSummary() {
             const bets = Object.values(myBets).filter(b => b.stake > 0);
             const total = bets.reduce((a, b) => a + b.stake, 0);
-            document.getElementById('active-count').innerText = `${bets.length} MARKETS SELECTED`;
-            document.getElementById('total-stake-display').innerText = `Stake: $${total.toLocaleString()}`;
+            document.getElementById('active-count').innerText = `${bets.length} ACTIVE POSITIONS`;
+            document.getElementById('total-stake-display').innerText = `$${total.toLocaleString()}`;
         }
 
         function submitBets() {
@@ -271,14 +329,14 @@
             
             const btn = document.getElementById('lock-bets-btn');
             btn.disabled = true;
-            btn.innerText = "WAITING FOR RIVAL...";
-            btn.classList.replace('bg-emerald-600', 'bg-slate-700');
+            btn.innerText = "WAITING FOR CLEARANCE...";
+            btn.classList.replace('bg-blue-600', 'bg-slate-700');
 
             if (isHost) {
                 hostReady = true;
                 if (joinerReady) simulateRound();
             } else {
-                conn.send({ type: 'OPP_READY' });
+                conn.send({ type: 'READY_SIGNAL' });
             }
         }
 
@@ -302,25 +360,33 @@
                     if (bet.side === res.winner) {
                         const win = bet.stake * (res.winner === 'h' ? fix.oh : fix.oa);
                         pnl += (win - bet.stake);
-                        logs.push(`<div class="text-emerald-400">✓ ${fix.h} vs ${fix.a}: +$${Math.floor(win).toLocaleString()}</div>`);
+                        logs.push(`
+                            <div class="flex justify-between items-center p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl">
+                                <span class="text-[9px] font-black uppercase text-emerald-400">${fix.h} VS ${fix.a}</span>
+                                <span class="text-[10px] font-black text-emerald-400">+$${Math.floor(win).toLocaleString()}</span>
+                            </div>`);
                     } else {
                         pnl -= bet.stake;
-                        logs.push(`<div class="text-rose-500">✗ ${fix.h} vs ${fix.a}: -$${bet.stake.toLocaleString()}</div>`);
+                        logs.push(`
+                            <div class="flex justify-between items-center p-3 bg-rose-500/5 border border-rose-500/20 rounded-2xl">
+                                <span class="text-[9px] font-black uppercase text-rose-500">${fix.h} VS ${fix.a}</span>
+                                <span class="text-[10px] font-black text-rose-500">-$${bet.stake.toLocaleString()}</span>
+                            </div>`);
                     }
                 }
             });
             myBalance += pnl;
             showResultsModal(pnl, logs);
-            conn.send({ type: 'BAL_UPDATE', bal: myBalance });
+            conn.send({ type: 'BALANCE_UPDATE', bal: myBalance });
         }
 
         function showResultsModal(pnl, logs) {
             const modal = document.getElementById('result-modal');
             const pnlEl = document.getElementById('modal-pnl');
             pnlEl.innerText = (pnl >= 0 ? "+$" : "-$") + Math.abs(Math.floor(pnl)).toLocaleString();
-            pnlEl.className = pnl >= 0 ? "text-5xl font-black mb-10 text-emerald-400" : "text-5xl font-black mb-10 text-rose-500";
-            document.getElementById('modal-logs').innerHTML = logs.length ? logs.join('') : "No market activity recorded this month.";
-            document.getElementById('modal-round-text').innerText = `Fiscal Month ${round} Settlement`;
+            pnlEl.className = pnl >= 0 ? "text-5xl font-black mb-2 text-emerald-400" : "text-5xl font-black mb-2 text-rose-500";
+            document.getElementById('modal-logs').innerHTML = logs.length ? logs.join('') : '<p class="text-slate-600 text-[10px] uppercase font-black text-center py-10 tracking-widest">No market activity this period</p>';
+            document.getElementById('modal-round-text').innerText = `Period ${round} Statement`;
             modal.classList.remove('hidden');
         }
 
@@ -328,24 +394,22 @@
             document.getElementById('result-modal').classList.add('hidden');
             if (isHost) {
                 round++;
-                if (round > 12) return alert("Fiscal Year Complete!");
+                if (round > 12) return alert("Investment Year Over!");
                 startRound();
             }
         }
 
-        function updateHeader() {
+        function updateDashboard() {
             document.getElementById('balance').innerText = `$${Math.floor(myBalance).toLocaleString()}`;
-            document.getElementById('opp-balance').innerText = `$${Math.floor(oppBalance).toLocaleString()}`;
+            document.getElementById('opp-balance').innerText = `$${(oppBalance/1000000).toFixed(1)}M`;
             document.getElementById('round-num').innerText = round;
         }
 
         function filterLeague(l, btn) {
             document.querySelectorAll('.league-btn').forEach(b => {
-                b.classList.replace('bg-blue-600', 'bg-slate-800');
-                b.classList.replace('text-white', 'text-slate-400');
+                b.className = 'league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-slate-800 text-slate-400 uppercase tracking-widest';
             });
-            btn.classList.replace('bg-slate-800', 'bg-blue-600');
-            btn.classList.replace('text-slate-400', 'text-white');
+            btn.className = 'league-btn px-5 py-2 rounded-xl text-[10px] font-black whitespace-nowrap bg-blue-600 text-white uppercase tracking-widest';
             renderFixtures(l);
         }
     </script>
