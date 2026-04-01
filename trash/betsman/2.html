@@ -1,0 +1,100 @@
+const LEAGUES = {
+    "Premier League": ["Man City", "Arsenal", "Liverpool", "Chelsea", "Man Utd", "Spurs", "Newcastle", "Aston Villa"],
+    "La Liga": ["Real Madrid", "Barcelona", "Atletico Madrid", "Girona", "Real Sociedad", "Athletic Club"],
+    "Bundesliga": ["Bayer Leverkusen", "Bayern Munich", "Dortmund", "RB Leipzig", "Stuttgart"],
+    "Serie A": ["Inter Milan", "AC Milan", "Juventus", "Atalanta", "AS Roma", "Napoli"],
+    "Ligue 1": ["PSG", "Monaco", "Lille", "Brest", "Nice", "Lyon"],
+    "Champions League": ["Real Madrid", "Man City", "Bayern Munich", "Inter Milan", "PSG", "Arsenal"]
+};
+
+let peer, conn;
+let myBalance = 1000000;
+let oppBalance = 1000000;
+let isHost = false;
+let currentFixtures = [];
+let myBets = {};
+let gameActive = false;
+let round = 1;
+let timeLeft = 900; 
+let timerInterval;
+
+// Unique prefix to prevent global ID collisions
+const ID_PREFIX = "FTBL-";
+
+function initializeHost() {
+    // Generate a random 4-digit code
+    const shortId = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Create peer with prefixed ID
+    peer = new Peer(ID_PREFIX + shortId);
+    
+    peer.on('open', (id) => {
+        document.getElementById('status').innerHTML = `
+            <div class="bg-blue-900/30 p-4 rounded-lg border border-blue-500/50">
+                <p class="text-slate-300 text-xs mb-1">YOUR JOIN CODE</p>
+                <p class="text-4xl font-black tracking-widest text-white">${shortId}</p>
+            </div>
+        `;
+        isHost = true;
+    });
+
+    peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+            // If the 4-digit code is taken, try again automatically
+            initializeHost();
+        } else {
+            console.error(err);
+            alert("Connection error. Please refresh.");
+        }
+    });
+
+    peer.on('connection', (c) => {
+        conn = c;
+        setupConnection();
+    });
+}
+
+function joinGame() {
+    const shortId = document.getElementById('joinId').value;
+    if (shortId.length !== 4) return alert("Please enter a 4-digit code");
+    
+    peer = new Peer();
+    peer.on('open', () => {
+        // Connect using the prefix
+        conn = peer.connect(ID_PREFIX + shortId);
+        setupConnection();
+    });
+
+    peer.on('error', (err) => {
+        alert("Could not find a game with that code.");
+        console.error(err);
+    });
+}
+
+function setupConnection() {
+    conn.on('open', () => {
+        document.getElementById('lobby').classList.add('hidden');
+        document.getElementById('game-container').classList.remove('hidden');
+        gameActive = true;
+        if (isHost) startNewRound();
+        startTimer();
+    });
+
+    conn.on('data', (data) => {
+        if (data.type === 'NEW_ROUND') {
+            currentFixtures = data.fixtures;
+            round = data.round;
+            renderFixtures();
+        }
+        if (data.type === 'RESULTS') {
+            processResults(data.results);
+        }
+        if (data.type === 'SYNC_BALANCE') {
+            oppBalance = data.balance;
+            updateUI();
+        }
+    });
+}
+
+// ... (Rest of the game logic functions from the previous response remain the same)
+// ... startTimer, startNewRound, generateFixtures, renderFixtures, setBet, updateStake, submitBets, simulateMatches, processResults, updateUI, showModal, closeModal, endGame
