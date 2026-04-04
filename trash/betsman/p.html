@@ -34,7 +34,7 @@
     <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/98 backdrop-blur-2xl">
         <div class="max-w-md w-full p-12 glass-panel text-center">
             <h1 class="logo-font text-4xl mb-2 italic tracking-tighter">PAPER<span class="text-transparent" style="-webkit-text-stroke: 1px var(--neon);">BET</span></h1>
-            <p class="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em] mb-12 text-center">PhysMath Academy Edition</p>
+            <p class="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em] mb-12 text-center font-bold">PhysMath Academy Edition</p>
             <div class="space-y-5">
                 <input type="text" id="username" placeholder="USERNAME" class="w-full p-5 rounded-2xl text-center font-bold outline-none text-lg">
                 <input type="password" id="password" placeholder="PASSWORD" class="w-full p-5 rounded-2xl text-center font-bold outline-none text-lg">
@@ -72,7 +72,7 @@
             </div>
             <div class="lg:col-span-1">
                 <div class="glass-panel p-8 border-t-4 border-t-purple-500">
-                    <h3 class="sports-font text-xl mb-8 flex items-center gap-3">
+                    <h3 class="sports-font text-xl mb-8 flex items-center gap-3 font-bold">
                         <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]"></span>
                         Live Tickets
                     </h3>
@@ -88,6 +88,7 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Your Exact Config
         const firebaseConfig = {
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -127,11 +128,13 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const snap = await getDoc(doc(db, "users", user.uid));
-                userData = { id: user.uid, ...snap.data() };
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app-content').classList.remove('hidden');
-                syncUI();
-                loadMatches('PL');
+                if (snap.exists()) {
+                    userData = { id: user.uid, ...snap.data() };
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('app-content').classList.remove('hidden');
+                    syncUI();
+                    loadMatches('PL');
+                }
             } else {
                 document.getElementById('auth-screen').classList.remove('hidden');
                 document.getElementById('app-content').classList.add('hidden');
@@ -143,17 +146,23 @@
             grid.innerHTML = '<div class="col-span-full py-20 text-center sports-font text-cyan-500 animate-pulse text-2xl">SCANNING MARKET...</div>';
             
             try {
-                // Using a proxy to bypass CORS on hosted domain
+                // Prepending corsproxy.io to bypass the block on kaffetish.club
                 const targetUrl = `https://api.football-data.org/v4/competitions/${league}/matches?status=SCHEDULED`;
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
                 
                 const res = await fetch(proxyUrl, {
+                    method: 'GET',
                     headers: { 'X-Auth-Token': FOOTBALL_KEY }
                 });
+                
+                if (!res.ok) throw new Error("API Limit");
                 const data = await res.json();
                 
                 grid.innerHTML = '';
-                if(!data.matches) throw new Error("No matches");
+                if(!data.matches || data.matches.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-500 sports-font">No matches found for this league.</div>';
+                    return;
+                }
 
                 data.matches.slice(0, 10).forEach(m => {
                     const div = document.createElement('div');
@@ -163,9 +172,9 @@
                             <span>MARKET OPEN</span><span>${new Date(m.utcDate).toLocaleDateString()}</span>
                         </div>
                         <div class="flex justify-between items-center mb-10 text-center gap-4">
-                            <div class="flex-1"><img src="https://crests.football-data.org/${m.homeTeam.id}.png" class="h-16 mx-auto mb-4"><p class="sports-font text-sm">${m.homeTeam.shortName}</p></div>
+                            <div class="flex-1"><img src="https://crests.football-data.org/${m.homeTeam.id}.png" class="h-16 mx-auto mb-4" onerror="this.src='https://placehold.co/60x60/111/fff?text=T1'"><p class="sports-font text-sm">${m.homeTeam.shortName}</p></div>
                             <div class="sports-font text-zinc-800 text-3xl italic font-black">VS</div>
-                            <div class="flex-1"><img src="https://crests.football-data.org/${m.awayTeam.id}.png" class="h-16 mx-auto mb-4"><p class="sports-font text-sm">${m.awayTeam.shortName}</p></div>
+                            <div class="flex-1"><img src="https://crests.football-data.org/${m.awayTeam.id}.png" class="h-16 mx-auto mb-4" onerror="this.src='https://placehold.co/60x60/111/fff?text=T2'"><p class="sports-font text-sm">${m.awayTeam.shortName}</p></div>
                         </div>
                         <div class="grid grid-cols-3 gap-3">
                             <button onclick="window.bet('${m.homeTeam.shortName}')" class="bet-btn py-5 rounded-2xl text-[11px] font-black">HOME</button>
@@ -174,7 +183,9 @@
                         </div>`;
                     grid.appendChild(div);
                 });
-            } catch (err) { grid.innerHTML = `<div class="col-span-full text-red-500 sports-font text-center">PROXY ERROR or API LIMIT. REFRESH IN 60S.</div>`; }
+            } catch (err) { 
+                grid.innerHTML = `<div class="col-span-full text-red-500 sports-font text-center">ACCESS DELAY: The API is resting. Refresh in 60s.</div>`; 
+            }
         };
 
         window.bet = async (team) => {
@@ -189,18 +200,20 @@
         };
 
         function syncUI() {
-            // Safety guard for 'toLocaleString' error
             if (!userData) return;
             const balanceVal = userData.balance !== undefined ? userData.balance : 0;
-            document.getElementById('balance-val').innerText = balanceVal.toLocaleString();
+            const display = document.getElementById('balance-val');
+            if (display) display.innerText = balanceVal.toLocaleString();
             
             const hist = document.getElementById('bet-history');
-            const bets = userData.bets || [];
-            hist.innerHTML = bets.slice(-6).reverse().map(b => `
-                <div class="bg-white/5 p-5 rounded-2xl border-l-4 border-cyan-500 flex justify-between items-center">
-                    <div><p class="text-[10px] text-zinc-500 font-black uppercase mb-1">${b.team}</p><p class="sports-font text-lg">STAKE: ${b.amount}</p></div>
-                    <span class="text-[9px] text-zinc-700 font-bold">${b.date}</span>
-                </div>`).join('') || '<p class="text-gray-600 text-xs text-center py-10">No active slips.</p>';
+            if (hist) {
+                const bets = userData.bets || [];
+                hist.innerHTML = bets.slice(-6).reverse().map(b => `
+                    <div class="bg-white/5 p-5 rounded-2xl border-l-4 border-cyan-500 flex justify-between items-center">
+                        <div><p class="text-[10px] text-zinc-500 font-black uppercase mb-1">${b.team}</p><p class="sports-font text-lg">STAKE: ${b.amount}</p></div>
+                        <span class="text-[9px] text-zinc-700 font-bold">${b.date}</span>
+                    </div>`).join('') || '<p class="text-gray-600 text-xs text-center py-10 italic">No active slips.</p>';
+            }
         }
     </script>
 </body>
