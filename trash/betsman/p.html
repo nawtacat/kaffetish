@@ -26,7 +26,6 @@
         .bet-btn { background: #1e293b; transition: 0.2s; font-family: 'Oswald', sans-serif; letter-spacing: 1px; }
         .bet-btn:hover { background: var(--neon-blue); color: #000; transform: scale(1.05); box-shadow: 0 0 15px var(--neon-blue); }
         input { background: rgba(0,0,0,0.4) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: white !important; }
-        input:focus { border-color: var(--neon-blue) !important; box-shadow: 0 0 15px rgba(0,242,255,0.2); }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -34,7 +33,7 @@
     <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/98 backdrop-blur-2xl">
         <div class="max-w-md w-full p-12 glass-panel text-center">
             <h1 class="logo-font text-4xl mb-2 italic tracking-tighter">PAPER<span class="text-transparent" style="-webkit-text-stroke: 1px var(--neon);">BET</span></h1>
-            <p class="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em] mb-12 text-center font-bold">PhysMath Academy Edition</p>
+            <p class="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em] mb-12 font-bold">PhysMath Academy Edition</p>
             <div class="space-y-5">
                 <input type="text" id="username" placeholder="USERNAME" class="w-full p-5 rounded-2xl text-center font-bold outline-none text-lg">
                 <input type="password" id="password" placeholder="PASSWORD" class="w-full p-5 rounded-2xl text-center font-bold outline-none text-lg">
@@ -50,7 +49,7 @@
         <header class="flex flex-col lg:flex-row justify-between items-center mb-16 gap-8">
             <div class="text-center lg:text-left">
                 <h1 class="text-7xl logo-font font-black italic tracking-tighter">PAPER<span class="text-transparent" style="-webkit-text-stroke: 1.5px var(--neon-blue);">BET</span></h1>
-                <p class="text-cyan-500 font-black text-[10px] uppercase tracking-[0.4em] mt-2">PhysMath Academy Terminal</p>
+                <p class="text-cyan-500 font-black text-[10px] uppercase tracking-[0.4em] mt-2">Authenticated User Portal</p>
             </div>
             <div class="glass-panel px-12 py-8 min-w-[320px] border-r-8 border-r-[#00f2ff]">
                 <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 text-right">Available Points</p>
@@ -64,9 +63,9 @@
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
             <div class="lg:col-span-3">
                 <div class="flex gap-4 mb-10 overflow-x-auto pb-4 no-scrollbar">
-                    <button onclick="loadMatches('PL')" class="px-10 py-4 bg-cyan-600 rounded-2xl sports-font text-sm tracking-widest">Premier League</button>
-                    <button onclick="loadMatches('CL')" class="px-10 py-4 bg-zinc-900 rounded-2xl sports-font text-sm tracking-widest">Champions League</button>
-                    <button onclick="loadMatches('PD')" class="px-10 py-4 bg-zinc-900 rounded-2xl sports-font text-sm tracking-widest">La Liga</button>
+                    <button onclick="loadMatches('English_Premier_League')" class="px-10 py-4 bg-cyan-600 rounded-2xl sports-font text-sm tracking-widest">Premier League</button>
+                    <button onclick="loadMatches('Spanish_La_Liga')" class="px-10 py-4 bg-zinc-900 rounded-2xl sports-font text-sm tracking-widest">La Liga</button>
+                    <button onclick="loadMatches('German_Bundesliga')" class="px-10 py-4 bg-zinc-900 rounded-2xl sports-font text-sm tracking-widest">Bundesliga</button>
                 </div>
                 <div id="game-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
             </div>
@@ -77,7 +76,7 @@
                         Live Tickets
                     </h3>
                     <div id="bet-history" class="space-y-5"></div>
-                    <button onclick="logout()" class="w-full mt-12 p-5 border border-red-900/30 text-red-500 rounded-2xl sports-font text-xs font-black">Terminal Logout</button>
+                    <button onclick="logout()" class="w-full mt-12 p-5 border border-red-900/30 text-red-500 rounded-2xl sports-font text-xs font-black">Sign Out</button>
                 </div>
             </div>
         </div>
@@ -88,7 +87,7 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Your Exact Config
+        // Firebase Config (Your credentials)
         const firebaseConfig = {
             apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
             authDomain: "physmathacademy-722b3.firebaseapp.com",
@@ -103,24 +102,22 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const FOOTBALL_KEY = 'e8a614b409df47d6a1ed615bc79787c7';
 
         let userData = null;
 
+        // AUTH
         window.handleAuth = async (type) => {
             const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value;
             if(!user || !pass) return alert("Credentials Required");
-            const email = `${user.toLowerCase()}@pb.com`;
-
             try {
                 if (type === 'signup') {
-                    const res = await createUserWithEmailAndPassword(auth, email, pass);
+                    const res = await createUserWithEmailAndPassword(auth, `${user.toLowerCase()}@pb.com`, pass);
                     await setDoc(doc(db, "users", res.user.uid), { username: user, balance: 1000, bets: [] });
                 } else {
-                    await signInWithEmailAndPassword(auth, email, pass);
+                    await signInWithEmailAndPassword(auth, `${user.toLowerCase()}@pb.com`, pass);
                 }
-            } catch (e) { alert("Access Denied: " + e.message); }
+            } catch (e) { alert(e.message); }
         };
 
         window.logout = () => signOut(auth);
@@ -133,7 +130,7 @@
                     document.getElementById('auth-screen').classList.add('hidden');
                     document.getElementById('app-content').classList.remove('hidden');
                     syncUI();
-                    loadMatches('PL');
+                    loadMatches('English_Premier_League');
                 }
             } else {
                 document.getElementById('auth-screen').classList.remove('hidden');
@@ -141,79 +138,76 @@
             }
         });
 
+        // GAMES (Zero-CORS Switch)
         window.loadMatches = async (league) => {
             const grid = document.getElementById('game-grid');
-            grid.innerHTML = '<div class="col-span-full py-20 text-center sports-font text-cyan-500 animate-pulse text-2xl">SCANNING MARKET...</div>';
+            grid.innerHTML = '<div class="col-span-full py-20 text-center sports-font text-cyan-500 animate-pulse text-2xl tracking-widest">SCANNING LIVE MARKETS...</div>';
             
             try {
-                // Prepending corsproxy.io to bypass the block on kaffetish.club
-                const targetUrl = `https://api.football-data.org/v4/competitions/${league}/matches?status=SCHEDULED`;
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-                
-                const res = await fetch(proxyUrl, {
-                    method: 'GET',
-                    headers: { 'X-Auth-Token': FOOTBALL_KEY }
-                });
-                
-                if (!res.ok) throw new Error("API Limit");
+                // Using searchfilename endpoint - no custom headers, so NO CORS BLOCKS!
+                const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/searchfilename.php?e=${league}`);
                 const data = await res.json();
                 
                 grid.innerHTML = '';
-                if(!data.matches || data.matches.length === 0) {
-                    grid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-500 sports-font">No matches found for this league.</div>';
+                if(!data.results) {
+                    grid.innerHTML = '<p class="col-span-full text-center py-20">Market currently closed for this league.</p>';
                     return;
                 }
 
-                data.matches.slice(0, 10).forEach(m => {
+                data.results.slice(0, 10).forEach(m => {
                     const div = document.createElement('div');
                     div.className = 'glass-panel p-10 match-card';
+                    // We generate realistic odds since TheSportsDB doesn't provide them
+                    const odds = [ (Math.random() * 2 + 1.2).toFixed(2), (Math.random() * 2 + 2).toFixed(2), (Math.random() * 3 + 2).toFixed(2)];
+                    
                     div.innerHTML = `
                         <div class="flex justify-between items-center mb-8 text-[10px] font-black text-zinc-600 uppercase">
-                            <span>MARKET OPEN</span><span>${new Date(m.utcDate).toLocaleDateString()}</span>
+                            <span>2026 SEASON</span><span>${m.strTimestamp ? new Date(m.strTimestamp).toLocaleDateString() : 'Upcoming'}</span>
                         </div>
                         <div class="flex justify-between items-center mb-10 text-center gap-4">
-                            <div class="flex-1"><img src="https://crests.football-data.org/${m.homeTeam.id}.png" class="h-16 mx-auto mb-4" onerror="this.src='https://placehold.co/60x60/111/fff?text=T1'"><p class="sports-font text-sm">${m.homeTeam.shortName}</p></div>
+                            <div class="flex-1">
+                                <img src="https://www.thesportsdb.com/images/media/team/badge/small/${m.idHomeTeam}.png" class="h-16 mx-auto mb-4" onerror="this.src='https://placehold.co/60x60/111/fff?text=T1'">
+                                <p class="sports-font text-sm">${m.strHomeTeam}</p>
+                            </div>
                             <div class="sports-font text-zinc-800 text-3xl italic font-black">VS</div>
-                            <div class="flex-1"><img src="https://crests.football-data.org/${m.awayTeam.id}.png" class="h-16 mx-auto mb-4" onerror="this.src='https://placehold.co/60x60/111/fff?text=T2'"><p class="sports-font text-sm">${m.awayTeam.shortName}</p></div>
+                            <div class="flex-1">
+                                <img src="https://www.thesportsdb.com/images/media/team/badge/small/${m.idAwayTeam}.png" class="h-16 mx-auto mb-4" onerror="this.src='https://placehold.co/60x60/111/fff?text=T2'">
+                                <p class="sports-font text-sm">${m.strAwayTeam}</p>
+                            </div>
                         </div>
                         <div class="grid grid-cols-3 gap-3">
-                            <button onclick="window.bet('${m.homeTeam.shortName}')" class="bet-btn py-5 rounded-2xl text-[11px] font-black">HOME</button>
-                            <button onclick="window.bet('Draw')" class="bet-btn py-5 rounded-2xl text-[11px] font-black">DRAW</button>
-                            <button onclick="window.bet('${m.awayTeam.shortName}')" class="bet-btn py-5 rounded-2xl text-[11px] font-black">AWAY</button>
+                            <button onclick="window.bet('${m.strHomeTeam}', ${odds[0]})" class="bet-btn py-5 rounded-2xl text-[11px] font-black">1 [${odds[0]}]</button>
+                            <button onclick="window.bet('Draw', ${odds[1]})" class="bet-btn py-5 rounded-2xl text-[11px] font-black">X [${odds[1]}]</button>
+                            <button onclick="window.bet('${m.strAwayTeam}', ${odds[2]})" class="bet-btn py-5 rounded-2xl text-[11px] font-black">2 [${odds[2]}]</button>
                         </div>`;
                     grid.appendChild(div);
                 });
-            } catch (err) { 
-                grid.innerHTML = `<div class="col-span-full text-red-500 sports-font text-center">ACCESS DELAY: The API is resting. Refresh in 60s.</div>`; 
-            }
+            } catch (err) { grid.innerHTML = "Error loading market."; }
         };
 
-        window.bet = async (team) => {
+        window.bet = async (team, odd) => {
             if (!userData || userData.balance < 100) return alert("Insufficient Points");
             const newBal = userData.balance - 100;
-            const newBet = { team, date: new Date().toLocaleTimeString(), amount: 100 };
+            const newBet = { team, date: new Date().toLocaleTimeString(), amount: 100, odd };
             try {
                 await updateDoc(doc(db, "users", userData.id), { balance: newBal, bets: arrayUnion(newBet) });
                 userData.balance = newBal; userData.bets.push(newBet);
                 syncUI();
+                alert(`STAKE LOCKED: 100 PTS on ${team} at ${odd}`);
             } catch (e) { alert("Sync Error"); }
         };
 
         function syncUI() {
             if (!userData) return;
-            const balanceVal = userData.balance !== undefined ? userData.balance : 0;
-            const display = document.getElementById('balance-val');
-            if (display) display.innerText = balanceVal.toLocaleString();
-            
+            const bal = userData.balance || 0;
+            document.getElementById('balance-val').innerText = bal.toLocaleString();
             const hist = document.getElementById('bet-history');
-            if (hist) {
-                const bets = userData.bets || [];
-                hist.innerHTML = bets.slice(-6).reverse().map(b => `
-                    <div class="bg-white/5 p-5 rounded-2xl border-l-4 border-cyan-500 flex justify-between items-center">
-                        <div><p class="text-[10px] text-zinc-500 font-black uppercase mb-1">${b.team}</p><p class="sports-font text-lg">STAKE: ${b.amount}</p></div>
-                        <span class="text-[9px] text-zinc-700 font-bold">${b.date}</span>
-                    </div>`).join('') || '<p class="text-gray-600 text-xs text-center py-10 italic">No active slips.</p>';
-            }
+            const bets = userData.bets || [];
+            hist.innerHTML = bets.slice(-6).reverse().map(b => `
+                <div class="bg-white/5 p-5 rounded-2xl border-l-4 border-cyan-500 flex justify-between items-center">
+                    <div><p class="text-[10px] text-zinc-500 font-black uppercase mb-1">${b.team}</p><p class="sports-font text-lg">RISK: ${b.amount} @ ${b.odd || '2.0'}</p></div>
+                    <span class="text-[9px] text-zinc-700 font-bold">${b.date}</span>
+                </div>`).join('') || '<p class="text-gray-600 text-xs text-center py-10">No active slips.</p>';
         }
     </script>
 </body>
