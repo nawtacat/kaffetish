@@ -3,99 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAPERBET | UNLIMITED</title>
+    <title>PAPERBET | PHYS-MATH ACADEMY</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Syncopate:wght@700&family=Inter:wght@400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Syncopate:wght@700&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     
     <style>
-        :root { --neon: #39ff14; --neon-blue: #00f2ff; }
+        :root { --neon: #39ff14; --neon-blue: #00f2ff; --bg: #020617; }
+        
         body { 
-            background: #020617; color: white; font-family: 'Inter', sans-serif;
-            background-image: linear-gradient(to bottom, #020617, #0f172a);
+            background: var(--bg); 
+            color: white; 
+            font-family: 'Inter', sans-serif;
+            background-image: radial-gradient(circle at 50% -20%, #1e1b4b 0%, transparent 50%);
             min-height: 100vh;
+            overflow-x: hidden;
         }
-        .header-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: -1px; }
+
         .logo-font { font-family: 'Syncopate', sans-serif; }
-        
-        .neon-border { border: 2px solid rgba(57, 255, 20, 0.1); transition: 0.3s; }
-        .neon-border:hover { border-color: var(--neon); box-shadow: 0 0 20px rgba(57, 255, 20, 0.2); }
-        
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); }
-        
-        .bet-btn { 
-            background: #1e293b; border: 1px solid #334155; 
-            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .bet-btn:hover { background: #334155; transform: scale(1.05); border-color: var(--neon-blue); }
-        .bet-btn:active { transform: scale(0.95); }
+        .sports-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
 
-        .balance-card {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            border-bottom: 4px solid var(--neon);
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 2.5rem;
         }
 
-        /* Custom Scrollbar for the 'gamer' look */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: var(--neon); border-radius: 10px; }
+        .neon-text { text-shadow: 0 0 15px var(--neon-blue); color: var(--neon-blue); }
+        .balance-glow { text-shadow: 0 0 20px var(--neon); color: var(--neon); }
+
+        .match-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .match-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--neon-blue);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .bet-btn {
+            background: #1e293b;
+            transition: 0.2s all;
+            font-family: 'Oswald', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .bet-btn:hover { 
+            background: var(--neon-blue); 
+            color: #000; 
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        input {
+            background: rgba(0,0,0,0.4) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            color: white !important;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--neon-blue) !important; box-shadow: 0 0 15px rgba(0,242,255,0.2); }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 10px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-10">
 
-    <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl">
-        <div class="w-full max-w-md p-12 glass rounded-[3rem] border border-white/10 text-center">
-            <h1 class="logo-font text-4xl mb-2 italic tracking-tighter text-white">PAPER<span class="text-transparent" style="-webkit-text-stroke: 1px var(--neon);">BET</span></h1>
-            <p class="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em] mb-10">Terminal v3.0 // 2026</p>
+    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/98 backdrop-blur-2xl">
+        <div class="max-w-md w-full p-12 glass-panel text-center shadow-2xl">
+            <h1 class="logo-font text-4xl mb-2 italic tracking-tighter">PAPER<span class="text-transparent" style="-webkit-text-stroke: 1px var(--neon);">BET</span></h1>
+            <p class="text-[10px] text-gray-500 font-black uppercase tracking-[0.5em] mb-12">PhysMath Academy Edition</p>
             
-            <input type="text" id="user-input" placeholder="USERNAME" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl mb-4 outline-none focus:border-cyan-500 text-center font-bold">
-            <input type="password" id="pass-input" placeholder="PASSWORD" class="w-full bg-white/5 border border-white/10 p-4 rounded-2xl mb-8 outline-none focus:border-cyan-500 text-center font-bold">
-            
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="auth('login')" class="bg-white text-black p-4 rounded-2xl font-black uppercase text-xs hover:bg-cyan-500 transition">Enter</button>
-                <button onclick="auth('signup')" class="border border-white/20 p-4 rounded-2xl font-black uppercase text-xs hover:bg-white/10 transition">Create</button>
+            <div class="space-y-5">
+                <input type="text" id="username" placeholder="USERNAME" class="w-full p-5 rounded-2xl text-center font-bold outline-none text-lg">
+                <input type="password" id="password" placeholder="PASSWORD" class="w-full p-5 rounded-2xl text-center font-bold outline-none text-lg">
+                <div class="grid grid-cols-2 gap-4 pt-6">
+                    <button onclick="handleAuth('login')" class="bg-white text-black py-5 rounded-2xl sports-font text-sm hover:bg-cyan-400 transition-all font-black">Login</button>
+                    <button onclick="handleAuth('signup')" class="border border-white/20 py-5 rounded-2xl sports-font text-sm hover:bg-white/10 transition-all font-black">Register</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="app-main" class="max-w-7xl mx-auto hidden">
+    <div id="app-content" class="max-w-7xl mx-auto hidden">
         <header class="flex flex-col lg:flex-row justify-between items-center mb-16 gap-8">
-            <div class="relative">
+            <div class="text-center lg:text-left">
                 <h1 class="text-7xl logo-font font-black italic tracking-tighter">PAPER<span class="text-transparent" style="-webkit-text-stroke: 1.5px var(--neon-blue);">BET</span></h1>
-                <div class="flex items-center gap-2 mt-2">
-                    <span class="h-1 w-8 bg-cyan-500"></span>
-                    <span class="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Live Exchange Active</span>
-                </div>
+                <p class="text-cyan-500 font-black text-[10px] uppercase tracking-[0.4em] mt-2">PhysMath Academy Secure Terminal</p>
             </div>
 
-            <div class="balance-card px-12 py-8 rounded-[2rem] text-center lg:text-right min-w-[280px]">
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Available Points</p>
-                <div class="flex items-baseline justify-center lg:justify-end gap-3">
-                    <span id="balance-display" class="text-6xl header-font text-white leading-none">0</span>
-                    <span class="text-xs font-black text-green-400">PTS</span>
+            <div class="glass-panel px-12 py-8 min-w-[320px] border-r-8 border-r-[#00f2ff] relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-cyan-500/10 blur-3xl"></div>
+                <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-1 text-right">Portfolio Balance</p>
+                <div class="flex items-baseline justify-end gap-3">
+                    <span id="balance-val" class="text-6xl sports-font balance-glow">0</span>
+                    <span class="text-xs font-black text-white/40">PTS</span>
                 </div>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div class="xl:col-span-3">
-                <div class="flex gap-4 mb-8 overflow-x-auto pb-4 no-scrollbar">
-                    <button onclick="fetchGames('PL')" class="px-8 py-3 bg-cyan-600 rounded-full header-font text-sm whitespace-nowrap">Premier League</button>
-                    <button onclick="fetchGames('CL')" class="px-8 py-3 bg-zinc-900 rounded-full header-font text-sm whitespace-nowrap hover:bg-zinc-800">Champions League</button>
-                    <button onclick="fetchGames('PD')" class="px-8 py-3 bg-zinc-900 rounded-full header-font text-sm whitespace-nowrap hover:bg-zinc-800">La Liga</button>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
+            <div class="lg:col-span-3">
+                <div class="flex gap-4 mb-10 overflow-x-auto pb-4 no-scrollbar">
+                    <button onclick="loadMatches('PL')" class="px-10 py-4 bg-cyan-600 rounded-2xl sports-font text-sm tracking-widest shadow-lg shadow-cyan-900/20">Premier League</button>
+                    <button onclick="loadMatches('CL')" class="px-10 py-4 bg-zinc-900 rounded-2xl sports-font text-sm tracking-widest hover:bg-zinc-800 transition">Champions League</button>
+                    <button onclick="loadMatches('PD')" class="px-10 py-4 bg-zinc-900 rounded-2xl sports-font text-sm tracking-widest hover:bg-zinc-800 transition">La Liga</button>
                 </div>
-                
-                <div id="match-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div id="game-grid" class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     </div>
             </div>
 
-            <div class="xl:col-span-1">
-                <div class="glass p-8 rounded-[2.5rem] border border-white/5">
-                    <h3 class="header-font text-xl mb-6 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                        Recent Activity
+            <div class="lg:col-span-1">
+                <div class="glass-panel p-8 border-t-4 border-t-purple-500">
+                    <h3 class="sports-font text-xl mb-8 flex items-center gap-3">
+                        <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]"></span>
+                        Live Tickets
                     </h3>
-                    <div id="bet-history" class="space-y-4">
-                        <p class="text-gray-500 text-xs italic">No active tickets...</p>
+                    <div id="bet-history" class="space-y-5">
+                        <p class="text-gray-600 text-xs italic text-center py-10">Waiting for market entry...</p>
                     </div>
+                    <button onclick="logout()" class="w-full mt-12 p-5 border border-red-900/30 text-red-500 rounded-2xl sports-font text-xs hover:bg-red-600 hover:text-white transition-all font-black">Terminal Logout</button>
                 </div>
             </div>
         </div>
@@ -103,74 +134,70 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // !!! ACTION REQUIRED !!!
-        // Paste your Firebase Config object here from the console
+        // CONFIG: Your Live Credentials
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_ID.firebaseapp.com",
-            projectId: "YOUR_ID",
-            storageBucket: "YOUR_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+            authDomain: "physmathacademy-722b3.firebaseapp.com",
+            databaseURL: "https://physmathacademy-722b3-default-rtdb.firebaseio.com",
+            projectId: "physmathacademy-722b3",
+            storageBucket: "physmathacademy-722b3.firebasestorage.app",
+            messagingSenderId: "1093640992262",
+            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+            measurementId: "G-CGVKKTJXLB"
         };
 
         const app = initializeApp(firebaseConfig);
-        const authModule = getAuth(app);
+        const auth = getAuth(app);
         const db = getFirestore(app);
-
         const FOOTBALL_KEY = 'e8a614b409df47d6a1ed615bc79787c7';
-        let userProfile = null;
 
-        // AUTH HANDLER
-        window.auth = async (type) => {
-            const email = `${document.getElementById('user-input').value}@paperbet.com`;
-            const pass = document.getElementById('pass-input').value;
-            
+        let userData = null;
+
+        // AUTH HANDLERS
+        window.handleAuth = async (type) => {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value;
+            if(!user || !pass) return alert("Credentials Required");
+            const email = `${user.toLowerCase()}@pb.com`;
+
             try {
-                if(type === 'signup') {
-                    const res = await createUserWithEmailAndPassword(authModule, email, pass);
+                if (type === 'signup') {
+                    const res = await createUserWithEmailAndPassword(auth, email, pass);
                     await setDoc(doc(db, "users", res.user.uid), {
-                        username: document.getElementById('user-input').value,
+                        username: user,
                         balance: 1000,
                         bets: []
                     });
+                    alert("Account Registered. Points Initialized.");
                 } else {
-                    await signInWithEmailAndPassword(authModule, email, pass);
+                    await signInWithEmailAndPassword(auth, email, pass);
                 }
-            } catch (e) { alert(e.message); }
+            } catch (e) { alert("Access Denied: " + e.message); }
         };
 
-        // SESSION OBSERVER
-        onAuthStateChanged(authModule, async (user) => {
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const snap = await getDoc(doc(db, "users", user.uid));
-                userProfile = { id: user.uid, ...snap.data() };
-                document.getElementById('auth-gate').style.display = 'none';
-                document.getElementById('app-main').style.display = 'block';
+                userData = { id: user.uid, ...snap.data() };
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
                 syncUI();
-                fetchGames('PL');
+                loadMatches('PL');
+            } else {
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
             }
         });
 
-        // UI SYNC
-        function syncUI() {
-            document.getElementById('balance-display').innerText = userProfile.balance.toLocaleString();
-            const history = document.getElementById('bet-history');
-            history.innerHTML = userProfile.bets.slice(-5).reverse().map(b => `
-                <div class="bg-white/5 p-4 rounded-xl border-l-2 border-cyan-500">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase">${b.team}</p>
-                    <p class="header-font text-sm">STAKE: ${b.amount} PTS</p>
-                </div>
-            `).join('') || '<p class="text-gray-500 text-xs">No bets yet.</p>';
-        }
-
-        // FETCH GAMES
-        window.fetchGames = async (league) => {
-            const grid = document.getElementById('match-grid');
-            grid.innerHTML = '<div class="col-span-full text-center py-20 text-cyan-400 header-font animate-pulse">Establishing Connection...</div>';
+        // APP LOGIC
+        window.loadMatches = async (league) => {
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '<div class="col-span-full py-20 text-center sports-font text-cyan-500 animate-pulse text-2xl tracking-widest">SCANNING SATELLITE FEEDS...</div>';
             
             try {
                 const res = await fetch(`https://api.football-data.org/v4/competitions/${league}/matches?status=SCHEDULED`, {
@@ -180,51 +207,66 @@
                 
                 grid.innerHTML = '';
                 data.matches.slice(0, 10).forEach(m => {
-                    const el = document.createElement('div');
-                    el.className = 'glass p-8 rounded-[2.5rem] neon-border';
-                    el.innerHTML = `
+                    const div = document.createElement('div');
+                    div.className = 'glass-panel p-10 match-card';
+                    div.innerHTML = `
                         <div class="flex justify-between items-center mb-8">
-                            <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">${league} • LIVE MARKET</span>
-                            <span class="text-[10px] font-black text-cyan-500 uppercase">${new Date(m.utcDate).toDateString()}</span>
+                            <span class="text-[10px] font-black text-zinc-600 tracking-[0.3em] uppercase">${league} • SECURE MARKET</span>
+                            <span class="text-[10px] font-black text-cyan-500 uppercase bg-cyan-500/10 px-3 py-1 rounded-md">${new Date(m.utcDate).toLocaleDateString()}</span>
                         </div>
-                        <div class="flex justify-between items-center mb-10 text-center">
+                        <div class="flex justify-between items-center mb-10 text-center gap-4">
                             <div class="flex-1">
-                                <img src="https://crests.football-data.org/${m.homeTeam.id}.png" class="h-16 mx-auto mb-3" onerror="this.src='https://placehold.co/100x100/111/fff?text=T1'">
-                                <p class="header-font text-sm">${m.homeTeam.shortName}</p>
+                                <img src="https://crests.football-data.org/${m.homeTeam.id}.png" class="h-20 mx-auto mb-4 filter drop-shadow-lg" onerror="this.src='https://placehold.co/100x100/111/fff?text=?'">
+                                <p class="sports-font text-sm tracking-tighter">${m.homeTeam.shortName}</p>
                             </div>
-                            <div class="px-4 header-font text-zinc-800 text-2xl italic">VS</div>
+                            <div class="sports-font text-zinc-800 text-3xl italic font-black">VS</div>
                             <div class="flex-1">
-                                <img src="https://crests.football-data.org/${m.awayTeam.id}.png" class="h-16 mx-auto mb-3" onerror="this.src='https://placehold.co/100x100/111/fff?text=T2'">
-                                <p class="header-font text-sm">${m.awayTeam.shortName}</p>
+                                <img src="https://crests.football-data.org/${m.awayTeam.id}.png" class="h-20 mx-auto mb-4 filter drop-shadow-lg" onerror="this.src='https://placehold.co/100x100/111/fff?text=?'">
+                                <p class="sports-font text-sm tracking-tighter">${m.awayTeam.shortName}</p>
                             </div>
                         </div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button onclick="window.placeBet('${m.homeTeam.shortName}')" class="bet-btn p-4 rounded-xl header-font text-[10px]">HOME</button>
-                            <button onclick="window.placeBet('Draw')" class="bet-btn p-4 rounded-xl header-font text-[10px]">DRAW</button>
-                            <button onclick="window.placeBet('${m.awayTeam.shortName}')" class="bet-btn p-4 rounded-xl header-font text-[10px]">AWAY</button>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="window.bet('${m.homeTeam.shortName}')" class="bet-btn py-5 rounded-2xl text-[11px] font-black">HOME</button>
+                            <button onclick="window.bet('Draw')" class="bet-btn py-5 rounded-2xl text-[11px] font-black">DRAW</button>
+                            <button onclick="window.bet('${m.awayTeam.shortName}')" class="bet-btn py-5 rounded-2xl text-[11px] font-black">AWAY</button>
                         </div>
                     `;
-                    grid.appendChild(el);
+                    grid.appendChild(div);
                 });
-            } catch (err) { grid.innerHTML = "API Limit reached. Wait 60 seconds."; }
-        }
+            } catch (err) { grid.innerHTML = `<div class="col-span-full text-red-500 sports-font text-center">API RATE LIMIT (WAIT 60S)</div>`; }
+        };
 
-        // PLACE BET
-        window.placeBet = async (team) => {
-            if (userProfile.balance < 100) return alert("Broke! Get some points first.");
+        window.bet = async (team) => {
+            if (userData.balance < 100) return alert("LIQUIDITY ERROR: Insufficient Points");
             
-            const newBalance = userProfile.balance - 100;
-            const newBet = { team, amount: 100, date: new Date().toISOString() };
+            const newBal = userData.balance - 100;
+            const newBet = { team, date: new Date().toLocaleTimeString(), amount: 100 };
             
-            await updateDoc(doc(db, "users", userProfile.id), {
-                balance: newBalance,
-                bets: arrayUnion(newBet)
-            });
-            
-            userProfile.balance = newBalance;
-            userProfile.bets.push(newBet);
-            syncUI();
-            alert(`LOCKED: 100 PTS on ${team}`);
+            try {
+                await updateDoc(doc(db, "users", userData.id), {
+                    balance: newBal,
+                    bets: arrayUnion(newBet)
+                });
+
+                userData.balance = newBal;
+                userData.bets.push(newBet);
+                syncUI();
+                alert(`TICKET LOCKED: 100 PTS ON ${team.toUpperCase()}`);
+            } catch (e) { alert("Cloud Sync Failed"); }
+        };
+
+        function syncUI() {
+            document.getElementById('balance-val').innerText = userData.balance.toLocaleString();
+            const hist = document.getElementById('bet-history');
+            hist.innerHTML = userData.bets.slice(-6).reverse().map(b => `
+                <div class="bg-white/5 p-5 rounded-2xl border-l-4 border-cyan-500 flex justify-between items-center hover:bg-white/10 transition-colors">
+                    <div>
+                        <p class="text-[10px] text-zinc-500 font-black uppercase mb-1">${b.team}</p>
+                        <p class="sports-font text-lg text-white">STAKE: ${b.amount}</p>
+                    </div>
+                    <span class="text-[9px] text-zinc-700 font-bold">${b.date}</span>
+                </div>
+            `).join('') || '<p class="text-gray-600 text-xs italic text-center py-10">Waiting for market entry...</p>';
         }
     </script>
 </body>
