@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperBet - No-Risk Football Betting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-400">PaperBet</h1>
+            <div class="glass px-6 py-2 rounded-full font-mono text-xl">
+                💰 <span id="balance">1000</span> <span class="text-sm text-gray-400">PTS</span>
+            </div>
+        </header>
+
+        <nav class="flex gap-4 mb-8 overflow-x-auto pb-2">
+            <button onclick="loadLeagues('4328')" class="bg-blue-600 px-4 py-2 rounded">Premier League</button>
+            <button onclick="loadLeagues('4335')" class="bg-slate-700 px-4 py-2 rounded">La Liga</button>
+            <button onclick="loadLeagues('4331')" class="bg-slate-700 px-4 py-2 rounded">Bundesliga</button>
+            <button onclick="loadLeagues('4480')" class="bg-slate-700 px-4 py-2 rounded">Champions League</button>
+        </nav>
+
+        <div id="match-container" class="grid gap-4">
+            <p class="text-gray-400">Loading live fixtures...</p>
+        </div>
+    </div>
+
+    <script>
+        let balance = localStorage.getItem('paperBalance') ? parseInt(localStorage.getItem('paperBalance')) : 1000;
+        document.getElementById('balance').innerText = balance;
+
+        // API Key '3' is the public test key for TheSportsDB
+        async function loadLeagues(id) {
+            const container = document.getElementById('match-container');
+            container.innerHTML = '<p class="animate-pulse">Fetching latest matches...</p>';
+            
+            try {
+                const res = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${id}`);
+                const data = await res.json();
+                
+                container.innerHTML = '';
+                if (!data.events) {
+                    container.innerHTML = '<p>No upcoming matches found for this league.</p>';
+                    return;
+                }
+
+                data.events.forEach(match => {
+                    const card = document.createElement('div');
+                    card.className = 'glass p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4';
+                    card.innerHTML = `
+                        <div class="text-center md:text-left flex-1">
+                            <p class="text-xs text-blue-300 uppercase font-bold">${match.strTimestamp.split('T')[0]}</p>
+                            <h3 class="text-lg font-bold">${match.strEvent}</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="placeBet('${match.idEvent}', '${match.strHomeTeam}', 100)" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded text-sm transition">Bet Home</button>
+                            <button onclick="placeBet('${match.idEvent}', 'Draw', 100)" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded text-sm transition">Draw</button>
+                            <button onclick="placeBet('${match.idEvent}', '${match.strAwayTeam}', 100)" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm transition">Bet Away</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                container.innerHTML = '<p class="text-red-400">Failed to load data. The free API might be busy.</p>';
+            }
+        }
+
+        function placeBet(matchId, choice, amount) {
+            if (balance < amount) {
+                alert("Not enough points!");
+                return;
+            }
+            balance -= amount;
+            updateUI();
+            alert(`Bet placed: 100 pts on ${choice}! Check back after the match to see if you won.`);
+        }
+
+        function updateUI() {
+            document.getElementById('balance').innerText = balance;
+            localStorage.setItem('paperBalance', balance);
+        }
+
+        // Initial Load (Premier League)
+        loadLeagues('4328');
+    </script>
+</body>
+</html>
