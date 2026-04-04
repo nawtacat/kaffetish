@@ -3,218 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PaperBet | Ultra-Premium Sportsbook</title>
+    <title>PaperBet | Next-Gen Sportsbook</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Syncopate:wght@700&family=Inter:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --neon-blue: #00f2ff;
-            --neon-purple: #bc13fe;
-        }
-
-        body { 
-            background: radial-gradient(circle at 50% 0%, #1e1b4b, #020617);
-            font-family: 'Inter', sans-serif;
-            color: #f8fafc;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .header-font { font-family: 'Syncopate', sans-serif; }
-        .mono { font-family: 'JetBrains+Mono', monospace; }
-
-        .glass-card {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .match-card {
-            position: relative;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border-left: 4px solid transparent;
-        }
-
-        .match-card:hover {
-            transform: scale(1.02);
-            border-left: 4px solid var(--neon-blue);
-            background: rgba(30, 41, 59, 0.8);
-        }
-
-        .neon-glow {
-            text-shadow: 0 0 10px rgba(0, 242, 255, 0.5);
-        }
-
-        .gradient-border {
-            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
-            height: 2px;
-            width: 100%;
-        }
-
-        .league-btn.active {
-            background: linear-gradient(45deg, #2563eb, #7c3aed);
-            box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
-            border-color: rgba(255,255,255,0.2);
-        }
-
-        .badge-shadow { filter: drop-shadow(0 0 8px rgba(255,255,255,0.2)); }
+        :root { --neon: #00ff9d; --accent: #0062ff; }
         
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        body { 
+            background: #050505;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 20% 30%, #1e1b4b 0%, transparent 40%),
+                              radial-gradient(circle at 80% 70%, #1e293b 0%, transparent 40%);
+        }
+
+        .sports-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+        .logo-font { font-family: 'Syncopate', sans-serif; letter-spacing: -2px; }
+
+        .neon-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .neon-card:hover {
+            border-color: var(--neon);
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .btn-bet {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+        }
+
+        .btn-bet:hover {
+            background: var(--accent);
+            border-color: var(--neon);
+            color: white;
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .balance-glow {
+            text-shadow: 0 0 20px rgba(0, 255, 157, 0.6);
+            color: var(--neon);
+        }
+
+        .badge-img { filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-6 md:p-12">
 
-    <div class="max-w-7xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
-            <div class="relative">
-                <div class="absolute -top-4 -left-4 w-20 h-20 bg-blue-500/20 blur-3xl rounded-full"></div>
-                <h1 class="text-6xl header-font tracking-tighter italic uppercase text-white mb-2">
-                    PAPER<span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">BET</span>
+    <div class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-16 gap-8">
+            <div class="text-center md:text-left">
+                <h1 class="text-7xl logo-font font-black italic mb-2 tracking-tighter">
+                    PAPER<span class="text-transparent" style="-webkit-text-stroke: 1.5px var(--neon);">BET</span>
                 </h1>
-                <div class="flex items-center gap-2">
-                    <span class="h-1 w-12 bg-cyan-500 rounded-full"></span>
-                    <p class="text-xs font-black uppercase tracking-[0.3em] text-cyan-500/80">Elite Sports Exchange</p>
+                <div class="flex items-center gap-3">
+                    <span class="h-[2px] w-12 bg-blue-600"></span>
+                    <p class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-500">Tier 1 Exchange 2026</p>
                 </div>
             </div>
 
-            <div class="glass-card px-10 py-6 rounded-3xl flex flex-col items-end border-r-4 border-purple-500">
-                <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Available Liquidity</span>
+            <div class="neon-card px-10 py-6 rounded-3xl text-right border-l-8 border-l-[#00ff9d]">
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Portfolio Balance</p>
                 <div class="flex items-baseline gap-2">
-                    <span id="balance" class="text-4xl mono font-bold neon-glow">1,000</span>
-                    <span class="text-purple-400 font-black text-sm uppercase">PTS</span>
+                    <span id="balance" class="text-5xl font-black sports-font balance-glow">1,000</span>
+                    <span class="text-xs font-bold text-gray-400">PTS</span>
                 </div>
             </div>
         </header>
 
-        <div class="flex gap-4 mb-12 overflow-x-auto pb-4 no-scrollbar">
-            <button onclick="changeLeague(this, '4328')" class="league-btn active whitespace-nowrap bg-slate-900 border border-slate-800 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">🇬🇧 Premier League</button>
-            <button onclick="changeLeague(this, '4335')" class="league-btn whitespace-nowrap bg-slate-900 border border-slate-800 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">🇪🇸 La Liga</button>
-            <button onclick="changeLeague(this, '4331')" class="league-btn whitespace-nowrap bg-slate-900 border border-slate-800 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">🇩🇪 Bundesliga</button>
-            <button onclick="changeLeague(this, '4332')" class="league-btn whitespace-nowrap bg-slate-900 border border-slate-800 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">🇮🇹 Serie A</button>
-            <button onclick="changeLeague(this, '4480')" class="league-btn whitespace-nowrap bg-slate-900 border border-slate-800 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">🏆 Champions League</button>
+        <div class="flex gap-4 mb-12 overflow-x-auto pb-4">
+            <button onclick="loadLeague('PL')" class="px-8 py-3 rounded-full bg-blue-600 sports-font text-sm tracking-widest">Premier League</button>
+            <button onclick="loadLeague('PD')" class="px-8 py-3 rounded-full bg-zinc-900 sports-font text-sm tracking-widest hover:bg-zinc-800">La Liga</button>
+            <button onclick="loadLeague('BL1')" class="px-8 py-3 rounded-full bg-zinc-900 sports-font text-sm tracking-widest hover:bg-zinc-800">Bundesliga</button>
+            <button onclick="loadLeague('CL')" class="px-8 py-3 rounded-full bg-zinc-900 sports-font text-sm tracking-widest hover:bg-zinc-800">Champions League</button>
         </div>
 
-        <div id="match-grid" class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div id="match-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             </div>
     </div>
 
     <script>
-        const API_KEY = '3';
-        let balance = localStorage.getItem('paperBetBalance') ? parseInt(localStorage.getItem('paperBetBalance')) : 1000;
-        
-        function updateDisplay() {
-            document.getElementById('balance').innerText = balance.toLocaleString();
-            localStorage.setItem('paperBetBalance', balance);
+        // NOTE: Get a free key at football-data.org for live updates
+        const API_KEY = 'YOUR_FREE_KEY'; 
+        let balance = localStorage.getItem('pb_bal') || 1000;
+
+        // Mock Data for 2026 (Loaded if no API key is provided)
+        const mockFixtures = [
+            { home: "Arsenal", away: "Bournemouth", homeId: 57, awayId: 1044, date: "Sat 11 Apr, 15:30", odds: [1.4, 4.5, 7.2] },
+            { home: "Chelsea", away: "Man City", homeId: 61, awayId: 65, date: "Sun 12 Apr, 19:30", odds: [3.1, 3.4, 2.1] },
+            { home: "Liverpool", away: "Fulham", homeId: 64, awayId: 63, date: "Sat 11 Apr, 20:30", odds: [1.2, 6.0, 11.5] },
+            { home: "Man United", away: "Leeds United", homeId: 66, awayId: 341, date: "Mon 13 Apr, 23:00", odds: [1.8, 3.6, 4.0] }
+        ];
+
+        function updateUI() {
+            document.getElementById('balance').innerText = Number(balance).toLocaleString();
+            localStorage.setItem('pb_bal', balance);
         }
 
-        function changeLeague(btn, id) {
-            document.querySelectorAll('.league-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            fetchMatches(id);
-        }
-
-        async function fetchMatches(leagueId) {
+        async function loadLeague(code) {
             const grid = document.getElementById('match-grid');
-            grid.innerHTML = `
-                <div class="col-span-full py-32 text-center">
-                    <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-cyan-500 mb-6"></div>
-                    <p class="header-font text-sm tracking-widest text-cyan-500 animate-pulse">Fetching Real-Time Odds...</p>
-                </div>`;
+            grid.innerHTML = '<div class="col-span-full text-center py-20 text-gray-600 sports-font animate-pulse">Syncing Global Data...</div>';
 
-            try {
-                // TheSportsDB: 4328 is PL, 4335 La Liga, etc.
-                const response = await fetch(`https://www.thesportsdb.com/api/v1/json/${API_KEY}/eventsnextleague.php?id=${leagueId}`);
-                const data = await response.json();
-
-                if (!data.events) {
-                    grid.innerHTML = `<p class="col-span-full text-center text-gray-500 py-10 font-bold uppercase tracking-widest">Off-season or No upcoming fixtures found.</p>`;
-                    return;
-                }
-
-                grid.innerHTML = '';
-                data.events.forEach(event => {
-                    const date = new Date(event.strTimestamp).toLocaleDateString('en-GB', { 
-                        weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' 
+            // If you have an API key, we fetch real data. Otherwise, we show the high-quality Mock PL games.
+            if (API_KEY !== 'YOUR_FREE_KEY') {
+                try {
+                    const response = await fetch(`https://api.football-data.org/v4/competitions/${code}/matches?status=SCHEDULED`, {
+                        headers: { 'X-Auth-Token': API_KEY }
                     });
-                    
-                    const card = document.createElement('div');
-                    card.className = 'match-card glass-card p-8 rounded-[2rem] flex flex-col justify-between overflow-hidden';
-                    
-                    // We use the Team Badge API from TheSportsDB
-                    // tiny badges: /images/media/team/badge/tiny/ID.png
-                    card.innerHTML = `
-                        <div class="flex justify-between items-center mb-10">
-                            <div class="flex items-center gap-3">
-                                <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
-                                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">${event.strLeague}</span>
-                            </div>
-                            <span class="mono text-[11px] text-cyan-400 bg-cyan-950/30 px-3 py-1 rounded-lg border border-cyan-500/20">${date}</span>
+                    const data = await response.json();
+                    renderMatches(data.matches);
+                    return;
+                } catch (e) { console.log("API Error, falling back to mock data."); }
+            }
+            
+            // Render High Quality Mock Data for now
+            setTimeout(() => renderMatches(mockFixtures), 800);
+        }
+
+        function renderMatches(matches) {
+            const grid = document.getElementById('match-grid');
+            grid.innerHTML = '';
+
+            matches.forEach((m, idx) => {
+                const card = document.createElement('div');
+                card.className = 'neon-card p-8 rounded-[2.5rem] flex flex-col justify-between overflow-hidden relative';
+                
+                // Using a reliable crest CDN
+                const homeBadge = `https://crests.football-data.org/${m.homeId}.png`;
+                const awayBadge = `https://crests.football-data.org/${m.awayId}.png`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-10">
+                        <span class="text-[10px] font-black tracking-widest text-blue-500 uppercase">Live Market • PL</span>
+                        <span class="text-[11px] sports-font text-gray-500 bg-white/5 px-4 py-1 rounded-full border border-white/5">${m.date || 'Upcoming'}</span>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-10 gap-4">
+                        <div class="flex-1 flex flex-col items-center">
+                            <img src="${homeBadge}" class="w-20 h-20 mb-4 badge-img" onerror="this.src='https://placehold.co/100x100/111/fff?text=${m.home[0]}'">
+                            <span class="sports-font text-lg text-center leading-tight">${m.home}</span>
                         </div>
                         
-                        <div class="flex justify-between items-center mb-12 relative">
-                            <div class="flex flex-col items-center flex-1">
-                                <div class="w-24 h-24 mb-4 flex items-center justify-center p-2 rounded-2xl bg-white/5 border border-white/10">
-                                    <img src="https://www.thesportsdb.com/images/media/team/badge/small/${event.idHomeTeam}.png" 
-                                         class="w-full h-full object-contain badge-shadow" onerror="this.src='https://via.placeholder.com/100?text=TEAM'">
-                                </div>
-                                <span class="header-font text-xs text-center leading-tight tracking-tighter">${event.strHomeTeam}</span>
-                            </div>
-
-                            <div class="flex flex-col items-center px-4">
-                                <div class="text-xs font-black text-slate-700 italic mb-2 tracking-tighter">VERSUS</div>
-                                <div class="h-12 w-[1px] bg-gradient-to-b from-transparent via-slate-700 to-transparent"></div>
-                            </div>
-
-                            <div class="flex flex-col items-center flex-1">
-                                <div class="w-24 h-24 mb-4 flex items-center justify-center p-2 rounded-2xl bg-white/5 border border-white/10">
-                                    <img src="https://www.thesportsdb.com/images/media/team/badge/small/${event.idAwayTeam}.png" 
-                                         class="w-full h-full object-contain badge-shadow" onerror="this.src='https://via.placeholder.com/100?text=TEAM'">
-                                </div>
-                                <span class="header-font text-xs text-center leading-tight tracking-tighter">${event.strAwayTeam}</span>
-                            </div>
+                        <div class="flex flex-col items-center">
+                            <div class="text-2xl font-black italic text-zinc-800">VS</div>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-4">
-                            <button onclick="placeBet('${event.strHomeTeam}')" class="group relative bg-slate-800/50 hover:bg-cyan-600 p-4 rounded-2xl transition-all duration-300">
-                                <span class="relative z-10 text-[10px] font-black uppercase tracking-widest group-hover:text-white text-gray-400">Home</span>
-                                <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-cyan-600 to-blue-600"></div>
-                            </button>
-                            <button onclick="placeBet('Draw')" class="bg-slate-800/50 hover:bg-slate-700 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all text-gray-400">Draw</button>
-                            <button onclick="placeBet('${event.strAwayTeam}')" class="group relative bg-slate-800/50 hover:bg-purple-600 p-4 rounded-2xl transition-all duration-300">
-                                <span class="relative z-10 text-[10px] font-black uppercase tracking-widest group-hover:text-white text-gray-400">Away</span>
-                                <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-purple-600 to-pink-600"></div>
-                            </button>
+                        <div class="flex-1 flex flex-col items-center">
+                            <img src="${awayBadge}" class="w-20 h-20 mb-4 badge-img" onerror="this.src='https://placehold.co/100x100/111/fff?text=${m.away[0]}'">
+                            <span class="sports-font text-lg text-center leading-tight">${m.away}</span>
                         </div>
-                    `;
-                    grid.appendChild(card);
-                });
-            } catch (error) {
-                grid.innerHTML = `<p class="col-span-full text-center text-red-400 font-mono">CRITICAL_ERROR: API_LIMIT_EXCEEDED</p>`;
-            }
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="bet('${m.home}', 1)" class="btn-bet py-4 rounded-2xl sports-font text-xs tracking-tighter">
+                            1 <span class="block text-[10px] text-blue-400">${m.odds ? m.odds[0] : '1.85'}</span>
+                        </button>
+                        <button onclick="bet('Draw', 1)" class="btn-bet py-4 rounded-2xl sports-font text-xs tracking-tighter">
+                            X <span class="block text-[10px] text-gray-500">${m.odds ? m.odds[1] : '3.40'}</span>
+                        </button>
+                        <button onclick="bet('${m.away}', 1)" class="btn-bet py-4 rounded-2xl sports-font text-xs tracking-tighter">
+                            2 <span class="block text-[10px] text-blue-400">${m.odds ? m.odds[2] : '4.20'}</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
         }
 
-        function placeBet(team) {
-            const stake = 100;
-            if (balance < stake) {
-                alert("🚫 INSUFFICIENT LIQUIDITY");
-                return;
-            }
-            balance -= stake;
-            updateDisplay();
-            
-            // Visual feedback instead of simple alert
-            const btn = event.currentTarget;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "<span class='text-white animate-pulse'>LOCKED</span>";
-            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        function bet(team, amount) {
+            if (balance < 100) return alert("INSUFFICIENT FUNDS");
+            balance -= 100;
+            updateUI();
+            alert(`TICKET LOCKED: 100 PTS ON ${team.toUpperCase()}`);
         }
 
-        // Initialize
-        updateDisplay();
-        fetchMatches('4328');
+        updateUI();
+        loadLeague('PL');
     </script>
 </body>
 </html>
