@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QYACHBET</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --win: #22c55e;
+            --lose: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { max-width: 500px; width: 100%; }
+
+        /* Login UI */
+        #login-screen { text-align: center; margin-top: 100px; }
+        input { padding: 12px; border-radius: 8px; border: none; width: 200px; font-size: 1.1rem; }
+        button { padding: 12px 24px; border-radius: 8px; background: var(--accent); border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        /* Header & Profile */
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .user-img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; }
+        
+        /* Leaderboard */
+        .leaderboard { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .lb-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+
+        /* Matches */
+        .section-title { font-size: 1.5rem; margin: 20px 0 10px; border-left: 4px solid var(--accent); padding-left: 10px; }
+        .match-card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 15px; position: relative; }
+        .teams { display: flex; justify-content: space-between; align-items: center; text-align: center; }
+        .team-logo { width: 40px; height: 40px; }
+        .vs { font-weight: bold; color: var(--accent); }
+        .odds { display: flex; justify-content: space-around; margin-top: 15px; gap: 10px; }
+        .odd-btn { background: #334155; flex: 1; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; }
+        .odd-btn:hover { background: #475569; }
+        
+        .settled-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .win-bg { background: var(--win); }
+        .lose-bg { background: var(--lose); }
+    </style>
+</head>
+<body>
+
+<div id="login-screen" class="container">
+    <h1>QYACHBET</h1>
+    <p>Մուտքագրեք ձեր կոդը</p>
+    <input type="password" id="loginCode" placeholder="Կոդ...">
+    <br>
+    <button onclick="login()">Մուտք</button>
+</div>
+
+<div id="main-app" class="container" style="display:none;">
+    <div class="header">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <img id="my-pic" class="user-img" src="" alt="">
+            <div>
+                <strong id="my-name"></strong><br>
+                <span id="my-balance" style="color:var(--accent)">0 ֏</span>
+            </div>
+        </div>
+        <button onclick="logout()" style="background:#ef4444; padding:5px 10px; font-size:0.8rem">Ելք</button>
+    </div>
+
+    <div class="leaderboard">
+        <h3>🏆 Առաջատարներ</h3>
+        <div id="leaderboard-list"></div>
+    </div>
+
+    <div class="section-title">Ընթացիկ Խաղեր</div>
+    <div id="upcoming-matches"></div>
+
+    <div class="section-title">Ավարտված</div>
+    <div id="past-matches"></div>
+</div>
+
+<script>
+    // ==========================================
+    // ADMIN: EDIT YOUR GAMES HERE
+    // ==========================================
+    const GAMES = [
+        {
+            id: 1,
+            teamA: "Real Madrid", logoA: "https://shorturl.at/t8NPh", coefA: 1.85,
+            teamB: "Bayern Munich", logoB: "https://shorturl.at/vVjS9", coefB: 2.10,
+            status: "open", // "open" or "finished"
+            result: null // "A" or "B" (Winner)
+        },
+        {
+            id: 2,
+            teamA: "Arsenal", logoA: "https://shorturl.at/p3Gsh", coefA: 1.50,
+            teamB: "Liverpool", logoB: "https://shorturl.at/uT0m6", coefB: 2.80,
+            status: "finished",
+            result: "A"
+        }
+    ];
+
+    const USER_CONFIG = {
+        "g0r": { name: "Գոռո", pic: "https://kaffetish.club/qyachbet/g0r.png" },
+        "rn": { name: "Արենչո", pic: "https://kaffetish.club/qyachbet/rn.png" },
+        "dts": { name: "Դծ", pic: "https://kaffetish.club/qyachbet/dts.png" },
+        "flo": { name: "Արամիկ", pic: "https://kaffetish.club/qyachbet/flo.png" }
+    };
+
+    // ==========================================
+    // APP LOGIC (Don't touch unless you're brave)
+    // ==========================================
+    let currentUser = null;
+
+    function init() {
+        const saved = localStorage.getItem('qyach_data');
+        if (!saved) {
+            const initialData = {};
+            Object.keys(USER_CONFIG).forEach(code => {
+                initialData[code] = { balance: 1000, bets: [] };
+            });
+            localStorage.setItem('qyach_data', JSON.stringify(initialData));
+        }
+        renderLeaderboard();
+        processSettlements();
+    }
+
+    function login() {
+        const code = document.getElementById('loginCode').value;
+        if (USER_CONFIG[code]) {
+            currentUser = code;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            updateUI();
+        } else {
+            alert("Սխալ կոդ!");
+        }
+    }
+
+    function updateUI() {
+        const data = JSON.parse(localStorage.getItem('qyach_data'));
+        const user = data[currentUser];
+        document.getElementById('my-name').innerText = USER_CONFIG[currentUser].name;
+        document.getElementById('my-pic').src = USER_CONFIG[currentUser].pic;
+        document.getElementById('my-balance').innerText = user.balance + " ֏";
+        
+        renderMatches();
+        renderLeaderboard();
+    }
+
+    function renderLeaderboard() {
+        const data = JSON.parse(localStorage.getItem('qyach_data'));
+        const list = document.getElementById('leaderboard-list');
+        list.innerHTML = "";
+        
+        const sorted = Object.keys(data).sort((a,b) => data[b].balance - data[a].balance);
+        
+        sorted.forEach(code => {
+            list.innerHTML += `
+                <div class="lb-row">
+                    <img src="${USER_CONFIG[code].pic}" class="user-img" style="width:30px; height:30px">
+                    <span style="flex:1">${USER_CONFIG[code].name}</span>
+                    <strong>${data[code].balance} ֏</strong>
+                </div>
+            `;
+        });
+    }
+
+    function renderMatches() {
+        const up = document.getElementById('upcoming-matches');
+        const past = document.getElementById('past-matches');
+        up.innerHTML = ""; past.innerHTML = "";
+
+        GAMES.forEach(game => {
+            const html = `
+                <div class="match-card">
+                    ${game.status === 'finished' ? `<div class="settled-badge ${game.result ? 'win-bg' : ''}">ԱՎԱՐՏՎԱԾ</div>` : ''}
+                    <div class="teams">
+                        <div><img src="${game.logoA}" class="team-logo"><br>${game.teamA}</div>
+                        <div class="vs">VS</div>
+                        <div><img src="${game.logoB}" class="team-logo"><br>${game.teamB}</div>
+                    </div>
+                    ${game.status === 'open' ? `
+                        <div class="odds">
+                            <div class="odd-btn" onclick="placeBet(${game.id}, 'A', ${game.coefA})">Հաղթանակ 1<br><b>${game.coefA}</b></div>
+                            <div class="odd-btn" onclick="placeBet(${game.id}, 'B', ${game.coefB})">Հաղթանակ 2<br><b>${game.coefB}</b></div>
+                        </div>
+                    ` : `<div style="text-align:center; margin-top:10px; opacity:0.6">Խաղն ավարտվել է</div>`}
+                </div>
+            `;
+            if (game.status === 'open') up.innerHTML += html;
+            else past.innerHTML += html;
+        });
+    }
+
+    function placeBet(gameId, team, coef) {
+        const amount = prompt("Մուտքագրեք խաղադրույքի չափը (֏):");
+        if (!amount || isNaN(amount) || amount <= 0) return;
+
+        let data = JSON.parse(localStorage.getItem('qyach_data'));
+        if (data[currentUser].balance < amount) {
+            alert("Բավարար միջոցներ չկան!");
+            return;
+        }
+
+        data[currentUser].balance -= parseInt(amount);
+        data[currentUser].bets.push({ gameId, team, amount: parseInt(amount), coef, settled: false });
+        
+        localStorage.setItem('qyach_data', JSON.stringify(data));
+        updateUI();
+        alert("Խաղադրույքը կատարված է:");
+    }
+
+    function processSettlements() {
+        let data = JSON.parse(localStorage.getItem('qyach_data'));
+        let changed = false;
+
+        Object.keys(data).forEach(code => {
+            data[code].bets.forEach(bet => {
+                const game = GAMES.find(g => g.id === bet.gameId);
+                if (game && game.status === 'finished' && !bet.settled) {
+                    if (game.result === bet.team) {
+                        data[code].balance += Math.floor(bet.amount * bet.coef);
+                    }
+                    bet.settled = true;
+                    changed = true;
+                }
+            });
+        });
+
+        if (changed) {
+            localStorage.setItem('qyach_data', JSON.stringify(data));
+            if (currentUser) updateUI();
+        }
+    }
+
+    function logout() {
+        currentUser = null;
+        document.getElementById('login-screen').style.display = 'block';
+        document.getElementById('main-app').style.display = 'none';
+    }
+
+    init();
+</script>
+
+</body>
+</html>
