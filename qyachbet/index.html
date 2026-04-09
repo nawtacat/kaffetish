@@ -188,21 +188,42 @@
         });
     }
 
-    // 5. BETTING LOGIC
-    window.placeBet = async (gameId, team, coef) => {
-        const amount = prompt("Մուտքագրեք չափը (֏):");
-        if (!amount || isNaN(amount) || amount <= 0) return;
+   window.placeBet = async (gameId, team, coef) => {
+    // 1. Check if the game is actually open in your hardcoded list
+    const game = GAMES.find(g => g.id === gameId);
+    if (!game || game.status !== 'open') {
+        alert("Այս խաղը փակ է:");
+        return;
+    }
 
-        const userRef = doc(db, "qyach_users", currentUser);
-        const userSnap = await getDoc(userRef);
-        const currentBalance = userSnap.data().balance;
+    // 2. Check if this user has ALREADY bet on this game
+    const q = query(
+        collection(db, "qyach_bets"), 
+        where("userId", "==", currentUser), 
+        where("gameId", "==", gameId)
+    );
+    const existingBets = await getDocs(q);
+    
+    if (!existingBets.empty) {
+        alert("Դուք արդեն կատարել եք խաղադրույք այս խաղի համար:");
+        return;
+    }
 
-        if (currentBalance < amount) {
-            alert("Բավարար միջոցներ չկան!");
-            return;
-        }
+    const amount = prompt("Մուտքագրեք չափը (֏):");
+    if (!amount || isNaN(amount) || amount <= 0) return;
 
-        // Deduct balance and record bet in Firestore
+    // 3. Check Balance
+    const userRef = doc(db, "qyach_users", currentUser);
+    const userSnap = await getDoc(userRef);
+    const currentBalance = userSnap.data().balance;
+
+    if (currentBalance < amount) {
+        alert("Բավարար միջոցներ չկան:");
+        return;
+    }
+
+    // 4. EXECUTE: Deduct money and save the bet
+    try {
         await updateDoc(userRef, { balance: currentBalance - parseInt(amount) });
         await addDoc(collection(db, "qyach_bets"), {
             userId: currentUser,
@@ -210,11 +231,14 @@
             team: team,
             amount: parseInt(amount),
             coef: coef,
-            settled: false
+            settled: false,
+            timestamp: new Date()
         });
-
-        alert("Խաղադրույքն ընդունված է:");
-    };
+        alert("Խաղադրույքն ընդունված է ✅");
+    } catch (e) {
+        alert("Սխալ տեղի ունեցավ: Փորձեք կրկին:");
+    }
+};
 
     // 6. AUTO-SETTLEMENT (Admin helper)
     async function processSettlements() {
