@@ -164,7 +164,11 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { 
+        getFirestore, doc, getDoc, setDoc, updateDoc, 
+        collection, onSnapshot, addDoc, query, 
+        where, getDocs, increment 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
@@ -181,9 +185,9 @@
     const GAMES = [
         {
             id: "m3",
-            teamA: "Van", logoA: "	https://images.fotmob.com/image_resources/logo/teamlogo/1078400_small.png", coefA: 2.3,
-            teamB: "Urartu", logoB: "	https://images.fotmob.com/image_resources/logo/teamlogo/7979_small.png", coefB: 1.4,
-            coefD: 1.9, // Coefficient for Draw
+            teamA: "Van", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/1078400_small.png", coefA: 2.3,
+            teamB: "Urartu", logoB: "https://images.fotmob.com/image_resources/logo/teamlogo/7979_small.png", coefB: 1.4,
+            coefD: 1.9, 
             status: "finished",
             score: "1 - 2",
             winner: "B"
@@ -192,7 +196,7 @@
             id: "m1",
             teamA: "Bayern Munich", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/9823_small.png", coefA: 1.4,
             teamB: "Real Madrid", logoB: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg", coefB: 1.65,
-            coefD: 3.2, // Coefficient for Draw
+            coefD: 3.2,
             status: "open",
             score: null,
             winner: null
@@ -218,14 +222,14 @@
     let currentUser = null;
 
     document.getElementById('loginBtn').addEventListener('click', async () => {
-        const code = document.getElementById('loginCode').value;
+        const code = document.getElementById('loginCode').value.trim();
         if (USER_CONFIG[code]) {
             currentUser = code;
             await checkUserExists(code);
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             startListeners();
-            processSettlements();
+            processSettlements(); // Run calculation on login
         } else {
             alert("Սխալ կոդ!");
         }
@@ -311,7 +315,7 @@
             `;
             if (game.status === 'open') {
                 up.innerHTML += html;
-                listenToBets(game.id, null); // Status open, so no winner yet
+                listenToBets(game.id, null);
             } else {
                 past.innerHTML += html;
                 listenToBets(game.id, game.winner);
@@ -319,7 +323,6 @@
         }
     }
 
-    // Live listener for bets (Works for both active and finished games)
     function listenToBets(gameId, winner) {
         const q = query(collection(db, "qyach_bets"), where("gameId", "==", gameId));
         onSnapshot(q, (snap) => {
@@ -366,7 +369,8 @@
         const existingBets = await getDocs(q);
         if (!existingBets.empty) { alert("Դուք արդեն կատարել եք խաղադրույք այս խաղի համար:"); return; }
 
-        const amount = prompt("Մուտքագրեք չափը (֏):");
+        const amountStr = prompt("Մուտքագրեք չափը (֏):");
+        const amount = parseInt(amountStr);
         if (!amount || isNaN(amount) || amount <= 0) return;
 
         const userRef = doc(db, "qyach_users", currentUser);
@@ -376,12 +380,13 @@
         if (currentBalance < amount) { alert("Բավարար միջոցներ չկան:"); return; }
 
         try {
-            await updateDoc(userRef, { balance: currentBalance - parseInt(amount) });
+            // Deduct balance safely using negative increment
+            await updateDoc(userRef, { balance: increment(-amount) });
             await addDoc(collection(db, "qyach_bets"), {
                 userId: currentUser,
                 gameId: gameId,
                 team: team,
-                amount: parseInt(amount),
+                amount: amount,
                 coef: coef,
                 settled: false,
                 timestamp: new Date()
@@ -393,19 +398,25 @@
     async function processSettlements() {
         const q = query(collection(db, "qyach_bets"), where("userId", "==", currentUser), where("settled", "==", false));
         const querySnapshot = await getDocs(q);
-        querySnapshot.forEach(async (betDoc) => {
+
+        for (const betDoc of querySnapshot.docs) {
             const bet = betDoc.data();
             const game = GAMES.find(g => g.id === bet.gameId);
+
+            // Only settle if game is marked "finished" in the local GAMES array
             if (game && game.status === 'finished') {
+                const userRef = doc(db, "qyach_users", currentUser);
+                
                 if (game.winner === bet.team) {
-                    const userRef = doc(db, "qyach_users", currentUser);
-                    const userSnap = await getDoc(userRef);
                     const winAmount = Math.floor(bet.amount * bet.coef);
-                    await updateDoc(userRef, { balance: userSnap.data().balance + winAmount });
+                    // FIXED: Atomic increment ensures we don't lose money on balance updates
+                    await updateDoc(userRef, { balance: increment(winAmount) });
                 }
+                
+                // Mark the bet as settled in Firebase so it doesn't pay out again next time
                 await updateDoc(doc(db, "qyach_bets", betDoc.id), { settled: true });
             }
-        });
+        }
     }
 </script>
 </body>
