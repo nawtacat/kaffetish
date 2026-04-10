@@ -5,126 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QYACHBET</title>
     <style>
-        :root { 
-            --bg: #0f172a; 
-            --card: #1e293b; 
-            --accent: #38bdf8; 
-            --text: #f8fafc; 
-            --win: #22c55e; 
-            --lose: #ef4444; 
-        }
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background-color: var(--bg); 
-            color: var(--text); 
-            margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --win: #22c55e; --lose: #ef4444; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { max-width: 500px; width: 100%; }
         #login-screen { text-align: center; margin-top: 100px; }
-        input { 
-            padding: 12px; 
-            border-radius: 8px; 
-            border: none; 
-            width: 200px; 
-            font-size: 1.1rem; 
-            margin-bottom: 10px; 
-            background: #334155; 
-            color: white; 
-        }
-        button { 
-            padding: 12px 24px; 
-            border-radius: 8px; 
-            background: var(--accent); 
-            border: none; 
-            font-weight: bold; 
-            cursor: pointer; 
-            color: #0f172a; 
-        }
-        .header { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: var(--card); 
-            padding: 15px; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            border: 1px solid #334155; 
-        }
-        .user-img { 
-            width: 50px; 
-            height: 50px; 
-            border-radius: 50%; 
-            border: 2px solid var(--accent); 
-            object-fit: cover; 
-        }
-        .leaderboard { 
-            background: var(--card); 
-            padding: 15px; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-        }
-        .lb-row { 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            margin-bottom: 10px; 
-            padding-bottom: 5px; 
-            border-bottom: 1px solid #334155; 
-        }
-        .section-title { 
-            font-size: 1.3rem; 
-            margin: 20px 0 10px; 
-            border-left: 4px solid var(--accent); 
-            padding-left: 10px; 
-            font-weight: bold; 
-        }
-        .match-card { 
-            background: var(--card); 
-            padding: 20px; 
-            border-radius: 12px; 
-            margin-bottom: 15px; 
-            position: relative; 
-            border: 1px solid #334155; 
-        }
-        .teams { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            text-align: center; 
-            margin-bottom: 10px;
-        }
+        input { padding: 12px; border-radius: 8px; border: none; width: 200px; font-size: 1.1rem; margin-bottom: 10px; background: #334155; color: white; }
+        button { padding: 12px 24px; border-radius: 8px; background: var(--accent); border: none; font-weight: bold; cursor: pointer; color: #0f172a; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #334155; }
+        .user-img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; }
+        .leaderboard { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .lb-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #334155; }
+        .section-title { font-size: 1.3rem; margin: 20px 0 10px; border-left: 4px solid var(--accent); padding-left: 10px; font-weight: bold; }
+        .match-card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; position: relative; border: 1px solid #334155; }
+        .teams { display: flex; justify-content: space-between; align-items: center; text-align: center; margin-bottom: 10px; }
         .team-box { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .team-logo { width: 45px; height: 45px; object-fit: contain; }
         .team-name { font-size: 0.85rem; font-weight: bold; }
         .score-box { text-align: center; padding: 0 10px; }
         .final-score { font-size: 1.8rem; font-weight: 800; color: var(--accent); letter-spacing: 2px; }
         .vs { font-weight: bold; color: var(--accent); font-size: 0.9rem; }
-        
-        .bet-history { 
-            margin-top: 15px; 
-            padding-top: 10px; 
-            border-top: 1px dashed #475569; 
-            font-size: 0.8rem; 
-        }
-        .bet-row { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 4px; 
-            padding: 6px 10px; 
-            border-radius: 6px;
-            background: rgba(15, 23, 42, 0.4);
-        }
+        .bet-history { margin-top: 15px; padding-top: 10px; border-top: 1px dashed #475569; font-size: 0.8rem; }
+        .bet-row { display: flex; justify-content: space-between; margin-bottom: 4px; padding: 6px 10px; border-radius: 6px; background: rgba(15, 23, 42, 0.4); }
         .status-win { color: var(--win); font-weight: bold; }
         .status-lose { color: var(--lose); font-weight: bold; }
         .active-bet { color: var(--accent); }
-
         .odds { display: flex; justify-content: space-around; margin-top: 15px; gap: 8px; }
         .odd-btn { background: #334155; flex: 1; padding: 10px 5px; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
-        .odd-btn:hover { background: #475569; transform: translateY(-2px); }
         .settled-badge { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; background: #475569; }
     </style>
 </head>
@@ -164,11 +70,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-        getFirestore, doc, getDoc, setDoc, updateDoc, 
-        collection, onSnapshot, addDoc, query, 
-        where, getDocs, increment 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, onSnapshot, addDoc, query, where, getDocs, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
@@ -183,33 +85,9 @@
     const db = getFirestore(app);
 
     const GAMES = [
-        {
-            id: "m3",
-            teamA: "Van", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/1078400_small.png", coefA: 2.3,
-            teamB: "Urartu", logoB: "https://images.fotmob.com/image_resources/logo/teamlogo/7979_small.png", coefB: 1.4,
-            coefD: 1.9, 
-            status: "finished",
-            score: "1 - 2",
-            winner: "B"
-        },
-        {
-            id: "m1",
-            teamA: "Bayern Munich", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/9823_small.png", coefA: 1.4,
-            teamB: "Real Madrid", logoB: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg", coefB: 1.65,
-            coefD: 3.2,
-            status: "open",
-            score: null,
-            winner: null
-        },
-        {
-            id: "m2",
-            teamA: "FC Porto", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/9773_small.png", coefA: 2.1,
-            teamB: "Nottm Forest", logoB: "https://upload.wikimedia.org/wikipedia/en/e/e5/Nottingham_Forest_F.C._logo.svg", coefB: 3.5,
-            coefD: 2.8,
-            status: "finished",
-            score: "1 - 1", 
-            winner: "D" 
-        }
+        { id: "m3", teamA: "Van", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/1078400_small.png", coefA: 2.3, teamB: "Urartu", logoB: "https://images.fotmob.com/image_resources/logo/teamlogo/7979_small.png", coefB: 1.4, coefD: 1.9, status: "finished", score: "1 - 2", winner: "B" },
+        { id: "m1", teamA: "Bayern Munich", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/9823_small.png", coefA: 1.4, teamB: "Real Madrid", logoB: "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg", coefB: 1.65, coefD: 3.2, status: "open", score: null, winner: null },
+        { id: "m2", teamA: "FC Porto", logoA: "https://images.fotmob.com/image_resources/logo/teamlogo/9773_small.png", coefA: 2.1, teamB: "Nottm Forest", logoB: "https://upload.wikimedia.org/wikipedia/en/e/e5/Nottingham_Forest_F.C._logo.svg", coefB: 3.5, coefD: 2.8, status: "finished", score: "1 - 1", winner: "D" }
     ];
 
     const USER_CONFIG = {
@@ -229,7 +107,7 @@
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'block';
             startListeners();
-            processSettlements(); // Run calculation on login
+            setTimeout(processSettlements, 1000); // Wait 1 sec for data to settle
         } else {
             alert("Սխալ կոդ!");
         }
@@ -248,21 +126,13 @@
             const users = [];
             snapshot.forEach(doc => users.push({id: doc.id, ...doc.data()}));
             users.sort((a,b) => b.balance - a.balance);
-            
             const list = document.getElementById('leaderboard-list');
             list.innerHTML = "";
             users.forEach(u => {
                 if(USER_CONFIG[u.id]) {
-                    list.innerHTML += `
-                        <div class="lb-row">
-                            <img src="${USER_CONFIG[u.id].pic}" class="user-img" style="width:30px; height:30px">
-                            <span style="flex:1">${USER_CONFIG[u.id].name}</span>
-                            <strong>${u.balance} ֏</strong>
-                        </div>
-                    `;
+                    list.innerHTML += `<div class="lb-row"><img src="${USER_CONFIG[u.id].pic}" class="user-img" style="width:30px; height:30px"><span style="flex:1">${USER_CONFIG[u.id].name}</span><strong>${u.balance} ֏</strong></div>`;
                 }
             });
-
             const me = users.find(u => u.id === currentUser);
             if (me) {
                 document.getElementById('my-balance').innerText = me.balance + " ֏";
@@ -277,144 +147,66 @@
         const up = document.getElementById('upcoming-matches');
         const past = document.getElementById('past-matches');
         up.innerHTML = ""; past.innerHTML = "";
-
         for (const game of GAMES) {
-            const html = `
-                <div class="match-card">
-                    ${game.status === 'finished' ? `<div class="settled-badge">ԱՎԱՐՏՎԱԾ</div>` : ''}
-                    <div class="teams">
-                        <div class="team-box">
-                            <img src="${game.logoA}" class="team-logo">
-                            <div class="team-name">${game.teamA}</div>
-                        </div>
-                        <div class="score-box">
-                            ${game.status === 'finished' ? `<div class="final-score">${game.score}</div>` : `<div class="vs">VS</div>`}
-                        </div>
-                        <div class="team-box">
-                            <img src="${game.logoB}" class="team-logo">
-                            <div class="team-name">${game.teamB}</div>
-                        </div>
-                    </div>
-                    ${game.status === 'open' ? `
-                        <div class="odds">
-                            <div class="odd-btn" onclick="window.placeBet('${game.id}', 'A', ${game.coefA})">
-                                1<br><b>${game.coefA}</b>
-                            </div>
-                            <div class="odd-btn" onclick="window.placeBet('${game.id}', 'D', ${game.coefD})">
-                                X<br><b>${game.coefD}</b>
-                            </div>
-                            <div class="odd-btn" onclick="window.placeBet('${game.id}', 'B', ${game.coefB})">
-                                2<br><b>${game.coefB}</b>
-                            </div>
-                        </div>
-                    ` : ''}
-                    <div class="bet-history" id="bets-${game.id}">
-                        <div style="text-align:center; color:#64748b; font-size:0.7rem">Բեռնվում են խաղադրույքները...</div>
-                    </div>
-                </div>
-            `;
-            if (game.status === 'open') {
-                up.innerHTML += html;
-                listenToBets(game.id, null);
-            } else {
-                past.innerHTML += html;
-                listenToBets(game.id, game.winner);
-            }
+            const html = `<div class="match-card">${game.status === 'finished' ? `<div class="settled-badge">ԱՎԱՐՏՎԱԾ</div>` : ''}<div class="teams"><div class="team-box"><img src="${game.logoA}" class="team-logo"><div class="team-name">${game.teamA}</div></div><div class="score-box">${game.status === 'finished' ? `<div class="final-score">${game.score}</div>` : `<div class="vs">VS</div>`}</div><div class="team-box"><img src="${game.logoB}" class="team-logo"><div class="team-name">${game.teamB}</div></div></div>${game.status === 'open' ? `<div class="odds"><div class="odd-btn" onclick="window.placeBet('${game.id}', 'A', ${game.coefA})">1<br><b>${game.coefA}</b></div><div class="odd-btn" onclick="window.placeBet('${game.id}', 'D', ${game.coefD})">X<br><b>${game.coefD}</b></div><div class="odd-btn" onclick="window.placeBet('${game.id}', 'B', ${game.coefB})">2<br><b>${game.coefB}</b></div></div>` : ''}<div class="bet-history" id="bets-${game.id}"><div style="text-align:center; color:#64748b; font-size:0.7rem">Բեռնվում են խաղադրույքները...</div></div></div>`;
+            if (game.status === 'open') { up.innerHTML += html; listenToBets(game.id, null); }
+            else { past.innerHTML += html; listenToBets(game.id, game.winner); }
         }
     }
 
     function listenToBets(gameId, winner) {
-        const q = query(collection(db, "qyach_bets"), where("gameId", "==", gameId));
-        onSnapshot(q, (snap) => {
+        onSnapshot(query(collection(db, "qyach_bets"), where("gameId", "==", gameId)), (snap) => {
             const container = document.getElementById(`bets-${gameId}`);
             if (!container) return;
-            
-            if (snap.empty) {
-                container.innerHTML = `<div style="text-align:center; color:#64748b; font-size:0.7rem">Դեռ խաղադրույքներ չկան</div>`;
-                return;
-            }
-
-            let title = winner ? "ԱՐԴՅՈՒՆՔՆԵՐ" : "ԱԿՏԻՎ ԽԱՂԱԴՐՈՒՅՔՆԵՐ";
-            let html = `<div style="font-weight:bold; margin-bottom:8px; font-size:0.7rem; color:var(--accent)">${title}</div>`;
-            
+            if (snap.empty) { container.innerHTML = `<div style="text-align:center; color:#64748b; font-size:0.7rem">Դեռ խաղադրույքներ չկան</div>`; return; }
+            let html = `<div style="font-weight:bold; margin-bottom:8px; font-size:0.7rem; color:var(--accent)">${winner ? "ԱՐԴՅՈՒՆՔՆԵՐ" : "ԱԿՏԻՎ ԽԱՂԱԴՐՈՒՅՔՆԵՐ"}</div>`;
             snap.forEach(doc => {
                 const bet = doc.data();
                 const user = USER_CONFIG[bet.userId];
                 const teamLabel = bet.team === 'A' ? '1' : (bet.team === 'D' ? 'X' : '2');
-                
-                let statusHtml = "";
-                if (winner) {
-                    const isWin = bet.team === winner;
-                    statusHtml = isWin ? `<span class="status-win">ՇԱՀՈՒՄ +${Math.floor(bet.amount * bet.coef)}</span>` : `<span class="status-lose">ՊԱՐՏՈՒԹՅՈՒՆ</span>`;
-                } else {
-                    statusHtml = `<span class="active-bet">Ընտրված: ${teamLabel}</span>`;
-                }
-
-                html += `
-                    <div class="bet-row">
-                        <span>${user ? user.name : bet.userId} (${bet.amount} ֏)</span>
-                        ${statusHtml}
-                    </div>
-                `;
+                let statusHtml = winner ? (bet.team === winner ? `<span class="status-win">ՇԱՀՈՒՄ +${Math.floor(bet.amount * bet.coef)}</span>` : `<span class="status-lose">ՊԱՐՏՈՒԹՅՈՒՆ</span>`) : `<span class="active-bet">Ընտրված: ${teamLabel}</span>`;
+                html += `<div class="bet-row"><span>${user ? user.name : bet.userId} (${bet.amount} ֏)</span>${statusHtml}</div>`;
             });
             container.innerHTML = html;
         });
     }
 
     window.placeBet = async (gameId, team, coef) => {
-        const game = GAMES.find(g => g.id === gameId);
-        if (!game || game.status !== 'open') return;
-
-        const q = query(collection(db, "qyach_bets"), where("userId", "==", currentUser), where("gameId", "==", gameId));
-        const existingBets = await getDocs(q);
-        if (!existingBets.empty) { alert("Դուք արդեն կատարել եք խաղադրույք այս խաղի համար:"); return; }
-
-        const amountStr = prompt("Մուտքագրեք չափը (֏):");
-        const amount = parseInt(amountStr);
-        if (!amount || isNaN(amount) || amount <= 0) return;
-
+        const amount = parseInt(prompt("Մուտքագրեք չափը (֏):"));
+        if (!amount || amount <= 0) return;
         const userRef = doc(db, "qyach_users", currentUser);
         const userSnap = await getDoc(userRef);
-        const currentBalance = userSnap.data().balance;
-
-        if (currentBalance < amount) { alert("Բավարար միջոցներ չկան:"); return; }
-
-        try {
-            // Deduct balance safely using negative increment
-            await updateDoc(userRef, { balance: increment(-amount) });
-            await addDoc(collection(db, "qyach_bets"), {
-                userId: currentUser,
-                gameId: gameId,
-                team: team,
-                amount: amount,
-                coef: coef,
-                settled: false,
-                timestamp: new Date()
-            });
-            alert("Խաղադրույքն ընդունված է ✅");
-        } catch (e) { alert("Սխալ տեղի ունեցավ:"); }
+        if (userSnap.data().balance < amount) { alert("Բավարար միջոցներ չկան:"); return; }
+        await updateDoc(userRef, { balance: increment(-amount) });
+        await addDoc(collection(db, "qyach_bets"), { userId: currentUser, gameId, team, amount, coef, settled: false, timestamp: new Date() });
+        alert("Խաղադրույքն ընդունված է ✅");
     };
 
     async function processSettlements() {
+        console.log("Checking settlements...");
         const q = query(collection(db, "qyach_bets"), where("userId", "==", currentUser), where("settled", "==", false));
-        const querySnapshot = await getDocs(q);
-
-        for (const betDoc of querySnapshot.docs) {
+        const snap = await getDocs(q);
+        
+        for (const betDoc of snap.docs) {
             const bet = betDoc.data();
             const game = GAMES.find(g => g.id === bet.gameId);
 
-            // Only settle if game is marked "finished" in the local GAMES array
             if (game && game.status === 'finished') {
-                const userRef = doc(db, "qyach_users", currentUser);
+                const isWin = game.winner === bet.team;
+                const winAmt = isWin ? Math.floor(bet.amount * bet.coef) : 0;
                 
-                if (game.winner === bet.team) {
-                    const winAmount = Math.floor(bet.amount * bet.coef);
-                    // FIXED: Atomic increment ensures we don't lose money on balance updates
-                    await updateDoc(userRef, { balance: increment(winAmount) });
-                }
-                
-                // Mark the bet as settled in Firebase so it doesn't pay out again next time
-                await updateDoc(doc(db, "qyach_bets", betDoc.id), { settled: true });
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const userRef = doc(db, "qyach_users", currentUser);
+                        // Update balance ONLY if they won
+                        if (winAmt > 0) {
+                            transaction.update(userRef, { balance: increment(winAmt) });
+                        }
+                        // ALWAYS mark as settled so it doesn't process again
+                        transaction.update(betDoc.ref, { settled: true });
+                    });
+                    if (winAmt > 0) alert(`Շնորհավոր! Դուք հաղթել եք ${winAmt} ֏:`);
+                } catch (e) { console.error("Settlement error:", e); }
             }
         }
     }
