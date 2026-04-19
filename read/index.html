@@ -1139,14 +1139,14 @@
 
      if (isWord) {
        // Single Word: Show definition and treat keywords as synonyms
-       html = `<p>${escapeHTML(simpleExplanation)}</p>`;
+       html = `<p><strong>${escapeHTML(simpleExplanation)}</strong></p>`;
        if (keywords?.length) {
          const synonyms = keywords.map(kw => escapeHTML(kw.term)).join(', ');
          html += `<p class="synonyms-list"><span>Synonyms:</span> ${synonyms}</p>`;
        }
      } else {
-       // Phrase: Minimalist breakdown with arrow
-       html = `<p>“${escapeHTML(textToExplain)}” <span class="breakdown-arrow">→</span> ${escapeHTML(simpleExplanation)}</p>`;
+       // Phrase: Lead with the breakdown directly, no repetition of selected text
+       html = `<p><strong>${escapeHTML(simpleExplanation)}</strong></p>`;
        if (contextualMeaning && contextualMeaning.toLowerCase() !== simpleExplanation.toLowerCase()) {
          html += `<p class="context-subtext">${escapeHTML(contextualMeaning)}</p>`;
        }
