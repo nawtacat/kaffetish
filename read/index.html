@@ -79,7 +79,7 @@
    .reader-controls { display: flex; align-items: center; gap: 24px; }
    .reader-controls.hidden { display: none; }
    .control-group { display: flex; align-items: center; gap: 8px; }
-   .book-title { font-weight: 500; max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
+   .book-title { font-weight: 500; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
    .page-indicator input {
         width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
         padding: 6px; border: 1px solid var(--border-color); background-color: var(--bg);
@@ -105,12 +105,21 @@
    .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
    
    main {
-        flex-grow: 1;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 24px 24px 80px; /* Top, Left/Right, Bottom */
+        display: flex;
+        flex-direction: row;
+        height: calc(100vh - 60px);
+        overflow: hidden;
    }
-   
+
+   .reader-view {
+        width: 70%;
+        height: 100%;
+        overflow-y: auto;
+        padding: 40px 24px 100px;
+        border-right: 1px solid var(--border-color);
+        box-sizing: border-box;
+   }
+
    .fallback-view, .loading-view {
         display: flex; flex-direction: column; justify-content: center; align-items: center;
         text-align: center; height: 100%;
@@ -214,22 +223,46 @@
    }
 
    .ai-panel {
-        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-        width: min(800px, 95vw); background-color: color-mix(in srgb, var(--bg) 92%, transparent);
-        backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-        border: 1px solid var(--border-color); border-radius: 12px;
-        box-shadow: 0 20px 60px var(--shadow-color); z-index: 2100; padding: 20px 24px;
-        display: none; flex-direction: column; animation: slideUp 0.3s ease-out;
+        width: 30%;
+        height: 100%;
+        background-color: color-mix(in srgb, var(--bg) 95%, transparent);
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        box-sizing: border-box;
+        z-index: 10;
    }
-   @keyframes slideUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-   .ai-panel-content { flex-grow: 1; }
-   .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+   .ai-panel-content { 
+        flex-grow: 1; 
+        display: flex; 
+        flex-direction: column; 
+        overflow: hidden; 
+   }
+   .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 20px; display: flex; align-items: center; gap: 8px; }
    .ai-title i { color: var(--accent); }
-   .ai-quote { display: block; border-left: 3px solid var(--accent); padding-left: 12px; margin: 0 0 16px 0; font-style: italic; color: var(--subtle); font-size: 0.95rem; }
-   .ai-text-content { max-height: 40vh; overflow-y: auto; font-size: 1rem; line-height: 1.7; padding-right: 10px; white-space: pre-wrap; word-wrap: break-word; }
-   .ai-panel-actions { position: absolute; top: 12px; right: 10px; display: flex; gap: 4px; }
-   .ai-panel-actions button { background: var(--border-color); color: var(--subtle); border: 0; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; transition: color 0.2s ease, background-color 0.2s ease; }
-   .ai-panel-actions button:hover, .ai-panel-actions button:active { color: var(--ink); background-color: color-mix(in srgb, var(--subtle) 30%, transparent); }
+   .ai-text-content { 
+        flex-grow: 1;
+        overflow-y: auto; 
+        font-size: 0.95rem; 
+        line-height: 1.6; 
+        padding-right: 10px; 
+   }
+   
+   .chat-message { margin-bottom: 24px; animation: fadeIn 0.3s ease-out; }
+   .chat-query { 
+        font-weight: 600; 
+        color: var(--accent); 
+        margin-bottom: 8px; 
+        font-family: var(--font-ui);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 4px;
+   }
+   .chat-response { color: var(--ink); }
+   .chat-response p { margin: 0 0 12px 0; }
+
+   .ai-panel-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
+   .ai-panel-actions button { background: var(--border-color); color: var(--subtle); border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: color 0.2s ease, background-color 0.2s ease; font-family: var(--font-ui); font-size: 0.8rem; }
+   .ai-panel-actions button:hover { color: var(--ink); }
 
    .mobile-page-indicator, .mobile-menu-toggle { display: none; }
    .mobile-menu-overlay {
@@ -501,22 +534,6 @@
         <button id="btn-highlight"><i class="fa-solid fa-marker"></i> Highlight</button>
         <button id="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
     </div>
-    <div id="ai-panel" class="ai-panel">
-        <div class="ai-panel-content">
-            <h4 class="ai-title"><i class="fa-solid fa-star"></i>Explanation</h4>
-            <blockquote id="ai-quote" class="ai-quote hidden"></blockquote>
-            <div id="ai-content" class="ai-text-content"></div>
-        </div>
-        <div class="ai-panel-actions">
-            <button id="ai-copy" title="Copy Explanation" aria-label="Copy Explanation"><i class="fa-regular fa-copy"></i></button>
-            <button id="ai-close" title="Close Panel" aria-label="Close Panel"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-    </div>
-    
-    <button id="mobile-action-btn" class="mobile-action-btn" aria-hidden="true">
-        <i id="mobile-action-icon" class="fa-solid fa-volume-high"></i>
-        <span id="mobile-action-text">Speak</span>
-    </button>
 
    <script type="module">
  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -742,8 +759,7 @@
    tooltipSpeak: document.getElementById('btn-speak'),
    tooltipCopy: document.getElementById('btn-copy'),
    aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
-   aiQuote: document.getElementById('ai-quote'),
-   aiClose: document.getElementById('ai-close'), aiCopy: document.getElementById('ai-copy'),
+   aiClear: document.getElementById('ai-clear'), aiCopy: document.getElementById('ai-copy'),
    mobilePageIndicator: document.getElementById('mobile-page-indicator'),
    mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
    mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
@@ -1034,32 +1050,51 @@
    }
  }
 
+ function getExpandedContext(range) {
+    const fullText = DOM.pageContent.innerText;
+    const selectedText = range.toString().trim();
+    const words = fullText.split(/\s+/);
+    const selectedWords = selectedText.split(/\s+/);
+    
+    // Find rough starting position of selection in the word array
+    const startIdx = words.findIndex((w, i) => words.slice(i, i + selectedWords.length).join(' ').includes(selectedWords[0]));
+    
+    if (startIdx === -1) return selectedText;
+
+    const contextStart = Math.max(0, startIdx - 24);
+    const contextEnd = Math.min(words.length, startIdx + selectedWords.length + 24);
+    
+    return words.slice(contextStart, contextEnd).join(' ');
+ }
+
  async function handleExplain() {
    const textToExplain = state.lastSelectionText;
-   const contextText = state.lastSelectionContext;
-
-   if (!textToExplain || !explainBookTextFn) {
-     console.warn("handleExplain called with no text or Firebase function not ready.");
-     return;
-   }
+   const range = state.lastSelectionRange;
+   
+   if (!textToExplain || !explainBookTextFn) return;
+   
+   const expandedContext = range ? getExpandedContext(range) : state.lastSelectionContext;
 
    clearSelection();
    await trackExplanationRequest(textToExplain);
-
-   if (isTouchDevice) {
-     enterExplanationView('<div class="spinner"></div>');
-   } else {
-     DOM.aiQuote.textContent = `"${textToExplain}"`;
-     DOM.aiQuote.classList.remove('hidden');
-     DOM.aiPanel.style.display = "flex";
-     DOM.aiContent.innerHTML = '<div><i class="fa-solid fa-spinner fa-spin"></i> Thinking...</div>';
-   }
+   
+   const messageId = 'msg-' + Date.now();
+   const chatEntry = document.createElement('div');
+   chatEntry.className = 'chat-message';
+   chatEntry.innerHTML = `
+     <div class="chat-query">"${textToExplain}"</div>
+     <div id="${messageId}" class="chat-response"><i class="fa-solid fa-spinner fa-spin"></i> Librarian is thinking...</div>
+   `;
+   
+   if (DOM.aiContent.querySelector('p[style*="italic"]')) DOM.aiContent.innerHTML = '';
+   DOM.aiContent.appendChild(chatEntry);
+   DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
 
    try {
      const { data } = await explainBookTextFn({
        text: textToExplain,
        bookTitle: state.bookTitle,
-       contextText: contextText
+       contextText: expandedContext
      });
 
      const { simpleExplanation, contextualMeaning, keywords } = data.explanation;
@@ -1076,20 +1111,13 @@
        formattedExplanation += '</ul>';
      }
 
-     if (isTouchDevice) {
-       updateExplanationView(formattedExplanation);
-     } else {
-       DOM.aiContent.innerHTML = formattedExplanation;
-     }
+     document.getElementById(messageId).innerHTML = formattedExplanation;
+     DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
 
    } catch (err) {
      console.error("Error fetching explanation:", err);
-     const errorMsg = "Sorry, an error occurred while getting the explanation.";
-     if (isTouchDevice) {
-       updateExplanationView(`<p>${errorMsg}</p>`);
-     } else {
-       DOM.aiContent.textContent = errorMsg;
-     }
+     const errorMsg = "Sorry, the librarian is busy at the moment.";
+     document.getElementById(messageId).textContent = errorMsg;
    }
  }
 
@@ -1379,8 +1407,14 @@
      DOM.body.classList.remove('menu-open');
    });
 
-   DOM.aiClose.addEventListener("click", () => DOM.aiPanel.style.display = "none");
-   DOM.aiCopy.addEventListener("click", () => { if (DOM.aiContent.textContent) navigator.clipboard.writeText(DOM.aiContent.textContent); flashAI("Copied!"); });
+   DOM.aiClear.addEventListener("click", () => { DOM.aiContent.innerHTML = '<p style="color:var(--subtle); font-style: italic;">Chat cleared.</p>'; });
+   DOM.aiCopy.addEventListener("click", () => { 
+       const responses = DOM.aiContent.querySelectorAll('.chat-response');
+       if (responses.length) {
+           navigator.clipboard.writeText(responses[responses.length-1].innerText);
+           flashAI("Last explanation copied!");
+       }
+   });
    
    // *** MODIFIED: Toggle is no longer in the header ***
    // DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
@@ -1466,11 +1500,33 @@
  function setupSelectionHandler() {
    const contentArea = DOM.pageContent;
 
-   const handleSelection = () => {
+   const handleSelection = (e) => {
      setTimeout(() => {
        if (state.isExplanationViewActive) return;
 
        const sel = window.getSelection();
+       if (!sel || sel.isCollapsed) {
+           if (isTouchDevice) {
+               DOM.mobileActionBtn.classList.remove('visible');
+           } else {
+               hideTooltip();
+           }
+           return;
+       }
+
+       // Snapping logic: Extend selection to word boundaries
+       if (sel.anchorNode && sel.anchorNode === sel.focusNode) {
+           const range = sel.getRangeAt(0);
+           while (range.startOffset > 0 && /\w/.test(range.startContainer.textContent[range.startOffset - 1])) {
+               range.setStart(range.startContainer, range.startOffset - 1);
+           }
+           while (range.endOffset < range.endContainer.textContent.length && /\w/.test(range.endContainer.textContent[range.endOffset])) {
+               range.setEnd(range.endContainer, range.endOffset + 1);
+           }
+           sel.removeAllRanges();
+           sel.addRange(range);
+       }
+
        const text = sel ? sel.toString().trim() : '';
 
        if (text.length >= 1 && !sel.isCollapsed) {
