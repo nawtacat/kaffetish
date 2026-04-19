@@ -875,7 +875,11 @@
    state.bookTitle = title;
 
    try {
-     const response = await fetch(sourceUrl);
+     // Workaround: Using a CORS proxy to bypass Firebase's strict origin policy
+     // This prepends a proxy service that adds the necessary headers.
+     const proxyUrl = "https://api.allorigins.win/raw?url=";
+     const response = await fetch(proxyUrl + encodeURIComponent(sourceUrl));
+     
      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
      const pdfData = await response.arrayBuffer();
 
