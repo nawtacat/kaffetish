@@ -1,682 +1,683 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Kaffetish</title>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+        <title>Kaffetish</title>
 
-    <!-- PWA manifest -->
-    <link rel="manifest" href="/manifest.json">
+        <!-- PWA manifest -->
+        <link rel="manifest" href="/manifest.json">
 
-    <!-- iOS specific icons -->
-    <link rel="apple-touch-icon" href="https://kaffetish.club/img/kaffetishicon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://kaffetish.club/img/kaffetishicon.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="https://kaffetish.club/img/kaffetishicon.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="https://kaffetish.club/img/kaffetishicon.png">
+        <!-- iOS specific icons -->
+        <link rel="apple-touch-icon" href="https://kaffetish.club/img/kaffetishicon.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="https://kaffetish.club/img/kaffetishicon.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="https://kaffetish.club/img/kaffetishicon.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="https://kaffetish.club/img/kaffetishicon.png">
 
-    <link rel="icon" type="image/png" href="https://kaffetish.club/img/kaffetishrounded.png">
+        <link rel="icon" type="image/png" href="https://kaffetish.club/img/kaffetishrounded.png">
 
-    <!-- iOS app-like behavior -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Kaffetish">
+        <!-- iOS app-like behavior -->
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="Kaffetish">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    
-    
-    <style>
-        :root {
-            --bg: #FDFBF7;
-            --ink: #2C2B2A;
-            --accent: #FF3A44;
-            --subtle: #8A8886;
-            --border-color: #EAE8E4;
-            --shadow-color: rgba(44, 43, 42, 0.1);
-            --font-main: 'Lora', serif;
-            --font-ui: 'Poppins', sans-serif;
-        }
-
-        body.dark-mode {
-            --bg: #21201F;
-            --ink: #EAE8E4;
-            --subtle: #999591;
-            --border-color: #3A3837;
-            --shadow-color: rgba(0, 0, 0, 0.25);
-        }
-
-        ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
-
-        body {
-    /* --- Keep your existing styles --- */
-    font-family: var(--font-ui);
-    background-color: var(--bg);
-    color: var(--ink);
-    transition: background-color 0.3s ease, color 0.3s ease;
-    margin: 0;
-    
-    /* Update body padding to account for the new, taller header */
-    padding-top: calc(60px + env(safe-area-inset-top));
-}
-
-        /* --- Header --- */
-        .app-header {
-    position: fixed; top: 0; left: 0; width: 100%;
-    
-    /* Adjust height and add padding for the safe area */
-    height: calc(60px + env(safe-area-inset-top));
-    padding-top: env(safe-area-inset-top);
-
-    /* --- Keep the rest of your styles --- */
-    background-color: color-mix(in srgb, var(--bg) 85%, transparent);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-color); z-index: 1000;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-    
-    /* Add this for better layout calculations */
-    box-sizing: border-box; 
-}
-        .header-content {
-            max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .logo {
-            display: flex;
-            align-items: baseline;
-            font-size: 1.6rem;
-            font-weight: 500;
-            letter-spacing: -0.5px;
-            color: var(--accent);
-            font-family: var(--font-main);
-        }
-        .logo .tagline {
-            font-size: 0.6em;
-            font-style: italic;
-            font-weight: 400;
-            color: var(--subtle);
-            letter-spacing: normal;
-            margin-left: 8px;
-        }
-        body.dark-mode .logo { color: var(--ink); }
-
-        .header-actions { display: flex; align-items: center; gap: 16px; }
-        .header-actions button, .header-actions a {
-            background: transparent; border: none; color: var(--subtle); border-radius: 6px;
-            padding: 8px 10px; cursor: pointer; font-size: 1rem;
-            transition: color 0.2s ease, background-color 0.2s ease;
-            text-decoration: none;
-        }
-        .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
         
-        /* --- Upload Modal --- */
-        .modal {
-            display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-        }
-        .modal-content {
-            background-color: var(--bg); margin: 10% auto; padding: 32px;
-            border: 1px solid var(--border-color); width: 90%; max-width: 500px;
-            border-radius: 16px; box-shadow: 0 20px 60px var(--shadow-color);
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .modal-header h3 { font-family: var(--font-main); margin: 0; font-size: 1.5rem; }
-        .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--subtle); }
         
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; }
-        .form-group input {
-            width: 100%; padding: 12px; border: 1px solid var(--border-color);
-            border-radius: 8px; background: var(--bg); color: var(--ink);
-            box-sizing: border-box; font-family: var(--font-ui);
-        }
-        .upload-btn {
-            width: 100%; padding: 14px; background-color: var(--accent); color: white;
-            border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
-            transition: opacity 0.2s; margin-top: 10px;
-        }
-        .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        <style>
+            :root {
+                --bg: #FDFBF7;
+                --ink: #2C2B2A;
+                --accent: #FF3A44;
+                --subtle: #8A8886;
+                --border-color: #EAE8E4;
+                --shadow-color: rgba(44, 43, 42, 0.1);
+                --font-main: 'Lora', serif;
+                --font-ui: 'Poppins', sans-serif;
+            }
+
+            body.dark-mode {
+                --bg: #21201F;
+                --ink: #EAE8E4;
+                --subtle: #999591;
+                --border-color: #3A3837;
+                --shadow-color: rgba(0, 0, 0, 0.25);
+            }
+
+            ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+
+            body {
+        /* --- Keep your existing styles --- */
+        font-family: var(--font-ui);
+        background-color: var(--bg);
+        color: var(--ink);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        margin: 0;
         
-        .progress-bar {
-            width: 100%; height: 6px; background: var(--border-color);
-            border-radius: 3px; margin-top: 15px; overflow: hidden; display: none;
-        }
-        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
-
-        /* --- Main Content --- */
-        main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
-        /* --- Footer --- */
-        /* --- Footer --- */
-.app-footer {
-    text-align: center;
-    padding: 32px 24px;
-    margin-top: 48px;
-    border-top: 1px solid var(--border-color);
-    font-size: 0.9rem;
-    transition: border-color 0.3s ease;
-}
-
-.footer-content {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap; /* Allows items to wrap if needed */
-    gap: 0.5em; /* The space between items */
-    color: var(--subtle);
-}
-
-/* This adds the bullet point separator after each item, except the last one */
-.footer-content > *:not(:last-child)::after {
-    content: "•";
-    margin-left: 0.5em;
-}
-
-.app-footer a {
-    color: var(--ink);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.app-footer a:hover {
-    color: var(--accent);
-    text-decoration: underline;
-}
-        /* --- Featured Author Section --- */
-        .featured-author-section {
-            margin-bottom: 64px;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 32px;
-            background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
-        }
-        .featured-author-header h3 {
-            font-family: var(--font-main);
-            font-size: 1.5rem;
-            font-weight: 500;
-            margin: 0 0 24px 0;
-            text-align: left;
-            position: relative;
-        }
-        .featured-author-header h3::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -8px;
-            width: 50px;
-            height: 2px;
-            background-color: var(--accent);
-        }
-
-        .featured-author-content {
-            display: flex;
-            gap: 32px;
-            align-items: flex-start;
-        }
-        .author-info {
-            flex: 0 0 220px;
-            text-align: center;
-        }
-        .author-info img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 16px;
-            border: 4px solid var(--bg);
-            box-shadow: 0 4px 15px var(--shadow-color);
-        }
-        .author-info h4 {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0 0 8px 0;
-        }
-        .author-info p {
-            font-size: 0.9rem;
-            color: var(--subtle);
-            line-height: 1.6;
-            margin: 0;
-        }
-        .author-books {
-            flex: 1;
-        }
-        
-        /* --- Browse Section --- */
-        .browse-section h2 {
-            font-family: var(--font-main); font-size: 2.5rem; font-weight: 500;
-            margin-bottom: 32px; text-align: center;
-        }
-        .search-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto 48px;
-        }
-        #search-input {
-            width: 100%; padding: 12px 16px 12px 40px; font-size: 1rem;
-            font-family: var(--font-ui); border: 1px solid var(--border-color);
-            border-radius: 24px; background-color: var(--bg); color: var(--ink);
-            box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        #search-input:focus {
-            outline: none; border-color: var(--accent);
-            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-        }
-        .search-container .fa-search {
-            position: absolute; left: 16px; top: 50%;
-            transform: translateY(-50%); color: var(--subtle);
-        }
-
-        .book-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 32px 24px;
-        }
-        .author-books .book-grid {
-             grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        }
-
-        .book-card {
-            text-decoration: none; cursor: pointer; text-align: center;
-            transition: transform 0.2s ease-out; display: block;
-        }
-        .book-card:hover { transform: translateY(-5px); }
-        .book-cover {
-            width: 100%; aspect-ratio: 2 / 3; border-radius: 8px;
-            overflow: hidden; box-shadow: 0 8px 20px var(--shadow-color);
-            margin-bottom: 12px; background-color: var(--border-color);
-        }
-        .book-cover img { width: 100%; height: 100%; object-fit: cover; }
-        .book-card-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); }
-        .book-card-author { font-size: 0.8rem; color: var(--subtle); }
-        
-        .no-results {
-            text-align: center; color: var(--subtle); padding: 40px;
-            grid-column: 1 / -1;
-        }
-
-        @media (max-width: 992px) {
-    main { 
-        padding: 24px 16px; 
-    }
-    .featured-author-content { 
-        flex-direction: column; 
-        align-items: center; 
-    }
-    .author-info { 
-        flex: 0 0 auto; 
-        margin-bottom: 24px; 
+        /* Update body padding to account for the new, taller header */
+        padding-top: calc(60px + env(safe-area-inset-top));
     }
 
-    /* This hides the tagline on mobile */
-    .logo .tagline {
-        display: none;
+            /* --- Header --- */
+            .app-header {
+        position: fixed; top: 0; left: 0; width: 100%;
+        
+        /* Adjust height and add padding for the safe area */
+        height: calc(60px + env(safe-area-inset-top));
+        padding-top: env(safe-area-inset-top);
+
+        /* --- Keep the rest of your styles --- */
+        background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-color); z-index: 1000;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+        
+        /* Add this for better layout calculations */
+        box-sizing: border-box; 
     }
-            @media (max-width: 480px) {
+            .header-content {
+                max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+                display: flex; justify-content: space-between; align-items: center;
+            }
+            .logo {
+                display: flex;
+                align-items: baseline;
+                font-size: 1.6rem;
+                font-weight: 500;
+                letter-spacing: -0.5px;
+                color: var(--accent);
+                font-family: var(--font-main);
+            }
+            .logo .tagline {
+                font-size: 0.6em;
+                font-style: italic;
+                font-weight: 400;
+                color: var(--subtle);
+                letter-spacing: normal;
+                margin-left: 8px;
+            }
+            body.dark-mode .logo { color: var(--ink); }
+
+            .header-actions { display: flex; align-items: center; gap: 16px; }
+            .header-actions button, .header-actions a {
+                background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+                padding: 8px 10px; cursor: pointer; font-size: 1rem;
+                transition: color 0.2s ease, background-color 0.2s ease;
+                text-decoration: none;
+            }
+            .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
+            
+            /* --- Upload Modal --- */
+            .modal {
+                display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
+                background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+            }
+            .modal-content {
+                background-color: var(--bg); margin: 10% auto; padding: 32px;
+                border: 1px solid var(--border-color); width: 90%; max-width: 500px;
+                border-radius: 16px; box-shadow: 0 20px 60px var(--shadow-color);
+            }
+            .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+            .modal-header h3 { font-family: var(--font-main); margin: 0; font-size: 1.5rem; }
+            .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--subtle); }
+            
+            .form-group { margin-bottom: 20px; }
+            .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; }
+            .form-group input {
+                width: 100%; padding: 12px; border: 1px solid var(--border-color);
+                border-radius: 8px; background: var(--bg); color: var(--ink);
+                box-sizing: border-box; font-family: var(--font-ui);
+            }
+            .upload-btn {
+                width: 100%; padding: 14px; background-color: var(--accent); color: white;
+                border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+                transition: opacity 0.2s; margin-top: 10px;
+            }
+            .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+            
+            .progress-bar {
+                width: 100%; height: 6px; background: var(--border-color);
+                border-radius: 3px; margin-top: 15px; overflow: hidden; display: none;
+            }
+            .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+
+            /* --- Main Content --- */
+            main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
+            /* --- Footer --- */
+            /* --- Footer --- */
+    .app-footer {
+        text-align: center;
+        padding: 32px 24px;
+        margin-top: 48px;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease;
+    }
+
     .footer-content {
-        flex-direction: column; /* Stack items vertically */
-        gap: 0.4em; /* Adjust spacing for vertical layout */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap; /* Allows items to wrap if needed */
+        gap: 0.5em; /* The space between items */
+        color: var(--subtle);
     }
-    /* Hide the bullet point separators on mobile */
+
+    /* This adds the bullet point separator after each item, except the last one */
     .footer-content > *:not(:last-child)::after {
-        content: "";
-        margin-left: 0;
+        content: "•";
+        margin-left: 0.5em;
     }
-}
 
-    /* --- LAYOUT FIX STARTS HERE --- */
-
-    .browse-section .book-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 24px;
+    .app-footer a {
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
     }
-    
-    .author-books .book-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 32px;
-        max-width: 280px;
-        margin: 0 auto;
+
+    .app-footer a:hover {
+        color: var(--accent);
+        text-decoration: underline;
     }
-}
-    </style>
-</head>
-<body>
-    <header class="app-header">
-        <div class="header-content">
-            <h1 class="logo">
-                Kaffetish
-                <span class="tagline">explained by the librarian</span>
-            </h1>
-            <div class="header-actions">
-                <button id="add-book-trigger" title="Add Book"><i class="fa-solid fa-plus"></i></button>
-                <a href="https://kaffetish.club/register" title="Profile"><i class="fa-solid fa-user"></i></a>
-                <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
-            </div>
-        </div>
-    </header>
-
-    <main>
-        <section class="library-view">
-            <section class="featured-author-section">
-                <div class="featured-author-header">
-                    <h3>Featured Author</h3>
-                </div>
-                <div class="featured-author-content">
-                    <div class="author-info">
-                        <img id="author-portrait" src="" alt="Portrait of the featured author">
-                        <h4 id="author-name"></h4>
-                        <p id="author-bio"></p>
-                    </div>
-                    <div class="author-books">
-                        <div id="author-book-grid" class="book-grid">
-                            </div>
-                    </div>
-                </div>
-            </section>
-    
-            <section class="browse-section">
-                <h2>Browse the Collection</h2>
-                <div class="search-container">
-                    <i class="fa-solid fa-search"></i>
-                    <input type="search" id="search-input" placeholder="Search all books by title or author...">
-                </div>
-                <div id="book-grid" class="book-grid">
-                    </div>
-            </section>
-        </section>
-    </main>
-
-    <!-- Upload Modal -->
-    <div id="upload-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Add to Library</h3>
-                <button class="close-modal" id="close-modal">&times;</button>
-            </div>
-            <form id="upload-form">
-                <div class="form-group">
-                    <label>Book Title</label>
-                    <input type="text" id="upload-title" placeholder="e.g. The Great Gatsby" required>
-                </div>
-                <div class="form-group">
-                    <label>Author</label>
-                    <input type="text" id="upload-author" placeholder="e.g. F. Scott Fitzgerald" required>
-                </div>
-                <div class="form-group">
-                    <label>PDF File</label>
-                    <input type="file" id="upload-pdf" accept=".pdf" required>
-                </div>
-                <div class="form-group">
-                    <label>Cover Image</label>
-                    <input type="file" id="upload-cover" accept="image/*" required>
-                </div>
-                <button type="submit" class="upload-btn" id="submit-upload">Upload Book</button>
-                <div class="progress-bar" id="upload-progress-bar">
-                    <div class="progress-fill" id="upload-progress-fill"></div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <footer class="app-footer">
-    <div class="footer-content">
-        <span>Curated by Aram A.</span>
-        <span>Goris, Armenia</span>
-        <a href="mailto:aramasatryan290@gmail.com">Get in touch</a>
-    </div>
-</footer>
-    
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-        const DOM = {
-            body: document.body,
-            bookGrid: document.getElementById('book-grid'),
-            authorBookGrid: document.getElementById('author-book-grid'),
-            authorPortrait: document.getElementById('author-portrait'),
-            authorName: document.getElementById('author-name'),
-            authorBio: document.getElementById('author-bio'),
-            searchInput: document.getElementById('search-input'),
-            modeToggle: document.getElementById('mode-toggle'),
-            addBookTrigger: document.getElementById('add-book-trigger'),
-            uploadModal: document.getElementById('upload-modal'),
-            closeModal: document.getElementById('close-modal'),
-            uploadForm: document.getElementById('upload-form'),
-            progressBar: document.getElementById('upload-progress-bar'),
-            progressFill: document.getElementById('upload-progress-fill'),
-            submitBtn: document.getElementById('submit-upload')
-        };
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
-            authDomain: "physmathacademy-722b3.firebaseapp.com",
-            projectId: "physmathacademy-722b3",
-            storageBucket: "physmathacademy-722b3.appspot.com",
-            messagingSenderId: "1093640992262",
-            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const storage = getStorage(app);
-        const db = getFirestore(app);
-
-        const state = {
-            mode: localStorage.getItem("kaffetishMode") || "light",
-            customBooks: []
-        };
-
-        const authors = {
-            "O. Henry": {
-                bio: "An American writer famous for his short stories with clever twists and humor.",
-                portrait: "https://cdn.britannica.com/04/11104-004-DFAA3C7C/O-Henry.jpg"
+            /* --- Featured Author Section --- */
+            .featured-author-section {
+                margin-bottom: 64px;
+                border: 1px solid var(--border-color);
+                border-radius: 16px;
+                padding: 32px;
+                background-color: color-mix(in srgb, var(--border-color) 20%, transparent);
             }
-        };
-
-        const libraryBooks = [
-            ...state.customBooks,
-            { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.harryhartog.com.au/cdn/shop/products/9781435159631.jpg?v=1662072834&width=480", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
-            { 
-    title: "Capital, Volume I", 
-    author: "Karl Marx", 
-    cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg",
-                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af"  
-    },
-             { 
-    title: "The Communist Manifesto", 
-    author: "Karl Marx", 
-    cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg",
-                url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2"  
-    },
-             // { title: "The Class Struggle", author: "Karl Kautsky", cover: "https://archive.org/services/img/classstruggleerf0000kaut/full/pct:200/0/default.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/The-Class-Struggle.pdf?alt=media&token=1692e93e-9705-4e63-9878-7b50774253fa" },
-            { title: "Frankenstein", author: "Mary Shelley", cover: "https://kaffetish.club/img/frankenstein.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
-           { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
-            { title: "Beyond Good and Evil", author: "Friedrich Nietzsche", cover: "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781625586100/beyond-good-and-evil-9781625586100_hr.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
-            { title: "The Antichrist", author: "Friedrich Nietzsche", cover: "https://cdn.kobo.com/book-images/4bc3d45d-3de4-482f-95a4-759fb593d11e/353/569/90/False/the-anti-christ.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/antichrist.pdf?alt=media&token=6ed7b8ac-4fc7-481c-94fc-3522bb3791a7" },
-            { title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman", cover: "https://images.penguinrandomhouse.com/cover/9780593230343", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" },
-             { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" },
-             { title: "The Gift of The Magi", author: "O. Henry", cover: "https://cdn2.penguin.com.au/covers/original/9789888240579.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-gift-of-the-magi.pdf?alt=media&token=7670ff06-e08c-49dc-b5c9-02523cc1310e" },
-            { title: "To Build a Fire", author: "Jack London", cover: "https://m.media-amazon.com/images/I/81jd8E6yypL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/to-build-a-fire.pdf?alt=media&token=730b2ce4-5aec-437e-82b2-2f5ace5b6e57" },
-            { title: "Memoirs of a Yellow Dog", author: "O. Henry", cover: "https://m.media-amazon.com/images/I/81ZpEjxuU9L._UF1000,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/memoirs_of_a_yellow_dog.pdf?alt=media&token=9255a8e2-3189-4c9e-8686-9a7c1668ba27" },
-            { title: "Man About Town", author: "O. Henry", cover: "https://m.media-amazon.com/images/I/91ufZ+SB25L._UF1000,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/man_about_town.pdf?alt=media&token=4776a1de-28ca-473e-8a72-abfac7031a72" }
-            
-        ];
-
-        function setMode(mode) {
-            state.mode = mode;
-            DOM.body.classList.toggle("dark-mode", mode === 'dark');
-            const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
-            DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
-            localStorage.setItem("kaffetishMode", mode);
-        }
-
-        function createBookCard(book) {
-            const card = document.createElement('a');
-            card.className = 'book-card';
-            
-            const readerBaseUrl = 'https://kaffetish.club/read/';
-            const readerUrl = `${readerBaseUrl}?url=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`;
-            
-            card.href = readerUrl;
-            card.target = "_blank";
-            card.setAttribute('aria-label', `Read ${book.title} by ${book.author}`);
-            
-            card.innerHTML = `
-                <div class="book-cover">
-                    <img src="${book.cover}" alt="Cover of ${book.title}" loading="lazy" 
-                         onerror="this.onerror=null;this.src='https://placehold.co/400x600/EAE8E4/2C2B2A?text=Cover';">
-                </div>
-                <div class="book-card-title">${book.title}</div>
-                <div class="book-card-author">${book.author}</div>
-            `;
-            return card;
-        }
-
-        function renderFeaturedAuthor(authorName) {
-            const authorData = authors[authorName];
-            if (!authorData) return;
-
-            const authorBooks = libraryBooks.filter(book => book.author === authorName);
-
-            DOM.authorPortrait.src = authorData.portrait;
-            DOM.authorPortrait.alt = `Portrait of ${authorName}`;
-            DOM.authorName.textContent = authorName;
-            DOM.authorBio.textContent = authorData.bio;
-
-            DOM.authorBookGrid.innerHTML = '';
-            authorBooks.forEach(book => {
-                DOM.authorBookGrid.appendChild(createBookCard(book));
-            });
-        }
-
-        function renderMainLibrary() {
-            const searchTerm = DOM.searchInput.value.toLowerCase();
-            DOM.bookGrid.innerHTML = '';
-            
-            const combinedBooks = [...state.customBooks, ...libraryBooks];
-
-            const filteredBooks = combinedBooks.filter(book => 
-                book.title.toLowerCase().includes(searchTerm) || 
-                book.author.toLowerCase().includes(searchTerm)
-            );
-
-            if (filteredBooks.length === 0) {
-                DOM.bookGrid.innerHTML = '<p class="no-results">No books found matching your search.</p>';
-                return;
+            .featured-author-header h3 {
+                font-family: var(--font-main);
+                font-size: 1.5rem;
+                font-weight: 500;
+                margin: 0 0 24px 0;
+                text-align: left;
+                position: relative;
+            }
+            .featured-author-header h3::after {
+                content: '';
+                position: absolute;
+                left: 0;
+                bottom: -8px;
+                width: 50px;
+                height: 2px;
+                background-color: var(--accent);
             }
 
-            filteredBooks.forEach(book => {
-                DOM.bookGrid.appendChild(createBookCard(book));
-            });
+            .featured-author-content {
+                display: flex;
+                gap: 32px;
+                align-items: flex-start;
+            }
+            .author-info {
+                flex: 0 0 220px;
+                text-align: center;
+            }
+            .author-info img {
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                object-fit: cover;
+                margin-bottom: 16px;
+                border: 4px solid var(--bg);
+                box-shadow: 0 4px 15px var(--shadow-color);
+            }
+            .author-info h4 {
+                font-size: 1.2rem;
+                font-weight: 600;
+                margin: 0 0 8px 0;
+            }
+            .author-info p {
+                font-size: 0.9rem;
+                color: var(--subtle);
+                line-height: 1.6;
+                margin: 0;
+            }
+            .author-books {
+                flex: 1;
+            }
+            
+            /* --- Browse Section --- */
+            .browse-section h2 {
+                font-family: var(--font-main); font-size: 2.5rem; font-weight: 500;
+                margin-bottom: 32px; text-align: center;
+            }
+            .search-container {
+                position: relative;
+                width: 100%;
+                max-width: 500px;
+                margin: 0 auto 48px;
+            }
+            #search-input {
+                width: 100%; padding: 12px 16px 12px 40px; font-size: 1rem;
+                font-family: var(--font-ui); border: 1px solid var(--border-color);
+                border-radius: 24px; background-color: var(--bg); color: var(--ink);
+                box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;
+            }
+            #search-input:focus {
+                outline: none; border-color: var(--accent);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+            }
+            .search-container .fa-search {
+                position: absolute; left: 16px; top: 50%;
+                transform: translateY(-50%); color: var(--subtle);
+            }
+
+            .book-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 32px 24px;
+            }
+            .author-books .book-grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            }
+
+            .book-card {
+                text-decoration: none; cursor: pointer; text-align: center;
+                transition: transform 0.2s ease-out; display: block;
+            }
+            .book-card:hover { transform: translateY(-5px); }
+            .book-cover {
+                width: 100%; aspect-ratio: 2 / 3; border-radius: 8px;
+                overflow: hidden; box-shadow: 0 8px 20px var(--shadow-color);
+                margin-bottom: 12px; background-color: var(--border-color);
+            }
+            .book-cover img { width: 100%; height: 100%; object-fit: cover; }
+            .book-card-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); }
+            .book-card-author { font-size: 0.8rem; color: var(--subtle); }
+            
+            .no-results {
+                text-align: center; color: var(--subtle); padding: 40px;
+                grid-column: 1 / -1;
+            }
+
+            @media (max-width: 992px) {
+        main { 
+            padding: 24px 16px; 
+        }
+        .featured-author-content { 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        .author-info { 
+            flex: 0 0 auto; 
+            margin-bottom: 24px; 
+        }
+
+        /* This hides the tagline on mobile */
+        .logo .tagline {
+            display: none;
+        }
+                @media (max-width: 480px) {
+        .footer-content {
+            flex-direction: column; /* Stack items vertically */
+            gap: 0.4em; /* Adjust spacing for vertical layout */
+        }
+        /* Hide the bullet point separators on mobile */
+        .footer-content > *:not(:last-child)::after {
+            content: "";
+            margin-left: 0;
+        }
+    }
+
+        /* --- LAYOUT FIX STARTS HERE --- */
+
+        .browse-section .book-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 24px;
         }
         
-        const debounce = (func, delay) => {
-            let timeoutId;
-            return (...args) => {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => func.apply(this, args), delay);
+        .author-books .book-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+    }
+        </style>
+    </head>
+    <body>
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="logo">
+                    Kaffetish
+                    <span class="tagline">explained by the librarian</span>
+                </h1>
+                <div class="header-actions">
+                    <button id="add-book-trigger" title="Add Book"><i class="fa-solid fa-plus"></i></button>
+                    <a href="https://kaffetish.club/register" title="Profile"><i class="fa-solid fa-user"></i></a>
+                    <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section class="library-view">
+                <section class="featured-author-section">
+                    <div class="featured-author-header">
+                        <h3>Featured Author</h3>
+                    </div>
+                    <div class="featured-author-content">
+                        <div class="author-info">
+                            <img id="author-portrait" src="" alt="Portrait of the featured author">
+                            <h4 id="author-name"></h4>
+                            <p id="author-bio"></p>
+                        </div>
+                        <div class="author-books">
+                            <div id="author-book-grid" class="book-grid">
+                                </div>
+                        </div>
+                    </div>
+                </section>
+        
+                <section class="browse-section">
+                    <h2>Browse the Collection</h2>
+                    <div class="search-container">
+                        <i class="fa-solid fa-search"></i>
+                        <input type="search" id="search-input" placeholder="Search all books by title or author...">
+                    </div>
+                    <div id="book-grid" class="book-grid">
+                        </div>
+                </section>
+            </section>
+        </main>
+
+        <!-- Upload Modal -->
+        <div id="upload-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add to Library</h3>
+                    <button class="close-modal" id="close-modal">&times;</button>
+                </div>
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label>Book Title</label>
+                        <input type="text" id="upload-title" placeholder="e.g. The Great Gatsby" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Author</label>
+                        <input type="text" id="upload-author" placeholder="e.g. F. Scott Fitzgerald" required>
+                    </div>
+                    <div class="form-group">
+                        <label>PDF File</label>
+                        <input type="file" id="upload-pdf" accept=".pdf" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Cover Image</label>
+                        <input type="file" id="upload-cover" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="upload-btn" id="submit-upload">Upload Book</button>
+                    <div class="progress-bar" id="upload-progress-bar">
+                        <div class="progress-fill" id="upload-progress-fill"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <footer class="app-footer">
+        <div class="footer-content">
+            <span>Curated by Aram A.</span>
+            <span>Goris, Armenia</span>
+            <a href="mailto:aramasatryan290@gmail.com">Get in touch</a>
+        </div>
+    </footer>
+        
+        <script type="module">
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+            import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+            import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+            import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+            const DOM = {
+                body: document.body,
+                bookGrid: document.getElementById('book-grid'),
+                authorBookGrid: document.getElementById('author-book-grid'),
+                authorPortrait: document.getElementById('author-portrait'),
+                authorName: document.getElementById('author-name'),
+                authorBio: document.getElementById('author-bio'),
+                searchInput: document.getElementById('search-input'),
+                modeToggle: document.getElementById('mode-toggle'),
+                addBookTrigger: document.getElementById('add-book-trigger'),
+                uploadModal: document.getElementById('upload-modal'),
+                closeModal: document.getElementById('close-modal'),
+                uploadForm: document.getElementById('upload-form'),
+                progressBar: document.getElementById('upload-progress-bar'),
+                progressFill: document.getElementById('upload-progress-fill'),
+                submitBtn: document.getElementById('submit-upload')
             };
-        };
 
-        async function uploadFile(file, path) {
-            const storageRef = ref(storage, path);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-            
-            return new Promise((resolve, reject) => {
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        DOM.progressFill.style.width = progress + '%';
-                    }, 
-                    (error) => reject(error), 
-                    () => getDownloadURL(uploadTask.snapshot.ref).then(resolve)
-                );
-            });
-        }
+            const firebaseConfig = {
+                apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+                authDomain: "physmathacademy-722b3.firebaseapp.com",
+                projectId: "physmathacademy-722b3",
+                storageBucket: "physmathacademy-722b3.appspot.com",
+                messagingSenderId: "1093640992262",
+                appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+            };
 
-        async function handleUpload(e) {
-            e.preventDefault();
-            const title = document.getElementById('upload-title').value;
-            const author = document.getElementById('upload-author').value;
-            const pdfFile = document.getElementById('upload-pdf').files[0];
-            const coverFile = document.getElementById('upload-cover').files[0];
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const storage = getStorage(app);
+            const db = getFirestore(app);
 
-            if (!pdfFile || !coverFile) return;
+            const state = {
+                mode: localStorage.getItem("kaffetishMode") || "light",
+                customBooks: []
+            };
 
-            DOM.submitBtn.disabled = true;
-            DOM.progressBar.style.display = 'block';
+            const authors = {
+                "O. Henry": {
+                    bio: "An American writer famous for his short stories with clever twists and humor.",
+                    portrait: "https://cdn.britannica.com/04/11104-004-DFAA3C7C/O-Henry.jpg"
+                }
+            };
 
-            try {
-                const pdfUrl = await uploadFile(pdfFile, `pdfs/${Date.now()}_${pdfFile.name}`);
-                const coverUrl = await uploadFile(coverFile, `covers/${Date.now()}_${coverFile.name}`);
-
-                const newBook = {
-                    title,
-                    author,
-                    url: pdfUrl,
-                    cover: coverUrl,
-                    createdAt: serverTimestamp()
-                };
-
-                await addDoc(collection(db, "custom_books"), newBook);
+            const libraryBooks = [
+                ...state.customBooks,
+                { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.harryhartog.com.au/cdn/shop/products/9781435159631.jpg?v=1662072834&width=480", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
+                { 
+        title: "Capital, Volume I", 
+        author: "Karl Marx", 
+        cover: "https://m.media-amazon.com/images/I/71NGRSNlgCL._SY466_.jpg",
+                    url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Capital-Volume-I.pdf?alt=media&token=46fd4252-4b83-459f-90bd-2a9478a8d3af"  
+        },
+                { 
+        title: "The Communist Manifesto", 
+        author: "Karl Marx", 
+        cover: "https://yale-university-press-uk.imgix.net/covers/9780300123029.jpg",
+                    url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/CM1.pdf?alt=media&token=0ad9cb1f-c634-4855-9aeb-00cb6cfab2c2"  
+        },
+                // { title: "The Class Struggle", author: "Karl Kautsky", cover: "https://archive.org/services/img/classstruggleerf0000kaut/full/pct:200/0/default.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/The-Class-Struggle.pdf?alt=media&token=1692e93e-9705-4e63-9878-7b50774253fa" },
+                { title: "Frankenstein", author: "Mary Shelley", cover: "https://kaffetish.club/img/frankenstein.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Frankenstein.pdf?alt=media&token=32978c82-15b5-41fa-92ef-d20ba73f212a" },
+            { title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche", cover: "https://m.media-amazon.com/images/I/61johKA3YbL._UF894,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
+                { title: "Beyond Good and Evil", author: "Friedrich Nietzsche", cover: "https://d28hgpri8am2if.cloudfront.net/book_images/onix/cvr9781625586100/beyond-good-and-evil-9781625586100_hr.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/thus-spoke-zarathustra.pdf?alt=media&token=320ec9d0-59a4-4bf3-9089-66d4c1423d9a" },
+                { title: "The Antichrist", author: "Friedrich Nietzsche", cover: "https://cdn.kobo.com/book-images/4bc3d45d-3de4-482f-95a4-759fb593d11e/353/569/90/False/the-anti-christ.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/antichrist.pdf?alt=media&token=6ed7b8ac-4fc7-481c-94fc-3522bb3791a7" },
+                { title: "The Yellow Wallpaper", author: "Charlotte Perkins Gilman", cover: "https://images.penguinrandomhouse.com/cover/9780593230343", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-yellow-wallpaper.pdf?alt=media&token=ccae5622-7576-47c2-a922-1a8c4c802df3" },
+                { title: "The Blackest Page of Modern History", author: "Herbert Adams Gibbons", cover: "https://m.media-amazon.com/images/I/81UYk5OyPeL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-blackest-page.pdf?alt=media&token=e12cb7e0-ee1f-45d3-9347-fecb248a156b" },
+                { title: "The Gift of The Magi", author: "O. Henry", cover: "https://cdn2.penguin.com.au/covers/original/9789888240579.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/the-gift-of-the-magi.pdf?alt=media&token=7670ff06-e08c-49dc-b5c9-02523cc1310e" },
+                { title: "To Build a Fire", author: "Jack London", cover: "https://m.media-amazon.com/images/I/81jd8E6yypL.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/to-build-a-fire.pdf?alt=media&token=730b2ce4-5aec-437e-82b2-2f5ace5b6e57" },
+                { title: "Memoirs of a Yellow Dog", author: "O. Henry", cover: "https://m.media-amazon.com/images/I/81ZpEjxuU9L._UF1000,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/memoirs_of_a_yellow_dog.pdf?alt=media&token=9255a8e2-3189-4c9e-8686-9a7c1668ba27" },
+                { title: "Man About Town", author: "O. Henry", cover: "https://m.media-amazon.com/images/I/91ufZ+SB25L._UF1000,1000_QL80_.jpg", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/man_about_town.pdf?alt=media&token=4776a1de-28ca-473e-8a72-abfac7031a72" }
                 
-                DOM.uploadModal.style.display = 'none';
-                DOM.uploadForm.reset();
-                await fetchCustomBooks();
-            } catch (err) {
-                console.error("Upload failed:", err);
-                alert("Upload failed. Check console for details.");
-            } finally {
-                DOM.submitBtn.disabled = false;
-                DOM.progressBar.style.display = 'none';
-                DOM.progressFill.style.width = '0%';
+            ];
+
+            function setMode(mode) {
+                state.mode = mode;
+                DOM.body.classList.toggle("dark-mode", mode === 'dark');
+                const iconClass = mode === 'light' ? 'fa-moon' : 'fa-sun';
+                DOM.modeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
+                localStorage.setItem("kaffetishMode", mode);
             }
-        }
 
-        async function fetchCustomBooks() {
-            const q = query(collection(db, "custom_books"), orderBy("createdAt", "desc"));
-            const querySnapshot = await getDocs(q);
-            state.customBooks = [];
-            querySnapshot.forEach((doc) => {
-                state.customBooks.push(doc.data());
-            });
-            renderMainLibrary();
-        }
+            function createBookCard(book) {
+                const card = document.createElement('a');
+                card.className = 'book-card';
+                
+                const readerBaseUrl = 'https://kaffetish.club/read/';
+                const readerUrl = `${readerBaseUrl}?url=${encodeURIComponent(book.url)}&title=${encodeURIComponent(book.title)}`;
+                
+                card.href = readerUrl;
+                card.target = "_blank";
+                card.setAttribute('aria-label', `Read ${book.title} by ${book.author}`);
+                
+                card.innerHTML = `
+                    <div class="book-cover">
+                        <img src="${book.cover}" alt="Cover of ${book.title}" loading="lazy" 
+                            onerror="this.onerror=null;this.src='https://placehold.co/400x600/EAE8E4/2C2B2A?text=Cover';">
+                    </div>
+                    <div class="book-card-title">${book.title}</div>
+                    <div class="book-card-author">${book.author}</div>
+                `;
+                return card;
+            }
 
-        function setupEventListeners() {
-            DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
-            DOM.searchInput.addEventListener('input', debounce(renderMainLibrary, 300));
-            
-            DOM.addBookTrigger.addEventListener("click", () => DOM.uploadModal.style.display = 'block');
-            DOM.closeModal.addEventListener("click", () => DOM.uploadModal.style.display = 'none');
-            window.addEventListener("click", (e) => { if (e.target === DOM.uploadModal) DOM.uploadModal.style.display = 'none'; });
-            
-            DOM.uploadForm.addEventListener("submit", handleUpload);
-        }
+            function renderFeaturedAuthor(authorName) {
+                const authorData = authors[authorName];
+                if (!authorData) return;
 
-        async function init() {
-            const savedMode = localStorage.getItem("kaffetishMode") || 'light';
-            setMode(savedMode);
-            
-            try {
-                await signInAnonymously(auth);
-                await fetchCustomBooks();
-            } catch (e) {
-                console.error("Auth/Fetch failed:", e);
+                const authorBooks = libraryBooks.filter(book => book.author === authorName);
+
+                DOM.authorPortrait.src = authorData.portrait;
+                DOM.authorPortrait.alt = `Portrait of ${authorName}`;
+                DOM.authorName.textContent = authorName;
+                DOM.authorBio.textContent = authorData.bio;
+
+                DOM.authorBookGrid.innerHTML = '';
+                authorBooks.forEach(book => {
+                    DOM.authorBookGrid.appendChild(createBookCard(book));
+                });
+            }
+
+            function renderMainLibrary() {
+                const searchTerm = DOM.searchInput.value.toLowerCase();
+                DOM.bookGrid.innerHTML = '';
+                
+                const combinedBooks = [...state.customBooks, ...libraryBooks];
+
+                const filteredBooks = combinedBooks.filter(book => 
+                    book.title.toLowerCase().includes(searchTerm) || 
+                    book.author.toLowerCase().includes(searchTerm)
+                );
+
+                if (filteredBooks.length === 0) {
+                    DOM.bookGrid.innerHTML = '<p class="no-results">No books found matching your search.</p>';
+                    return;
+                }
+
+                filteredBooks.forEach(book => {
+                    DOM.bookGrid.appendChild(createBookCard(book));
+                });
             }
             
-            renderFeaturedAuthor("O. Henry");
-            renderMainLibrary();
-            setupEventListeners();
-        }
+            const debounce = (func, delay) => {
+                let timeoutId;
+                return (...args) => {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => func.apply(this, args), delay);
+                };
+            };
 
-        init();
-    </script>
-</body>
-</html>
+            async function uploadFile(file, path) {
+                const storageRef = ref(storage, path);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+                
+                return new Promise((resolve, reject) => {
+                    uploadTask.on('state_changed', 
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            DOM.progressFill.style.width = progress + '%';
+                        }, 
+                        (error) => reject(error), 
+                        () => getDownloadURL(uploadTask.snapshot.ref).then(resolve)
+                    );
+                });
+            }
+
+            async function handleUpload(e) {
+                e.preventDefault();
+                const title = document.getElementById('upload-title').value;
+                const author = document.getElementById('upload-author').value;
+                const pdfFile = document.getElementById('upload-pdf').files[0];
+                const coverFile = document.getElementById('upload-cover').files[0];
+
+                if (!pdfFile || !coverFile) return;
+
+                DOM.submitBtn.disabled = true;
+                DOM.progressBar.style.display = 'block';
+
+                try {
+                    const pdfUrl = await uploadFile(pdfFile, `pdfs/${Date.now()}_${pdfFile.name}`);
+                    const coverUrl = await uploadFile(coverFile, `covers/${Date.now()}_${coverFile.name}`);
+
+                    const newBook = {
+                        title,
+                        author,
+                        url: pdfUrl,
+                        cover: coverUrl,
+                        createdAt: serverTimestamp()
+                    };
+
+                    await addDoc(collection(db, "custom_books"), newBook);
+                    
+                    DOM.uploadModal.style.display = 'none';
+                    DOM.uploadForm.reset();
+                    await fetchCustomBooks();
+                } catch (err) {
+                    console.error("Upload failed:", err);
+                    alert("Upload failed. Check console for details.");
+                } finally {
+                    DOM.submitBtn.disabled = false;
+                    DOM.progressBar.style.display = 'none';
+                    DOM.progressFill.style.width = '0%';
+                }
+            }
+
+            async function fetchCustomBooks() {
+                const q = query(collection(db, "custom_books"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                state.customBooks = [];
+                querySnapshot.forEach((doc) => {
+                    state.customBooks.push(doc.data());
+                });
+                renderMainLibrary();
+            }
+
+            function setupEventListeners() {
+                DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
+                DOM.searchInput.addEventListener('input', debounce(renderMainLibrary, 300));
+                
+                DOM.addBookTrigger.addEventListener("click", () => DOM.uploadModal.style.display = 'block');
+                DOM.closeModal.addEventListener("click", () => DOM.uploadModal.style.display = 'none');
+                window.addEventListener("click", (e) => { if (e.target === DOM.uploadModal) DOM.uploadModal.style.display = 'none'; });
+                
+                DOM.uploadForm.addEventListener("submit", handleUpload);
+            }
+
+            async function init() {
+                const savedMode = localStorage.getItem("kaffetishMode") || 'light';
+                setMode(savedMode);
+                
+                try {
+                    await signInAnonymously(auth);
+                    await fetchCustomBooks();
+                } catch (e) {
+                    console.error("Auth/Fetch failed:", e);
+                }
+                
+                renderFeaturedAuthor("O. Henry");
+                renderMainLibrary();
+                setupEventListeners();
+            }
+
+            init();
+        </script>
+    </body>
+    </html>
