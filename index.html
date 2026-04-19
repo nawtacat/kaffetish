@@ -111,6 +111,40 @@
         }
         .header-actions button:hover, .header-actions a:hover { color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent); }
         
+        /* --- Upload Modal --- */
+        .modal {
+            display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background-color: var(--bg); margin: 10% auto; padding: 32px;
+            border: 1px solid var(--border-color); width: 90%; max-width: 500px;
+            border-radius: 16px; box-shadow: 0 20px 60px var(--shadow-color);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .modal-header h3 { font-family: var(--font-main); margin: 0; font-size: 1.5rem; }
+        .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--subtle); }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; }
+        .form-group input {
+            width: 100%; padding: 12px; border: 1px solid var(--border-color);
+            border-radius: 8px; background: var(--bg); color: var(--ink);
+            box-sizing: border-box; font-family: var(--font-ui);
+        }
+        .upload-btn {
+            width: 100%; padding: 14px; background-color: var(--accent); color: white;
+            border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+            transition: opacity 0.2s; margin-top: 10px;
+        }
+        .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .progress-bar {
+            width: 100%; height: 6px; background: var(--border-color);
+            border-radius: 3px; margin-top: 15px; overflow: hidden; display: none;
+        }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+
         /* --- Main Content --- */
         main { padding: 48px 24px; max-width: 1200px; margin: 0 auto; }
         /* --- Footer --- */
@@ -317,6 +351,7 @@
                 <span class="tagline">explained by the librarian</span>
             </h1>
             <div class="header-actions">
+                <button id="add-book-trigger" title="Add Book"><i class="fa-solid fa-plus"></i></button>
                 <a href="https://kaffetish.club/register" title="Profile"><i class="fa-solid fa-user"></i></a>
                 <button id="mode-toggle" title="Toggle Theme"><i class="fa-solid fa-moon"></i></button>
             </div>
@@ -353,6 +388,39 @@
             </section>
         </section>
     </main>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add to Library</h3>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            <form id="upload-form">
+                <div class="form-group">
+                    <label>Book Title</label>
+                    <input type="text" id="upload-title" placeholder="e.g. The Great Gatsby" required>
+                </div>
+                <div class="form-group">
+                    <label>Author</label>
+                    <input type="text" id="upload-author" placeholder="e.g. F. Scott Fitzgerald" required>
+                </div>
+                <div class="form-group">
+                    <label>PDF File</label>
+                    <input type="file" id="upload-pdf" accept=".pdf" required>
+                </div>
+                <div class="form-group">
+                    <label>Cover Image</label>
+                    <input type="file" id="upload-cover" accept="image/*" required>
+                </div>
+                <button type="submit" class="upload-btn" id="submit-upload">Upload Book</button>
+                <div class="progress-bar" id="upload-progress-bar">
+                    <div class="progress-fill" id="upload-progress-fill"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <footer class="app-footer">
     <div class="footer-content">
         <span>Curated by Aram A.</span>
@@ -361,7 +429,12 @@
     </div>
 </footer>
     
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
         const DOM = {
             body: document.body,
             bookGrid: document.getElementById('book-grid'),
@@ -371,10 +444,32 @@
             authorBio: document.getElementById('author-bio'),
             searchInput: document.getElementById('search-input'),
             modeToggle: document.getElementById('mode-toggle'),
+            addBookTrigger: document.getElementById('add-book-trigger'),
+            uploadModal: document.getElementById('upload-modal'),
+            closeModal: document.getElementById('close-modal'),
+            uploadForm: document.getElementById('upload-form'),
+            progressBar: document.getElementById('upload-progress-bar'),
+            progressFill: document.getElementById('upload-progress-fill'),
+            submitBtn: document.getElementById('submit-upload')
         };
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+            authDomain: "physmathacademy-722b3.firebaseapp.com",
+            projectId: "physmathacademy-722b3",
+            storageBucket: "physmathacademy-722b3.appspot.com",
+            messagingSenderId: "1093640992262",
+            appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+        const db = getFirestore(app);
 
         const state = {
             mode: localStorage.getItem("kaffetishMode") || "light",
+            customBooks: []
         };
 
         const authors = {
@@ -385,6 +480,7 @@
         };
 
         const libraryBooks = [
+            ...state.customBooks,
             { title: "Pride and Prejudice Vol. 1", author: "Jane Austen", cover: "https://www.harryhartog.com.au/cdn/shop/products/9781435159631.jpg?v=1662072834&width=480", url: "https://firebasestorage.googleapis.com/v0/b/physmathacademy-722b3.firebasestorage.app/o/Pride-and-Prejudice-Vol-1.pdf?alt=media&token=256e4759-1479-4099-998b-3e05727fc37a" },
             { 
     title: "Capital, Volume I", 
@@ -461,9 +557,11 @@
 
         function renderMainLibrary() {
             const searchTerm = DOM.searchInput.value.toLowerCase();
-            DOM.bookGrid.innerHTML = ''; 
+            DOM.bookGrid.innerHTML = '';
+            
+            const combinedBooks = [...state.customBooks, ...libraryBooks];
 
-            const filteredBooks = libraryBooks.filter(book => 
+            const filteredBooks = combinedBooks.filter(book => 
                 book.title.toLowerCase().includes(searchTerm) || 
                 book.author.toLowerCase().includes(searchTerm)
             );
@@ -486,14 +584,92 @@
             };
         };
 
+        async function uploadFile(file, path) {
+            const storageRef = ref(storage, path);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+            
+            return new Promise((resolve, reject) => {
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        DOM.progressFill.style.width = progress + '%';
+                    }, 
+                    (error) => reject(error), 
+                    () => getDownloadURL(uploadTask.snapshot.ref).then(resolve)
+                );
+            });
+        }
+
+        async function handleUpload(e) {
+            e.preventDefault();
+            const title = document.getElementById('upload-title').value;
+            const author = document.getElementById('upload-author').value;
+            const pdfFile = document.getElementById('upload-pdf').files[0];
+            const coverFile = document.getElementById('upload-cover').files[0];
+
+            if (!pdfFile || !coverFile) return;
+
+            DOM.submitBtn.disabled = true;
+            DOM.progressBar.style.display = 'block';
+
+            try {
+                const pdfUrl = await uploadFile(pdfFile, `pdfs/${Date.now()}_${pdfFile.name}`);
+                const coverUrl = await uploadFile(coverFile, `covers/${Date.now()}_${coverFile.name}`);
+
+                const newBook = {
+                    title,
+                    author,
+                    url: pdfUrl,
+                    cover: coverUrl,
+                    createdAt: serverTimestamp()
+                };
+
+                await addDoc(collection(db, "custom_books"), newBook);
+                
+                DOM.uploadModal.style.display = 'none';
+                DOM.uploadForm.reset();
+                await fetchCustomBooks();
+            } catch (err) {
+                console.error("Upload failed:", err);
+                alert("Upload failed. Check console for details.");
+            } finally {
+                DOM.submitBtn.disabled = false;
+                DOM.progressBar.style.display = 'none';
+                DOM.progressFill.style.width = '0%';
+            }
+        }
+
+        async function fetchCustomBooks() {
+            const q = query(collection(db, "custom_books"), orderBy("createdAt", "desc"));
+            const querySnapshot = await getDocs(q);
+            state.customBooks = [];
+            querySnapshot.forEach((doc) => {
+                state.customBooks.push(doc.data());
+            });
+            renderMainLibrary();
+        }
+
         function setupEventListeners() {
             DOM.modeToggle.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light'));
             DOM.searchInput.addEventListener('input', debounce(renderMainLibrary, 300));
+            
+            DOM.addBookTrigger.addEventListener("click", () => DOM.uploadModal.style.display = 'block');
+            DOM.closeModal.addEventListener("click", () => DOM.uploadModal.style.display = 'none');
+            window.addEventListener("click", (e) => { if (e.target === DOM.uploadModal) DOM.uploadModal.style.display = 'none'; });
+            
+            DOM.uploadForm.addEventListener("submit", handleUpload);
         }
 
-        function init() {
+        async function init() {
             const savedMode = localStorage.getItem("kaffetishMode") || 'light';
             setMode(savedMode);
+            
+            try {
+                await signInAnonymously(auth);
+                await fetchCustomBooks();
+            } catch (e) {
+                console.error("Auth/Fetch failed:", e);
+            }
             
             renderFeaturedAuthor("O. Henry");
             renderMainLibrary();
