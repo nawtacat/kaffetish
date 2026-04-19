@@ -484,6 +484,12 @@
             </div>
         </section>
     </main>
+
+    <button id="mobile-action-btn" class="mobile-action-btn" aria-hidden="true">
+        <i id="mobile-action-icon" class="fa-solid fa-wand-magic-sparkles"></i>
+        <span id="mobile-action-text">Explain</span>
+    </button>
+
     <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
     <nav id="mobile-nav-menu" class="mobile-nav-menu">
         <div class="mobile-menu-header">
@@ -1373,8 +1379,11 @@
  }
 
  function flashAI(msg, duration = 2000) {
-   DOM.aiQuote.classList.add('hidden');
-   DOM.aiPanel.style.display = "flex";
+   // aiPanel is now a persistent flex container on desktop.
+   // On mobile, we avoid using it for transient flashes.
+   if (window.innerWidth > 860) {
+     DOM.aiPanel.style.display = "flex";
+   }
    DOM.aiContent.textContent = msg;
    
    if (DOM.aiPanel.flashTimer) {
@@ -1383,7 +1392,9 @@
 
    DOM.aiPanel.flashTimer = setTimeout(() => { 
      if (DOM.aiContent.textContent === msg) {
-         DOM.aiPanel.style.display = "none"; 
+         if (window.innerWidth <= 860) {
+            DOM.aiPanel.style.display = "none"; 
+         }
      }
    }, duration);
  }
@@ -1466,13 +1477,13 @@
    });
    // --- End noise ---
 
-   DOM.mobileActionBtn.addEventListener("click", () => {
+   DOM.mobileActionBtn?.addEventListener("click", () => {
         // *** MODIFIED: Button logic is now more complex ***
         if (state.isExplanationViewActive) {
             returnToBookView();
         } else if (state.lastSelectionText) {
-            // "Speak" is the default action for a selection
-            handleSpeak(); 
+            // Mobile users use the island button to trigger the Librarian
+            handleExplain(); 
         }
    });
 
