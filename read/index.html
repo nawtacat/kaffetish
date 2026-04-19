@@ -744,7 +744,7 @@
    apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
    authDomain: "physmathacademy-722b3.firebaseapp.com",
    projectId: "physmathacademy-722b3",
-   storageBucket: "physmathacademy-722b3.appspot.com",
+   storageBucket: "physmathacademy-722b3.firebasestorage.app",
    messagingSenderId: "1093640992262",
    appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
  };
@@ -932,7 +932,7 @@
 
      const user = auth.currentUser;
 
-     if (user && !user.isAnonymous && state.bookId) {
+     if (user && state.bookId) {
        const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
        const bookmarkSnap = await getDoc(bookmarkDocRef);
 
@@ -1378,7 +1378,7 @@
        
        // Persist the highlighted HTML to Firestore
        const user = auth.currentUser;
-       if (user && !user.isAnonymous && state.bookId) {
+       if (user && state.bookId) {
            const pageRef = doc(db, "highlights", `${user.uid}_${state.bookId}_${state.currentPage}`);
            await setDoc(pageRef, {
                content: DOM.pageContent.innerHTML,
@@ -1393,10 +1393,7 @@
 
  async function handleBookmarkPage() {
    const user = auth.currentUser;
-   if (!user || user.isAnonymous) {
-     flashAI("Please sign in to save bookmarks.", 3000);
-     return;
-   }
+   if (!user) return;
 
    if (!state.bookId) return;
 
