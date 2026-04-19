@@ -483,6 +483,19 @@
                 </article>
             </div>
         </section>
+
+        <section id="ai-panel" class="ai-panel">
+            <div class="ai-panel-content">
+                <h4 class="ai-title"><i class="fa-solid fa-sparkles"></i> Librarian's Desk</h4>
+                <div id="ai-content" class="ai-text-content">
+                    <p style="color:var(--subtle); font-style: italic;">Select text and hit "Explain" to start a conversation...</p>
+                </div>
+            </div>
+            <div class="ai-panel-actions">
+                <button id="ai-copy">Copy Last</button>
+                <button id="ai-clear">Clear Chat</button>
+            </div>
+        </section>
     </main>
 
     <button id="mobile-action-btn" class="mobile-action-btn" aria-hidden="true">
@@ -1418,8 +1431,8 @@
      DOM.body.classList.remove('menu-open');
    });
 
-   DOM.aiClear.addEventListener("click", () => { DOM.aiContent.innerHTML = '<p style="color:var(--subtle); font-style: italic;">Chat cleared.</p>'; });
-   DOM.aiCopy.addEventListener("click", () => { 
+   DOM.aiClear?.addEventListener("click", () => { DOM.aiContent.innerHTML = '<p style="color:var(--subtle); font-style: italic;">Chat cleared.</p>'; });
+   DOM.aiCopy?.addEventListener("click", () => { 
        const responses = DOM.aiContent.querySelectorAll('.chat-response');
        if (responses.length) {
            navigator.clipboard.writeText(responses[responses.length-1].innerText);
@@ -1562,10 +1575,9 @@
          }
 
          if (isTouchDevice) {
-           // *** MODIFIED: Set up button for "Speak" ***
            DOM.mobileActionBtn.classList.remove('return-mode');
-           DOM.mobileActionIcon.className = 'fa-solid fa-volume-high';
-           DOM.mobileActionText.textContent = 'Speak';
+           DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
+           DOM.mobileActionText.textContent = 'Explain';
            DOM.mobileActionBtn.classList.add('visible');
            DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
          } else {
