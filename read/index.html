@@ -1369,12 +1369,22 @@
    DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
  }
 
- function handleHighlight() {
+ async function handleHighlight() {
    if (state.lastSelectionRange) {
      try {
        const span = document.createElement("span");
        span.className = "highlighted-text";
        state.lastSelectionRange.surroundContents(span);
+       
+       // Persist the highlighted HTML to Firestore
+       const user = auth.currentUser;
+       if (user && !user.isAnonymous && state.bookId) {
+           const pageRef = doc(db, "highlights", `${user.uid}_${state.bookId}_${state.currentPage}`);
+           await setDoc(pageRef, {
+               content: DOM.pageContent.innerHTML,
+               updatedAt: serverTimestamp()
+           });
+       }
      } catch (e) { console.error("Highlighting failed:", e); }
    }
    state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
@@ -1703,7 +1713,11 @@
 
  // Initialize the app once the first auth state is confirmed
  auth.onAuthStateChanged(user => {
-   initApp();
+   if (!user) {
+       signInAnonymously(auth).then(() => initApp()).catch(console.error);
+   } else {
+       initApp();
+   }
  }, { onlyOnce: true });
 </script>
 
