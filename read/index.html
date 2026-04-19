@@ -257,8 +257,12 @@
         border-bottom: 1px solid var(--border-color);
         padding-bottom: 4px;
    }
-   .chat-response { color: var(--ink); }
+   .chat-response { color: var(--ink); font-size: 0.95rem; }
    .chat-response p { margin: 0 0 12px 0; }
+   .chat-response .synonyms-list { font-size: 0.85rem; color: var(--subtle); margin-top: -4px; }
+   .chat-response .synonyms-list span { font-weight: 600; color: var(--ink); opacity: 0.7; }
+   .chat-response .breakdown-arrow { color: var(--accent); margin: 0 4px; font-weight: 700; }
+   .chat-response .context-subtext { font-size: 0.85rem; color: var(--subtle); font-style: italic; margin-top: -4px; }
 
    .ai-panel-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
    .ai-panel-actions button { background: var(--border-color); color: var(--subtle); border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: color 0.2s ease, background-color 0.2s ease; font-family: var(--font-ui); font-size: 0.8rem; }
@@ -1071,17 +1075,30 @@
 
  function getExpandedContext(range) {
     const fullText = DOM.pageContent.innerText;
+    const words = fullText.split(/\s+/).filter(w => w.length > 0);
     const selectedText = range.toString().trim();
-    const words = fullText.split(/\s+/);
-    const selectedWords = selectedText.split(/\s+/);
-    
-    // Find rough starting position of selection in the word array
-    const startIdx = words.findIndex((w, i) => words.slice(i, i + selectedWords.length).join(' ').includes(selectedWords[0]));
-    
-    if (startIdx === -1) return selectedText;
+    const selectedWords = selectedText.split(/\s+/).filter(w => w.length > 0);
 
-    const contextStart = Math.max(0, startIdx - 24);
-    const contextEnd = Math.min(words.length, startIdx + selectedWords.length + 24);
+    // Robust sequence search for the selected words within the page text
+    let startIndex = -1;
+    for (let i = 0; i <= words.length - selectedWords.length; i++) {
+        let match = true;
+        for (let j = 0; j < selectedWords.length; j++) {
+            if (words[i + j] !== selectedWords[j]) {
+                match = false;
+                break;
+            }
+        }
+        if (match) {
+            startIndex = i;
+            break;
+        }
+    }
+
+    if (startIndex === -1) return selectedText;
+
+    const contextStart = Math.max(0, startIndex - 24);
+    const contextEnd = Math.min(words.length, startIndex + selectedWords.length + 24);
     
     return words.slice(contextStart, contextEnd).join(' ');
  }
@@ -1117,20 +1134,25 @@
      });
 
      const { simpleExplanation, contextualMeaning, keywords } = data.explanation;
+     const isWord = !textToExplain.trim().includes(' ');
+     let html = '';
 
-     let formattedExplanation = `<p>${escapeHTML(simpleExplanation)}</p>`;
-     if (contextualMeaning) {
-       formattedExplanation += `<p><strong>In this context:</strong> ${escapeHTML(contextualMeaning)}</p>`;
-     }
-     if (keywords && keywords.length > 0) {
-       formattedExplanation += '<strong>Key Terms:</strong><ul>';
-       keywords.forEach(kw => {
-         formattedExplanation += `<li><strong>${escapeHTML(kw.term)}:</strong> ${escapeHTML(kw.definition)}</li>`;
-       });
-       formattedExplanation += '</ul>';
+     if (isWord) {
+       // Single Word: Show definition and treat keywords as synonyms
+       html = `<p>${escapeHTML(simpleExplanation)}</p>`;
+       if (keywords?.length) {
+         const synonyms = keywords.map(kw => escapeHTML(kw.term)).join(', ');
+         html += `<p class="synonyms-list"><span>Synonyms:</span> ${synonyms}</p>`;
+       }
+     } else {
+       // Phrase: Minimalist breakdown with arrow
+       html = `<p>“${escapeHTML(textToExplain)}” <span class="breakdown-arrow">→</span> ${escapeHTML(simpleExplanation)}</p>`;
+       if (contextualMeaning && contextualMeaning.toLowerCase() !== simpleExplanation.toLowerCase()) {
+         html += `<p class="context-subtext">${escapeHTML(contextualMeaning)}</p>`;
+       }
      }
 
-     document.getElementById(messageId).innerHTML = formattedExplanation;
+     document.getElementById(messageId).innerHTML = html;
      DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
 
    } catch (err) {
