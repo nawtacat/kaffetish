@@ -876,8 +876,8 @@
 
    try {
      // Workaround: Using a CORS proxy to bypass Firebase's strict origin policy
-     // This prepends a proxy service that adds the necessary headers.
-     const proxyUrl = "https://api.allorigins.win/raw?url=";
+     // corsproxy.io is generally more stable for Firebase Storage links.
+     const proxyUrl = "https://corsproxy.io/?";
      const response = await fetch(proxyUrl + encodeURIComponent(sourceUrl));
      
      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
