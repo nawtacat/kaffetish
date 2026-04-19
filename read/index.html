@@ -1686,7 +1686,7 @@
    const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
 
    if (bookUrl) {
-     loadPdfFromUrl(decodeURIComponent(bookUrl), decodeURIComponent(bookTitle));
+     loadPdfFromUrl(bookUrl, bookTitle);
    } else {
      showView(DOM.fallbackView);
    }
