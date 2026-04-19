@@ -875,10 +875,7 @@
    state.bookTitle = title;
 
    try {
-     // Workaround: Using a CORS proxy to bypass Firebase's strict origin policy
-     // corsproxy.io is generally more stable for Firebase Storage links.
-     const proxyUrl = "https://corsproxy.io/?";
-     const response = await fetch(proxyUrl + encodeURIComponent(sourceUrl));
+     const response = await fetch(sourceUrl);
      
      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
      const pdfData = await response.arrayBuffer();
