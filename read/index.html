@@ -932,13 +932,11 @@
 
      const user = auth.currentUser;
 
-     if (user && state.bookId) {
-       const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
-       const bookmarkSnap = await getDoc(bookmarkDocRef);
-
-       if (bookmarkSnap.exists()) {
-         state.bookmark = bookmarkSnap.data();
-         startingPage = state.bookmark.pageNum;
+     if (state.bookId) {
+       const bookRef = doc(db, "KAFFETISH", state.bookId);
+       const bookSnap = await getDoc(bookRef);
+       if (bookSnap.exists() && bookSnap.data().lastPage) {
+         startingPage = bookSnap.data().lastPage;
        }
      }
 
@@ -1012,11 +1010,19 @@
    state.isRendering = true;
    state.currentPage = pageNum;
 
+   // Check cache first, then Firestore for highlights, then the PDF
    if (!state.pagesHTML[pageNum - 1]) {
      try {
-       const page = await state.pdfDoc.getPage(pageNum);
-       const textContent = await page.getTextContent({ normalizeWhitespace: true });
-       state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+       const highlightRef = doc(db, "KAFFETISH", state.bookId, "highlights", String(pageNum));
+       const highlightSnap = await getDoc(highlightRef);
+
+       if (highlightSnap.exists()) {
+         state.pagesHTML[pageNum - 1] = highlightSnap.data().content;
+       } else {
+         const page = await state.pdfDoc.getPage(pageNum);
+         const textContent = await page.getTextContent({ normalizeWhitespace: true });
+         state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+       }
      } catch (e) {
        console.error(`Failed to render page ${pageNum}:`, e);
        state.pagesHTML[pageNum - 1] = "<p>Error loading page.</p>";
@@ -1376,14 +1382,13 @@
        span.className = "highlighted-text";
        state.lastSelectionRange.surroundContents(span);
        
-       // Persist the highlighted HTML to Firestore
-       const user = auth.currentUser;
-       if (user && state.bookId) {
-           const pageRef = doc(db, "highlights", `${user.uid}_${state.bookId}_${state.currentPage}`);
-           await setDoc(pageRef, {
-               content: DOM.pageContent.innerHTML,
-               updatedAt: serverTimestamp()
-           });
+       // Persist the highlighted HTML to the KAFFETISH collection
+       if (state.bookId) {
+         const pageRef = doc(db, "KAFFETISH", state.bookId, "highlights", String(state.currentPage));
+         await setDoc(pageRef, {
+             content: DOM.pageContent.innerHTML,
+             updatedAt: serverTimestamp()
+         });
        }
      } catch (e) { console.error("Highlighting failed:", e); }
    }
@@ -1392,22 +1397,15 @@
  }
 
  async function handleBookmarkPage() {
-   const user = auth.currentUser;
-   if (!user) return;
-
    if (!state.bookId) return;
 
-   const bookmarkData = {
-     userId: user.uid,
-     bookId: state.bookId,
-     pageNum: state.currentPage,
-     createdAt: serverTimestamp()
-   };
-
    try {
-     const bookmarkDocRef = doc(db, "bookmarks", `${user.uid}_${state.bookId}`);
-     await setDoc(bookmarkDocRef, bookmarkData);
-     state.bookmark = bookmarkData;
+     const bookRef = doc(db, "KAFFETISH", state.bookId);
+     await setDoc(bookRef, { 
+       lastPage: state.currentPage, 
+       updatedAt: serverTimestamp() 
+     }, { merge: true });
+     
      flashAI(`Page ${state.currentPage} bookmarked!`, 2000);
    } catch (e) {
      console.error("Error saving bookmark:", e);
