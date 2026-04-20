@@ -150,6 +150,27 @@
         border-radius: 8px; padding: 4rem 5rem; position: relative;
         transition: border-color 0.3s ease, background-color 0.3s ease;
    }
+   /* Original PDF View styles */
+   .pdf-canvas-container {
+        position: relative;
+        margin: 0 auto;
+        box-shadow: 0 10px 30px var(--shadow-color);
+        background-color: white;
+   }
+   .textLayer {
+        position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+        overflow: hidden; opacity: 1.0; line-height: 1.0; mix-blend-mode: multiply;
+   }
+   .textLayer span {
+        color: transparent; position: absolute; white-space: pre;
+        cursor: text; transform-origin: 0% 0%;
+   }
+   .page.original-mode {
+        max-width: 75ch; margin: 0 auto;
+        background-color: var(--bg); border: 1px solid var(--border-color);
+        border-radius: 8px; padding: 4rem 5rem; position: relative;
+        transition: border-color 0.3s ease, background-color 0.3s ease;
+   }
    body.dark-mode .page { background-color: #2D2C2B; }
    .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; transition: opacity 200ms ease-out; }
    .content.content-fading { opacity: 0; }
@@ -456,6 +477,7 @@
                 </div>
                 <div class="control-group settings">
                     <button id="btn-bookmark-page" title="Bookmark this page" class="hidden"><i class="fa-solid fa-bookmark"></i></button>
+                    <button id="view-mode-toggle" title="Toggle Layout Mode"><i id="view-mode-icon" class="fa-solid fa-file-pdf"></i></button>
                     <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
                     <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
                     <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
@@ -520,6 +542,10 @@
                 <span id="mobile-font-size-display" class="font-size-display">100%</span>
                 <button id="mobile-font-increase" aria-label="Increase Font Size">A+</button>
             </div>
+            <button id="mobile-view-mode-toggle" class="menu-button">
+                <i id="mobile-view-icon" class="fa-solid fa-file-pdf"></i>
+                <span>Original Layout</span>
+            </button>
             <button id="mobile-mode-toggle" class="menu-button">
                 <i id="mobile-mode-icon" class="fa-solid fa-moon"></i>
                 <span>Toggle Theme</span>
@@ -778,6 +804,10 @@
    fontDec: document.getElementById('font-decrease'),
    tooltip: document.getElementById('selection-tooltip'),
    tooltipExplain: document.getElementById('btn-explain'),
+   viewModeToggle: document.getElementById('view-mode-toggle'),
+   viewModeIcon: document.getElementById('view-mode-icon'),
+   mobileViewModeToggle: document.getElementById('mobile-view-mode-toggle'),
+   mobileViewIcon: document.getElementById('mobile-view-icon'),
    tooltipHighlight: document.getElementById('btn-highlight'),
    tooltipSpeak: document.getElementById('btn-speak'),
    tooltipCopy: document.getElementById('btn-copy'),
@@ -810,6 +840,7 @@
    pagesHTML: [], isRendering: false,
    currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
    mode: "light",
+   viewMode: localStorage.getItem("kaffetishViewMode") || "reflow",
    touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false, lastTapTime: 0 }, // <-- MODIFIED
    lastSelectionText: "",
    lastSelectionRange: null,
@@ -1004,10 +1035,19 @@
 
  async function renderPage(pageNum) {
    if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
-   if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "" && !state.isExplanationViewActive) return;
 
    clearSelection();
    state.isRendering = true;
+
+   if (state.viewMode === 'original') {
+       await renderOriginalPage(pageNum);
+   } else {
+       await renderReflowPage(pageNum);
+   }
+   state.isRendering = false;
+ }
+
+ async function renderReflowPage(pageNum) {
    state.currentPage = pageNum;
 
    // Check cache first, then Firestore for highlights, then the PDF
@@ -1030,6 +1070,7 @@
    }
 
    DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
+   DOM.pageContainer.querySelector('.page').classList.remove('original-mode');
 
    DOM.pageContent.classList.add("fade-in");
    setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
@@ -1045,11 +1086,54 @@
    DOM.nextBtn.disabled = pageNum >= state.totalPages;
    setFontRem(state.currentFontRem);
 
-   setTimeout(() => {
-     DOM.mainContent.scrollTop = 0;
-   }, 0);
+   setTimeout(() => { DOM.mainContent.scrollTop = 0; }, 0);
+ }
 
-   state.isRendering = false;
+ async function renderOriginalPage(pageNum) {
+   state.currentPage = pageNum;
+   const page = await state.pdfDoc.getPage(pageNum);
+   
+   // Calculate scale based on container width
+   const containerWidth = DOM.readerView.clientWidth - 80;
+   const unscaledViewport = page.getViewport({ scale: 1 });
+   const scale = containerWidth / unscaledViewport.width;
+   const viewport = page.getViewport({ scale: scale });
+
+   DOM.pageContent.innerHTML = '';
+   DOM.pageContainer.querySelector('.page').classList.add('original-mode');
+   
+   const wrapper = document.createElement('div');
+   wrapper.className = 'pdf-canvas-container';
+   wrapper.style.width = `${viewport.width}px`;
+   wrapper.style.height = `${viewport.height}px`;
+
+   const canvas = document.createElement('canvas');
+   canvas.width = viewport.width;
+   canvas.height = viewport.height;
+   wrapper.appendChild(canvas);
+
+   const textLayerDiv = document.createElement('div');
+   textLayerDiv.className = 'textLayer';
+   wrapper.appendChild(textLayerDiv);
+
+   DOM.pageContent.appendChild(wrapper);
+
+   const renderContext = { canvasContext: canvas.getContext('2d'), viewport: viewport };
+   await page.render(renderContext).promise;
+
+   const textContent = await page.getTextContent();
+   await pdfjsLib.renderTextLayer({
+     textContent: textContent,
+     container: textLayerDiv,
+     viewport: viewport,
+     textDivs: []
+   }).promise;
+
+   DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
+   DOM.mobilePageIndicator.textContent = `${pageNum} / ${state.totalPages}`;
+   DOM.pageJumpInput.value = pageNum;
+   DOM.prevBtn.disabled = pageNum <= 1;
+   DOM.nextBtn.disabled = pageNum >= state.totalPages;
  }
 
  function showTooltipAt(rect) {
@@ -1446,6 +1530,22 @@
    [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
    [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
    [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+
+   const toggleView = () => {
+       state.viewMode = state.viewMode === 'reflow' ? 'original' : 'reflow';
+       localStorage.setItem("kaffetishViewMode", state.viewMode);
+       
+       const isOriginal = state.viewMode === 'original';
+       [DOM.viewModeIcon, DOM.mobileViewIcon].forEach(icon => {
+           icon.classList.toggle('fa-file-pdf', !isOriginal);
+           icon.classList.toggle('fa-align-left', isOriginal);
+       });
+       const label = isOriginal ? "Reflow Text" : "Original Layout";
+       DOM.mobileViewModeToggle.querySelector('span').textContent = label;
+       
+       renderPage(state.currentPage);
+   };
+   [DOM.viewModeToggle, DOM.mobileViewModeToggle].forEach(btn => btn.addEventListener("click", toggleView));
 
    DOM.tooltipExplain.addEventListener("click", handleExplain);
    DOM.tooltipHighlight.addEventListener("click", handleHighlight);
