@@ -1057,11 +1057,33 @@
        const highlightSnap = await getDoc(highlightRef);
 
        if (highlightSnap.exists()) {
-         state.pagesHTML[pageNum - 1] = highlightSnap.data().content;
+         const stored = highlightSnap.data().content;
+         // Guard: if a highlight was accidentally saved from "original" (PDF canvas) mode,
+         // it will contain canvas/textLayer markup and will break reflow rendering.
+         const looksLikeOriginalMode =
+           typeof stored === "string" &&
+           (stored.includes("pdf-canvas-container") || stored.includes("textLayer") || stored.includes("<canvas"));
+
+         if (!looksLikeOriginalMode) {
+           state.pagesHTML[pageNum - 1] = stored;
+         }
        } else {
          const page = await state.pdfDoc.getPage(pageNum);
          const textContent = await page.getTextContent({ normalizeWhitespace: true });
          state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+       }
+
+       // If we ignored a bad stored highlight, regenerate from PDF and repair Firestore.
+       if (!state.pagesHTML[pageNum - 1]) {
+         const page = await state.pdfDoc.getPage(pageNum);
+         const textContent = await page.getTextContent({ normalizeWhitespace: true });
+         const regenerated = paragraphize(textContent);
+         state.pagesHTML[pageNum - 1] = regenerated;
+         try {
+           await setDoc(highlightRef, { content: regenerated, updatedAt: serverTimestamp() }, { merge: true });
+         } catch (e) {
+           console.warn("Failed to repair invalid highlight content:", e);
+         }
        }
      } catch (e) {
        console.error(`Failed to render page ${pageNum}:`, e);
@@ -1462,6 +1484,11 @@
  }
 
  async function handleHighlight() {
+   if (state.viewMode === 'original') {
+     flashAI("Switch to Reflow Text to highlight.", 2500);
+     hideTooltip();
+     return;
+   }
    if (state.lastSelectionRange) {
      try {
        const span = document.createElement("span");
