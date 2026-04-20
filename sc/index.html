@@ -1056,9 +1056,9 @@
          if (state.viewMode === 'paragraphized') {
              state.pagesHTML[pageNum - 1] = paragraphize(textContent);
          } else {
-             state.pagesHTML[pageNum - 1] = `<div style="white-space: pre-wrap; line-height: 1.6;">${textContent.items.map(it => 
-                 escapeHTML(it.str) + (it.hasEOL ? '\n' : '')
-             ).join(' ')}</div>`;
+             state.pagesHTML[pageNum - 1] = textContent.items.map(it => 
+                 escapeHTML(it.str) + (it.hasEOL ? '<br>' : ' ')
+             ).join('');
          }
        }
      } catch (e) {
