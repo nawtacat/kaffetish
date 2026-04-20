@@ -845,6 +845,7 @@
    lastSelectionText: "",
    lastSelectionRange: null,
    lastSelectionContext: "",
+   isAdjustingSelection: false,
    currentSessionId: null,
    bookTitle: null,
    bookId: null,
@@ -1695,9 +1696,144 @@
  function setupSelectionHandler() {
    const contentArea = DOM.pageContent;
 
+   function isWordLetterOrNumber(ch) {
+     try {
+       return /[\p{L}\p{N}]/u.test(ch);
+     } catch {
+       return /[A-Za-z0-9]/.test(ch);
+     }
+   }
+
+   function isWordChar(ch, prevCh, nextCh) {
+     if (!ch) return false;
+     if (isWordLetterOrNumber(ch) || ch === "_") return true;
+     // Allow connectors inside words: can't start/end a word.
+     if (ch === "-" || ch === "'" || ch === "’") {
+       return isWordLetterOrNumber(prevCh) && isWordLetterOrNumber(nextCh);
+     }
+     return false;
+   }
+
+   function getTextNodesUnder(root) {
+     const out = [];
+     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+       acceptNode(node) {
+         if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+         if (node.nodeValue.length === 0) return NodeFilter.FILTER_REJECT;
+         return NodeFilter.FILTER_ACCEPT;
+       }
+     });
+     let n;
+     while ((n = walker.nextNode())) out.push(n);
+     return out;
+   }
+
+   function expandSelectionToWholeWordInTextLayer(sel) {
+     if (!sel || sel.rangeCount === 0) return false;
+     const range = sel.getRangeAt(0);
+     const textLayer = range.commonAncestorContainer?.nodeType === Node.ELEMENT_NODE
+       ? range.commonAncestorContainer.closest?.('.textLayer')
+       : range.commonAncestorContainer?.parentElement?.closest?.('.textLayer');
+     if (!textLayer) return false;
+
+     // Only auto-expand when the user picked part of a single word (e.g. a character).
+     const selectedText = sel.toString();
+     if (!selectedText || /\s/.test(selectedText) || selectedText.length > 4) return false;
+
+     const nodes = getTextNodesUnder(textLayer);
+     if (!nodes.length) return false;
+
+     const startNode = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer : null;
+     const endNode = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer : null;
+     if (!startNode || !endNode) return false;
+
+     let startIndex = nodes.indexOf(startNode);
+     let endIndex = nodes.indexOf(endNode);
+     if (startIndex === -1 || endIndex === -1) return false;
+
+     let startOffset = range.startOffset;
+     let endOffset = range.endOffset;
+
+     // Normalize so start <= end in document order.
+     if (startIndex > endIndex || (startIndex === endIndex && startOffset > endOffset)) {
+       [startIndex, endIndex] = [endIndex, startIndex];
+       [startOffset, endOffset] = [endOffset, startOffset];
+     }
+
+     const stepBack = () => {
+       if (startOffset > 0) {
+         startOffset--;
+       } else if (startIndex > 0) {
+         startIndex--;
+         startOffset = nodes[startIndex].nodeValue.length - 1;
+       } else {
+         return false;
+       }
+       return true;
+     };
+     const stepForward = () => {
+       const len = nodes[endIndex].nodeValue.length;
+       if (endOffset < len) {
+         endOffset++;
+       } else if (endIndex < nodes.length - 1) {
+         endIndex++;
+         endOffset = 1;
+       } else {
+         return false;
+       }
+       return true;
+     };
+
+     const peekCharAt = (nodeIndex, offsetIndex) => {
+       const v = nodes[nodeIndex]?.nodeValue ?? "";
+       if (offsetIndex < 0 || offsetIndex >= v.length) return "";
+       return v[offsetIndex];
+     };
+
+     // Expand backward to the start of the word.
+     while (true) {
+       const prevPosIndex = startOffset - 1;
+       const prevCh = prevPosIndex >= 0
+         ? peekCharAt(startIndex, prevPosIndex)
+         : (startIndex > 0 ? peekCharAt(startIndex - 1, nodes[startIndex - 1].nodeValue.length - 1) : "");
+       const curCh = prevCh;
+       if (!curCh) break;
+       const prevPrevCh = prevPosIndex - 1 >= 0
+         ? peekCharAt(startIndex, prevPosIndex - 1)
+         : (startIndex > 0 && nodes[startIndex - 1].nodeValue.length >= 2
+           ? peekCharAt(startIndex - 1, nodes[startIndex - 1].nodeValue.length - 2)
+           : "");
+       const nextCh = peekCharAt(startIndex, startOffset);
+       if (!isWordChar(curCh, prevPrevCh, nextCh)) break;
+       if (!stepBack()) break;
+     }
+
+     // Expand forward to the end of the word.
+     while (true) {
+       const curCh = peekCharAt(endIndex, endOffset);
+       if (!curCh) break;
+       const prevCh = endOffset - 1 >= 0
+         ? peekCharAt(endIndex, endOffset - 1)
+         : (endIndex > 0 ? peekCharAt(endIndex - 1, nodes[endIndex - 1].nodeValue.length - 1) : "");
+       const nextCh = endOffset + 1 < nodes[endIndex].nodeValue.length
+         ? peekCharAt(endIndex, endOffset + 1)
+         : (endIndex < nodes.length - 1 ? peekCharAt(endIndex + 1, 0) : "");
+       if (!isWordChar(curCh, prevCh, nextCh)) break;
+       if (!stepForward()) break;
+     }
+
+     const newRange = document.createRange();
+     newRange.setStart(nodes[startIndex], startOffset);
+     newRange.setEnd(nodes[endIndex], endOffset);
+     sel.removeAllRanges();
+     sel.addRange(newRange);
+     return true;
+   }
+
    const handleSelection = (e) => {
      setTimeout(() => {
        if (state.isExplanationViewActive) return;
+       if (state.isAdjustingSelection) return;
 
        const sel = window.getSelection();
        if (!sel || sel.isCollapsed) {
@@ -1709,7 +1845,14 @@
            return;
        }
 
-       // Snapping logic: Extend selection to word boundaries
+       // Snapping logic: Extend selection to word boundaries (reflow + PDF text layer)
+       if (state.viewMode === 'original') {
+         state.isAdjustingSelection = true;
+         try { expandSelectionToWholeWordInTextLayer(sel); } catch {}
+         state.isAdjustingSelection = false;
+       }
+
+       // Reflow snapping: Extend selection inside a single text node.
        if (sel.anchorNode && sel.anchorNode === sel.focusNode) {
            const range = sel.getRangeAt(0);
            while (range.startOffset > 0 && /\w/.test(range.startContainer.textContent[range.startOffset - 1])) {
