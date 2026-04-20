@@ -985,7 +985,8 @@
  }
 
  function paragraphize(textContent) {
-   const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
+   const styleKeys = textContent.styles ? Object.keys(textContent.styles) : [];
+   const pageWidth = styleKeys.length > 0 ? (textContent.styles[styleKeys[0]].fontSize || 12) * 60 : 600;
    const items = textContent.items.map(it => ({
      str: it.str, x: it.transform[4], y: it.transform[5],
      fontSize: it.transform[0], height: it.height
@@ -1055,9 +1056,9 @@
          if (state.viewMode === 'paragraphized') {
              state.pagesHTML[pageNum - 1] = paragraphize(textContent);
          } else {
-             state.pagesHTML[pageNum - 1] = textContent.items.map(it => 
-                 escapeHTML(it.str) + (it.hasEOL ? '<br>' : ' ')
-             ).join('');
+             state.pagesHTML[pageNum - 1] = `<div style="white-space: pre-wrap; line-height: 1.6;">${textContent.items.map(it => 
+                 escapeHTML(it.str) + (it.hasEOL ? '\n' : '')
+             ).join(' ')}</div>`;
          }
        }
      } catch (e) {
