@@ -1,1646 +1,1764 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BALDSTAFF</title>
-    <style>
-        @font-face {
-            font-family: 'Pixelpurl';
-            src: url('https://kaffetish.club/trash/shootcraft/fonts/Pixelpurl-0vBPP.ttf');
-        }
-        body { margin: 0; overflow: hidden; font-family: 'Pixelpurl', monospace; user-select: none; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
-        
-        /* HUD */
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
-            background: transparent; border: 2px solid rgba(255, 255, 255, 0.8);
-            transform: translate(-50%, -50%); border-radius: 50%;
-        }
-        #crosshair::after {
-            content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
-            background: white; transform: translate(-50%, -50%); border-radius: 50%;
-        }
-        
-        #hud-bottom { padding: 20px; display: flex; align-items: flex-end; }
-        #health-container { width: 200px; height: 25px; background: #333; border: 2px solid #fff; position: relative; }
-        #health-bar { width: 100%; height: 100%; background: #42b132; transition: width 0.2s; }
-        #health-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; color: white; line-height: 25px; font-weight: bold; text-shadow: 1px 1px 0 #000; }
-        
-        #kill-feed { position: absolute; top: 60px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
-        .kill-msg { color: #fff; font-weight: bold; text-shadow: 1px 1px 0 #000; margin-bottom: 5px; font-size: 16px; }
-        
-        #tab-scoreboard { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; background: rgba(0,0,0,0.85); border-radius: 10px; padding: 20px; z-index: 20; justify-content: space-around; color: white; }
-        .team-col { width: 45%; }
-        .team-col h2 { text-align: center; border-bottom: 2px solid white; padding-bottom: 10px; }
-        .player-list { list-style: none; padding: 0; }
-        .player-list li { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 18px; display: flex; justify-content: space-between; }
-        .list-header { display: flex; justify-content: space-between; padding: 5px 8px; font-weight: bold; border-bottom: 1px solid white; margin-bottom: 5px; }
-        
-        #scoreboard { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; font-size: 24px; font-weight: bold; text-shadow: 2px 2px 0 #000; color: white; }
-        .score-blue { color: #009cda; }
-        .score-red { color: #e71e07; }
-        #timer { font-size: 30px; color: #fcd000; }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Kaffetish</title>
 
-        #game-over { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 20; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        #winner-text { font-size: 48px; font-weight: bold; margin-bottom: 10px; }
-        #restart-text { font-size: 24px; color: #ccc; }
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Poppins:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="icon" type="image/png" href="https://kaffetish.club/img/kaffetishrounded.png">
 
-        /* Menu / Connection */
-        #menu-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center;
-            pointer-events: auto; z-index: 10;
-        }
-        #menu-box {
-            background: rgba(30, 30, 30, 0.95); padding: 40px; border: 4px solid #42b132; 
-            text-align: center; max-width: 450px; width: 90%;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); color: white;
-            image-rendering: pixelated;
-        }
-        h1 { margin-top: 0; color: #42b132; font-size: 48px; text-shadow: 4px 4px 0 #000; letter-spacing: 2px; margin-bottom: 20px; }
-        input { width: 70%; padding: 12px; margin: 10px 0; background: #222; border: 2px solid #555; color: white; font-family: 'Pixelpurl', monospace; font-size: 16px; outline: none; }
-        input:focus { border-color: #42b132; }
-        button { padding: 12px 24px; background: #42b132; color: white; border: 2px solid #2a7a20; border-bottom-width: 5px; cursor: pointer; font-size: 20px; font-family: 'Pixelpurl', monospace; margin: 5px; transition: transform 0.1s; text-shadow: 2px 2px 0 #000; }
-        button:hover { background: #5cd64f; transform: translateY(-2px); }
-        button:active { transform: translateY(2px); border-bottom-width: 2px; margin-top: 7px; margin-bottom: 3px; }
-        .status { margin-top: 15px; font-size: 14px; color: #aaa; word-break: break-all; }
-        
-        #controls-hint { position: absolute; top: 10px; left: 10px; color: rgba(255,255,255,0.7); font-size: 12px; }
-        
-        .copy-btn { margin-left: 10px; padding: 5px 10px; font-size: 14px; background: #555; border-color: #333; }
-        .copy-btn:hover { background: #666; }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js";
+    </script>
+    
+   <style>
+   :root {
+        --bg: #FDFBF7;
+        --ink: #2C2B2A;
+        --accent: #FF3A44;
+        --subtle: #8A8886;
+        --border-color: #EAE8E4;
+        --shadow-color: rgba(44, 43, 42, 0.1);
+        --font-main: 'Lora', serif;
+        --font-ui: 'Poppins', sans-serif;
+   }
 
-        /* Server Browser */
-        #server-browser { display: none; flex-direction: column; height: 100%; }
-        #server-list { flex: 1; overflow-y: auto; border: 2px solid #444; margin: 15px 0; padding: 10px; text-align: left; background: #111; }
-        .server-item { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; margin-bottom: 8px; border: 1px solid #444; color: #eee; }
-        .server-item:hover { background: #333; border-color: #666; }
-        .server-info { display: flex; flex-direction: column; }
-        .server-name { font-weight: bold; font-size: 18px; color: #42b132; }
-        .server-meta { font-size: 12px; color: #888; }
-        .join-btn { padding: 5px 15px; font-size: 14px; background: #009cda; border-color: #007ba8; margin-left: 10px; }
-        .join-btn:hover { background: #33b5e5; }
-        .host-options { display: flex; align-items: center; justify-content: center; margin: 15px 0; gap: 10px; }
-        
-        /* Scrollbar for server list */
-        #server-list::-webkit-scrollbar { width: 10px; }
-        #server-list::-webkit-scrollbar-track { background: #111; }
-        #server-list::-webkit-scrollbar-thumb { background: #444; border: 1px solid #111; }
-        #server-list::-webkit-scrollbar-thumb:hover { background: #555; }
+   body.dark-mode {
+        --bg: #21201F;
+        --ink: #EAE8E4;
+        --subtle: #999591;
+        --border-color: #3A3837;
+        --shadow-color: rgba(0, 0, 0, 0.25);
+   }
 
-        #minimap {
-            position: absolute; bottom: 20px; left: 20px;
-            width: 150px; height: 150px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid #fff; border-radius: 4px;
+   * { -webkit-tap-highlight-color: transparent; }
+   ::selection { background-color: var(--accent); color: white; opacity: 0.9; }
+
+   html, body {
+        height: 100%;
+        overflow: hidden;
+   }
+
+   body {
+        font-family: var(--font-ui);
+        background-color: var(--bg);
+        color: var(--ink);
+        transition: background-color 0.3s ease, color 0.3s ease;
+        margin: 0;
+        padding-top: 60px; /* This will be overridden on mobile */
+        display: flex;
+        flex-direction: column;
+   }
+
+   .hidden { display: none !important; }
+
+   .app-header {
+        position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+        background-color: color-mix(in srgb, var(--bg) 85%, transparent);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-color); z-index: 1000;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+        flex-shrink: 0;
+   }
+   .header-content {
+        max-width: 1200px; height: 100%; margin: 0 auto; padding: 0 24px;
+        display: flex; justify-content: space-between; align-items: center;
+        position: relative;
+   }
+   .logo {
+        font-size: 1.6rem; font-weight: 500; letter-spacing: -0.5px;
+        color: var(--accent); font-family: var(--font-main); user-select: none;
+   }
+   body.dark-mode .logo { color: var(--ink); }
+
+   .reader-controls { display: flex; align-items: center; gap: 24px; }
+   .reader-controls.hidden { display: none; }
+   .control-group { display: flex; align-items: center; gap: 8px; }
+   .book-title { font-weight: 500; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
+   .page-indicator input {
+        width: 40px; text-align: center; font-size: 0.9rem; font-family: var(--font-ui);
+        padding: 6px; border: 1px solid var(--border-color); background-color: var(--bg);
+        color: var(--ink); border-radius: 6px; -moz-appearance: textfield;
+        transition: border-color 0.2s, box-shadow 0.2s;
+   }
+   .page-indicator input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
+   .page-indicator input::-webkit-outer-spin-button, .page-indicator input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+   .page-indicator span { color: var(--subtle); user-select: none; }
+
+   .reader-controls button, .reader-controls a.button, .mobile-menu-toggle {
+        background: transparent; border: none; color: var(--subtle); border-radius: 6px;
+        padding: 8px 10px; cursor: pointer; font-size: 1rem;
+        transition: color 0.2s ease, background-color 0.2s ease;
+        text-decoration: none; display: inline-flex;
+        align-items: center; justify-content: center; user-select: none;
+   }
+   .reader-controls button:hover, .reader-controls button:active,
+   .reader-controls a.button:hover, .reader-controls a.button:active,
+   .mobile-menu-toggle:hover, .mobile-menu-toggle:active {
+        color: var(--ink); background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+   }
+   .reader-controls button:disabled { opacity: 0.4; cursor: not-allowed; background-color: transparent !important; color: var(--subtle) !important; }
+   
+   main {
+        display: flex;
+        flex-direction: row;
+        height: calc(100vh - 60px);
+        overflow: hidden;
+   }
+
+   .reader-view {
+        width: 70%;
+        height: 100%;
+        overflow-y: auto;
+        padding: 40px 24px 100px;
+        border-right: 1px solid var(--border-color);
+        box-sizing: border-box;
+   }
+
+   .fallback-view, .loading-view {
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; height: 100%;
+   }
+   .fallback-content { max-width: 500px; }
+   .fallback-icon { font-size: 3.5rem; color: var(--accent); margin-bottom: 24px; }
+   .fallback-title { font-size: 1.75rem; font-family: var(--font-main); margin: 0 0 8px 0; }
+   .fallback-text { color: var(--subtle); margin-bottom: 24px; line-height: 1.7; }
+   .library-link {
+        display: inline-block; background-color: var(--accent); color: white;
+        padding: 12px 24px; border-radius: 24px; text-decoration: none;
+        font-weight: 500; transition: background-color 0.2s, transform 0.2s;
+   }
+   .library-link:hover, .library-link:active { background-color: color-mix(in srgb, var(--accent) 85%, black); transform: scale(1.03); }
+   .library-link i { margin-right: 8px; }
+   .spinner {
+        width: 48px; height: 48px; border-radius: 50%;
+        border: 5px solid var(--border-color); border-top-color: var(--accent);
+        animation: spin 1s linear infinite; margin-bottom: 16px;
+   }
+   @keyframes spin { to { transform: rotate(360deg); } }
+
+   .page-container { filter: drop-shadow(0 10px 25px var(--shadow-color)); }
+   html:not(.touch-device) .page-container { cursor: pointer; }
+   .page {
+        max-width: 75ch; margin: 0 auto;
+        background-color: var(--bg); border: 1px solid var(--border-color);
+        border-radius: 8px; padding: 4rem 5rem; position: relative;
+        transition: border-color 0.3s ease, background-color 0.3s ease;
+   }
+   body.dark-mode .page { background-color: #2D2C2B; }
+   .content { font-family: var(--font-main); font-size: 1.15rem; line-height: 1.8; transition: opacity 200ms ease-out; }
+   .content.content-fading { opacity: 0; }
+   .content p { margin: 0 0 1.5em; overflow-wrap: break-word; }
+   .content p:last-child { margin-bottom: 0; }
+   .fade-in { animation: fadeIn 250ms ease-out both; }
+   @keyframes fadeIn { from { opacity: 0.6; } to { opacity: 1; } }
+   .page-number {
+        position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+        color: var(--subtle); font-size: 0.9rem; user-select: none;
+   }
+
+   .highlighted-text {
+        background-color: color-mix(in srgb, var(--accent) 25%, transparent);
+        border-radius: 3px;
+   }
+   body.dark-mode .highlighted-text { background-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+
+   .selection-tooltip {
+        position: absolute; z-index: 2000; display: none; gap: 6px; padding: 6px;
+        background-color: var(--ink); color: var(--bg); border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        opacity: 0; transform: translateY(10px);
+        transition: opacity 150ms ease-out, transform 150ms ease-out;
+        will-change: opacity, transform;
+   }
+   .selection-tooltip.visible { opacity: 1; transform: translateY(0); }
+   .selection-tooltip button {
+        background: transparent; border: 0; color: var(--bg); padding: 8px 12px;
+        border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+        font-family: var(--font-ui); transition: background-color 0.2s ease;
+   }
+   .selection-tooltip button:hover, .selection-tooltip button:active { background-color: rgba(255,255,255,0.15); }
+   .selection-tooltip i { margin-right: 6px; }
+
+   /* New styles for immersive explanation view */
+   .explanation-view-content .explanation-quote {
+        display: block;
+        border-left: 3px solid var(--accent);
+        padding-left: 16px;
+        margin: 0 0 24px 0;
+        font-style: italic;
+        color: var(--subtle);
+        font-size: 1.05rem;
+   }
+   .explanation-view-content .explanation-title {
+        font-size: 1.3rem;
+        font-weight: 500;
+        margin: 0 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-ui);
+   }
+   .explanation-view-content .explanation-title i {
+        color: var(--accent);
+   }
+   .explanation-view-content .explanation-text {
+        font-size: 1rem;
+        line-height: 1.7;
+        font-family: var(--font-ui);
+   }
+   .explanation-view-content .explanation-actions {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+   }
+   .explanation-view-content .explanation-actions button {
+        background-color: color-mix(in srgb, var(--border-color) 60%, transparent);
+        /* Re-use menu-button styles for consistency */
+   }
+
+   .ai-panel {
+        width: 30%;
+        height: 100%;
+        background-color: color-mix(in srgb, var(--bg) 95%, transparent);
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        box-sizing: border-box;
+        z-index: 10;
+   }
+   .ai-panel-content { 
+        flex-grow: 1; 
+        display: flex; 
+        flex-direction: column; 
+        overflow: hidden; 
+   }
+   .ai-title { font-size: 1.1rem; font-weight: 500; margin: 0 0 20px; display: flex; align-items: center; gap: 8px; }
+   .ai-title i { color: var(--accent); }
+   .ai-text-content { 
+        flex-grow: 1;
+        overflow-y: auto; 
+        font-size: 0.95rem; 
+        line-height: 1.6; 
+        padding-right: 10px; 
+   }
+   
+   .chat-message { margin-bottom: 24px; animation: fadeIn 0.3s ease-out; }
+   .chat-query { 
+        font-weight: 600; 
+        color: var(--accent); 
+        margin-bottom: 8px; 
+        font-family: var(--font-ui);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 4px;
+   }
+   .chat-response { color: var(--ink); font-size: 0.95rem; }
+   .chat-response p { margin: 0 0 12px 0; }
+   .chat-response .synonyms-list { font-size: 0.85rem; color: var(--subtle); margin-top: -4px; }
+   .chat-response .synonyms-list span { font-weight: 600; color: var(--ink); opacity: 0.7; }
+   .chat-response .breakdown-arrow { color: var(--accent); margin: 0 4px; font-weight: 700; }
+   .chat-response .context-subtext { font-size: 0.85rem; color: var(--subtle); font-style: italic; margin-top: -4px; }
+
+   .ai-panel-actions { display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; }
+   .ai-panel-actions button { background: var(--border-color); color: var(--subtle); border: 0; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: color 0.2s ease, background-color 0.2s ease; font-family: var(--font-ui); font-size: 0.8rem; }
+   .ai-panel-actions button:hover { color: var(--ink); }
+
+   .mobile-page-indicator, .mobile-menu-toggle { display: none; }
+   .mobile-menu-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        z-index: 1500; opacity: 0; transition: opacity 0.3s ease;
+        pointer-events: none;
+   }
+ .mobile-nav-menu {
+        position: fixed; top: 0; left: 0; /* <-- MODIFIED */
+        width: 300px; height: 100%;
+        background-color: color-mix(in srgb, var(--bg) 90%, transparent);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        z-index: 1600;
+        transform: translateX(-100%); /* <-- MODIFIED */
+        transition: transform 0.35s ease-out;
+        padding: 16px; display: flex; flex-direction: column; gap: 24px;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.1); /* <-- MODIFIED */
+        border-right: 1px solid var(--border-color); /* <-- MODIFIED */
+        overflow-y: auto;
+        overflow-x: hidden;
+   }
+   body.menu-open .mobile-menu-overlay { opacity: 1; pointer-events: auto; }
+   body.menu-open .mobile-nav-menu { transform: translateX(0); } /* <-- MODIFIED */
+   .mobile-menu-header { display: flex; justify-content: space-between; align-items: center; padding: 8px; }
+   .mobile-menu-header h3 { margin: 0; font-size: 1.2rem; font-weight: 500; }
+   #mobile-menu-close { background: none; border: 0; font-size: 1.5rem; color: var(--subtle); cursor: pointer; transition: color 0.2s; padding: 4px 8px; }
+   .menu-section { display: flex; flex-direction: column; gap: 12px; }
+   .menu-section-title { font-size: 0.8rem; font-weight: 500; color: var(--subtle); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; }
+   .menu-divider { border: 0; height: 1px; background: var(--border-color); margin: 0; }
+   .font-control { display: flex; align-items: center; justify-content: space-between; background-color: color-mix(in srgb, var(--border-color) 60%, transparent); border-radius: 8px; padding: 8px; }
+   .font-control button { background: none; border: 1px solid var(--border-color); color: var(--ink); width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; transition: background-color 0.2s; }
+   .menu-button { display: flex; align-items: center; gap: 12px; background-color: color-mix(in srgb, var(--border-color) 60%, transparent); border: 0; border-radius: 8px; padding: 12px; text-decoration: none; font-size: 1rem; color: var(--ink); text-align: left; width: 100%; cursor: pointer; transition: background-color 0.2s; }
+   .menu-button i { color: var(--subtle); width: 20px; text-align: center; }
+   .menu-section > * { opacity: 0; transform: translateX(20px); transition: opacity 0.3s ease, transform 0.3s ease; }
+   body.menu-open .menu-section > * { opacity: 1; transform: translateX(0); }
+   body.menu-open .menu-section > *:nth-child(2) { transition-delay: 0.05s; }
+   body.menu-open .menu-section > *:nth-child(3) { transition-delay: 0.1s; }
+   body.menu-open .menu-section > *:nth-child(4) { transition-delay: 0.15s; }
+   .page-jump-control { display: flex; align-items: center; justify-content: center; gap: 8px; background-color: color-mix(in srgb, var(--border-color) 60%, transparent); border-radius: 8px; padding: 12px; }
+   .page-jump-control input { width: 60px; text-align: center; font-size: 1rem; font-family: var(--font-ui); padding: 8px; border: 1px solid var(--border-color); background-color: var(--bg); color: var(--ink); border-radius: 6px; -moz-appearance: textfield; }
+   .page-jump-control input::-webkit-outer-spin-button, .page-jump-control input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+   .page-jump-control span { font-size: 1rem; color: var(--subtle); }
+
+   .mobile-action-btn {
+        position: fixed;
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        left: 50%;
+        z-index: 2000;
+        background-color: var(--ink);
+        color: var(--bg);
+        border: 1px solid var(--border-color);
+        border-radius: 30px;
+        padding: 12px 24px;
+        font-family: var(--font-ui);
+        font-weight: 500;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        box-shadow: 0 10px 30px var(--shadow-color);
+       opacity: 0; /* MODIFIED: Start hidden */
+       transform: translate(-50%, 20px); /* MODIFIED: Start off-screen */
+       transition: opacity 0.3s ease-out, transform 0.3s ease-out; /* MODIFIED: Smooth animation */
+       pointer-events: none; /* MODIFIED: Not clickable when hidden */
+   }
+   .mobile-action-btn.visible {
+       opacity: 1; /* MODIFIED: Make visible */
+        transform: translate(-50%, 0);
+        pointer-events: auto;
+   }
+   .mobile-action-btn i {
+        color: var(--accent);
+        transition: transform 0.3s ease;
+   }
+   .mobile-action-btn.return-mode i {
+        transform: rotate(180deg);
+   }
+   body.dark-mode .mobile-action-btn i {
+        color: var(--bg);
+   }
+   
+   @media (max-width: 860px) {
+        /* *** MODIFIED FOR IMMERSIVE UI *** */
+        .app-header {
+            display: none;
+        }
+        body {
+            padding-top: 0;
+        }
+        /* *** END MODIFICATIONS *** */
+
+        /* Hide desktop AI panel on mobile, replaced by immersive view */
+        .ai-panel { display: none !important; }
+
+        .font-control button {
+           border: none;
+           border-radius: 6px;
+           width: auto;
+           height: auto;
+           padding: 8px 12px;
+           background-color: transparent;
+        }
+        .content {
+           padding-bottom: 5rem;
+        }
+        .mobile-nav-menu {
+           padding-bottom: 80px;
+        }
+        .font-control button:hover,
+        .font-control button:active {
+           background-color: color-mix(in srgb, var(--subtle) 20%, transparent);
+        }
+   
+        .header-content {
+           display: grid;
+           grid-template-columns: 1fr auto 1fr;
+           padding: 0 16px;
+           align-items: center;
+        }
+        .logo { grid-column: 1 / 2; justify-self: start; }
+        .reader-controls { display: none; }
+        .mobile-page-indicator { display: block; grid-column: 2 / 3; justify-self: center; color: var(--subtle); font-size: 0.9rem; user-select: none; }
+        .mobile-menu-toggle { display: inline-flex; grid-column: 3 / 4; justify-self: end; }
+        main { padding: 16px; }
+        .page-number { display: none; }
+        .app-header, .mobile-nav-menu, .mobile-menu-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; background-color: color-mix(in srgb, var(--bg) 95%, transparent); }
+        
+        .font-control,
+        .page-jump-control {
+           width: 100%;
+           box-sizing: border-box;
+           padding: 12px;
         }
         
-        /* Mobile Controls */
-        #mobile-controls { display: none; position: absolute; bottom: 20px; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: auto; }
-        #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); }
-        .mobile-btn { position: absolute; width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.5); color: white; font-weight: bold; pointer-events: auto; display: flex; align-items: center; justify-content: center; user-select: none; }
-        .mobile-btn:active { background: rgba(255,255,255,0.5); }
-        #mobile-jump { bottom: 40px; right: 40px; }
-        #mobile-shoot { bottom: 130px; right: 40px; background: rgba(255,0,0,0.3); border-color: rgba(255,0,0,0.5); }
-        #mobile-look-zone { position: absolute; top: 0; right: 0; width: 50%; height: 100%; pointer-events: auto; z-index: -1; }
+        .page-container { filter: none; box-shadow: none; }
+        .page { border: none; padding: 0; border-radius: 0; background-color: transparent; }
+        body.dark-mode .page { background-color: transparent; }
+   }
 
-        #damage-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: red; opacity: 0; pointer-events: none; transition: opacity 0.1s;
-            z-index: 1;
-        }
-        #heal-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #00ff00; opacity: 0; pointer-events: none; transition: opacity 0.5s;
-            z-index: 1;
-        }
-    </style>
+   @media (max-width: 860px) {
+       /* Hide scrollbars on mobile for a cleaner look */
+       main, .mobile-nav-menu {
+           -ms-overflow-style: none;  /* IE and Edge */
+           scrollbar-width: none;  /* Firefox */
+       }
+       main::-webkit-scrollbar, .mobile-nav-menu::-webkit-scrollbar { display: none; } /* Chrome, Safari, Opera */
+   }
+   
+   html:not(.touch-device) main::-webkit-scrollbar { width: 12px; }
+   html:not(.touch-device) main::-webkit-scrollbar-track { background: var(--bg); }
+   html:not(.touch-device) main::-webkit-scrollbar-thumb {
+        background-color: var(--ink);
+        border-radius: 6px;
+        border: 3px solid var(--bg);
+   }
+   html:not(.touch-device) main::-webkit-scrollbar-thumb:hover { background-color: var(--subtle); }
+       .logo a {
+      color: inherit;
+      text-decoration: none;
+   }
+       .mobile-nav-menu::after {
+       content: '';
+       display: block;
+       min-height: 40px;
+   }
+       .menu-button.active i {
+       color: var(--accent);
+   }
+</style>
 </head>
 <body>
-
-    <!-- UI Layer -->
-    <div id="ui-layer">
-        <div id="damage-overlay"></div>
-        <div id="heal-overlay"></div>
-        <div id="controls-hint">WASD to Move | SPACE to Jump | CLICK to Shoot</div>
-        <div id="scoreboard"><span class="score-blue" id="score-blue">BLUE: 0</span> <div id="timer">WAITING</div> <span class="score-red" id="score-red">RED: 0</span></div>
-        <div id="kill-feed"></div>
-        <div id="crosshair"></div>
-        <div id="tab-scoreboard">
-            <div class="team-col">
-                <h2 style="color:#009cda">BLUE TEAM</h2>
-                <div class="list-header"><span>Name</span> <span>K / D</span></div>
-                <ul id="blue-list" class="player-list"></ul>
-            </div>
-            <div class="team-col">
-                <h2 style="color:#e71e07">RED TEAM</h2>
-                <div class="list-header"><span>Name</span> <span>K / D</span></div>
-                <ul id="red-list" class="player-list"></ul>
-            </div>
-        </div>
-        <div id="hud-bottom">
-            <div id="health-container">
-                <div id="health-bar"></div>
-                <div id="health-text">100 HP</div>
-            </div>
-        </div>
-        <canvas id="minimap" width="150" height="150"></canvas>
-    </div>
-    
-    <!-- Game Over Screen -->
-    <div id="game-over">
-        <div id="winner-text">BLUE WINS!</div>
-        <div id="restart-text">Next match in 3...</div>
-    </div>
-
-    <!-- Mobile Controls -->
-    <div id="mobile-controls">
-        <div id="mobile-look-zone"></div>
-        <div id="joystick-zone"><div id="joystick-knob"></div></div>
-        <div id="mobile-shoot" class="mobile-btn">FIRE</div>
-        <div id="mobile-jump" class="mobile-btn">JUMP</div>
-    </div>
-
-    <!-- Menu Overlay -->
-    <div id="menu-overlay">
-        <div id="menu-box">
-            <div id="main-menu">
-                <img src="https://kaffetish.club/trash/shootcraft/baldstaff.png" alt="Baldstaff" style="max-width: 100%; margin-bottom: 20px;">
-                <input type="text" id="nickname-input" placeholder="Enter Nickname" maxlength="10">
-                <p>Your ID: <span id="my-id">Generating...</span> <button id="copy-btn" class="copy-btn">Copy</button></p>
-                <hr style="border-color: #444; margin: 20px 0;">
-                <div id="menu-default">
-                    <input type="text" id="peer-id-input" placeholder="Enter Opponent ID">
-                    <button id="connect-btn">Connect</button>
-                    <button id="browse-btn" style="background:#009cda; border-color:#007ba8; margin-top:5px;">Browse Public Servers</button>
-                    <p>OR</p>
-                    <div class="host-options">
-                        <label style="font-size:18px; color:#eee; display:flex; align-items:center; cursor:pointer;">
-                            <input type="checkbox" id="public-host-check" style="width:auto; margin:0 10px 0 0; transform: scale(1.5);"> Public Game
-                        </label>
+    <header id="app-header" class="app-header">
+        <div class="header-content">
+            <h1 class="logo"><a href="https://kaffetish.club">Kaffetish</a></h1>
+            <div id="mobile-page-indicator" class="mobile-page-indicator"></div>
+            <div id="reader-controls" class="reader-controls">
+                <div class="control-group file-info"> <span id="book-title" class="book-title"></span> </div>
+                <div class="control-group navigation">
+                    <button id="prev-page" title="Previous Page (←)"><i class="fa-solid fa-arrow-left"></i></button>
+                    <div class="page-indicator">
+                        <input id="page-jump" type="number" min="1" aria-label="Jump to page" />
+                        <span id="page-total">/ 0</span>
                     </div>
-                    <button id="play-btn">Play Solo / Host</button>
+                    <button id="next-page" title="Next Page (→)"><i class="fa-solid fa-arrow-right"></i></button>
                 </div>
-                <div id="server-browser">
-                    <h2 style="font-size: 24px; margin-bottom: 10px; color: #009cda;">Public Servers</h2>
-                    <div id="server-list">Connecting to directory...</div>
-                    <button id="back-btn" style="background:#757575; border-color: #616161;">Back</button>
+                <div class="control-group settings">
+                    <button id="view-mode-toggle" title="Toggle View Mode"><i class="fa-solid fa-file-lines"></i></button>
+                    <button id="btn-bookmark-page" title="Bookmark this page" class="hidden"><i class="fa-solid fa-bookmark"></i></button>
+                    <button id="font-decrease" title="Decrease Font Size"><i class="fa-solid fa-font" style="font-size: 0.8em;"></i></button>
+                    <button id="font-increase" title="Increase Font Size"><i class="fa-solid fa-font" style="font-size: 1.2em;"></i></button>
+                    <button id="mode-toggle" title="Toggle Theme"><i id="mode-icon" class="fa-solid fa-moon"></i></button>
+                    <a id="back-to-library" class="button" href="https://kaffetish.club" title="Back to Library"><i class="fa-solid fa-book-open"></i></a>
                 </div>
-                <div class="status" id="status-msg">Ready to connect.</div>
             </div>
-            <div id="pause-menu" style="display:none;">
-                <h1>Paused</h1>
-                <button id="resume-btn">Resume</button>
-                <button id="exit-btn" style="background:#e71e07; border-color:#b01605; margin-top:10px;">Exit Match</button>
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" title="Open Menu" aria-label="Open Menu"><i class="fa-solid fa-bars"></i></button>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section id="fallback-view" class="fallback-view hidden">
+           <div class="fallback-content">
+                <div class="fallback-icon"><i class="fa-solid fa-book-sparkles"></i></div>
+                <h2 class="fallback-title">No Book Loaded</h2>
+                <p class="fallback-text" id="fallback-text">It looks like there was an issue loading your book. Please return to the library to choose a title.</p>
+                <a href="https://kaffetish.club/" class="library-link"><i class="fa-solid fa-arrow-left"></i> Back to Library</a>
+           </div>
+        </section>
+        <section id="loading-view" class="loading-view">
+            <div class="spinner"></div>
+            <p id="loading-text">Brewing your document...</p>
+        </section>
+        <section id="reader-view" class="reader-view hidden">
+            <div class="page-container" id="page-container">
+                <article class="page">
+                    <div id="page-content" class="content"></div>
+                    <div id="page-number" class="page-number"></div>
+                </article>
+            </div>
+        </section>
+
+        <section id="ai-panel" class="ai-panel">
+            <div class="ai-panel-content">
+                <h4 class="ai-title"><i class="fa-solid fa-sparkles"></i> Librarian's Desk</h4>
+                <div id="ai-content" class="ai-text-content">
+                    <p style="color:var(--subtle); font-style: italic;">Select text and hit "Explain" to start a conversation...</p>
+                </div>
+            </div>
+            <div class="ai-panel-actions">
+                <button id="ai-copy">Copy Last</button>
+                <button id="ai-clear">Clear Chat</button>
+            </div>
+        </section>
+    </main>
+
+    <button id="mobile-action-btn" class="mobile-action-btn" aria-hidden="true">
+        <i id="mobile-action-icon" class="fa-solid fa-wand-magic-sparkles"></i>
+        <span id="mobile-action-text">Explain</span>
+    </button>
+
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+    <nav id="mobile-nav-menu" class="mobile-nav-menu">
+        <div class="mobile-menu-header">
+            <h1 class="logo" style="font-size: 1.6rem; margin: 0;"><a href="https://kaffetish.club">Kaffetish</a></h1>
+            <button id="mobile-menu-close" aria-label="Close Menu">&times;</button>
+        </div>
+        <div class="menu-section">
+            <h4 class="menu-section-title">Appearance</h4>
+            <div class="font-control">
+                <button id="mobile-font-decrease" aria-label="Decrease Font Size">A-</button>
+                <span id="mobile-font-size-display" class="font-size-display">100%</span>
+                <button id="mobile-font-increase" aria-label="Increase Font Size">A+</button>
+            </div>
+            <button id="mobile-view-mode-toggle" class="menu-button">
+                <i id="mobile-view-mode-icon" class="fa-solid fa-file-lines"></i>
+                <span id="mobile-view-mode-text">Mode: Reflowed</span>
+            </button>
+            <button id="mobile-mode-toggle" class="menu-button">
+                <i id="mobile-mode-icon" class="fa-solid fa-moon"></i>
+                <span>Toggle Theme</span>
+            </button>
+        </div>
+        <button id="mobile-noise-toggle" class="menu-button">
+                 <i id="mobile-noise-icon" class="fa-solid fa-wave-square"></i>
+                 <span>Black Noise</span>
+           </button>
+        <hr class="menu-divider" />
+        <div class="menu-section">
+            <h4 class="menu-section-title">Go to Page</h4>
+            <div class="page-jump-control">
+                <input type="number" id="mobile-page-jump" min="1" aria-label="Jump to page" />
+                <span id="mobile-page-total">/ 0</span>
             </div>
         </div>
+        <hr class="menu-divider" />
+        <div class="menu-section">
+            <h4 class="menu-section-title">Navigation</h4>
+            <button id="mobile-btn-bookmark-page" class="menu-button hidden">
+                <i class="fa-solid fa-bookmark"></i>
+                <span>Bookmark this Page</span>
+            </button>
+            <a href="https://kaffetish.club" class="menu-button">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Back to Library</span>
+            </a>
+        </div>
+    </nav>
+    
+    <div id="selection-tooltip" class="selection-tooltip">
+        <button id="btn-explain"><i class="fa-solid fa-wand-magic-sparkles"></i> Explain</button>
+        <button id="btn-speak"><i class="fa-solid fa-volume-high"></i> Speak</button>
+        <button id="btn-highlight"><i class="fa-solid fa-marker"></i> Highlight</button>
+        <button id="btn-copy"><i class="fa-regular fa-copy"></i> Copy</button>
     </div>
 
-    <!-- Import Maps -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "peerjs": "https://esm.sh/peerjs@1.5.2?bundle-deps",
-                "mqtt": "https://esm.sh/mqtt@5.3.5"
+   <script type="module">
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+ import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+ import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-functions.js";
+ import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+ const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+ document.documentElement.classList.toggle('touch-device', isTouchDevice);
+
+ let app, auth, functions, explainBookTextFn, db;
+ let getSpokenExplanationFn;
+
+ // ─────────────────────────────────────────────────────────────
+ // Robust background noise engine for Kaffetish
+ // Seamless crossfades, safe start/stop, rapid toggle proof
+ // ─────────────────────────────────────────────────────────────
+ class NoiseEngine {
+   /**
+    * @param {Object} opts
+    * @param {string} opts.url - audio file url
+    * @param {number} [opts.fadeIn=2.0] - seconds master fade-in
+    * @param {number} [opts.fadeOut=1.0] - seconds master fade-out
+    * @param {number} [opts.crossfade=0.08] - seconds per-loop crossfade
+    * @param {number} [opts.ahead=0.6] - schedule ahead window (sec)
+    */
+   constructor(opts) {
+     this.url = opts.url;
+     this.FADE_IN = opts.fadeIn ?? 2.0;
+     this.FADE_OUT = opts.fadeOut ?? 1.0;
+     this.CROSS = Math.max(0.02, opts.crossfade ?? 0.08);
+     this.AHEAD = opts.ahead ?? 0.6;
+
+     this.ctx = null;
+     this.buffer = null;
+
+     this.master = null;
+     this.laneGains = [null, null];
+     this.activeSources = new Set();
+
+     this.nextTime = 0;
+     this.timer = null;
+     this.playing = false;
+
+     this.generation = 0;
+   }
+
+   async init() {
+     if (this.ctx) return;
+     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+     this.master = this.ctx.createGain();
+     this.master.gain.value = 0;
+     this.master.connect(this.ctx.destination);
+
+     this.laneGains = [this.ctx.createGain(), this.ctx.createGain()];
+     this.laneGains[0].gain.value = 0;
+     this.laneGains[1].gain.value = 0;
+     this.laneGains[0].connect(this.master);
+     this.laneGains[1].connect(this.master);
+
+     const resp = await fetch(this.url);
+     const buf = await resp.arrayBuffer();
+     this.buffer = await this.ctx.decodeAudioData(buf);
+   }
+
+   async start() {
+     await this.init();
+     if (this.playing && this.ctx.state === 'running') return;
+
+     if (this.ctx.state === 'suspended') {
+       await this.ctx.resume();
+     }
+
+     this.playing = true;
+     const myGen = ++this.generation;
+
+     const now = this.ctx.currentTime;
+     this.master.gain.cancelScheduledValues(now);
+     this.master.gain.setValueAtTime(this.master.gain.value, now);
+     this.master.gain.linearRampToValueAtTime(1.0, now + this.FADE_IN);
+
+     for (const g of this.laneGains) {
+       g.gain.cancelScheduledValues(now);
+       g.gain.setValueAtTime(0.0, now);
+     }
+
+     this.nextTime = now + 0.02;
+     this._scheduleMore(myGen);
+   }
+
+   stop() {
+     if (!this.ctx) return;
+     if (!this.playing) return;
+
+     this.playing = false;
+     const myGen = ++this.generation;
+
+     const now = this.ctx.currentTime;
+     this.master.gain.cancelScheduledValues(now);
+     this.master.gain.setValueAtTime(this.master.gain.value, now);
+     this.master.gain.linearRampToValueAtTime(0.0, now + this.FADE_OUT);
+
+     if (this.timer) {
+       clearTimeout(this.timer);
+       this.timer = null;
+     }
+
+     const killAt = now + this.FADE_OUT + 0.01;
+     for (const src of this.activeSources) {
+       try { src.stop(killAt); } catch {}
+     }
+     setTimeout(() => {
+       if (this.generation !== myGen) return;
+       for (const src of this.activeSources) {
+         try { src.disconnect(); } catch {}
+       }
+       this.activeSources.clear();
+       const t = this.ctx.currentTime;
+       for (const g of this.laneGains) {
+         g.gain.cancelScheduledValues(t);
+         g.gain.setValueAtTime(0.0, t);
+       }
+     }, (this.FADE_OUT + 0.2) * 1000);
+   }
+
+   toggle() {
+     if (this.playing) this.stop();
+     else this.start();
+   }
+
+   _scheduleMore(gen) {
+     if (gen !== this.generation) return;
+     if (!this.playing || !this.buffer) return;
+
+     const now = this.ctx.currentTime;
+     const effective = Math.max(0.2, this.buffer.duration - this.CROSS);
+
+     while (this.nextTime < now + this.AHEAD) {
+       const laneIndex = Math.round(this.nextTime / effective) % 2;
+       const gainIn = this.laneGains[laneIndex];
+       const gainOut = this.laneGains[1 - laneIndex];
+
+       const src = this.ctx.createBufferSource();
+       src.buffer = this.buffer;
+       src.connect(gainIn);
+
+       gainIn.gain.cancelScheduledValues(this.nextTime);
+       gainIn.gain.setValueAtTime(0.0, this.nextTime);
+       gainIn.gain.linearRampToValueAtTime(1.0, this.nextTime + this.CROSS);
+
+       const outStart = this.nextTime + effective - this.CROSS;
+       gainOut.gain.cancelScheduledValues(outStart);
+       gainOut.gain.setValueAtTime(1.0, outStart);
+       gainOut.gain.linearRampToValueAtTime(0.0, outStart + this.CROSS);
+
+       src.start(this.nextTime);
+       src.stop(this.nextTime + effective + 0.02);
+
+       this.activeSources.add(src);
+       src.onended = () => {
+         this.activeSources.delete(src);
+         try { src.disconnect(); } catch {}
+       };
+
+       this.nextTime += effective;
+     }
+
+     const waitMs = Math.max(60, (this.AHEAD * 0.5) * 1000);
+     this.timer = setTimeout(() => this._scheduleMore(gen), waitMs);
+   }
+ }
+
+ // --- Noise Engine (instance) ---
+ const noiseEngine = new NoiseEngine({
+   url: 'https://kaffetish.club/audio/BlackNoise.mp3',
+   fadeIn: 2.0,
+   fadeOut: 1.0,
+   crossfade: 0.08,
+   ahead: 0.6
+ });
+ // --- End Noise Engine ---
+
+ const firebaseConfig = {
+   apiKey: "AIzaSyAbnPpcIt88B0jIAoLUdC71zmQDvR_fdu8",
+   authDomain: "physmathacademy-722b3.firebaseapp.com",
+   projectId: "physmathacademy-722b3",
+   storageBucket: "physmathacademy-722b3.firebasestorage.app",
+   messagingSenderId: "1093640992262",
+   appId: "1:1093640992262:web:35b1bf4d2364bcf745f587",
+ };
+
+ if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith("AIza")) {
+   app = initializeApp(firebaseConfig);
+   auth = getAuth(app);
+   functions = getFunctions(app, "us-central1");
+   db = getFirestore(app);
+   explainBookTextFn = httpsCallable(functions, "explainBookText");
+   getSpokenExplanationFn = httpsCallable(functions, "getSpokenExplanation");
+ } else {
+   console.warn("Firebase config is missing or incomplete. AI and bookmark features will be disabled.");
+ }
+
+ const DOM = {
+   body: document.body, header: document.getElementById('app-header'),
+   mainContent: document.getElementById('main-content'),
+   readerControls: document.getElementById('reader-controls'),
+   fallbackView: document.getElementById('fallback-view'),
+   fallbackText: document.getElementById('fallback-text'),
+   readerView: document.getElementById('reader-view'), loadingView: document.getElementById('loading-view'),
+   loadingText: document.getElementById('loading-text'),
+   pageContainer: document.getElementById('page-container'),
+   pageContent: document.getElementById('page-content'),
+   pageNumber: document.getElementById('page-number'), bookTitle: document.getElementById('book-title'),
+   pageTotal: document.getElementById('page-total'), pageJumpInput: document.getElementById('page-jump'),
+   prevBtn: document.getElementById('prev-page'), nextBtn: document.getElementById('next-page'),
+   modeToggle: document.getElementById('mode-toggle'),
+   modeIcon: document.getElementById('mode-icon'), fontInc: document.getElementById('font-increase'),
+   fontDec: document.getElementById('font-decrease'),
+   tooltip: document.getElementById('selection-tooltip'),
+   tooltipExplain: document.getElementById('btn-explain'),
+   tooltipHighlight: document.getElementById('btn-highlight'),
+   tooltipSpeak: document.getElementById('btn-speak'),
+   tooltipCopy: document.getElementById('btn-copy'),
+   aiPanel: document.getElementById('ai-panel'), aiContent: document.getElementById('ai-content'),
+   aiClear: document.getElementById('ai-clear'), aiCopy: document.getElementById('ai-copy'),
+   mobilePageIndicator: document.getElementById('mobile-page-indicator'),
+   mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+   mobileMenuOverlay: document.getElementById('mobile-menu-overlay'),
+   mobileNavMenu: document.getElementById('mobile-nav-menu'),
+   mobileMenuClose: document.getElementById('mobile-menu-close'),
+   mobileModeToggle: document.getElementById('mobile-mode-toggle'),
+   mobileModeIcon: document.getElementById('mobile-mode-icon'),
+   mobileFontInc: document.getElementById('mobile-font-increase'),
+   mobileFontDec: document.getElementById('mobile-font-decrease'),
+   mobileFontSizeDisplay: document.getElementById('mobile-font-size-display'),
+   mobilePageJumpInput: document.getElementById('mobile-page-jump'),
+   mobilePageTotal: document.getElementById('mobile-page-total'),
+   mobileNoiseToggle: document.getElementById('mobile-noise-toggle'),
+   mobileNoiseIcon: document.getElementById('mobile-noise-icon'),
+   viewModeToggle: document.getElementById('view-mode-toggle'),
+   mobileViewModeToggle: document.getElementById('mobile-view-mode-toggle'),
+   mobileViewModeIcon: document.getElementById('mobile-view-mode-icon'),
+   mobileViewModeText: document.getElementById('mobile-view-mode-text'),
+   desktopNoiseToggle: document.getElementById('btn-noise-toggle'),
+   mobileActionBtn: document.getElementById('mobile-action-btn'),
+   mobileActionIcon: document.getElementById('mobile-action-icon'),
+   mobileActionText: document.getElementById('mobile-action-text'),
+   bookmarkPageBtn: document.getElementById('btn-bookmark-page'),
+   mobileBookmarkPageBtn: document.getElementById('mobile-btn-bookmark-page'),
+ };
+
+ const state = {
+   pdfDoc: null, totalPages: 0, currentPage: 1,
+   pagesHTML: [], isRendering: false,
+   currentFontRem: parseFloat(localStorage.getItem("kaffetishFontRem") || "1.15"),
+   mode: "light",
+   viewMode: localStorage.getItem("kaffetishViewMode") || "paragraphized",
+   touch: { startX: 0, startY: 0, startTime: 0, justSwiped: false, lastTapTime: 0 }, // <-- MODIFIED
+   lastSelectionText: "",
+   lastSelectionRange: null,
+   lastSelectionContext: "",
+   currentSessionId: null,
+   bookTitle: null,
+   bookId: null,
+   bookmark: null,
+   isExplanationViewActive: false,
+   cachedPageHTML: null,
+   lastScrollPosition: 0,
+   isNoisePlaying: localStorage.getItem("kaffetishNoise") === 'true',
+   speechSynthesis: window.speechSynthesis,
+   audioCtx: null,
+   currentAudioSource: null,
+   currentSpokenHighlight: null // <-- MODIFIED: To track the "Speak" highlight
+ };
+ const baseFontRem = 1.15;
+
+ async function trackUserActivity() {
+   if (!auth?.currentUser || !db) return;
+   const userDocRef = doc(db, "users", auth.currentUser.uid);
+   try {
+     await setDoc(userDocRef, { lastSeen: serverTimestamp(), createdAt: serverTimestamp() }, { merge: true });
+   } catch (e) { console.error("Error tracking user activity:", e); }
+ }
+
+ async function startReadingSession(bookTitle) {
+   if (!auth?.currentUser || !db || state.currentSessionId) return;
+   state.bookTitle = bookTitle;
+   const sessionsColRef = collection(db, "reading_sessions");
+   try {
+     const sessionDocRef = await addDoc(sessionsColRef, {
+       userId: auth.currentUser.uid,
+       bookTitle: bookTitle,
+       startTime: serverTimestamp(),
+       endTime: null
+     });
+     state.currentSessionId = sessionDocRef.id;
+   } catch (e) { console.error("Error starting session:", e); }
+ }
+
+ async function endReadingSession() {
+   if (!state.currentSessionId || !db) return;
+   const sessionDocRef = doc(db, "reading_sessions", state.currentSessionId);
+   try {
+     await updateDoc(sessionDocRef, { endTime: serverTimestamp() });
+     state.currentSessionId = null;
+   } catch (e) { console.error("Error ending session:", e); }
+ }
+
+ async function trackExplanationRequest(text) {
+   if (!auth?.currentUser || !db) return;
+   const explanationsColRef = collection(db, "explanation_requests");
+   try {
+     await addDoc(explanationsColRef, {
+       userId: auth.currentUser.uid,
+       bookTitle: state.bookTitle,
+       requestedText: text,
+       timestamp: serverTimestamp()
+     });
+   } catch (e) { console.error("Error tracking explanation:", e); }
+ }
+
+ const escapeHTML = (s) => s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+ function setMode(mode) {
+   state.mode = mode;
+   DOM.body.classList.toggle("dark-mode", mode === 'dark');
+   const isDark = mode === 'dark';
+   [DOM.modeIcon, DOM.mobileModeIcon].forEach(icon => {
+     if (icon) {
+       icon.classList.toggle('fa-moon', !isDark);
+       icon.classList.toggle('fa-sun', isDark);
+     }
+   });
+   localStorage.setItem("kaffetishMode", mode);
+ }
+
+ function setViewMode(mode) {
+   state.viewMode = mode;
+   localStorage.setItem("kaffetishViewMode", mode);
+   
+   if (state.pdfDoc) {
+       state.pagesHTML = new Array(state.totalPages).fill(null);
+   }
+   
+   const isParagraphized = mode === 'paragraphized';
+   const iconClass = isParagraphized ? 'fa-file-lines' : 'fa-file-pdf';
+   const text = isParagraphized ? 'Mode: Reflowed' : 'Mode: Original';
+
+   if (DOM.viewModeToggle) DOM.viewModeToggle.querySelector('i').className = `fa-solid ${iconClass}`;
+   if (DOM.mobileViewModeIcon) DOM.mobileViewModeIcon.className = `fa-solid ${iconClass}`;
+   if (DOM.mobileViewModeText) DOM.mobileViewModeText.textContent = text;
+
+   if (state.pdfDoc) {
+       renderPage(state.currentPage);
+   }
+ }
+
+ function setFontRem(rem) {
+   state.currentFontRem = Math.min(2.0, Math.max(0.8, rem));
+   DOM.pageContent.style.fontSize = `${state.currentFontRem}rem`;
+   localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
+   const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
+   if (DOM.mobileFontSizeDisplay) DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
+ }
+
+ function showView(view) {
+   [DOM.fallbackView, DOM.readerView, DOM.loadingView].forEach(v => v.classList.add('hidden'));
+   view.classList.remove('hidden');
+   const isReader = view === DOM.readerView;
+   DOM.readerControls.classList.toggle('hidden', !isReader);
+   // *** MODIFIED: Don't show these on mobile anymore ***
+   // DOM.mobileMenuToggle.classList.toggle('hidden', !isReader);
+   // DOM.mobilePageIndicator.classList.toggle('hidden', !isReader);
+ }
+
+ async function loadPdfFromUrl(sourceUrl, title) {
+   showView(DOM.loadingView);
+   DOM.loadingText.textContent = `Brewing your document...`;
+   state.bookId = btoa(sourceUrl).replace(/\//g, '_');
+   state.bookTitle = title;
+
+   try {
+     const response = await fetch(sourceUrl);
+     
+     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+     const pdfData = await response.arrayBuffer();
+
+     const pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(pdfData) }).promise;
+     state.pdfDoc = pdfDoc;
+     state.totalPages = pdfDoc.numPages;
+     state.pagesHTML = new Array(state.totalPages).fill(null);
+
+     DOM.bookTitle.textContent = title.replace(/\.pdf$/i, "");
+
+     let startingPage = 1;
+
+     await auth.authStateReady?.();
+
+     const user = auth.currentUser;
+
+     if (state.bookId) {
+       const bookRef = doc(db, "KAFFETISH", state.bookId);
+       const bookSnap = await getDoc(bookRef);
+       if (bookSnap.exists() && bookSnap.data().lastPage) {
+         startingPage = bookSnap.data().lastPage;
+       }
+     }
+
+     await renderPage(startingPage);
+
+     showView(DOM.readerView);
+
+     startReadingSession(state.bookTitle);
+
+   } catch (err) {
+     console.error("PDF Loading/Processing Error:", err);
+     DOM.fallbackText.textContent = `There was an error loading the book "${title}".`;
+     showView(DOM.fallbackView);
+   }
+ }
+
+ function paragraphize(textContent) {
+   const pageWidth = textContent.styles ? textContent.styles[Object.keys(textContent.styles)[0]].fontSize * 60 : 600;
+   const items = textContent.items.map(it => ({
+     str: it.str, x: it.transform[4], y: it.transform[5],
+     fontSize: it.transform[0], height: it.height
+   }));
+   if (items.length === 0) return "";
+   let paragraphs = [], currentLine = "", currentStyle = null, lastY = items[0].y, lastHeight = items[0].height || 10;
+   const getStyle = (item) => {
+     const trimmedStr = item.str.trim();
+     const isCentered = Math.abs(item.x + (item.str.length * item.fontSize / 2) - pageWidth / 2) < pageWidth * 0.15;
+     if (item.fontSize > 20) return "h1";
+     if (item.fontSize > 13) return "h2";
+     if (/^(CHAPTER|PART|BOOK)\s+[\dIVXLCDM]+\.?$/i.test(trimmedStr)) return "h2";
+     if (/^[A-Z\s\d\.\-]+$/.test(trimmedStr) && trimmedStr.length > 1 && trimmedStr.length < 50 && isCentered) return "h2";
+     if (isCentered) return "center";
+     return "p";
+   };
+   for (const item of items) {
+     if (!item.str.trim()) continue;
+     const newStyle = getStyle(item);
+     const yGap = Math.abs(lastY - item.y);
+     const isStyleBreak = currentStyle && newStyle !== currentStyle && (currentStyle.startsWith('h') || newStyle.startsWith('h'));
+     const isParagraphBreak = yGap > lastHeight * 1.6 || isStyleBreak;
+     if (isParagraphBreak) {
+       if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+       currentLine = item.str;
+       currentStyle = newStyle;
+     } else {
+       if (/-$/.test(currentLine) && /^[a-z]/.test(item.str)) currentLine = currentLine.slice(0, -1);
+       else if (currentLine.length > 0 && !/[\s-]$/.test(currentLine)) currentLine += " ";
+       currentLine += item.str;
+       currentStyle = newStyle;
+     }
+     lastY = item.y;
+     lastHeight = item.height || lastHeight;
+   }
+   if (currentLine.trim()) paragraphs.push({ text: currentLine.trim(), style: currentStyle || "p" });
+   return paragraphs.map(p => {
+     const text = escapeHTML(p.text);
+     switch (p.style) {
+       case "h1": return `<h1 style="text-align:center">${text}</h1>`;
+       case "h2": return `<h2 style="text-align:center">${text}</h2>`;
+       case "center": return `<p style="text-align:center">${text}</p>`;
+       default: return `<p>${text}</p>`;
+     }
+   }).join("\n");
+ }
+
+ async function renderPage(pageNum) {
+   if (pageNum < 1 || pageNum > state.totalPages || state.isRendering) return;
+   if (state.currentPage === pageNum && DOM.pageContent.innerHTML !== "" && !state.isExplanationViewActive) return;
+
+   clearSelection();
+   state.isRendering = true;
+   state.currentPage = pageNum;
+
+   // Check cache first, then Firestore for highlights, then the PDF
+   if (!state.pagesHTML[pageNum - 1]) {
+     try {
+       const highlightRef = doc(db, "KAFFETISH", state.bookId, "highlights", String(pageNum));
+       const highlightSnap = await getDoc(highlightRef);
+
+       if (highlightSnap.exists()) {
+         state.pagesHTML[pageNum - 1] = highlightSnap.data().content;
+       } else {
+         const page = await state.pdfDoc.getPage(pageNum);
+         const textContent = await page.getTextContent({ normalizeWhitespace: true });
+         if (state.viewMode === 'paragraphized') {
+             state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+         } else {
+             state.pagesHTML[pageNum - 1] = textContent.items.map(it => 
+                 escapeHTML(it.str) + (it.hasEOL ? '<br>' : ' ')
+             ).join('');
+         }
+       }
+     } catch (e) {
+       console.error(`Failed to render page ${pageNum}:`, e);
+       state.pagesHTML[pageNum - 1] = "<p>Error loading page.</p>";
+     }
+   }
+
+   DOM.pageContent.innerHTML = state.pagesHTML[pageNum - 1] || "<p>Page is empty.</p>";
+
+   DOM.pageContent.classList.add("fade-in");
+   setTimeout(() => DOM.pageContent.classList.remove("fade-in"), 300);
+
+   DOM.pageNumber.textContent = `${pageNum} of ${state.totalPages}`;
+   DOM.pageTotal.textContent = `/ ${state.totalPages}`;
+   DOM.pageJumpInput.value = pageNum;
+   DOM.mobilePageIndicator.textContent = `${pageNum} / ${state.totalPages}`;
+   DOM.mobilePageJumpInput.value = pageNum;
+   DOM.mobilePageJumpInput.max = state.totalPages;
+   DOM.mobilePageTotal.textContent = `/ ${state.totalPages}`;
+   DOM.prevBtn.disabled = pageNum <= 1;
+   DOM.nextBtn.disabled = pageNum >= state.totalPages;
+   setFontRem(state.currentFontRem);
+
+   setTimeout(() => {
+     DOM.mainContent.scrollTop = 0;
+   }, 0);
+
+   state.isRendering = false;
+ }
+
+ function showTooltipAt(rect) {
+   DOM.tooltip.style.display = "flex";
+   const topBoundary = 68;
+   const top = rect.top - DOM.tooltip.offsetHeight - 8;
+   let left = rect.left + rect.width / 2 - DOM.tooltip.offsetWidth / 2;
+   left = Math.max(8, Math.min(left, window.innerWidth - DOM.tooltip.offsetWidth - 8));
+   DOM.tooltip.style.top = `${Math.max(top, topBoundary)}px`;
+   DOM.tooltip.style.left = `${left}px`;
+   requestAnimationFrame(() => { DOM.tooltip.classList.add('visible'); });
+ }
+
+ function hideTooltip() {
+   DOM.tooltip.classList.remove('visible');
+   setTimeout(() => { if (!DOM.tooltip.classList.contains('visible')) DOM.tooltip.style.display = 'none'; }, 150);
+ }
+
+ function clearSelection() {
+   hideTooltip();
+   if (!state.isExplanationViewActive) {
+     DOM.mobileActionBtn.classList.remove('visible');
+     DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+   }
+   if (window.getSelection) {
+     window.getSelection().removeAllRanges();
+   }
+ }
+
+ function getExpandedContext(range) {
+    const fullText = DOM.pageContent.innerText;
+    const words = fullText.split(/\s+/).filter(w => w.length > 0);
+    const selectedText = range.toString().trim();
+    const selectedWords = selectedText.split(/\s+/).filter(w => w.length > 0);
+
+    // Robust sequence search for the selected words within the page text
+    let startIndex = -1;
+    for (let i = 0; i <= words.length - selectedWords.length; i++) {
+        let match = true;
+        for (let j = 0; j < selectedWords.length; j++) {
+            if (words[i + j] !== selectedWords[j]) {
+                match = false;
+                break;
             }
         }
-    </script>
-
-    <script type="module">
-        import * as THREE from 'three';
-        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-        import { Peer } from 'peerjs';
-        import mqtt from 'mqtt';
-
-        // --- Configuration ---
-        const WORLD_SIZE = 60;
-        const PLAYER_HEIGHT = 1.6;
-        const MOVEMENT_SPEED = 10;
-        const JUMP_FORCE = 10;
-        const GRAVITY = 25;
-        const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
-        const MQTT_TOPIC = 'voxel-fps-p2p/lobby';
-        
-        // --- Globals ---
-        let camera, scene, renderer, controls;
-        let raycaster;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let canJump = false;
-        let prevTime = performance.now();
-        const velocity = new THREE.Vector3();
-        const direction = new THREE.Vector3();
-        
-        // Game State
-        let health = 100;
-        let currentHeight = PLAYER_HEIGHT;
-        let currentSpeed = MOVEMENT_SPEED;
-        const obstacles = []; // Array of meshes for collision
-        const bullets = []; // Active projectiles
-        const grenades = []; // Active grenades
-        const particles = []; // Visual particles
-        const peers = {}; // Connection objects
-        const remotePlayers = {}; // Meshes for remote players
-        let myPeerId = null;
-        let gameStarted = false;
-        let isMobile = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Match Logic
-        let myNickname = "Player";
-        let myTeam = 'blue'; // 'blue' or 'red'
-        let matchActive = false;
-        let matchTime = 180; // 3 minutes
-        let scores = { blue: 0, red: 0 };
-        let rounds = { blue: 0, red: 0 };
-        let playerStats = {}; // { peerId: { kills: 0, deaths: 0, nick: "...", team: "..." } }
-        let isTabPressed = false;
-        let isHost = false;
-        let isPublic = false;
-        let mqttClient = null;
-        let discoveredHosts = new Map(); // ID -> { info, timestamp }
-        let lastActivityTime = performance.now();
-        let soloStartTime = 0;
-        
-        let lastGrenadeTime = 0;
-        let grenadeChargeStart = 0;
-        let isChargingGrenade = false;
-        
-        let isSliding = false;
-        let lastSlideTime = 0;
-        let isCrouching = false;
-        let lastHealTime = 0;
-        
-        let muzzleLight;
-        // Mobile Input State
-        let joystick = { x: 0, y: 0, active: false, origin: {x:0, y:0} };
-        let touchLook = { active: false, lastX: 0, lastY: 0 };
-        
-        // Audio
-        const shootSound = new Audio('https://kaffetish.club/trash/shootcraft/shoot.mp3');
-        const hitSound = new Audio('https://kaffetish.club/trash/shootcraft/ah.mp3');
-        const runSound = new Audio('https://kaffetish.club/trash/shootcraft/run.mp3');
-        runSound.loop = true;
-        const boomSound = new Audio('https://kaffetish.club/trash/shootcraft/boom.mp3');
-        const ouchSound = new Audio('https://kaffetish.club/trash/shootcraft/ouch.m4a');
-        const slideSound = new Audio('https://kaffetish.club/trash/shootcraft/sliding.m4a');
-        const healSound = new Audio('https://kaffetish.club/trash/shootcraft/heal.mp3');
-        
-        // DOM Elements
-        const menuOverlay = document.getElementById('menu-overlay');
-        const mainMenu = document.getElementById('main-menu');
-        const pauseMenu = document.getElementById('pause-menu');
-        const resumeBtn = document.getElementById('resume-btn');
-        const exitBtn = document.getElementById('exit-btn');
-        const playBtn = document.getElementById('play-btn');
-        const copyBtn = document.getElementById('copy-btn');
-        const connectBtn = document.getElementById('connect-btn');
-        const peerInput = document.getElementById('peer-id-input');
-        const nicknameInput = document.getElementById('nickname-input');
-        const statusMsg = document.getElementById('status-msg');
-        const myIdDisplay = document.getElementById('my-id');
-        const healthBar = document.getElementById('health-bar');
-        const healthText = document.getElementById('health-text');
-        const killFeed = document.getElementById('kill-feed');
-        const minimapCanvas = document.getElementById('minimap');
-        const minimapCtx = minimapCanvas.getContext('2d');
-        const scoreBlueEl = document.getElementById('score-blue');
-        const scoreRedEl = document.getElementById('score-red');
-        const timerEl = document.getElementById('timer');
-        const tabScoreboard = document.getElementById('tab-scoreboard');
-        const blueList = document.getElementById('blue-list');
-        const redList = document.getElementById('red-list');
-        const browseBtn = document.getElementById('browse-btn');
-        const backBtn = document.getElementById('back-btn');
-        const serverBrowser = document.getElementById('server-browser');
-        const menuDefault = document.getElementById('menu-default');
-        const serverListEl = document.getElementById('server-list');
-        const publicCheck = document.getElementById('public-host-check');
-
-        // --- Initialization ---
-        init();
-        animate();
-        initNetwork();
-
-        function init() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); // Sky blue
-            scene.fog = new THREE.Fog(0x87CEEB, 0, 60);
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
-            // Spawn Logic
-            const spawn = getSpawnPoint();
-            camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
-            camera.lookAt(0, PLAYER_HEIGHT, 0); // Look at center
-
-            // Lights
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
-            hemiLight.position.set(0, 20, 0);
-            scene.add(hemiLight);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(10, 20, 10);
-            scene.add(dirLight);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-
-            // Controls
-            controls = new PointerLockControls(camera, document.body);
-            
-            controls.addEventListener('lock', () => {
-                menuOverlay.style.display = 'none';
-                if (isTabPressed) showScoreboard(true); // Ensure scoreboard shows if tab held
-            });
-            controls.addEventListener('unlock', () => {
-                // Pause Menu Logic
-                if (gameStarted && !isMobile) {
-                    mainMenu.style.display = 'none';
-                    pauseMenu.style.display = 'block';
-                    menuOverlay.style.display = 'flex';
-                    
-                    // If Tab caused unlock, hide menu immediately to allow quick resume
-                    if (isTabPressed) {
-                        menuOverlay.style.display = 'none';
-                    }
-                }
-                runSound.pause();
-            });
-
-            // Click to resume if unlocked by Tab
-            document.addEventListener('click', () => {
-                if (gameStarted && !isMobile && !controls.isLocked && menuOverlay.style.display === 'none') {
-                    controls.lock();
-                }
-            });
-
-            // World Generation
-            generateWorld();
-
-            // Weapon (Visual)
-            const gunGeo = new THREE.BoxGeometry(0.1, 0.1, 0.4);
-            const gunMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-            const gun = new THREE.Mesh(gunGeo, gunMat);
-            gun.position.set(0.2, -0.2, -0.3);
-            
-            muzzleLight = new THREE.PointLight(0xffff00, 0, 3);
-            muzzleLight.position.set(0, 0, -0.3);
-            gun.add(muzzleLight);
-            
-            camera.add(gun);
-            scene.add(camera);
-
-            // Raycaster
-            raycaster = new THREE.Raycaster();
-
-            // Event Listeners
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            document.addEventListener('mousedown', onMouseDown);
-            document.addEventListener('mousemove', () => lastActivityTime = performance.now());
-            window.addEventListener('resize', onWindowResize);
-            
-            playBtn.addEventListener('click', (e) => { 
-                e.stopPropagation();
-                if (nicknameInput.value) myNickname = nicknameInput.value;
-                isPublic = publicCheck.checked;
-                isHost = true; // Playing solo/waiting implies hosting
-                myTeam = 'blue'; // Host is always blue initially
-                gameStarted = true; 
-                lastActivityTime = performance.now();
-                soloStartTime = performance.now();
-                if (!isMobile) controls.lock();
-                else menuOverlay.style.display = 'none';
-                if (isPublic) startAdvertising();
-            });
-            resumeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (!isMobile) controls.lock();
-                else menuOverlay.style.display = 'none';
-            });
-            exitBtn.addEventListener('click', exitMatch);
-            copyBtn.addEventListener('click', () => {
-                if (myPeerId) {
-                    navigator.clipboard.writeText(myPeerId);
-                    copyBtn.innerText = "Copied!";
-                    setTimeout(() => copyBtn.innerText = "Copy", 2000);
-                }
-            });
-            connectBtn.addEventListener('click', () => {
-                if (nicknameInput.value) myNickname = nicknameInput.value;
-                const id = peerInput.value;
-                if(id) connectToPeer(id);
-            });
-            
-            browseBtn.addEventListener('click', () => {
-                menuDefault.style.display = 'none';
-                serverBrowser.style.display = 'flex';
-                startBrowsing();
-            });
-            
-            backBtn.addEventListener('click', () => {
-                serverBrowser.style.display = 'none';
-                menuDefault.style.display = 'block';
-                stopBrowsing();
-            });
-
-            // Mobile Events
-            if (isMobile) {
-                document.getElementById('mobile-controls').style.display = 'block';
-                document.getElementById('controls-hint').style.display = 'none';
-
-                const joyZone = document.getElementById('joystick-zone');
-                const joyKnob = document.getElementById('joystick-knob');
-                const lookZone = document.getElementById('mobile-look-zone');
-                
-                joyZone.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    lastActivityTime = performance.now();
-                    const touch = e.changedTouches[0];
-                    joystick.active = true;
-                    joystick.origin = { x: touch.clientX, y: touch.clientY };
-                    joystick.id = touch.identifier;
-                }, {passive: false});
-
-                joyZone.addEventListener('touchmove', (e) => {
-                    e.preventDefault();
-                    if (!joystick.active) return;
-                    const touch = Array.from(e.changedTouches).find(t => t.identifier === joystick.id);
-                    if (!touch) return;
-                    
-                    const dx = touch.clientX - joystick.origin.x;
-                    const dy = touch.clientY - joystick.origin.y;
-                    const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
-                    const angle = Math.atan2(dy, dx);
-                    
-                    joystick.x = (Math.cos(angle) * dist) / 40;
-                    joystick.y = (Math.sin(angle) * dist) / 40;
-                    
-                    joyKnob.style.transform = `translate(calc(-50% + ${Math.cos(angle)*dist}px), calc(-50% + ${Math.sin(angle)*dist}px))`;
-                }, {passive: false});
-
-                const endJoy = (e) => {
-                    if (Array.from(e.changedTouches).some(t => t.identifier === joystick.id)) {
-                        joystick.active = false;
-                        joystick.x = 0; joystick.y = 0;
-                        joyKnob.style.transform = `translate(-50%, -50%)`;
-                    }
-                };
-                joyZone.addEventListener('touchend', endJoy);
-                joyZone.addEventListener('touchcancel', endJoy);
-
-                lookZone.addEventListener('touchstart', (e) => {
-                    touchLook.active = true;
-                    touchLook.lastX = e.touches[0].clientX;
-                    touchLook.lastY = e.touches[0].clientY;
-                    lastActivityTime = performance.now();
-                });
-                lookZone.addEventListener('touchmove', (e) => {
-                    if (!touchLook.active) return;
-                    const dx = e.touches[0].clientX - touchLook.lastX;
-                    const dy = e.touches[0].clientY - touchLook.lastY;
-                    touchLook.lastX = e.touches[0].clientX;
-                    touchLook.lastY = e.touches[0].clientY;
-                    lastActivityTime = performance.now();
-                    
-                    camera.rotation.y -= dx * 0.005;
-                    camera.rotation.x -= dy * 0.005;
-                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
-                });
-                lookZone.addEventListener('touchend', () => touchLook.active = false);
-
-                document.getElementById('mobile-jump').addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    lastActivityTime = performance.now();
-                    if (canJump) { velocity.y += JUMP_FORCE; canJump = false; }
-                });
-                document.getElementById('mobile-shoot').addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    lastActivityTime = performance.now();
-                    onMouseDown({});
-                });
-            }
-
-            // Network Heartbeat (20 TPS)
-            setInterval(() => {
-                if (!gameStarted) return;
-                broadcast({
-                    t: 'm',
-                    x: camera.position.x,
-                    y: camera.position.y,
-                    z: camera.position.z,
-                    ry: camera.rotation.y,
-                    tm: myTeam, // Send team for late joiners/verification
-                    nick: myNickname
-                });
-            }, 50);
+        if (match) {
+            startIndex = i;
+            break;
         }
+    }
 
-        function generateWorld() {
-            const loader = new THREE.TextureLoader();
-            
-            // Textures
-            const grassTex = loader.load('https://kaffetish.club/trash/shootcraft/grass.jpg');
-            grassTex.wrapS = THREE.RepeatWrapping;
-            grassTex.wrapT = THREE.RepeatWrapping;
-            grassTex.repeat.set(WORLD_SIZE / 2, WORLD_SIZE / 2);
-            grassTex.magFilter = THREE.NearestFilter;
-            grassTex.colorSpace = THREE.SRGBColorSpace;
+    if (startIndex === -1) return selectedText;
 
-            const woodTex = loader.load('https://kaffetish.club/trash/shootcraft/wood.jpg');
-            woodTex.magFilter = THREE.NearestFilter;
-            woodTex.colorSpace = THREE.SRGBColorSpace;
+    const contextStart = Math.max(0, startIndex - 24);
+    const contextEnd = Math.min(words.length, startIndex + selectedWords.length + 24);
+    
+    return words.slice(contextStart, contextEnd).join(' ');
+ }
 
-            // Floor
-            const floorGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
-            const floorMat = new THREE.MeshStandardMaterial({ map: grassTex });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
+ async function handleExplain() {
+   const textToExplain = state.lastSelectionText;
+   const range = state.lastSelectionRange;
+   
+   if (!textToExplain || !explainBookTextFn) return;
+   
+   const expandedContext = range ? getExpandedContext(range) : state.lastSelectionContext;
 
-            // Random Voxels
-            const boxGeo = new THREE.BoxGeometry(2, 2, 2);
-            const boxMat = new THREE.MeshStandardMaterial({ map: woodTex });
+   clearSelection();
+   await trackExplanationRequest(textToExplain);
+   
+   const messageId = 'msg-' + Date.now();
+   const chatEntry = document.createElement('div');
+   chatEntry.className = 'chat-message';
+   chatEntry.innerHTML = `
+     <div class="chat-query">"${textToExplain}"</div>
+     <div id="${messageId}" class="chat-response"><i class="fa-solid fa-spinner fa-spin"></i> Librarian is thinking...</div>
+   `;
+   
+   if (DOM.aiContent.querySelector('p[style*="italic"]')) DOM.aiContent.innerHTML = '';
+   DOM.aiContent.appendChild(chatEntry);
+   DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
 
-            for (let i = 0; i < 40; i++) {
-                const box = new THREE.Mesh(boxGeo, boxMat);
-                box.position.x = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
-                box.position.y = 1; // On floor
-                box.position.z = (Math.random() - 0.5) * WORLD_SIZE * 0.8;
-                
-                // Keep spawn area clear
-                if (box.position.distanceTo(new THREE.Vector3(0,1,0)) < 5) continue;
-                
-                // Keep corners clear (Spawn Points)
-                const range = WORLD_SIZE / 2 - 5;
-                if (box.position.distanceTo(new THREE.Vector3(range, 1, range)) < 5) continue;
-                if (box.position.distanceTo(new THREE.Vector3(-range, 1, range)) < 5) continue;
-                if (box.position.distanceTo(new THREE.Vector3(range, 1, -range)) < 5) continue;
-                if (box.position.distanceTo(new THREE.Vector3(-range, 1, -range)) < 5) continue;
+   try {
+     const { data } = await explainBookTextFn({
+       text: textToExplain,
+       bookTitle: state.bookTitle,
+       contextText: expandedContext
+     });
 
-                scene.add(box);
-                obstacles.push(box);
-            }
+     const { simpleExplanation, contextualMeaning, keywords } = data.explanation;
+     const isWord = !textToExplain.trim().includes(' ');
+     let html = '';
 
-            // Clouds
-            const cloudGeo = new THREE.BoxGeometry(6, 2, 4);
-            const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
-            for (let i = 0; i < 20; i++) {
-                const cloud = new THREE.Mesh(cloudGeo, cloudMat);
-                cloud.position.set(
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5,
-                    30 + Math.random() * 15,
-                    (Math.random() - 0.5) * WORLD_SIZE * 1.5
-                );
-                scene.add(cloud);
-            }
+     if (isWord) {
+       // Single Word: Show definition and treat keywords as synonyms
+       html = `<p><strong>${escapeHTML(simpleExplanation)}</strong></p>`;
+       if (keywords?.length) {
+         const synonyms = keywords.map(kw => escapeHTML(kw.term)).join(', ');
+         html += `<p class="synonyms-list"><span>Synonyms:</span> ${synonyms}</p>`;
+       }
+     } else {
+       // Phrase: Lead with the breakdown directly, no repetition of selected text
+       html = `<p><strong>${escapeHTML(simpleExplanation)}</strong></p>`;
+       if (contextualMeaning && contextualMeaning.toLowerCase() !== simpleExplanation.toLowerCase()) {
+         html += `<p class="context-subtext">${escapeHTML(contextualMeaning)}</p>`;
+       }
+     }
+
+     document.getElementById(messageId).innerHTML = html;
+     DOM.aiContent.scrollTop = DOM.aiContent.scrollHeight;
+
+   } catch (err) {
+     console.error("Error fetching explanation:", err);
+     const errorMsg = "Sorry, the librarian is busy at the moment.";
+     document.getElementById(messageId).textContent = errorMsg;
+   }
+ }
+
+ // *** MODIFIED: Logic to unwrap the "Speak" highlight ***
+ function unwrapSpokenHighlight() {
+    if (state.currentSpokenHighlight) {
+        const el = state.currentSpokenHighlight;
+        if (el.parentNode) {
+            // Replace the span with its inner text
+            el.parentNode.replaceChild(document.createTextNode(el.textContent), el);
         }
+        state.currentSpokenHighlight = null;
+    }
+ }
 
-        function getSpawnPoint() {
-            const range = WORLD_SIZE / 2 - 5;
-            const corners = [
-                {x: -range, z: -range}, {x: range, z: -range},
-                {x: range, z: range}, {x: -range, z: range}
-            ];
-            return corners[Math.floor(Math.random() * corners.length)];
+ /**
+  * 👈 *** MODIFIED FUNCTION ***
+  * Now highlights the text while speaking and un-highlights when done.
+  */
+ /**
+  * 👈 *** UPDATED FUNCTION (with Mobile Audio Fix) ***
+  * Now highlights the text, unlocks audio on tap, and un-highlights when done.
+  */
+ async function handleSpeak() {
+       const textToExplain = state.lastSelectionText;
+       if (!textToExplain || !getSpokenExplanationFn) return;
+ 
+       // *** FIX: UNLOCK AUDIO CONTEXT ***
+       // This must happen immediately on user tap for mobile to work.
+       if (!state.audioCtx) {
+           state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+       }
+       // Asynchronously resume, but don't await and block the rest of the UI
+       if (state.audioCtx.state === 'suspended') {
+           state.audioCtx.resume().then(() => {
+               console.log("AudioContext resumed by user gesture.");
+           }).catch(e => {
+               console.error("AudioContext resume failed", e);
+           });
+       }
+       // *** END FIX ***
+ 
+       // 1. Stop any audio that is currently playing
+       if (state.speechSynthesis.speaking) {
+           state.speechSynthesis.cancel();
+       }
+       if (state.currentAudioSource) {
+           try { state.currentAudioSource.stop(); } catch (e) {}
+           state.currentAudioSource = null;
+           unwrapSpokenHighlight(); // Stop and unwrap previous
+       }
+ 
+       await trackExplanationRequest(textToExplain);
+       
+       // 2. Programmatically highlight the text
+       if (state.lastSelectionRange) {
+           try {
+               const span = document.createElement("span");
+               span.className = "highlighted-text"; // Use existing highlight class
+               state.lastSelectionRange.surroundContents(span);
+               state.currentSpokenHighlight = span; // Store the reference
+           } catch (e) {
+               console.error("Highlighting for speak failed:", e);
+           }
+       }
+       
+       // 3. Clear the user's blue selection (our highlight remains)
+       clearSelection();
+       
+       // 4. UX FIX: Show a persistent loading message.
+       flashAI("Brewing your audio...", 999999); 
+ 
+       try {
+           // 5. Call the backend function
+           const { data } = await getSpokenExplanationFn({
+               text: textToExplain,
+               bookTitle: state.bookTitle,
+               contextText: state.lastSelectionContext
+           });
+ 
+           if (!data.audioBase64) {
+               throw new Error("No audio data received from server.");
+           }
+ 
+           // 6. Decode the Base64 MP3 data
+           // (The AudioContext was already created/resumed at the start)
+           const audioData = atob(data.audioBase64); // Decode base64
+           const audioBuffer = new Uint8Array(audioData.length);
+           for (let i = 0; i < audioData.length; i++) {
+               audioBuffer[i] = audioData.charCodeAt(i);
+           }
+           
+           const decodedBuffer = await state.audioCtx.decodeAudioData(audioBuffer.buffer);
+ 
+           // 7. Play the audio
+           const source = state.audioCtx.createBufferSource();
+           source.buffer = decodedBuffer;
+           source.connect(state.audioCtx.destination);
+           source.start(0);
+           
+           // 8. UX FIX: Update the UI now that speech has started
+           flashAI("Speaking...", 4000); // Show "Speaking" briefly
+ 
+           state.currentAudioSource = source; // Store for stopping
+           
+           source.onended = () => {
+               state.currentAudioSource = null;
+               unwrapSpokenHighlight(); // Remove highlight when done
+           };
+ 
+       } catch (err) {
+           console.error("Error fetching/playing spoken explanation:", err);
+           // 9. UX FIX: Show an error in the persistent panel
+           flashAI("Sorry, I couldn't get that explanation.", 3000);
+           unwrapSpokenHighlight(); // Remove highlight on error
+       }
+ }
+
+ function enterExplanationView(initialContent) {
+   state.isExplanationViewActive = true;
+   state.lastScrollPosition = DOM.mainContent.scrollTop;
+   state.cachedPageHTML = DOM.pageContent.innerHTML;
+   DOM.mobileActionBtn.classList.add('return-mode', 'visible');
+   DOM.mobileActionIcon.className = 'fa-solid fa-arrow-left';
+   DOM.mobileActionText.textContent = 'Return';
+
+   DOM.pageContent.classList.add('content-fading');
+
+   setTimeout(() => {
+     const explanationHTML = `
+       <div class="explanation-view-content">
+         <h4 class="explanation-title"><i class="fa-solid fa-star"></i>Explanation</h4>
+         <div class="explanation-text">${initialContent}</div>
+         <div class="explanation-actions">
+           <button id="mobile-speak-btn" class="menu-button"><i class="fa-solid fa-volume-high"></i> Speak</button>
+           <button id="mobile-copy-btn" class="menu-button"><i class="fa-regular fa-copy"></i> Copy</button>
+         </div>
+       </div>
+     `;
+     DOM.pageContent.innerHTML = explanationHTML;
+     setFontRem(state.currentFontRem);
+     DOM.pageContent.classList.remove('content-fading');
+     DOM.mainContent.scrollTop = 0;
+   }, 200);
+
+   // Use event delegation for buttons inside the new view
+   DOM.pageContent.addEventListener('click', explanationViewClickHandler);
+ }
+
+ function updateExplanationView(finalContent) {
+   const explanationTextElement = DOM.pageContent.querySelector('.explanation-text');
+   if (explanationTextElement) {
+     explanationTextElement.innerHTML = finalContent;
+     // Make speak button active
+     const speakBtn = document.getElementById('mobile-speak-btn');
+     if(speakBtn) speakBtn.disabled = false;
+   }
+ }
+
+ function explanationViewClickHandler(event) {
+     const speakBtn = event.target.closest('#mobile-speak-btn');
+     const copyBtn = event.target.closest('#mobile-copy-btn');
+
+     if (speakBtn) {
+         // This currently uses the old, less-reliable browser synthesis.
+         // We can upgrade this later to use the new handleSpeak logic.
+         const explanationText = DOM.pageContent.querySelector('.explanation-text')?.innerText;
+         if (explanationText && !state.speechSynthesis.speaking) {
+             const utterance = new SpeechSynthesisUtterance(explanationText);
+             state.speechSynthesis.speak(utterance);
+         } else if (state.speechSynthesis.speaking) {
+             state.speechSynthesis.cancel();
+         }
+     } else if (copyBtn) {
+         const explanationText = DOM.pageContent.querySelector('.explanation-text')?.innerText;
+         if (explanationText) navigator.clipboard.writeText(explanationText).catch(console.error);
+     }
+ }
+
+ function returnToBookView() {
+   if (!state.isExplanationViewActive) return;
+   if (state.speechSynthesis.speaking) state.speechSynthesis.cancel();
+   
+   if (state.currentAudioSource) {
+       state.currentAudioSource.stop();
+       state.currentAudioSource = null;
+   }
+   
+   unwrapSpokenHighlight(); // <-- *** MODIFIED: Ensure highlight is removed ***
+
+   state.isExplanationViewActive = false;
+   clearSelection(); // This is already here, perfect.
+
+   DOM.pageContent.classList.add('content-fading');
+
+   setTimeout(() => {
+     DOM.pageContent.innerHTML = state.cachedPageHTML;
+     state.cachedPageHTML = null;
+     setFontRem(state.currentFontRem);
+     DOM.pageContent.classList.remove('content-fading');
+     DOM.mainContent.scrollTop = state.lastScrollPosition;
+     DOM.pageContent.removeEventListener('click', explanationViewClickHandler);
+   }, 200);
+
+   DOM.mobileActionBtn.classList.remove('return-mode', 'visible');
+   DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
+   DOM.mobileActionText.textContent = 'Explain';
+   DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+ }
+
+ async function handleHighlight() {
+   if (state.lastSelectionRange) {
+     try {
+       const span = document.createElement("span");
+       span.className = "highlighted-text";
+       state.lastSelectionRange.surroundContents(span);
+       
+       // Persist the highlighted HTML to the KAFFETISH collection
+       if (state.bookId) {
+         const pageRef = doc(db, "KAFFETISH", state.bookId, "highlights", String(state.currentPage));
+         await setDoc(pageRef, {
+             content: DOM.pageContent.innerHTML,
+             updatedAt: serverTimestamp()
+         });
+       }
+     } catch (e) { console.error("Highlighting failed:", e); }
+   }
+   state.pagesHTML[state.currentPage - 1] = DOM.pageContent.innerHTML;
+   clearSelection();
+ }
+
+ async function handleBookmarkPage() {
+   if (!state.bookId) return;
+
+   try {
+     const bookRef = doc(db, "KAFFETISH", state.bookId);
+     await setDoc(bookRef, { 
+       lastPage: state.currentPage, 
+       updatedAt: serverTimestamp() 
+     }, { merge: true });
+     
+     flashAI(`Page ${state.currentPage} bookmarked!`, 2000);
+   } catch (e) {
+     console.error("Error saving bookmark:", e);
+     flashAI("Failed to save bookmark.", 3000);
+   }
+ }
+
+ function handleCopy() {
+   if (state.lastSelectionText) navigator.clipboard.writeText(state.lastSelectionText).catch(console.error);
+   clearSelection();
+ }
+
+ function flashAI(msg, duration = 2000) {
+   // aiPanel is now a persistent flex container on desktop.
+   // On mobile, we avoid using it for transient flashes.
+   if (window.innerWidth > 860) {
+     DOM.aiPanel.style.display = "flex";
+   }
+   DOM.aiContent.textContent = msg;
+   
+   if (DOM.aiPanel.flashTimer) {
+     clearTimeout(DOM.aiPanel.flashTimer);
+   }
+
+   DOM.aiPanel.flashTimer = setTimeout(() => { 
+     if (DOM.aiContent.textContent === msg) {
+         if (window.innerWidth <= 860) {
+            DOM.aiPanel.style.display = "none"; 
+         }
+     }
+   }, duration);
+ }
+
+ function setupEventListeners() {
+   DOM.prevBtn.addEventListener("click", () => renderPage(state.currentPage - 1));
+   DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
+   DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
+   [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
+   [DOM.viewModeToggle, DOM.mobileViewModeToggle].forEach(btn => {
+       if (btn) btn.addEventListener("click", () => {
+           setViewMode(state.viewMode === 'paragraphized' ? 'original' : 'paragraphized');
+       });
+   });
+   [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
+   [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+
+   DOM.tooltipExplain.addEventListener("click", handleExplain);
+   DOM.tooltipHighlight.addEventListener("click", handleHighlight);
+   DOM.tooltipSpeak.addEventListener("click", handleSpeak);
+   DOM.tooltipCopy.addEventListener("click", handleCopy);
+
+   DOM.bookmarkPageBtn.addEventListener("click", handleBookmarkPage);
+   DOM.mobileBookmarkPageBtn.addEventListener("click", () => {
+     handleBookmarkPage();
+     DOM.body.classList.remove('menu-open');
+   });
+
+   DOM.aiClear?.addEventListener("click", () => { DOM.aiContent.innerHTML = '<p style="color:var(--subtle); font-style: italic;">Chat cleared.</p>'; });
+   DOM.aiCopy?.addEventListener("click", () => { 
+       const responses = DOM.aiContent.querySelectorAll('.chat-response');
+       if (responses.length) {
+           navigator.clipboard.writeText(responses[responses.length-1].innerText);
+           flashAI("Last explanation copied!");
+       }
+   });
+   
+   // *** MODIFIED: Toggle is no longer in the header ***
+   // DOM.mobileMenuToggle.addEventListener('click', () => DOM.body.classList.add('menu-open'));
+   
+   DOM.mobileMenuOverlay.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+   DOM.mobileMenuClose.addEventListener('click', () => DOM.body.classList.remove('menu-open'));
+   DOM.mobilePageJumpInput.addEventListener("change", () => {
+     const p = parseInt(DOM.mobilePageJumpInput.value, 10);
+     if (!isNaN(p)) { renderPage(p); DOM.body.classList.remove('menu-open'); }
+   });
+
+   // --- Noise toggles (uses NoiseEngine) ---
+   if (DOM.mobileNoiseToggle) {
+     DOM.mobileNoiseToggle.addEventListener("click", () => {
+       state.isNoisePlaying = !state.isNoisePlaying;
+       localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
+       if (state.isNoisePlaying) {
+         noiseEngine.start();
+         DOM.mobileNoiseToggle.classList.add('active');
+         DOM.desktopNoiseToggle?.classList.add('active');
+       } else {
+         noiseEngine.stop();
+         DOM.mobileNoiseToggle.classList.remove('active');
+         DOM.desktopNoiseToggle?.classList.remove('active');
+       }
+     });
+   }
+   if (DOM.desktopNoiseToggle) {
+     DOM.desktopNoiseToggle.addEventListener("click", () => {
+       state.isNoisePlaying = !state.isNoisePlaying;
+       localStorage.setItem("kaffetishNoise", state.isNoisePlaying);
+       if (state.isNoisePlaying) {
+         noiseEngine.start();
+         DOM.desktopNoiseToggle.classList.add('active');
+         DOM.mobileNoiseToggle?.classList.add('active');
+       } else {
+         noiseEngine.stop();
+         DOM.desktopNoiseToggle.classList.remove('active');
+         DOM.mobileNoiseToggle?.classList.remove('active');
+       }
+     });
+   }
+   document.addEventListener('visibilitychange', () => {
+     if (document.visibilityState === 'hidden') {
+       noiseEngine.stop();
+     } else if (state.isNoisePlaying) {
+       noiseEngine.start();
+     }
+   });
+   // --- End noise ---
+
+   DOM.mobileActionBtn?.addEventListener("click", () => {
+        // *** MODIFIED: Button logic is now more complex ***
+        if (state.isExplanationViewActive) {
+            returnToBookView();
+        } else if (state.lastSelectionText) {
+            // Mobile users use the island button to trigger the Librarian
+            handleExplain(); 
         }
+   });
 
-        function exitMatch() {
-            // Disconnect from all peers
-            for (let id in peers) {
-                if (peers[id]) {
-                    peers[id].close();
-                }
-            }
-            // The 'close' event listeners will handle cleanup.
+   document.addEventListener('keydown', (e) => {
+     if (e.target.tagName === 'INPUT' || state.isRendering) return;
+     if (e.key === 'ArrowLeft') DOM.prevBtn.click();
+     else if (e.key === 'ArrowRight') DOM.nextBtn.click();
+     else if (e.key === 'Escape') {
+         if (state.speechSynthesis.speaking) state.speechSynthesis.cancel();
+         if (state.currentAudioSource) { 
+             state.currentAudioSource.stop();
+             state.currentAudioSource = null;
+         }
+         unwrapSpokenHighlight(); // <-- *** MODIFIED: Unwrap on escape ***
+     }
+   });
+   document.addEventListener('visibilitychange', () => {
+     if (document.visibilityState === 'hidden') { endReadingSession(); }
+   });
+   document.addEventListener('pagehide', endReadingSession);
+   setupSelectionHandler();
+   if (isTouchDevice) { setupSwipeNavigation(); }
+ }
 
-            if (mqttClient) { mqttClient.end(); mqttClient = null; }
-            // Reset local game state
-            gameStarted = false;
-            health = 100;
-            updateHealthUI();
-            const spawn = getSpawnPoint();
-            camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
-            velocity.set(0, 0, 0);
+ function setupSelectionHandler() {
+   const contentArea = DOM.pageContent;
 
-            // Reset UI to initial state
-            mainMenu.style.display = 'block';
-            pauseMenu.style.display = 'none';
-            menuDefault.style.display = 'block';
-            serverBrowser.style.display = 'none';
-            menuOverlay.style.display = 'flex';
-            statusMsg.innerText = "Ready to connect.";
+   const handleSelection = (e) => {
+     setTimeout(() => {
+       if (state.isExplanationViewActive) return;
+
+       const sel = window.getSelection();
+       if (!sel || sel.isCollapsed) {
+           if (isTouchDevice) {
+               DOM.mobileActionBtn.classList.remove('visible');
+           } else {
+               hideTooltip();
+           }
+           return;
+       }
+
+       // Snapping logic: Extend selection to word boundaries
+       if (sel.anchorNode && sel.anchorNode === sel.focusNode) {
+           const range = sel.getRangeAt(0);
+           while (range.startOffset > 0 && /\w/.test(range.startContainer.textContent[range.startOffset - 1])) {
+               range.setStart(range.startContainer, range.startOffset - 1);
+           }
+           while (range.endOffset < range.endContainer.textContent.length && /\w/.test(range.endContainer.textContent[range.endOffset])) {
+               range.setEnd(range.endContainer, range.endOffset + 1);
+           }
+           sel.removeAllRanges();
+           sel.addRange(range);
+       }
+
+       const text = sel ? sel.toString().trim() : '';
+
+       if (text.length >= 1 && !sel.isCollapsed) {
+         state.lastSelectionText = text;
+         try {
+           const range = sel.getRangeAt(0);
+           state.lastSelectionRange = range;
+
+           let contextNode = range.commonAncestorContainer;
+           if (contextNode.nodeType === Node.TEXT_NODE) {
+             contextNode = contextNode.parentNode;
+           }
+
+           if (contentArea.contains(contextNode)) {
+             state.lastSelectionContext = contextNode.textContent || '';
+           } else {
+             state.lastSelectionContext = text;
+           }
+         } catch (e) {
+           console.error("Could not get selection range or context.", e);
+           state.lastSelectionContext = text;
+         }
+
+         if (isTouchDevice) {
+           DOM.mobileActionBtn.classList.remove('return-mode');
+           DOM.mobileActionIcon.className = 'fa-solid fa-wand-magic-sparkles';
+           DOM.mobileActionText.textContent = 'Explain';
+           DOM.mobileActionBtn.classList.add('visible');
+           DOM.mobileActionBtn.setAttribute('aria-hidden', 'false');
+         } else {
+           showTooltipAt(state.lastSelectionRange.getBoundingClientRect());
+         }
+       } else {
+         if (isTouchDevice) {
+           DOM.mobileActionBtn.classList.remove('visible');
+           DOM.mobileActionBtn.setAttribute('aria-hidden', 'true');
+         } else {
+           hideTooltip();
+         }
+       }
+     }, 100);
+   };
+
+   document.addEventListener('selectionchange', handleSelection);
+   document.addEventListener('mouseup', handleSelection);
+ }
+
+ // *** MODIFIED: Replaced function to handle swipes AND double-taps ***
+ function setupSwipeNavigation() {
+    // This listener is now on `touchstart` to manage swipe AND tap logic
+    DOM.mainContent.addEventListener('touchstart', (e) => {
+        if (e.touches.length > 1 || state.isExplanationViewActive) return;
+        const touch = e.touches[0];
+        state.touch.startX = touch.screenX;
+        state.touch.startY = touch.screenY;
+        state.touch.startTime = Date.now();
+    }, { passive: true });
+
+    DOM.mainContent.addEventListener('touchend', (e) => {
+        if (e.changedTouches.length === 0 || state.isExplanationViewActive) return;
+
+        const touch = e.changedTouches[0];
+        const deltaX = touch.screenX - state.touch.startX;
+        const deltaY = touch.screenY - state.touch.startY; // Corrected: was screenX
+        const elapsedTime = Date.now() - state.touch.startTime;
+
+        // 1. Swipe Logic (existing)
+        if (elapsedTime < 500 && Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > 0) DOM.prevBtn.click();
+            else DOM.nextBtn.click();
+            state.touch.lastTapTime = 0; // Reset tap on a successful swipe
         }
-        
-        function updateScoreUI() {
-            scoreBlueEl.innerText = `BLUE: ${scores.blue} (${rounds.blue})`;
-            scoreRedEl.innerText = `RED: ${scores.red} (${rounds.red})`;
-        }
-
-        function checkMatchStart() {
-            // Host Logic: Start match if 2+ players and not active
-            if (isHost && !matchActive && Object.keys(peers).length >= 1) {
-                matchActive = true;
-                matchTime = 180;
-                broadcast({ t: 'sys', k: 'start' });
-            }
-        }
-
-        function endGame() {
-            matchActive = false;
-            gameStarted = false;
-            document.exitPointerLock();
-            document.getElementById('game-over').style.display = 'flex';
-            
-            let winner = "DRAW";
-            if (scores.blue > scores.red) { winner = "BLUE"; rounds.blue++; }
-            else if (scores.red > scores.blue) { winner = "RED"; rounds.red++; }
-            
-            document.getElementById('winner-text').innerText = `${winner} WINS!`;
-            updateScoreUI();
-
-            if (isHost) {
-                setTimeout(() => {
-                    broadcast({ t: 'sys', k: 'restart' });
-                    resetMatch();
-                }, 3000);
-            }
-        }
-
-        function resetMatch() {
-            scores = { blue: 0, red: 0 };
-            for (let id in playerStats) { playerStats[id].kills = 0; playerStats[id].deaths = 0; }
-            matchTime = 180;
-            matchActive = true;
-            gameStarted = true;
-            updateScoreUI();
-            document.getElementById('game-over').style.display = 'none';
-            respawn();
-            if (!isMobile) controls.lock();
-        }
-
-        // --- Networking ---
-        function initNetwork() {
-            const shortId = Math.random().toString(36).substring(2, 8);
-            const peer = new Peer(shortId, {
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
-                    ]
-                }
-            });
-            
-            peer.on('open', (id) => {
-                myPeerId = id;
-                myIdDisplay.innerText = id;
-                playerStats[myPeerId] = { 
-                    kills: 0, deaths: 0, 
-                    nick: myNickname, team: myTeam 
-                };
-                statusMsg.innerText = "ID Generated. Share it with a friend.";
-            });
-
-            peer.on('connection', (conn) => {
-                setupConnection(conn);
-                statusMsg.innerText = "Incoming connection from " + conn.peer;
-            });
-
-            peer.on('error', (err) => {
-                console.error(err);
-                statusMsg.innerText = "Error: " + err.type;
-            });
-
-            window.connectToPeer = (id) => {
-                serverBrowser.style.display = 'none';
-                menuDefault.style.display = 'block';
-                stopBrowsing();
-
-                statusMsg.innerText = "Connecting to " + id + "...";
-                const conn = peer.connect(id);
-                setupConnection(conn);
-            };
-        }
-
-        function setupConnection(conn) {
-            // Max players check (Host side)
-            if (isHost && Object.keys(peers).length >= 9) {
-                conn.close();
-                return;
-            }
-
-            const register = () => {
-                if (!peers[conn.peer]) {
-                    peers[conn.peer] = conn;
-                    soloStartTime = 0;
-                    statusMsg.innerText = "Connected to " + conn.peer;
-                    
-                    // Handshake
-                    conn.send({ t: 'hello', nick: myNickname, team: myTeam });
-                    
-                    if (isHost) {
-                        checkMatchStart();
-                    }
-                }
-            };
-
-            if (conn.open) register();
-            conn.on('open', register);
-
-            conn.on('data', (data) => {
-                register();
-                handleData(conn.peer, data);
-            });
-
-            conn.on('close', () => {
-                removeRemotePlayer(conn.peer);
-                delete peers[conn.peer];
-                if (isHost && Object.keys(peers).length === 0) soloStartTime = performance.now();
-                statusMsg.innerText = "Disconnected from " + conn.peer;
-            });
-        }
-
-        function handleData(peerId, data) {
-            const sourceId = data.id || peerId;
-
-            // Relay Logic (Host Only)
-            if (isHost && peerId !== myPeerId && data.t !== 'hello') {
-                const relayData = { ...data, id: sourceId };
-                if (data.targetId) {
-                    if (peers[data.targetId]) peers[data.targetId].send(relayData);
-                } else {
-                    for (let pid in peers) {
-                        if (pid !== peerId) peers[pid].send(relayData);
-                    }
-                }
-            }
-
-            if (data.t === 'hello') {
-                // New player joined
-                let assignedTeam = data.team;
-                
-                // Host assigns team to balance
-                if (isHost) {
-                    let blueCount = (myTeam === 'blue' ? 1 : 0);
-                    let redCount = (myTeam === 'red' ? 1 : 0);
-                    for(let id in remotePlayers) {
-                        if(remotePlayers[id].userData.team === 'blue') blueCount++;
-                        else redCount++;
-                    }
-                    assignedTeam = blueCount <= redCount ? 'blue' : 'red';
-                    
-                    // Send Welcome Packet with Game State
-                    peers[peerId].send({ 
-                        t: 'welcome', 
-                        team: assignedTeam, 
-                        time: matchTime, 
-                        active: matchActive,
-                        scores: scores,
-                        rounds: rounds,
-                        stats: playerStats
-                    });
-                }
-                
-                createRemotePlayer(peerId, data.nick, assignedTeam);
-                
-            } else if (data.t === 'welcome') {
-                // We just joined, apply state from Host
-                myTeam = data.team;
-                matchTime = data.time;
-                matchActive = data.active;
-                scores = data.scores;
-                rounds = data.rounds || { blue: 0, red: 0 };
-                if (data.stats) playerStats = data.stats;
-                updateScoreUI();
-                gameStarted = true;
-                lastActivityTime = performance.now();
-                
-                menuOverlay.style.display = 'none';
-                if (!isMobile) {
-                    try { controls.lock(); } catch(e) {}
-                }
-                
-            } else if (data.t === 'm') { // Move
-                if (!remotePlayers[sourceId]) {
-                    createRemotePlayer(sourceId, data.nick || 'Player', data.tm || 'blue');
-                }
-                updateRemotePlayer(sourceId, data);
-            } else if (data.t === 'h') { // Hit
-                if (data.targetId === myPeerId) {
-                    takeDamage(data.d, sourceId, data.g);
-                }
-            } else if (data.t === 's') { // Shoot visual
-                visualizeShot(sourceId);
-            } else if (data.t === 'g') { // Grenade
-                spawnGrenade(new THREE.Vector3(data.x, data.y, data.z), new THREE.Vector3(data.vx, data.vy, data.vz), false);
-            } else if (data.t === 'die') { // Player died
-                const killerTeam = data.team === 'blue' ? 'red' : 'blue';
-                scores[killerTeam]++;
-                updateScoreUI();
-
-                // Update Stats
-                if (data.victimId && playerStats[data.victimId]) playerStats[data.victimId].deaths++;
-                if (data.killerId && playerStats[data.killerId]) playerStats[data.killerId].kills++;
-                
-                // Sync local stats if we are the victim (redundant but safe)
-                if (data.victimId === myPeerId && playerStats[myPeerId]) {
-                    playerStats[myPeerId].deaths = Math.max(playerStats[myPeerId].deaths, (playerStats[data.victimId]?.deaths || 0));
-                }
-
-                if (isTabPressed) showScoreboard(true); // Refresh if open
-                
-                const msg = document.createElement('div');
-                msg.className = 'kill-msg';
-                msg.innerText = data.killer ? `${data.killer} killed ${data.nick}` : `${data.nick} died`;
-                killFeed.appendChild(msg);
-                setTimeout(() => msg.remove(), 10000);
-            } else if (data.t === 'sys') { // System commands
-                if (data.k === 'start') { matchActive = true; matchTime = 180; }
-                if (data.k === 'tick') { matchTime = data.v; }
-                if (data.k === 'end') { endGame(); }
-                if (data.k === 'restart') { resetMatch(); }
-            }
-        }
-
-        function broadcast(data) {
-            for (let id in peers) {
-                peers[id].send(data);
-            }
-        }
-
-        // --- MQTT / Public Lobby Logic ---
-        function startAdvertising() {
-            if (!mqttClient) mqttClient = mqtt.connect(MQTT_BROKER);
-            
-            mqttClient.on('connect', () => {
-                console.log('Connected to Public Lobby');
-                statusMsg.innerText = "Public Game Listed.";
-                
-                // Advertise loop
-                const advertise = () => {
-                    if (!gameStarted || !isHost) return;
-                    const payload = {
-                        id: myPeerId,
-                        nick: myNickname,
-                        players: Object.keys(peers).length + 1,
-                        active: matchActive
-                    };
-                    mqttClient.publish(MQTT_TOPIC, JSON.stringify(payload));
-                };
-                
-                advertise();
-                setInterval(advertise, 3000);
-            });
-        }
-
-        function startBrowsing() {
-            serverListEl.innerHTML = '<div style="padding:10px; color:#666;">Connecting to directory...</div>';
-            discoveredHosts.clear();
-            
-            if (mqttClient) mqttClient.end();
-            mqttClient = mqtt.connect(MQTT_BROKER);
-            
-            mqttClient.on('connect', () => {
-                serverListEl.innerHTML = '<div style="padding:10px; color:#666;">Searching for games...</div>';
-                mqttClient.subscribe(MQTT_TOPIC);
-            });
-
-            mqttClient.on('error', (err) => {
-                serverListEl.innerHTML = '<div style="padding:10px; color:red;">Connection Error.</div>';
-            });
-
-            mqttClient.on('message', (topic, message) => {
-                try {
-                    const data = JSON.parse(message.toString());
-                    if (data.id === myPeerId) return; // Ignore self
-                    discoveredHosts.set(data.id, { info: data, ts: Date.now() });
-                    updateServerListUI();
-                } catch(e) {}
-            });
-        }
-
-        function stopBrowsing() {
-            if (mqttClient) {
-                mqttClient.end();
-                mqttClient = null;
-            }
-        }
-
-        function updateServerListUI() {
+        // 2. Double-Tap Logic (New)
+        else if (elapsedTime < 250 && Math.abs(deltaX) < 30 && Math.abs(deltaY) < 30) {
+            // This was a tap, not a swipe
             const now = Date.now();
-            let html = '';
-            let count = 0;
-            
-            discoveredHosts.forEach((val, id) => {
-                if (now - val.ts > 5000) { // Remove stale hosts (>5s silence)
-                    discoveredHosts.delete(id);
-                    return;
+            if (now - state.touch.lastTapTime < 300) { // 300ms threshold for double-tap
+                // Check if the tap is on our programmatic highlight
+                if (!state.currentSpokenHighlight || !state.currentSpokenHighlight.contains(e.target)) {
+                    DOM.body.classList.add('menu-open');
                 }
-                count++;
-                html += `<div class="server-item">
-                    <div class="server-info"><span class="server-name">${val.info.nick}'s Game</span> <span class="server-meta">Players: ${val.info.players} | Status: ${val.info.active ? 'In Match' : 'Lobby'}</span></div>
-                    <button class="join-btn" onclick="window.connectToPeer('${id}')">JOIN</button>
-                </div>`;
-            });
-            
-            if (count === 0) serverListEl.innerHTML = '<div style="padding:10px; color:#666;">No public games found.</div>';
-            else serverListEl.innerHTML = html;
-        }
-
-        // --- Player Logic ---
-        function createRemotePlayer(id, nick, team) {
-            if (remotePlayers[id]) return;
-            
-            const group = new THREE.Group();
-            group.userData = { team: team, nick: nick };
-            
-            // Init Stats if not present
-            if (!playerStats[id]) {
-                playerStats[id] = { kills: 0, deaths: 0, nick: nick, team: team };
-            }
-            
-            // Body
-            const bodyGeo = new THREE.BoxGeometry(0.6, 1.8, 0.6);
-            const color = team === 'blue' ? 0x009cda : 0xe71e07;
-            const bodyMat = new THREE.MeshStandardMaterial({ color: color });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            body.position.y = 0.9 - PLAYER_HEIGHT;
-            group.visible = false; // Hide until first update to prevent ghosting at 0,0,0
-            group.add(body);
-
-            // Name Tag
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = 256; canvas.height = 64;
-            ctx.fillStyle = 'rgba(0,0,0,0.5)';
-            ctx.fillRect(0,0,256,64);
-            ctx.fillStyle = team === 'blue' ? '#aaaaff' : '#ffaaaa';
-            ctx.font = 'bold 30px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(nick || id.substr(0,5), 128, 32);
-            
-            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
-            sprite.scale.set(2, 0.5, 1);
-            sprite.position.y = 1.2;
-            group.add(sprite);
-
-            scene.add(group);
-            remotePlayers[id] = group;
-        }
-
-        function updateRemotePlayer(id, data) {
-            const p = remotePlayers[id];
-            if (p) {
-                if (!p.userData.targetPos) {
-                    p.position.set(data.x, data.y, data.z);
-                    p.rotation.y = data.ry;
-                    p.userData.targetPos = new THREE.Vector3(data.x, data.y, data.z);
-                    p.userData.targetRot = data.ry;
-                } else {
-                    p.userData.targetPos.set(data.x, data.y, data.z);
-                    p.userData.targetRot = data.ry;
-                }
-                p.visible = true;
-            }
-        }
-
-        function removeRemotePlayer(id) {
-            if (remotePlayers[id]) {
-                scene.remove(remotePlayers[id]);
-                delete remotePlayers[id];
-            }
-        }
-
-        function takeDamage(amount, attackerId, isGrenade = false) {
-            if (!matchActive) return; // No damage before match starts
-            // Friendly Fire Check
-            if (!isGrenade && attackerId && remotePlayers[attackerId] && remotePlayers[attackerId].userData.team === myTeam) return;
-            
-            health -= amount;
-            
-            const overlay = document.getElementById('damage-overlay');
-            overlay.style.opacity = '0.4';
-            setTimeout(() => overlay.style.opacity = '0', 200);
-            ouchSound.currentTime = 0;
-            ouchSound.play().catch(() => {});
-
-            updateHealthUI();
-            if (health <= 0) {
-                // Broadcast death so everyone updates score
-                const killerNick = attackerId ? (remotePlayers[attackerId]?.userData?.nick || "Unknown") : null;
-                
-                broadcast({ 
-                    t: 'die', 
-                    victimId: myPeerId,
-                    killerId: attackerId,
-                    nick: myNickname, 
-                    team: myTeam, 
-                    killer: killerNick 
-                });
-                respawn();
-            }
-        }
-
-        function respawn() {
-            health = 100;
-            updateHealthUI();
-            // Add to enemy score locally
-            const enemyTeam = myTeam === 'blue' ? 'red' : 'blue';
-            scores[enemyTeam]++;
-            updateScoreUI();
-            
-            const spawn = getSpawnPoint();
-            camera.position.set(spawn.x, PLAYER_HEIGHT, spawn.z);
-            velocity.set(0, 0, 0);
-        }
-
-        function updateHealthUI() {
-            healthBar.style.width = health + '%';
-            healthText.innerText = health + ' HP';
-            if (health < 30) healthBar.style.background = '#e71e07';
-            else healthBar.style.background = '#42b132';
-        }
-
-        function visualizeShot(peerId) {
-            const p = remotePlayers[peerId];
-            if (p) {
-                const pos = p.position.clone();
-                pos.y += 1.5; // Approximate eye level
-                
-                const dir = new THREE.Vector3(0, 0, -1);
-                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), p.rotation.y);
-                
-                spawnBullet(pos, dir);
-                
-                const s = shootSound.cloneNode();
-                s.volume = 0.5;
-                s.play().catch(() => {});
-            }
-        }
-
-        function spawnBullet(position, direction, isLocal = false) {
-            const bullet = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
-            bullet.position.copy(position);
-            bullet.userData = { velocity: direction.multiplyScalar(50), life: 2.0, isLocal: isLocal }; // 50 units/sec, 2 sec life
-            scene.add(bullet);
-            bullets.push(bullet);
-        }
-
-        function createImpact(position) {
-            for(let i=0; i<5; i++) {
-                const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-                const mat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.copy(position);
-                mesh.position.add(new THREE.Vector3((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5));
-                
-                const vel = new THREE.Vector3(
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 5,
-                    (Math.random() - 0.5) * 5
-                );
-                
-                scene.add(mesh);
-                particles.push({ mesh: mesh, velocity: vel, life: 0.5 });
-            }
-        }
-
-        function spawnGrenade(pos, vel, isLocal) {
-            const geo = new THREE.SphereGeometry(0.2, 8, 8);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.copy(pos);
-            mesh.userData = { velocity: vel, isLocal: isLocal };
-            scene.add(mesh);
-            grenades.push(mesh);
-        }
-
-        function explodeGrenade(pos, isLocal) {
-            boomSound.currentTime = 0;
-            boomSound.play().catch(()=>{});
-            
-            // Visuals (Simple particles)
-            for(let i=0; i<20; i++) {
-                const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-                const mat = new THREE.MeshBasicMaterial({ color: 0xff4500 });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.copy(pos);
-                const vel = new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*10 + 5, (Math.random()-0.5)*10);
-                scene.add(mesh);
-                particles.push({ mesh: mesh, velocity: vel, life: 1.0 });
-            }
-
-            if (isLocal) {
-                const radius = 8;
-                const maxDamage = 160;
-                
-                // Damage Remote Players
-                for (let id in remotePlayers) {
-                    const dist = remotePlayers[id].position.distanceTo(pos);
-                    if (dist < radius) {
-                        const dmg = Math.floor(maxDamage * (1 - dist/radius));
-                        if (dmg > 0) {
-                            const hitData = { t: 'h', d: dmg, targetId: id, g: true };
-                            if (peers[id]) peers[id].send(hitData);
-                            else broadcast(hitData);
-                        }
-                    }
-                }
-                // Damage Self
-                const dist = camera.position.distanceTo(pos);
-                if (dist < radius) {
-                    const dmg = Math.floor(maxDamage * (1 - dist/radius));
-                    if (dmg > 0) takeDamage(dmg, null, true);
-                }
-            }
-        }
-
-        // --- Input & Physics ---
-        function onKeyDown(event) {
-            lastActivityTime = performance.now();
-            switch (event.code) {
-                case 'Escape':
-                    if (gameStarted && !controls.isLocked && !isMobile) {
-                        controls.lock();
-                    }
-                    break;
-                case 'Tab':
-                    event.preventDefault();
-                    isTabPressed = true;
-                    showScoreboard(true);
-                    break;
-                case 'KeyE':
-                    if (matchActive && health < 100 && performance.now() - lastHealTime > 12000) {
-                        lastHealTime = performance.now();
-                        health = Math.min(100, health + 30);
-                        updateHealthUI();
-                        healSound.currentTime = 0;
-                        healSound.play().catch(() => {});
-                        const hOverlay = document.getElementById('heal-overlay');
-                        hOverlay.style.opacity = '0.3';
-                        setTimeout(() => hOverlay.style.opacity = '0', 500);
-                    }
-                    break;
-                case 'ArrowUp': case 'KeyW': moveForward = true; break;
-                case 'ArrowLeft': case 'KeyA': moveLeft = true; break;
-                case 'ArrowDown': case 'KeyS': moveBackward = true; break;
-                case 'ArrowRight': case 'KeyD': moveRight = true; break;
-                case 'Space': if (canJump) velocity.y += JUMP_FORCE; canJump = false; break;
-                case 'KeyR':
-                    if (matchActive && !isChargingGrenade && performance.now() - lastGrenadeTime > 5000) {
-                        isChargingGrenade = true;
-                        grenadeChargeStart = performance.now();
-                    }
-                    break;
-                case 'KeyC':
-                    camera.fov = 30;
-                    camera.updateProjectionMatrix();
-                    break;
-                case 'KeyF':
-                    if (!isSliding && canJump && performance.now() - lastSlideTime > 4000) {
-                        isSliding = true;
-                        lastSlideTime = performance.now();
-                        
-                        slideSound.currentTime = 0;
-                        slideSound.play().catch(() => {});
-                        
-                        // Slide Boost
-                        let inputZ = Number(moveForward) - Number(moveBackward);
-                        let inputX = Number(moveRight) - Number(moveLeft);
-                        
-                        // Default to forward if no input
-                        if (inputZ === 0 && inputX === 0) inputZ = 1;
-                        
-                        // Normalize
-                        const len = Math.sqrt(inputX*inputX + inputZ*inputZ);
-                        const dirX = len > 0 ? inputX / len : 0;
-                        const dirZ = len > 0 ? inputZ / len : 0;
-                        
-                        velocity.x = -dirX * 30;
-                        velocity.z = -dirZ * 30;
-                        currentHeight = PLAYER_HEIGHT * 0.4;
-                    }
-                    break;
-                case 'ShiftLeft': case 'ShiftRight':
-                    isCrouching = true;
-                    currentHeight = PLAYER_HEIGHT / 2;
-                    currentSpeed = MOVEMENT_SPEED / 2;
-                    break;
-            }
-        }
-
-        function onKeyUp(event) {
-            switch (event.code) {
-                case 'Tab':
-                    isTabPressed = false;
-                    showScoreboard(false);
-                    break;
-                case 'ArrowUp': case 'KeyW': moveForward = false; break;
-                case 'ArrowLeft': case 'KeyA': moveLeft = false; break;
-                case 'ArrowDown': case 'KeyS': moveBackward = false; break;
-                case 'ArrowRight': case 'KeyD': moveRight = false; break;
-                case 'KeyR':
-                    if (isChargingGrenade) {
-                        const duration = Math.min(performance.now() - grenadeChargeStart, 2000);
-                        const force = 15 + (duration / 2000) * 35; 
-                        const dir = new THREE.Vector3();
-                        camera.getWorldDirection(dir);
-                        const vel = dir.multiplyScalar(force);
-                        spawnGrenade(camera.position.clone(), vel, true);
-                        broadcast({
-                            t: 'g', x: camera.position.x, y: camera.position.y, z: camera.position.z,
-                            vx: vel.x, vy: vel.y, vz: vel.z
-                        });
-                        isChargingGrenade = false;
-                        lastGrenadeTime = performance.now();
-                    }
-                    break;
-                case 'KeyC':
-                    camera.fov = 75;
-                    camera.updateProjectionMatrix();
-                    break;
-                case 'ShiftLeft': case 'ShiftRight':
-                    isCrouching = false;
-                    currentHeight = PLAYER_HEIGHT;
-                    currentSpeed = MOVEMENT_SPEED;
-                    break;
-            }
-        }
-
-        function showScoreboard(visible) {
-            tabScoreboard.style.display = visible ? 'flex' : 'none';
-            if (visible) {
-                blueList.innerHTML = '';
-                redList.innerHTML = '';
-                
-                const addPlayer = (id, nick, team) => {
-                    const stats = playerStats[id] || { kills: 0, deaths: 0 };
-                    const li = document.createElement('li');
-                    li.innerHTML = `<span>${nick}</span> <span>${stats.kills} / ${stats.deaths}</span>`;
-                    (team === 'blue' ? blueList : redList).appendChild(li);
-                };
-                
-                // Add Self
-                if (myPeerId) addPlayer(myPeerId, myNickname, myTeam);
-                
-                // Add Others
-                for (let id in remotePlayers) {
-                    addPlayer(id, remotePlayers[id].userData.nick, remotePlayers[id].userData.team);
-                }
-            }
-        }
-
-        function onMouseDown(event) {
-            lastActivityTime = performance.now();
-            if ((!isMobile && !controls.isLocked) || !matchActive) return;
-            
-            // Shoot
-            // 1. Spawn Bullet
-            shootSound.currentTime = 0;
-            shootSound.play().catch(() => {});
-            
-            const dir = new THREE.Vector3();
-            camera.getWorldDirection(dir);
-            spawnBullet(camera.position.clone().add(dir), dir.clone(), true);
-            
-            // Visuals
-            muzzleLight.intensity = 5;
-            setTimeout(() => muzzleLight.intensity = 0, 50);
-            camera.rotation.x += 0.02;
-            setTimeout(() => camera.rotation.x -= 0.02, 50);
-
-            // Broadcast shot event (for visuals)
-            broadcast({ t: 's' });
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function drawMinimap() {
-            minimapCtx.clearRect(0, 0, 150, 150);
-            
-            // Draw Map Border
-            minimapCtx.strokeStyle = '#fff';
-            minimapCtx.strokeRect(0, 0, 150, 150);
-
-            // Helper to convert world coord to map coord
-            const toMap = (val) => ((val + WORLD_SIZE/2) / WORLD_SIZE) * 150;
-
-            // Draw Obstacles
-            minimapCtx.fillStyle = '#8b4513';
-            obstacles.forEach(obs => {
-                const x = toMap(obs.position.x);
-                const y = toMap(obs.position.z);
-                const s = (2 / WORLD_SIZE) * 150;
-                minimapCtx.fillRect(x - s/2, y - s/2, s, s);
-            });
-
-            // Draw Remote Players (Red)
-            for (let id in remotePlayers) {
-                const p = remotePlayers[id];
-                if (!p.visible) continue;
-                minimapCtx.fillStyle = p.userData.team === 'blue' ? '#009cda' : '#e71e07';
-                minimapCtx.beginPath();
-                minimapCtx.arc(toMap(p.position.x), toMap(p.position.z), 4, 0, Math.PI*2);
-                minimapCtx.fill();
-            }
-
-            // Draw Local Player (Blue)
-            minimapCtx.fillStyle = myTeam === 'blue' ? '#00ffff' : '#ffaaaa';
-            minimapCtx.beginPath();
-            minimapCtx.arc(toMap(camera.position.x), toMap(camera.position.z), 4, 0, Math.PI*2);
-            minimapCtx.fill();
-        }
-        
-        // Timer Logic (1 second interval)
-        setInterval(() => {
-            if (gameStarted) {
-                if (performance.now() - lastActivityTime > 180000) {
-                    exitMatch();
-                    statusMsg.innerText = "Kicked for AFK (3 min).";
-                    return;
-                }
-                if (isHost && soloStartTime > 0 && performance.now() - soloStartTime > 300000) {
-                    exitMatch();
-                    statusMsg.innerText = "Server closed (Empty for 5 min).";
-                    return;
-                }
-            }
-            if (matchActive) {
-                if (isHost) {
-                    matchTime--;
-                    broadcast({ t: 'sys', k: 'tick', v: matchTime });
-                    if (matchTime <= 0) {
-                        broadcast({ t: 'sys', k: 'end' });
-                        endGame();
-                    }
-                }
-                
-                const m = Math.floor(matchTime / 60);
-                const s = matchTime % 60;
-                timerEl.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+                state.touch.lastTapTime = 0; // Reset
             } else {
-                timerEl.innerText = Object.keys(peers).length < 1 ? "WAITING FOR PLAYERS" : "READY";
+                state.touch.lastTapTime = now;
             }
-        }, 1000);
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const time = performance.now();
-            const delta = (time - prevTime) / 1000;
-
-            // Update Bullets
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const b = bullets[i];
-                b.userData.velocity.y -= (GRAVITY * 0.2) * delta;
-                const oldPos = b.position.clone();
-                b.position.addScaledVector(b.userData.velocity, delta);
-
-                if (b.position.y <= 0) {
-                    createImpact(b.position);
-                    scene.remove(b);
-                    bullets.splice(i, 1);
-                    continue;
-                }
-
-                // Projectile Collision Logic
-                const dist = b.position.distanceTo(oldPos);
-                raycaster.set(oldPos, b.userData.velocity.clone().normalize());
-                
-                const targets = [...obstacles];
-                // Only check against players if it's a local bullet (to deal damage)
-                if (b.userData.isLocal) {
-                    for (let id in remotePlayers) targets.push(remotePlayers[id].children[0]);
-                }
-                
-                const intersects = raycaster.intersectObjects(targets);
-                if (intersects.length > 0 && intersects[0].distance <= dist) {
-                    const hitObj = intersects[0].object;
-                    createImpact(intersects[0].point);
-                    
-                    if (b.userData.isLocal && !obstacles.includes(hitObj)) {
-                        // Hit a player
-                        for (let id in remotePlayers) {
-                            if (remotePlayers[id].children[0] === hitObj) {
-                                const hitData = { t: 'h', d: 10, targetId: id };
-                                if (peers[id]) {
-                                    peers[id].send(hitData);
-                                } else {
-                                    broadcast(hitData);
-                                }
-                                
-                                if (Math.random() < 0.2) {
-                                    hitSound.currentTime = 0;
-                                    hitSound.play().catch(() => {});
-                                }
-                                killFeed.innerText = "Hit!";
-                                setTimeout(() => killFeed.innerText = '', 500);
-                                break;
-                            }
-                        }
-                    }
-                    scene.remove(b);
-                    bullets.splice(i, 1);
-                    continue;
-                }
-
-                b.userData.life -= delta;
-                if (b.userData.life <= 0) {
-                    scene.remove(b);
-                    bullets.splice(i, 1);
-                }
-            }
-
-            // Update Grenades
-            for (let i = grenades.length - 1; i >= 0; i--) {
-                const g = grenades[i];
-                g.userData.velocity.y -= GRAVITY * delta;
-                const oldPos = g.position.clone();
-                g.position.addScaledVector(g.userData.velocity, delta);
-                
-                let hit = false;
-                // Floor
-                if (g.position.y < 0.2) {
-                    g.position.y = 0.2;
-                    hit = true;
-                }
-                // Obstacles
-                if (!hit) {
-                    const dist = g.position.distanceTo(oldPos);
-                    raycaster.set(oldPos, g.userData.velocity.clone().normalize());
-                    const intersects = raycaster.intersectObjects(obstacles);
-                    if (intersects.length > 0 && intersects[0].distance <= dist) {
-                        hit = true;
-                        g.position.copy(intersects[0].point);
-                    }
-                }
-                if (hit) {
-                    explodeGrenade(g.position, g.userData.isLocal);
-                    scene.remove(g);
-                    grenades.splice(i, 1);
-                }
-            }
-
-            // Update Particles
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.life -= delta;
-                p.mesh.position.addScaledVector(p.velocity, delta);
-                p.mesh.material.opacity = p.life / 0.5;
-                if (p.life <= 0) {
-                    scene.remove(p.mesh);
-                    particles.splice(i, 1);
-                }
-            }
-
-            // Interpolate Remote Players
-            for (let id in remotePlayers) {
-                const p = remotePlayers[id];
-                if (p.userData.targetPos) {
-                    p.position.lerp(p.userData.targetPos, 0.2);
-                    p.rotation.y += (p.userData.targetRot - p.rotation.y) * 0.2;
-                }
-            }
-
-            drawMinimap();
-
-            // Physics & Logic
-            
-            // Slide Logic
-            if (isSliding) {
-                if (performance.now() - lastSlideTime > 800) {
-                    isSliding = false;
-                    if (isCrouching) {
-                        currentHeight = PLAYER_HEIGHT / 2;
-                        currentSpeed = MOVEMENT_SPEED / 2;
-                    } else {
-                        currentHeight = PLAYER_HEIGHT;
-                        currentSpeed = MOVEMENT_SPEED;
-                    }
-                }
-            }
-            
-            // Input Processing
-            let inputX = 0;
-            let inputZ = 0;
-
-            if (isMobile) {
-                inputX = joystick.x;
-                inputZ = joystick.y;
-            } else if (controls.isLocked && !isSliding) {
-                inputZ = Number(moveForward) - Number(moveBackward);
-                inputX = Number(moveRight) - Number(moveLeft);
-            }
-
-            // Run Sound
-            const isMoving = Math.abs(inputX) > 0.1 || Math.abs(inputZ) > 0.1;
-            if (isMoving && canJump) {
-                if (runSound.paused) runSound.play().catch(() => {});
-            } else {
-                runSound.pause();
-            }
-
-            // Friction
-            const friction = isSliding ? 2.0 : 10.0;
-            velocity.x -= velocity.x * friction * delta;
-            velocity.z -= velocity.z * friction * delta;
-            velocity.y -= GRAVITY * delta;
-
-            direction.z = inputZ;
-            direction.x = inputX;
-            direction.normalize();
-
-            if (!isSliding && inputZ !== 0) velocity.z -= direction.z * currentSpeed * 10.0 * delta;
-            if (!isSliding && inputX !== 0) velocity.x -= direction.x * currentSpeed * 10.0 * delta;
-
-            // Sliding Collision Logic
-            const startPos = controls.getObject().position.clone();
-            
-            controls.moveRight(-velocity.x * delta);
-            controls.moveForward(-velocity.z * delta);
-
-            const endPos = controls.getObject().position.clone();
-            const deltaX = endPos.x - startPos.x;
-            const deltaZ = endPos.z - startPos.z;
-            
-            controls.getObject().position.copy(startPos);
-
-            // Apply X
-            controls.getObject().position.x += deltaX;
-            let playerBox = new THREE.Box3().setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
-            
-            for (let obs of obstacles) {
-                const obsBox = new THREE.Box3().setFromObject(obs);
-                obsBox.max.y = 1000; 
-                if (playerBox.intersectsBox(obsBox)) {
-                    controls.getObject().position.x -= deltaX;
-                    if (isSliding) velocity.x = 0;
-                    break;
-                }
-            }
-
-            // Apply Z
-            controls.getObject().position.z += deltaZ;
-            playerBox.setFromCenterAndSize(controls.getObject().position, new THREE.Vector3(1, 2, 1));
-            
-            for (let obs of obstacles) {
-                const obsBox = new THREE.Box3().setFromObject(obs);
-                obsBox.max.y = 1000;
-                if (playerBox.intersectsBox(obsBox)) {
-                    controls.getObject().position.z -= deltaZ;
-                    if (isSliding) velocity.z = 0;
-                    break;
-                }
-            }
-
-            // Map Boundaries
-            let pos = controls.getObject().position;
-            const limit = WORLD_SIZE / 2;
-            if (pos.x < -limit) pos.x = -limit;
-            if (pos.x > limit) pos.x = limit;
-            if (pos.z < -limit) pos.z = -limit;
-            if (pos.z > limit) pos.z = limit;
-            
-            controls.getObject().position.y += velocity.y * delta;
-
-            // Floor Collision
-            if (controls.getObject().position.y < currentHeight) {
-                velocity.y = 0;
-                controls.getObject().position.y = currentHeight;
-                canJump = true;
-            }
-
-            // Check Y Collision (Obstacles)
-            pos = controls.getObject().position;
-            playerBox.setFromCenterAndSize(pos, new THREE.Vector3(1, 2, 1));
-            
-            for (let obs of obstacles) {
-                const obsBox = new THREE.Box3().setFromObject(obs);
-                if (playerBox.intersectsBox(obsBox)) {
-                    controls.getObject().position.y -= velocity.y * delta;
-                    velocity.y = 0;
-                    break;
-                }
-            }
-
-            prevTime = time;
-            renderer.render(scene, camera);
         }
-    </script>
+    }, { passive: true });
+ }
+
+ function initApp() {
+   setMode(localStorage.getItem("kaffetishMode") || 'light');
+   setFontRem(state.currentFontRem);
+   setViewMode(state.viewMode);
+
+   // Restore noise state
+   if (state.isNoisePlaying) {
+     noiseEngine.start();
+     DOM.mobileNoiseToggle?.classList.add('active');
+     DOM.desktopNoiseToggle?.classList.add('active');
+   }
+
+   setupEventListeners();
+
+   const params = new URLSearchParams(window.location.search);
+   const bookUrl = params.get('url'), bookTitle = params.get('title') || 'Document';
+
+   if (bookUrl) {
+     loadPdfFromUrl(bookUrl, bookTitle);
+   } else {
+     showView(DOM.fallbackView);
+   }
+   if (!explainBookTextFn) {
+     [DOM.tooltipExplain, DOM.mobileActionBtn].forEach(el => { if (el) el.style.display = 'none'; });
+   }
+ }
+
+ onAuthStateChanged(auth, (user) => {
+   if (user) {
+     DOM.bookmarkPageBtn.classList.remove('hidden');
+     DOM.mobileBookmarkPageBtn.classList.remove('hidden');
+     trackUserActivity();
+   } else {
+     signInAnonymously(auth).catch(err => {
+       console.error("Anonymous sign-in failed:", err);
+     });
+   }
+ });
+
+ // Initialize the app once the first auth state is confirmed
+ auth.onAuthStateChanged(user => {
+   if (!user) {
+       signInAnonymously(auth).then(() => initApp()).catch(console.error);
+   } else {
+       initApp();
+   }
+ }, { onlyOnce: true });
+</script>
+
 </body>
 </html>
+
+ 
