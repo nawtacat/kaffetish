@@ -1201,7 +1201,9 @@
    
    const expandedContext = range ? getExpandedContext(range) : state.lastSelectionContext;
 
-   clearSelection();
+   // Keep the native selection highlight visible after "Explain".
+   // We only hide the tooltip UI; selection is cleared by an intentional click elsewhere.
+   hideTooltip();
    await trackExplanationRequest(textToExplain);
    
    const messageId = 'msg-' + Date.now();
@@ -1551,6 +1553,21 @@
    DOM.tooltipHighlight.addEventListener("click", handleHighlight);
    DOM.tooltipSpeak.addEventListener("click", handleSpeak);
    DOM.tooltipCopy.addEventListener("click", handleCopy);
+
+   // Preserve text selection when interacting with the selection tooltip.
+   // Clicking a button normally collapses the selection; preventing default on mousedown keeps it highlighted.
+   if (DOM.tooltip) {
+     DOM.tooltip.addEventListener("mousedown", (e) => {
+       e.preventDefault();
+       e.stopPropagation();
+     });
+     DOM.tooltip.addEventListener("mouseup", (e) => {
+       e.stopPropagation();
+     });
+     DOM.tooltip.addEventListener("click", (e) => {
+       e.stopPropagation();
+     });
+   }
 
    DOM.bookmarkPageBtn.addEventListener("click", handleBookmarkPage);
    DOM.mobileBookmarkPageBtn.addEventListener("click", () => {
