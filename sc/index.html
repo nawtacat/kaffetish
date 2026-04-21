@@ -156,23 +156,33 @@
         margin: 0 auto;
         box-shadow: 0 10px 30px var(--shadow-color);
         background-color: white;
+        overflow: hidden;
    }
+   .pdf-canvas-container canvas { display: block; }
    .textLayer {
         position: absolute; left: 0; top: 0; right: 0; bottom: 0;
-        overflow: hidden; opacity: 1.0; line-height: 1.0; mix-blend-mode: multiply;
+        overflow: hidden; opacity: 1.0; line-height: 1; mix-blend-mode: multiply;
+        text-align: left;
+        --scale-factor: 1;
    }
    .textLayer span {
         color: transparent; position: absolute; white-space: pre;
         cursor: text; transform-origin: 0% 0%;
+        font-family: sans-serif;
+        line-height: 1;
+        letter-spacing: 0;
+        word-spacing: 0;
    }
    .textLayer ::selection {
         background-color: var(--accent);
         color: transparent;
    }
    .page.original-mode {
-        max-width: 75ch; margin: 0 auto;
+        max-width: none; 
+        width: fit-content;
+        margin: 0 auto;
         background-color: var(--bg); border: 1px solid var(--border-color);
-        border-radius: 8px; padding: 4rem 5rem; position: relative;
+        border-radius: 8px; padding: 2rem 1rem; position: relative;
         transition: border-color 0.3s ease, background-color 0.3s ease;
    }
    body.dark-mode .page { background-color: #2D2C2B; }
@@ -1130,7 +1140,7 @@
    const dpr = window.devicePixelRatio || 1;
    
    // Calculate scale based on container width
-   const containerWidth = DOM.readerView.clientWidth - (window.innerWidth < 860 ? 40 : 120);
+   const containerWidth = DOM.readerView.clientWidth - (window.innerWidth < 860 ? 40 : 160);
    const unscaledViewport = page.getViewport({ scale: 1 });
    const fitScale = containerWidth / unscaledViewport.width;
    const scale = fitScale * (state.pdfZoom || 1);
