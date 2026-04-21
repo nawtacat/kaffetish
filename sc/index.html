@@ -1130,7 +1130,7 @@
    const dpr = window.devicePixelRatio || 1;
    
    // Calculate scale based on container width
-   const containerWidth = DOM.readerView.clientWidth - 80;
+   const containerWidth = DOM.readerView.clientWidth - (window.innerWidth < 860 ? 40 : 120);
    const unscaledViewport = page.getViewport({ scale: 1 });
    const fitScale = containerWidth / unscaledViewport.width;
    const scale = fitScale * (state.pdfZoom || 1);
@@ -1153,6 +1153,7 @@
 
    const textLayerDiv = document.createElement('div');
    textLayerDiv.className = 'textLayer';
+   textLayerDiv.style.setProperty('--scale-factor', scale);
    wrapper.appendChild(textLayerDiv);
 
    DOM.pageContent.appendChild(wrapper);
@@ -1207,42 +1208,33 @@
  }
 
  function getExpandedContext(range) {
-    try {
-        const fullText = DOM.pageContent.innerText;
-        const selectedText = range.toString().trim();
-        if (!selectedText) return "";
+    const fullText = DOM.pageContent.innerText;
+    const words = fullText.split(/\s+/).filter(w => w.length > 0);
+    const selectedText = range.toString().trim();
+    const selectedWords = selectedText.split(/\s+/).filter(w => w.length > 0);
 
-        // Calculate the actual character offset of the selection to find the correct occurrence
-        let charOffset = 0;
-        const walker = document.createTreeWalker(DOM.pageContent, NodeFilter.SHOW_TEXT);
-        let node;
-        while ((node = walker.nextNode())) {
-            if (node === range.startContainer) {
-                charOffset += range.startOffset;
+    // Robust sequence search for the selected words within the page text
+    let startIndex = -1;
+    for (let i = 0; i <= words.length - selectedWords.length; i++) {
+        let match = true;
+        for (let j = 0; j < selectedWords.length; j++) {
+            if (words[i + j] !== selectedWords[j]) {
+                match = false;
                 break;
             }
-            charOffset += node.nodeValue.length;
         }
-
-        // Tokenize text into words with positional indices
-        const words = [];
-        const regex = /\S+/g;
-        let match;
-        while ((match = regex.exec(fullText)) !== null) {
-            words.push({ text: match[0], start: match.index, end: match.index + match[0].length });
+        if (match) {
+            startIndex = i;
+            break;
         }
-
-        // Find the word index closest to the actual selection point
-        let wordIdx = words.findIndex(w => w.end >= charOffset);
-        if (wordIdx === -1) wordIdx = 0;
-
-        const start = Math.max(0, wordIdx - 30);
-        const end = Math.min(words.length, wordIdx + 30);
-        return words.slice(start, end).map(w => w.text).join(' ');
-    } catch (e) {
-        console.error("Context mapping failed:", e);
-        return range.toString();
     }
+
+    if (startIndex === -1) return selectedText;
+
+    const contextStart = Math.max(0, startIndex - 24);
+    const contextEnd = Math.min(words.length, startIndex + selectedWords.length + 24);
+    
+    return words.slice(contextStart, contextEnd).join(' ');
  }
 
  async function handleExplain() {
@@ -1968,16 +1960,13 @@
          state.isAdjustingSelection = false;
        }
 
-       // Reflow snapping: Only apply to Reflow mode, not Original PDF mode.
-       if (state.viewMode !== 'original' && sel.anchorNode && sel.anchorNode === sel.focusNode) {
+       // Reflow snapping: Extend selection inside a single text node.
+       if (sel.anchorNode && sel.anchorNode === sel.focusNode) {
            const range = sel.getRangeAt(0);
-           const text = range.startContainer.textContent;
-           const isWordChar = (c) => /[a-zA-Z0-9\u0531-\u058F]/.test(c);
-
-           while (range.startOffset > 0 && isWordChar(text[range.startOffset - 1])) {
+           while (range.startOffset > 0 && /\w/.test(range.startContainer.textContent[range.startOffset - 1])) {
                range.setStart(range.startContainer, range.startOffset - 1);
            }
-           while (range.endOffset < text.length && isWordChar(text[range.endOffset])) {
+           while (range.endOffset < range.endContainer.textContent.length && /\w/.test(range.endContainer.textContent[range.endOffset])) {
                range.setEnd(range.endContainer, range.endOffset + 1);
            }
            sel.removeAllRanges();
