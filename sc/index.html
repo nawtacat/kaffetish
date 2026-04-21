@@ -165,6 +165,10 @@
         color: transparent; position: absolute; white-space: pre;
         cursor: text; transform-origin: 0% 0%;
    }
+   .textLayer ::selection {
+        background-color: var(--accent);
+        color: transparent;
+   }
    .page.original-mode {
         max-width: 75ch; margin: 0 auto;
         background-color: var(--bg); border: 1px solid var(--border-color);
@@ -845,6 +849,8 @@
    lastSelectionText: "",
    lastSelectionRange: null,
    lastSelectionContext: "",
+   isAdjustingSelection: false,
+   pdfZoom: parseFloat(localStorage.getItem("kaffetishPdfZoom") || "1"),
    currentSessionId: null,
    bookTitle: null,
    bookId: null,
@@ -926,6 +932,12 @@
    localStorage.setItem("kaffetishFontRem", String(state.currentFontRem));
    const percentage = Math.round((state.currentFontRem / baseFontRem) * 100);
    if (DOM.mobileFontSizeDisplay) DOM.mobileFontSizeDisplay.textContent = `${percentage}%`;
+ }
+
+ function setPdfZoom(zoom) {
+   const clamped = Math.min(5.0, Math.max(0.5, zoom));
+   state.pdfZoom = clamped;
+   localStorage.setItem("kaffetishPdfZoom", String(clamped));
  }
 
  function showView(view) {
@@ -1057,11 +1069,33 @@
        const highlightSnap = await getDoc(highlightRef);
 
        if (highlightSnap.exists()) {
-         state.pagesHTML[pageNum - 1] = highlightSnap.data().content;
+         const stored = highlightSnap.data().content;
+         // Guard: if a highlight was accidentally saved from "original" (PDF canvas) mode,
+         // it will contain canvas/textLayer markup and will break reflow rendering.
+         const looksLikeOriginalMode =
+           typeof stored === "string" &&
+           (stored.includes("pdf-canvas-container") || stored.includes("textLayer") || stored.includes("<canvas"));
+
+         if (!looksLikeOriginalMode) {
+           state.pagesHTML[pageNum - 1] = stored;
+         }
        } else {
          const page = await state.pdfDoc.getPage(pageNum);
          const textContent = await page.getTextContent({ normalizeWhitespace: true });
          state.pagesHTML[pageNum - 1] = paragraphize(textContent);
+       }
+
+       // If we ignored a bad stored highlight, regenerate from PDF and repair Firestore.
+       if (!state.pagesHTML[pageNum - 1]) {
+         const page = await state.pdfDoc.getPage(pageNum);
+         const textContent = await page.getTextContent({ normalizeWhitespace: true });
+         const regenerated = paragraphize(textContent);
+         state.pagesHTML[pageNum - 1] = regenerated;
+         try {
+           await setDoc(highlightRef, { content: regenerated, updatedAt: serverTimestamp() }, { merge: true });
+         } catch (e) {
+           console.warn("Failed to repair invalid highlight content:", e);
+         }
        }
      } catch (e) {
        console.error(`Failed to render page ${pageNum}:`, e);
@@ -1092,11 +1126,14 @@
  async function renderOriginalPage(pageNum) {
    state.currentPage = pageNum;
    const page = await state.pdfDoc.getPage(pageNum);
+
+   const dpr = window.devicePixelRatio || 1;
    
    // Calculate scale based on container width
    const containerWidth = DOM.readerView.clientWidth - 80;
    const unscaledViewport = page.getViewport({ scale: 1 });
-   const scale = containerWidth / unscaledViewport.width;
+   const fitScale = containerWidth / unscaledViewport.width;
+   const scale = fitScale * (state.pdfZoom || 1);
    const viewport = page.getViewport({ scale: scale });
 
    DOM.pageContent.innerHTML = '';
@@ -1108,8 +1145,10 @@
    wrapper.style.height = `${viewport.height}px`;
 
    const canvas = document.createElement('canvas');
-   canvas.width = viewport.width;
-   canvas.height = viewport.height;
+   canvas.width = Math.floor(viewport.width * dpr);
+   canvas.height = Math.floor(viewport.height * dpr);
+   canvas.style.width = `${viewport.width}px`;
+   canvas.style.height = `${viewport.height}px`;
    wrapper.appendChild(canvas);
 
    const textLayerDiv = document.createElement('div');
@@ -1118,7 +1157,11 @@
 
    DOM.pageContent.appendChild(wrapper);
 
-   const renderContext = { canvasContext: canvas.getContext('2d'), viewport: viewport };
+   const renderContext = { 
+     canvasContext: canvas.getContext('2d'), 
+     viewport: viewport,
+     transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null
+   };
    await page.render(renderContext).promise;
 
    const textContent = await page.getTextContent();
@@ -1164,33 +1207,42 @@
  }
 
  function getExpandedContext(range) {
-    const fullText = DOM.pageContent.innerText;
-    const words = fullText.split(/\s+/).filter(w => w.length > 0);
-    const selectedText = range.toString().trim();
-    const selectedWords = selectedText.split(/\s+/).filter(w => w.length > 0);
+    try {
+        const fullText = DOM.pageContent.innerText;
+        const selectedText = range.toString().trim();
+        if (!selectedText) return "";
 
-    // Robust sequence search for the selected words within the page text
-    let startIndex = -1;
-    for (let i = 0; i <= words.length - selectedWords.length; i++) {
-        let match = true;
-        for (let j = 0; j < selectedWords.length; j++) {
-            if (words[i + j] !== selectedWords[j]) {
-                match = false;
+        // Calculate the actual character offset of the selection to find the correct occurrence
+        let charOffset = 0;
+        const walker = document.createTreeWalker(DOM.pageContent, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+            if (node === range.startContainer) {
+                charOffset += range.startOffset;
                 break;
             }
+            charOffset += node.nodeValue.length;
         }
-        if (match) {
-            startIndex = i;
-            break;
+
+        // Tokenize text into words with positional indices
+        const words = [];
+        const regex = /\S+/g;
+        let match;
+        while ((match = regex.exec(fullText)) !== null) {
+            words.push({ text: match[0], start: match.index, end: match.index + match[0].length });
         }
+
+        // Find the word index closest to the actual selection point
+        let wordIdx = words.findIndex(w => w.end >= charOffset);
+        if (wordIdx === -1) wordIdx = 0;
+
+        const start = Math.max(0, wordIdx - 30);
+        const end = Math.min(words.length, wordIdx + 30);
+        return words.slice(start, end).map(w => w.text).join(' ');
+    } catch (e) {
+        console.error("Context mapping failed:", e);
+        return range.toString();
     }
-
-    if (startIndex === -1) return selectedText;
-
-    const contextStart = Math.max(0, startIndex - 24);
-    const contextEnd = Math.min(words.length, startIndex + selectedWords.length + 24);
-    
-    return words.slice(contextStart, contextEnd).join(' ');
  }
 
  async function handleExplain() {
@@ -1462,6 +1514,11 @@
  }
 
  async function handleHighlight() {
+   if (state.viewMode === 'original') {
+     flashAI("Switch to Reflow Text to highlight.", 2500);
+     hideTooltip();
+     return;
+   }
    if (state.lastSelectionRange) {
      try {
        const span = document.createElement("span");
@@ -1530,8 +1587,17 @@
    DOM.nextBtn.addEventListener("click", () => renderPage(state.currentPage + 1));
    DOM.pageJumpInput.addEventListener("change", () => { const p = parseInt(DOM.pageJumpInput.value, 10); if (!isNaN(p)) renderPage(p); });
    [DOM.modeToggle, DOM.mobileModeToggle].forEach(btn => btn.addEventListener("click", () => setMode(state.mode === 'light' ? 'dark' : 'light')));
-   [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem + 0.1)));
-   [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => setFontRem(state.currentFontRem - 0.1)));
+   const adjustReadingSize = (delta) => {
+     // Reflow: font size; Original PDF: zoom
+     if (state.viewMode === 'original') {
+       setPdfZoom((state.pdfZoom || 1) + delta);
+       renderPage(state.currentPage);
+     } else {
+       setFontRem(state.currentFontRem + delta);
+     }
+   };
+   [DOM.fontInc, DOM.mobileFontInc].forEach(btn => btn.addEventListener("click", () => adjustReadingSize(0.1)));
+   [DOM.fontDec, DOM.mobileFontDec].forEach(btn => btn.addEventListener("click", () => adjustReadingSize(-0.1)));
 
    const toggleView = () => {
        state.viewMode = state.viewMode === 'reflow' ? 'original' : 'reflow';
@@ -1644,10 +1710,69 @@
         }
    });
 
+   // Zoom controls for Original PDF mode
+   DOM.readerView.addEventListener('wheel', (e) => {
+     if (state.viewMode !== 'original') return;
+     // Trackpad pinch usually maps to ctrl+wheel; keep normal scroll otherwise.
+     if (!e.ctrlKey && !e.metaKey) return;
+     e.preventDefault();
+     const direction = e.deltaY > 0 ? -1 : 1;
+     setPdfZoom((state.pdfZoom || 1) + direction * 0.1);
+     renderPage(state.currentPage);
+   }, { passive: false });
+
+   if (isTouchDevice) {
+     const pinch = { active: false, startDist: 0, startZoom: 1, lastRender: 0, pending: null };
+     const getDist = (t0, t1) => Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+     DOM.mainContent.addEventListener('touchstart', (e) => {
+       if (state.viewMode !== 'original') return;
+       if (e.touches.length !== 2) return;
+       pinch.active = true;
+       pinch.startDist = getDist(e.touches[0], e.touches[1]);
+       pinch.startZoom = state.pdfZoom || 1;
+       pinch.lastRender = Date.now();
+       pinch.pending = null;
+     }, { passive: true });
+
+     DOM.mainContent.addEventListener('touchmove', (e) => {
+       if (!pinch.active || state.viewMode !== 'original') return;
+       if (e.touches.length !== 2) return;
+       e.preventDefault();
+       const dist = getDist(e.touches[0], e.touches[1]);
+       if (!pinch.startDist) return;
+       const nextZoom = pinch.startZoom * (dist / pinch.startDist);
+       setPdfZoom(nextZoom);
+
+       const now = Date.now();
+       if (now - pinch.lastRender > 120) {
+         pinch.lastRender = now;
+         renderPage(state.currentPage);
+       } else {
+         pinch.pending = true;
+       }
+     }, { passive: false });
+
+     DOM.mainContent.addEventListener('touchend', () => {
+       if (!pinch.active) return;
+       pinch.active = false;
+       if (pinch.pending) {
+         pinch.pending = null;
+         renderPage(state.currentPage);
+       }
+     }, { passive: true });
+   }
+
    document.addEventListener('keydown', (e) => {
      if (e.target.tagName === 'INPUT' || state.isRendering) return;
      if (e.key === 'ArrowLeft') DOM.prevBtn.click();
      else if (e.key === 'ArrowRight') DOM.nextBtn.click();
+     else if (state.viewMode === 'original' && (e.key === '+' || e.key === '=')) {
+       setPdfZoom((state.pdfZoom || 1) + 0.1);
+       renderPage(state.currentPage);
+     } else if (state.viewMode === 'original' && e.key === '-') {
+       setPdfZoom((state.pdfZoom || 1) - 0.1);
+       renderPage(state.currentPage);
+     }
      else if (e.key === 'Escape') {
          if (state.speechSynthesis.speaking) state.speechSynthesis.cancel();
          if (state.currentAudioSource) { 
@@ -1668,9 +1793,163 @@
  function setupSelectionHandler() {
    const contentArea = DOM.pageContent;
 
+   function isWordLetterOrNumber(ch) {
+     try {
+       return /[\p{L}\p{N}]/u.test(ch);
+     } catch {
+       return /[A-Za-z0-9]/.test(ch);
+     }
+   }
+
+   function isWordChar(ch, prevCh, nextCh) {
+     if (!ch) return false;
+     if (isWordLetterOrNumber(ch) || ch === "_") return true;
+     // Allow connectors inside words: can't start/end a word.
+     if (ch === "-" || ch === "'" || ch === "’") {
+       return isWordLetterOrNumber(prevCh) && isWordLetterOrNumber(nextCh);
+     }
+     return false;
+   }
+
+   function getTextNodesUnder(root) {
+     const out = [];
+     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+       acceptNode(node) {
+         if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
+         if (node.nodeValue.length === 0) return NodeFilter.FILTER_REJECT;
+         return NodeFilter.FILTER_ACCEPT;
+       }
+     });
+     let n;
+     while ((n = walker.nextNode())) out.push(n);
+     return out;
+   }
+
+   function expandSelectionToWholeWordInTextLayer(sel) {
+     if (!sel || sel.rangeCount === 0) return false;
+     const range = sel.getRangeAt(0);
+     const textLayer = range.commonAncestorContainer?.nodeType === Node.ELEMENT_NODE
+       ? range.commonAncestorContainer.closest?.('.textLayer')
+       : range.commonAncestorContainer?.parentElement?.closest?.('.textLayer');
+     if (!textLayer) return false;
+
+     // Only auto-expand when the user picked part of a single word (e.g. a character).
+     const selectedText = sel.toString();
+     const compact = selectedText ? selectedText.replace(/\s+/g, '') : '';
+     if (!compact) return false;
+
+     const nodes = getTextNodesUnder(textLayer);
+     if (!nodes.length) return false;
+
+     const startNode = range.startContainer.nodeType === Node.TEXT_NODE ? range.startContainer : null;
+     const endNode = range.endContainer.nodeType === Node.TEXT_NODE ? range.endContainer : null;
+     if (!startNode || !endNode) return false;
+
+     let startIndex = nodes.indexOf(startNode);
+     let endIndex = nodes.indexOf(endNode);
+     if (startIndex === -1 || endIndex === -1) return false;
+
+     let startOffset = range.startOffset;
+     let endOffset = range.endOffset;
+
+     // Normalize so start <= end in document order.
+     if (startIndex > endIndex || (startIndex === endIndex && startOffset > endOffset)) {
+       [startIndex, endIndex] = [endIndex, startIndex];
+       [startOffset, endOffset] = [endOffset, startOffset];
+     }
+
+     const nodeLen = (i) => nodes[i]?.nodeValue?.length ?? 0;
+     const charAt = (i, off) => {
+       const v = nodes[i]?.nodeValue ?? "";
+       if (off < 0 || off >= v.length) return "";
+       return v[off];
+     };
+     const posPrev = (i, off) => {
+       if (off > 0) return { i, off: off - 1 };
+       if (i > 0) return { i: i - 1, off: nodeLen(i - 1) - 1 };
+       return null;
+     };
+     const posNext = (i, off) => {
+       const len = nodeLen(i);
+       if (off + 1 < len) return { i, off: off + 1 };
+       if (i < nodes.length - 1) return { i: i + 1, off: 0 };
+       return null;
+     };
+     const charPrevOfPos = (pos) => {
+       if (!pos) return "";
+       const p = posPrev(pos.i, pos.off);
+       return p ? charAt(p.i, p.off) : "";
+     };
+     const charNextOfPos = (pos) => {
+       if (!pos) return "";
+       const p = posNext(pos.i, pos.off);
+       return p ? charAt(p.i, p.off) : "";
+     };
+
+     const stepBack = () => {
+       if (startOffset > 0) {
+         startOffset--;
+       } else if (startIndex > 0) {
+         startIndex--;
+         startOffset = nodes[startIndex].nodeValue.length - 1;
+       } else {
+         return false;
+       }
+       return true;
+     };
+     const stepForward = () => {
+       const len = nodes[endIndex].nodeValue.length;
+       if (endOffset < len) {
+         endOffset++;
+       } else if (endIndex < nodes.length - 1) {
+         endIndex++;
+         endOffset = 1;
+       } else {
+         return false;
+       }
+       return true;
+     };
+
+     // Expand backward to the start of the word.
+     while (true) {
+       const candidate = posPrev(startIndex, startOffset);
+       if (!candidate) break;
+       const curCh = charAt(candidate.i, candidate.off);
+       if (!curCh) break;
+       const prevCh = charPrevOfPos(candidate);
+       const nextCh = charNextOfPos(candidate);
+       if (!isWordChar(curCh, prevCh, nextCh)) break;
+       if (!stepBack()) break;
+     }
+
+     // Expand forward to the end of the word.
+     while (true) {
+       const len = nodeLen(endIndex);
+       const candidate = endOffset < len
+         ? { i: endIndex, off: endOffset }
+         : (endIndex < nodes.length - 1 ? { i: endIndex + 1, off: 0 } : null);
+       if (!candidate) break;
+
+       const curCh = charAt(candidate.i, candidate.off);
+       if (!curCh) break;
+       const prevCh = charPrevOfPos(candidate);
+       const nextCh = charNextOfPos(candidate);
+       if (!isWordChar(curCh, prevCh, nextCh)) break;
+       if (!stepForward()) break;
+     }
+
+     const newRange = document.createRange();
+     newRange.setStart(nodes[startIndex], startOffset);
+     newRange.setEnd(nodes[endIndex], endOffset);
+     sel.removeAllRanges();
+     sel.addRange(newRange);
+     return true;
+   }
+
    const handleSelection = (e) => {
      setTimeout(() => {
        if (state.isExplanationViewActive) return;
+       if (state.isAdjustingSelection) return;
 
        const sel = window.getSelection();
        if (!sel || sel.isCollapsed) {
@@ -1682,13 +1961,23 @@
            return;
        }
 
-       // Snapping logic: Extend selection to word boundaries
-       if (sel.anchorNode && sel.anchorNode === sel.focusNode) {
+       // Snapping logic: Extend selection to word boundaries (reflow + PDF text layer)
+       if (state.viewMode === 'original') {
+         state.isAdjustingSelection = true;
+         try { expandSelectionToWholeWordInTextLayer(sel); } catch {}
+         state.isAdjustingSelection = false;
+       }
+
+       // Reflow snapping: Only apply to Reflow mode, not Original PDF mode.
+       if (state.viewMode !== 'original' && sel.anchorNode && sel.anchorNode === sel.focusNode) {
            const range = sel.getRangeAt(0);
-           while (range.startOffset > 0 && /\w/.test(range.startContainer.textContent[range.startOffset - 1])) {
+           const text = range.startContainer.textContent;
+           const isWordChar = (c) => /[a-zA-Z0-9\u0531-\u058F]/.test(c);
+
+           while (range.startOffset > 0 && isWordChar(text[range.startOffset - 1])) {
                range.setStart(range.startContainer, range.startOffset - 1);
            }
-           while (range.endOffset < range.endContainer.textContent.length && /\w/.test(range.endContainer.textContent[range.endOffset])) {
+           while (range.endOffset < text.length && isWordChar(text[range.endOffset])) {
                range.setEnd(range.endContainer, range.endOffset + 1);
            }
            sel.removeAllRanges();
