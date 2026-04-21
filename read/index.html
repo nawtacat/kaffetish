@@ -1122,6 +1122,8 @@
  async function renderOriginalPage(pageNum) {
    state.currentPage = pageNum;
    const page = await state.pdfDoc.getPage(pageNum);
+
+   const dpr = window.devicePixelRatio || 1;
    
    // Calculate scale based on container width
    const containerWidth = DOM.readerView.clientWidth - 80;
