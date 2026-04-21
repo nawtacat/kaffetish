@@ -1139,8 +1139,10 @@
    wrapper.style.height = `${viewport.height}px`;
 
    const canvas = document.createElement('canvas');
-   canvas.width = viewport.width;
-   canvas.height = viewport.height;
+   canvas.width = Math.floor(viewport.width * dpr);
+   canvas.height = Math.floor(viewport.height * dpr);
+   canvas.style.width = `${viewport.width}px`;
+   canvas.style.height = `${viewport.height}px`;
    wrapper.appendChild(canvas);
 
    const textLayerDiv = document.createElement('div');
@@ -1149,7 +1151,11 @@
 
    DOM.pageContent.appendChild(wrapper);
 
-   const renderContext = { canvasContext: canvas.getContext('2d'), viewport: viewport };
+   const renderContext = { 
+     canvasContext: canvas.getContext('2d'), 
+     viewport: viewport,
+     transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null
+   };
    await page.render(renderContext).promise;
 
    const textContent = await page.getTextContent();
