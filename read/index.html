@@ -1738,7 +1738,8 @@
 
      // Only auto-expand when the user picked part of a single word (e.g. a character).
      const selectedText = sel.toString();
-     if (!selectedText || /\s/.test(selectedText) || selectedText.length > 4) return false;
+     const compact = selectedText ? selectedText.replace(/\s+/g, '') : '';
+     if (!compact || compact.length > 64) return false;
 
      const nodes = getTextNodesUnder(textLayer);
      if (!nodes.length) return false;
@@ -1759,6 +1760,34 @@
        [startIndex, endIndex] = [endIndex, startIndex];
        [startOffset, endOffset] = [endOffset, startOffset];
      }
+
+     const nodeLen = (i) => nodes[i]?.nodeValue?.length ?? 0;
+     const charAt = (i, off) => {
+       const v = nodes[i]?.nodeValue ?? "";
+       if (off < 0 || off >= v.length) return "";
+       return v[off];
+     };
+     const posPrev = (i, off) => {
+       if (off > 0) return { i, off: off - 1 };
+       if (i > 0) return { i: i - 1, off: nodeLen(i - 1) - 1 };
+       return null;
+     };
+     const posNext = (i, off) => {
+       const len = nodeLen(i);
+       if (off + 1 < len) return { i, off: off + 1 };
+       if (i < nodes.length - 1) return { i: i + 1, off: 0 };
+       return null;
+     };
+     const charPrevOfPos = (pos) => {
+       if (!pos) return "";
+       const p = posPrev(pos.i, pos.off);
+       return p ? charAt(p.i, p.off) : "";
+     };
+     const charNextOfPos = (pos) => {
+       if (!pos) return "";
+       const p = posNext(pos.i, pos.off);
+       return p ? charAt(p.i, p.off) : "";
+     };
 
      const stepBack = () => {
        if (startOffset > 0) {
@@ -1784,40 +1813,30 @@
        return true;
      };
 
-     const peekCharAt = (nodeIndex, offsetIndex) => {
-       const v = nodes[nodeIndex]?.nodeValue ?? "";
-       if (offsetIndex < 0 || offsetIndex >= v.length) return "";
-       return v[offsetIndex];
-     };
-
      // Expand backward to the start of the word.
      while (true) {
-       const prevPosIndex = startOffset - 1;
-       const prevCh = prevPosIndex >= 0
-         ? peekCharAt(startIndex, prevPosIndex)
-         : (startIndex > 0 ? peekCharAt(startIndex - 1, nodes[startIndex - 1].nodeValue.length - 1) : "");
-       const curCh = prevCh;
+       const candidate = posPrev(startIndex, startOffset);
+       if (!candidate) break;
+       const curCh = charAt(candidate.i, candidate.off);
        if (!curCh) break;
-       const prevPrevCh = prevPosIndex - 1 >= 0
-         ? peekCharAt(startIndex, prevPosIndex - 1)
-         : (startIndex > 0 && nodes[startIndex - 1].nodeValue.length >= 2
-           ? peekCharAt(startIndex - 1, nodes[startIndex - 1].nodeValue.length - 2)
-           : "");
-       const nextCh = peekCharAt(startIndex, startOffset);
-       if (!isWordChar(curCh, prevPrevCh, nextCh)) break;
+       const prevCh = charPrevOfPos(candidate);
+       const nextCh = charNextOfPos(candidate);
+       if (!isWordChar(curCh, prevCh, nextCh)) break;
        if (!stepBack()) break;
      }
 
      // Expand forward to the end of the word.
      while (true) {
-       const curCh = peekCharAt(endIndex, endOffset);
+       const len = nodeLen(endIndex);
+       const candidate = endOffset < len
+         ? { i: endIndex, off: endOffset }
+         : (endIndex < nodes.length - 1 ? { i: endIndex + 1, off: 0 } : null);
+       if (!candidate) break;
+
+       const curCh = charAt(candidate.i, candidate.off);
        if (!curCh) break;
-       const prevCh = endOffset - 1 >= 0
-         ? peekCharAt(endIndex, endOffset - 1)
-         : (endIndex > 0 ? peekCharAt(endIndex - 1, nodes[endIndex - 1].nodeValue.length - 1) : "");
-       const nextCh = endOffset + 1 < nodes[endIndex].nodeValue.length
-         ? peekCharAt(endIndex, endOffset + 1)
-         : (endIndex < nodes.length - 1 ? peekCharAt(endIndex + 1, 0) : "");
+       const prevCh = charPrevOfPos(candidate);
+       const nextCh = charNextOfPos(candidate);
        if (!isWordChar(curCh, prevCh, nextCh)) break;
        if (!stepForward()) break;
      }
