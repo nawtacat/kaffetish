@@ -1815,7 +1815,7 @@
      // Only auto-expand when the user picked part of a single word (e.g. a character).
      const selectedText = sel.toString();
      const compact = selectedText ? selectedText.replace(/\s+/g, '') : '';
-     if (!compact || compact.length > 64) return false;
+     if (!compact) return false;
 
      const nodes = getTextNodesUnder(textLayer);
      if (!nodes.length) return false;
